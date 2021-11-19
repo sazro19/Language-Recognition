@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Всё как у больших. Автозагрузка приложений в оконных менеджерах linux / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/583328\/"},"headline":"Всё как у больших. Автозагрузка приложений в оконных менеджерах linux","datePublished":"2021-10-18T12:00:04+03:00","dateModified":"2021-10-18T14:48:52+03:00","author":{"@type":"Person","name":"Вадим Прилуцкий"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Вывод systemd-analyze dot --user &lsquo;i3.service&rsquo; | dot -Tpng | imv -  Как-то раз, листая сообщения в профильном systemd чате, в телеграм, я наткнулся на следующий...","url":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/583328\/#post-content-body","about":["c_ruvds","h_linux","h_desktop_environment","h_nix","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/583328\/0db9e9032961c39b54a1b3026f9b0536\/","https:\/\/habrastorage.org\/webt\/8v\/ay\/v_\/8vayv_if8zfzzpmbd5b81aqjcjc.png","https:\/\/habrastorage.org\/webt\/ou\/g5\/kh\/oug5kh6sjydt9llengsiebnp40w.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Всё как у больших. Автозагрузка приложений в оконных менеджерах linux" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Всё как у больших. Автозагрузка приложений в оконных менеджерах linux" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Всё как у больших. Автозагрузка приложений в оконных менеджерах linux" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -
+
+Как-то раз, листая сообщения в профильном systemd чате, в телеграм, я наткнулся на следующий кусок man..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -
+
+Как-то раз, листая сообщения в профильном systemd чате, в телеграм, я наткнулся на следующий кусок man..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -
+
+Как-то раз, листая сообщения в профильном systemd чате, в телеграм, я наткнулся на следующий кусок man..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -
+
+Как-то раз, листая сообщения в профильном systemd чате, в телеграм, я наткнулся на следующий кусок man..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -
+
+Как-то раз, листая сообщения в профильном systemd чате, в телеграм, я наткнулся на следующий кусок man..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/8v/ay/v_/8vayv_if8zfzzpmbd5b81aqjcjc.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/8v/ay/v_/8vayv_if8zfzzpmbd5b81aqjcjc.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/8v/ay/v_/8vayv_if8zfzzpmbd5b81aqjcjc.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/8v/ay/v_/8vayv_if8zfzzpmbd5b81aqjcjc.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/8v/ay/v_/8vayv_if8zfzzpmbd5b81aqjcjc.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583328" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-18T09:00:04.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583328/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/ruvds/blog/583328/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/8v/ay/v_/8vayv_if8zfzzpmbd5b81aqjcjc.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="ruvds" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://ruvds.com/ru-rub"><img src="//habrastorage.org/getpro/habr/branding/b77/8d5/a41/b778d5a41f83016379c6630262c3294c.png" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/ruvds/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">2824.34</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/ruvds/profile/" class="tm-company-card__name">
+        RUVDS.com
+      </a> <div class="tm-company-card__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Oxyd/" title="Oxyd" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/a19/0fb/feb/a190fbfeb40ce8a9805987a7ada55e1f.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Oxyd/" class="tm-user-info__username">
+      Oxyd
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-18T09:00:04.000Z" title="2021-10-18, 12:00">18  октября   в 12:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Всё как у больших. Автозагрузка приложений в оконных менеджерах linux</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/ruvds/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании RUVDS.com</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux/" class="tm-article-snippet__hubs-item-link"><span>Настройка Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/desktop_environment/" class="tm-article-snippet__hubs-item-link"><span>Графические оболочки</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/nix/" class="tm-article-snippet__hubs-item-link"><span>*nix</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><a href="https://habr.com/ru/company/ruvds/blog/583328/"><div style="text-align:center;"><img src="/img/image-loader.svg" alt="Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -" data-src="https://habrastorage.org/webt/8v/ay/v_/8vayv_if8zfzzpmbd5b81aqjcjc.png"/></div></a><br/>
+<br/>
+<i><font color="#999999">Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -</font></i><br/>
+<br/>
+<p>Как-то раз, листая сообщения в профильном <em>systemd</em> <a href="https://t.me/ru_systemd">чате, в телеграм</a>, я наткнулся на следующий кусок <code>man systemd.special</code>…</p><br/>
+<pre><code class="plaintext">xdg-desktop-autostart.target
+   The XDG specification defines a way to autostart applications using XDG desktop files.
+systemd ships systemd-xdg-autostart-generator(8) for the XDG desktop files in autostart
+directories. Desktop Environments can opt-in to use this service by adding a Wants=dependency
+on xdg-desktop-autostart.target.</code></pre><br/>
+<p>О как интересно, подумалось мне. Можно реализовать функционал полноценных<code>Desktop Environments</code>, по автоматическому запуску приложений, при старте. А у меня как раз <em>i3wm</em>, который таковым не является и которому такой функционал не помешал бы. Надо это дело исследовать. Тогда я ещё не знал во что ввязался. Как оказалось, не всё так просто.</p><br/>
+<a name="habracut"></a><br/>
+<h2><font color="#3AC1EF">Переменные XDG, freedesktop.org, desktop-файлы и autostart</font></h2><br/>
+<p>Пользователям полноценных линуксовых графических окружений (KDE, Gnome, Mate etc) прекрасно известна возможность автозапуска приложений при логине пользователя в систему, разработанную инициативной группой <a href="https://www.freedesktop.org/wiki/">Freedesktop.org</a> (ранее X Desktop Group, или <em>XDG</em>), подобная той, что существует, например, в Windows. Данный функционал обеспечивается обычными <code>*.desktop</code> <a href="https://specifications.freedesktop.org/desktop-entry-spec/latest/">файлами</a>, но лежащими по определённым путям:</p><br/>
+<ul>
+<li><code>$XDG_CONFIG_DIRS/autostart/</code> (<code>/etc/xdg/autostart/</code> по умолчанию) — общесистемная директория, для всех пользователей. Туда, обычно, попадают десктоп файлы при установке софта пакетным менеджером.</li>
+<li><code>$XDG_CONFIG_HOME/autostart/</code> (<code>$HOME/.config/autostart/</code> по умолчанию) — Пользовательская директория, имеющая больший приоритет, нежели общесистемная, то есть если в пользовательской лежит десктоп файл с таким же именем, что и в общесистемной, будет использован именно пользовательский файл.</li>
+</ul><br/>
+<p>Если в этих переменных семейства <a href="http://standards.freedesktop.org/basedir-spec/">XDG directories</a> не указано иное, или эти переменные отсутствуют (так происходит в большинстве <b><font color="#3AC1EF">классических</font></b> дистрибутивов, привет <em>NixOS</em>!), будут использованы значения по умолчанию.</p><br/>
+<p>Итак, с директориями определились. Файлы в них можно:</p><br/>
+<ul>
+<li>Симлинкнуть из стандартных путей: <code>$XDG_DATA_DIRS/applications/</code> (<code>/usr/share/applications/</code> по умолчанию) или из пользовательского <code>$XDG_DATA_HOME/applications/</code> (<code>~/.local/share/applications</code> по умолчанию), куда, кстати, любят класть свои файлы Steam, Itch.io или Wine.</li>
+<li>Можно создать самому, написав десктоп файлы руками.</li>
+<li>Можно нажать галочку «Запускать при старте системы», в каком-нибудь софте, например, в телеграм клиенте и тогда уже софт сам создаст в <code>$XDG_CONFIG_HOME/autostart/</code> свой файл.</li>
+</ul><br/>
+<p>Всё хорошо. Одно плохо. Это не работает, как минимум, в <em>Leftwm</em>, <em>Spectrwm</em>, <em>xmonad</em>, <em>bspwm</em>, <em>dwm</em> (без патчей точно) и, разумеется, в любимом <a href="https://i3wm.org/">i3wm</a>. Просто потому, что у них отсутствует <em>session manager</em>. И вот тут мы переходим к самому интересному. Встречайте! <em>systemd</em>!</p><br/>
+<h2><font color="#3AC1EF">Systemd как спасательный круг тайловых (и не очень) оконных менеджеров</font></h2><br/>
+<p>Эта глава будет самой объёмной. Тут мы разберёмся кто и как может помочь разобрать залежи desktop файлов, кто, как и когда их запустит, и при чём тут вообще <em>systemd</em>. Поехали!</p><br/>
+<h3><font color="#3AC1EF">▍ <del>Developers, developers, developers!</del> Генераторы, генераторы, генераторы!</font></h3><br/>
+<p>Systemd, как известно, это не только система инициализации, логгирования событий, но и набор готовых дополнительных утилит, готовых сервисов с их юнитами, система управления сетью, and more… Среди прочего systemd может выступать в качестве системного менеджера для пользовательских сервисов — юнитов, работающих в пространстве пользователя. То есть после логина пользователя в систему запускается ещё один экземпляр <code>/usr/lib/systemd</code> только уже от пользователя и позволяет запускать юниты в пространстве пользователя, с наследованием его окружения и правами.<br/>
+<br/>
+Среди других интересных и полезных вещей в systemd есть такая штука, как генераторы. Маленькие утилиты запускаемые на раннем этапе загрузки системы или сразу после логина пользователя и выполняющие динамическую генерацию юнитов и/или их конфигов. Например, есть генератор, который читает <code>/etc/fstab</code> и на его основе генерирует <code>*.mount</code> юниты. Или генератор, который вычитывает файлы <code>*.conf</code> из <code>/etc/environment.d/</code> и <code>$HOME/.config/environment.d/</code> и на их основе собирает переменные которые пользователь видит набирая команду <code>env</code> и которые наследуются всеми <b><font color="#3AC1EF">пользовательскими</font></b> юнитами. Среди прочего есть и генератор, который пробегает по <code>$XDG_CONFIG_DIRS/autostart</code> и <code>$XDG_CONFIG_HOME/autostart</code>, вычитывает <code>*.desktop</code> файлы, генерирует пользовательские <code>*.service</code> юниты и кладёт их в <code>/run/user/&lt;UID>/systemd/generator.late</code>.<br/>
+<br/>
+Всё хорошо и замечательно, но есть одно но. Если есть сервисы, их должен кто-то вовремя запустить. То есть запустить ровно тогда, когда будет запущена графическая оболочка… Если посмотреть, произвольный такой юнит, мы увидим там упоминание target-а <code>graphical-session.target</code> (Юнит на основе десктоп файла апплета управления Bluetooth <code>cat /run/user/1000/systemd/generator.late/app-blueman@autostart.service</code>):</p><br/>
+<pre><code class="plaintext"># Automatically generated by systemd-xdg-autostart-generator
+
+[Unit]
+Documentation=man:systemd-xdg-autostart-generator(8)
+SourcePath=/etc/xdg/autostart/blueman.desktop
+PartOf=graphical-session.target
+
+Description=Blueman Applet
+After=graphical-session.target
+
+[Service]
+Type=exec
+ExecStart=:/usr/bin/blueman-applet
+Restart=no
+TimeoutSec=5s
+Slice=app.slice</code></pre><br/>
+<p>Хорошо, но что это за <em>graphical-session.target</em>? В выводе <code>systemctl --user --type=target</code>, если выполнить команду из-под <em>i3wm</em> никакого такого таргета не наблюдается. А вот если запустить из-под, например, <em>Gnome</em>, то вполне:</p><br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Многабукв и ничего интересного ;-)</b>
+                        <div class="spoiler_text"><pre><code class="plaintext">  UNIT                                                LOAD   ACTIVE SUB     DESCRIPTION                                                                       
+  basic.target                                        loaded active active  Basic System                                                                      
+  default.target                                      loaded active active  Main User Target                                                                  
+  gnome-session-initialized.target                    loaded active active  GNOME Session is initialized                                                      
+  gnome-session-manager.target                        loaded active active  GNOME Session Manager is ready                                                    
+  gnome-session-pre.target                            loaded active active  Tasks to be run before GNOME Session starts                                       
+  gnome-session-x11-services.target                   loaded active active  GNOME session X11 services                                                        
+  gnome-session-x11.target                            loaded active active  GNOME X11 Session                                                                 
+  gnome-session-x11@zorin.target                      loaded active active  GNOME X11 Session (session: gnome)                                                
+  gnome-session.target                                loaded active active  GNOME Session                                                                     
+  gnome-session@gnome.target                          loaded active active  GNOME Session (session: gnome)                                                    
+  graphical-session-pre.target                        loaded active active  Session services which should run early before the graphical session is brought up
+  graphical-session.target                            loaded active active  Current graphical user session                                                    
+  org.gnome.SettingsDaemon.A11ySettings.target        loaded active active  GNOME accessibility target                                                        
+  org.gnome.SettingsDaemon.Color.target               loaded active active  GNOME color management target                                                     
+  org.gnome.SettingsDaemon.Datetime.target            loaded active active  GNOME date &amp; time target                                                          
+  org.gnome.SettingsDaemon.Housekeeping.target        loaded active active  GNOME maintenance of expirable data target                                        
+  org.gnome.SettingsDaemon.Keyboard.target            loaded active active  GNOME keyboard configuration target                                               
+  org.gnome.SettingsDaemon.MediaKeys.target           loaded active active  GNOME keyboard shortcuts target                                                   
+  org.gnome.SettingsDaemon.Power.target               loaded active active  GNOME power management target                                                     
+  org.gnome.SettingsDaemon.PrintNotifications.target  loaded active active  GNOME printer notifications target                                                
+  org.gnome.SettingsDaemon.Rfkill.target              loaded active active  GNOME RFKill support target                                                       
+  org.gnome.SettingsDaemon.ScreensaverProxy.target    loaded active active  GNOME FreeDesktop screensaver target                                              
+  org.gnome.SettingsDaemon.Sharing.target             loaded active active  GNOME file sharing target                                                         
+  org.gnome.SettingsDaemon.Smartcard.target           loaded active active  GNOME smartcard target                                                            
+  org.gnome.SettingsDaemon.Sound.target               loaded active active  GNOME sound sample caching target                                                 
+  org.gnome.SettingsDaemon.Wacom.target               loaded active active  GNOME Wacom tablet support target                                                 
+  org.gnome.SettingsDaemon.XSettings.target           loaded active active  GNOME XSettings target                                                            
+  org.gnome.Shell.target                              loaded active active  GNOME Shell                                                                       
+  paths.target                                        loaded active active  Paths                                                                             
+  sockets.target                                      loaded active active  Sockets                                                                           
+  timers.target                                       loaded active active  Timers                                                                            
+
+LOAD   = Reflects whether the unit definition was properly loaded.
+ACTIVE = The high-level unit activation state, i.e. generalization of SUB.
+SUB    = The low-level unit activation state, values depend on unit type.
+
+31 loaded units listed. Pass --all to see loaded but inactive units, too.
+To show all installed unit files use 'systemctl list-unit-files'.
+</code></pre><br/>
+</div>
+                    </div><br/>
+<p>И что же со всем этим делать и как быть? Как получить заветный <em>target</em>?</p><br/>
+<h3><font color="#3AC1EF">▍ Графическая оболочка тоже сервис. Подсматриваем в Gnome</font></h3><br/>
+<p>Если в Gnome запустить <code>systemctl --user --type=service</code> можно заметить интересный сервис:</p><br/>
+<pre><code class="plaintext">  UNIT                                                LOAD   ACTIVE SUB     DESCRIPTION
+  at-spi-dbus-bus.service                             loaded active running Accessibility services bus
+  dbus.service                                        loaded active running D-Bus User Message Bus
+
+...
+
+  gnome-shell-x11.service                             loaded active running GNOME Shell on X11
+
+...</code></pre><br/>
+<p>Становится всё интереснее. Значит <em>Gnome</em> запускается как systemd сервис (<code>gnome-shell-x11.service</code>). Ну а уж из сервиса можно реализовывать любые зависимости. В принципе ожидаемо. Но как реализовывать такое для произвольной графической оболочки, которая не заточена под такие тонкие извращения? Надеемся на то не должно быть сложно… Перво-наперво смотрим в юнит (<code>systemctl cat --user gnome-shell-x11.service</code>) и понимаем, что ничего не понимаем и что мы немножко попали…</p><br/>
+<pre><code class="plaintext"># /usr/lib/systemd/user/gnome-shell-x11.service
+[Unit]
+Description=GNOME Shell on X11
+# On X11, try to show the GNOME Session Failed screen
+OnFailure=gnome-shell-disable-extensions.service gnome-session-failed.target
+OnFailureJobMode=replace
+CollectMode=inactive-or-failed
+RefuseManualStart=on
+RefuseManualStop=on
+
+After=gnome-session-manager.target
+
+Requisite=gnome-session-initialized.target
+PartOf=gnome-session-initialized.target
+Before=gnome-session-initialized.target
+
+# The units already conflict because they use the same BusName
+#Conflicts=gnome-shell-wayland.service
+
+# Limit startup frequency more than the default
+StartLimitIntervalSec=15s
+StartLimitBurst=3
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/gnome-shell
+# Exit code 1 means we are probably *not* dealing with an extension failure
+SuccessExitStatus=1
+# On X11 we want to restart on-success (Alt+F2 + r) and on-failure.
+Restart=always</code></pre><br/>
+<p>Ладно, чёрт с ним, идём смотреть в <code>*.desktop</code> файл xsessions(<code>cat /usr/share/xsessions/gnome.desktop</code>)…</p><br/>
+<pre><code class="plaintext">[Desktop Entry]
+Name=GNOME
+Comment=This session logs you into GNOME
+Exec=env GNOME_SHELL_SESSION_MODE=gnome /usr/bin/gnome-session --systemd --session=gnome
+TryExec=/usr/bin/gnome-shell
+Type=Application
+DesktopNames=GNOME
+X-GDM-SessionRegisters=true
+X-Ubuntu-Gettext-Domain=gnome-session-3.0</code></pre><br/>
+<p>… и понимаем, что попали несколько серьёзнее чем хотелось бы и что гном, в данном случае, нам мало чем поможет. Он изначально заточен под работу с systemd. Идём в эти наши интернеты.</p><br/>
+<h3><font color="#3AC1EF">▍ Выходим на финишную прямую. Пишем враппер, юнит и наконец удачно стартуем</font></h3><br/>
+<p>Не буду затягивать и утомлять читателя подробностями того, как и где приходилось выуживать информацию по крупицам. Это были и маны и <code>ArchWiki</code> и чёрт его знает что ещё. Лучше сразу приведу готовые, в меру откомментированные файлы.</p><br/>
+<p>Итак, копируем дефолтный <code>/usr/share/xsessions/i3.desktop</code> в <code>/usr/share/xsessions/i3-systemd.desktop</code> и немного модифицируем.</p><br/>
+<pre><code class="plaintext">[Desktop Entry]
+### Было: ###
+# Name=i3
+### Стало: ###
+Name=i3 via systemd
+Comment=improved dynamic tiling window manager
+### Было: ###
+# Exec=i3
+# TryExec=i3
+### Стало: ###
+Exec=i3-service
+TryExec=i3-service
+Type=Application
+X-LightDM-DesktopName=i3
+DesktopNames=i3
+Keywords=tiling;wm;windowmanager;window;manager;</code></pre><br/>
+<p>Теперь нам нужно написать враппер i3-service который будет подготавливать окружение и запускать i3wm в качестве сервиса. Ну и, разумеется, сам <code>i3.service</code> файл тоже должен быть написан. Итак враппер <code>/usr/local/bin/i3-service</code>:</p><br/>
+<pre><code class="bash">#!/usr/bin/env sh
+
+# Импортируем и загружаем в d-bus сессию переменные из логин менеджера.
+/etc/X11/xinit/xinitrc.d/50-systemd-user.sh
+
+systemctl --user import-environment XDG_SEAT XDG_VTNR XDG_SESSION_ID XDG_SESSION_TYPE XDG_SESSION_CLASS
+
+if command -v dbus-update-activation-environment >/dev/null 2>&amp;1; then
+    dbus-update-activation-environment XDG_SEAT XDG_VTNR XDG_SESSION_ID XDG_SESSION_TYPE XDG_SESSION_CLASS
+fi
+
+# Загружаем иксовые ресурсы.
+
+userresources=$HOME/.Xresources
+usermodmap=$HOME/.Xmodmap
+sysresources=/etc/X11/xinit/.Xresources
+sysmodmap=/etc/X11/xinit/.Xmodmap
+
+if [ -f $sysresources ]; then
+    xrdb -merge $sysresources
+fi
+
+if [ -f $sysmodmap ]; then
+    xmodmap $sysmodmap
+fi
+
+if [ -f "$userresources" ]; then
+    xrdb -merge "$userresources"
+fi
+
+if [ -f "$usermodmap" ]; then
+    xmodmap "$usermodmap"
+fi
+
+# Запускаем xinitrc* скрипты.
+
+if [ -d /etc/X11/xinit/xinitrc.d ] ; then
+    for f in /etc/X11/xinit/xinitrc.d/?*.sh ; do
+        [ -x "$f" ] &amp;&amp; . "$f"
+    done
+    unset f
+fi
+
+# И собственно запускаем сервис.
+exec systemctl --wait --user start i3.service</code></pre><br/>
+<p>Ну и наконец вишенка на нашем торте, сам <code>/etc/systemd/user/i3.service</code>:</p><br/>
+<pre><code class="plaintext">[Unit]
+Description=i3wm tiling window manager for X
+Documentation=man:i3(5)
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target
+# Самое главное, биндимся к таргету графической сессии..
+BindsTo=graphical-session.target
+PartOf=graphical-session.target
+# ... и не забываем включить таргет, ради которого всё затевалось.
+Before=xdg-desktop-autostart.target
+Wants=xdg-desktop-autostart.target
+
+[Service]
+Type=simple
+# Запускаем i3 через d-bus launcher. Мы же хотим, чтоб у нас работал d-bus?
+ExecStart=/usr/bin/dbus-launch --sh-syntax --exit-with-session i3 --shmlog-size 0
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10</code></pre><br/>
+<ul>
+<li>Записываемся.</li>
+<li>Для проверки добавляем в автозагрузку, например, тот же клиент телеграма.</li>
+<li>Идём на перезагрузку и в дисплейном менеджере при старте системы, выбираем пункт «<em>i3 via systemd</em>»</li>
+</ul><br/>
+<h2><font color="#3AC1EF">Что в итоге?</font></h2><br/>
+<ul>
+<li>Работает автозагрузка, прямо как в каком-нить гноме.</li>
+<li>Бонусом получили <code>graphical-session.target</code>, к которому можно биндить сервисы, зависящие от запущенной графической оболочки. Например, до этого у меня падал, при загрузке юнит <em>clipboard manager</em>-а, в результате приходилось костылять таймаут… Теперь не падает.</li>
+<li>Можно выкинуть из конфига i3 всё, что запускается при старте (Директива <code>exec --no-startup-id</code> и это вот всё) и упаковать в отдельные аккуратные пользовательские <code>*.service</code> и по-человечески рулить ими в процессе работы. Например, отключать и включать <em>lockscreen</em> простым <code>systemctl --user start</code>/<code>stop</code></li>
+<li>Для автозагружаемых юнитов, сгенерённых из <code>*.desktop</code> файлов, в самих этих файлах их можно отключать, добавив строчку <code>Hidden=true</code></li>
+</ul><br/>
+<p>Ну и вообще, приятно быть первооткрывателем. Ибо в процессе гугления и чтения манов, готового рецепта обнаружено не было. Так что любители wm, не относящиеся к systemd хейтерам. Пробуйте. За месяц использования был замечен ровно один косяк. Не работает <code>gvgs-*</code> функционал в <em>pcman-fm</em>, если его запустить хоткеем из <code>i3</code> Но если запустить из <em>rofi</em>, волшебным образом всё начинает работать. Возможно я забыл импортировать какую-то переменную в <em>d-bus</em> Ну и, чтоб не копипастить, <a href="https://github.com/Oxyd76/wm_via_systemd-with_xdg">ссылка на гитхаб</a>.</p><br/>
+<a href="http://ruvds.com/ru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=Oxyd&amp;utm_content=vsyo_kak_u_bolshix._avtozagruzka_prilozhenij_v_okonnyx_menedzherax_linux"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ou/g5/kh/oug5kh6sjydt9llengsiebnp40w.png"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bsystemd%5D" class="tm-tags-list__link">systemd</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Blinux%5D" class="tm-tags-list__link">linux</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bxdg-autostart%5D" class="tm-tags-list__link">xdg-autostart</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bautostart%5D" class="tm-tags-list__link">autostart</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bi3wm%5D" class="tm-tags-list__link">i3wm</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Btiling%20wm%5D" class="tm-tags-list__link">tiling wm</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bruvds_%D1%81%D1%82%D0%B0%D1%82%D1%8C%D0%B8%5D" class="tm-tags-list__link">ruvds_статьи</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/ruvds/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании RUVDS.com
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/linux/" class="tm-hubs-list__link">
+    Настройка Linux
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/desktop_environment/" class="tm-hubs-list__link">
+    Графические оболочки
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/nix/" class="tm-hubs-list__link">
+    *nix
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 59: ↑59 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 59: ↑59 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+59</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">6.4K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    71
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__title">RUVDS.com</a> <div class="tm-company-snippet__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/ruvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Oxyd/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/a19/0fb/feb/a190fbfeb40ce8a9805987a7ada55e1f.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 219 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    89.2
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">120</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Вадим Прилуцкий</span> <a href="/ru/users/Oxyd/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Oxyd
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Админ Linux</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <button type="submit" class="tm-user-card__button btn btn_transparent btn_small">
+      Задонатить
+    </button> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/ruvds/blog/583328/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 15 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-07-26T21:00:00.000Z" title="2015-07-27, 00:00">27  июля  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://ruvds.com" target="_blank" class="tm-company-basic-info__link">
+      ruvds.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    11–30 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2016-03-18T05:43:01.000Z" title="2016-03-18, 08:43">18  марта  2016</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/ruvds/" class="tm-company-basic-info__link">
+      ruvds
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/ruvds/blog/583328/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/ruvds/blog/583328/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583328":{"id":"583328","timePublished":"2021-10-18T09:00:04+00:00","isCorporative":true,"lang":"ru","titleHtml":"Всё как у больших. Автозагрузка приложений в оконных менеджерах linux","leadData":{"textHtml":"\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F583328\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F8v\u002Fay\u002Fv_\u002F8vayv_if8zfzzpmbd5b81aqjcjc.png\" alt=\"Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EВывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Cp\u003EКак-то раз, листая сообщения в профильном \u003Cem\u003Esystemd\u003C\u002Fem\u003E \u003Ca href=\"https:\u002F\u002Ft.me\u002Fru_systemd\" rel=\"nofollow noopener noreferrer\"\u003Eчате, в телеграм\u003C\u002Fa\u003E, я наткнулся на следующий кусок \u003Ccode\u003Eman systemd.special\u003C\u002Fcode\u003E…\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Exdg-desktop-autostart.target\n   The XDG specification defines a way to autostart applications using XDG desktop files.\nsystemd ships systemd-xdg-autostart-generator(8) for the XDG desktop files in autostart\ndirectories. Desktop Environments can opt-in to use this service by adding a Wants=dependency\non xdg-desktop-autostart.target.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u003E\r\n\u003Cp\u003EО как интересно, подумалось мне. Можно реализовать функционал полноценных\u003Ccode\u003EDesktop Environments\u003C\u002Fcode\u003E, по автоматическому запуску приложений, при старте. А у меня как раз \u003Cem\u003Ei3wm\u003C\u002Fem\u003E, который таковым не является и которому такой функционал не помешал бы. Надо это дело исследовать. Тогда я ещё не знал во что ввязался. Как оказалось, не всё так просто.\u003C\u002Fp\u003E\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":89.2,"votesCount":219},"rating":120,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":"4100116256057114","paymentPayPalMe":null,"paymentWebmoney":"104863563242"},"id":"17630","alias":"Oxyd","fullname":"Вадим Прилуцкий","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Fa19\u002F0fb\u002Ffeb\u002Fa190fbfeb40ce8a9805987a7ada55e1f.jpg","speciality":"Админ Linux"},"statistics":{"commentsCount":15,"favoritesCount":71,"readingCount":6386,"score":59,"votesCount":59},"hubs":[{"relatedData":null,"id":"19791","alias":"ruvds","type":"corporative","title":"Блог компании RUVDS.com","titleHtml":"Блог компании RUVDS.com","isProfiled":false},{"relatedData":null,"id":"36","alias":"linux","type":"collective","title":"Настройка Linux","titleHtml":"Настройка Linux","isProfiled":true},{"relatedData":null,"id":"640","alias":"desktop_environment","type":"collective","title":"Графические оболочки","titleHtml":"Графические оболочки","isProfiled":true},{"relatedData":null,"id":"7289","alias":"nix","type":"collective","title":"*nix","titleHtml":"*nix","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F583328\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F8v\u002Fay\u002Fv_\u002F8vayv_if8zfzzpmbd5b81aqjcjc.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EВывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКак-то раз, листая сообщения в профильном \u003Cem\u003Esystemd\u003C\u002Fem\u003E \u003Ca href=\"https:\u002F\u002Ft.me\u002Fru_systemd\"\u003Eчате, в телеграм\u003C\u002Fa\u003E, я наткнулся на следующий кусок \u003Ccode\u003Eman systemd.special\u003C\u002Fcode\u003E…\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Exdg-desktop-autostart.target\n   The XDG specification defines a way to autostart applications using XDG desktop files.\nsystemd ships systemd-xdg-autostart-generator(8) for the XDG desktop files in autostart\ndirectories. Desktop Environments can opt-in to use this service by adding a Wants=dependency\non xdg-desktop-autostart.target.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EО как интересно, подумалось мне. Можно реализовать функционал полноценных\u003Ccode\u003EDesktop Environments\u003C\u002Fcode\u003E, по автоматическому запуску приложений, при старте. А у меня как раз \u003Cem\u003Ei3wm\u003C\u002Fem\u003E, который таковым не является и которому такой функционал не помешал бы. Надо это дело исследовать. Тогда я ещё не знал во что ввязался. Как оказалось, не всё так просто.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EПеременные XDG, freedesktop.org, desktop-файлы и autostart\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПользователям полноценных линуксовых графических окружений (KDE, Gnome, Mate etc) прекрасно известна возможность автозапуска приложений при логине пользователя в систему, разработанную инициативной группой \u003Ca href=\"https:\u002F\u002Fwww.freedesktop.org\u002Fwiki\u002F\"\u003EFreedesktop.org\u003C\u002Fa\u003E (ранее X Desktop Group, или \u003Cem\u003EXDG\u003C\u002Fem\u003E), подобная той, что существует, например, в Windows. Данный функционал обеспечивается обычными \u003Ccode\u003E*.desktop\u003C\u002Fcode\u003E \u003Ca href=\"https:\u002F\u002Fspecifications.freedesktop.org\u002Fdesktop-entry-spec\u002Flatest\u002F\"\u003Eфайлами\u003C\u002Fa\u003E, но лежащими по определённым путям:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003E$XDG_CONFIG_DIRS\u002Fautostart\u002F\u003C\u002Fcode\u003E (\u003Ccode\u003E\u002Fetc\u002Fxdg\u002Fautostart\u002F\u003C\u002Fcode\u003E по умолчанию) — общесистемная директория, для всех пользователей. Туда, обычно, попадают десктоп файлы при установке софта пакетным менеджером.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003E$XDG_CONFIG_HOME\u002Fautostart\u002F\u003C\u002Fcode\u003E (\u003Ccode\u003E$HOME\u002F.config\u002Fautostart\u002F\u003C\u002Fcode\u003E по умолчанию) — Пользовательская директория, имеющая больший приоритет, нежели общесистемная, то есть если в пользовательской лежит десктоп файл с таким же именем, что и в общесистемной, будет использован именно пользовательский файл.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли в этих переменных семейства \u003Ca href=\"http:\u002F\u002Fstandards.freedesktop.org\u002Fbasedir-spec\u002F\"\u003EXDG directories\u003C\u002Fa\u003E не указано иное, или эти переменные отсутствуют (так происходит в большинстве \u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003Eклассических\u003C\u002Ffont\u003E\u003C\u002Fb\u003E дистрибутивов, привет \u003Cem\u003ENixOS\u003C\u002Fem\u003E!), будут использованы значения по умолчанию.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИтак, с директориями определились. Файлы в них можно:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EСимлинкнуть из стандартных путей: \u003Ccode\u003E$XDG_DATA_DIRS\u002Fapplications\u002F\u003C\u002Fcode\u003E (\u003Ccode\u003E\u002Fusr\u002Fshare\u002Fapplications\u002F\u003C\u002Fcode\u003E по умолчанию) или из пользовательского \u003Ccode\u003E$XDG_DATA_HOME\u002Fapplications\u002F\u003C\u002Fcode\u003E (\u003Ccode\u003E~\u002F.local\u002Fshare\u002Fapplications\u003C\u002Fcode\u003E по умолчанию), куда, кстати, любят класть свои файлы Steam, Itch.io или Wine.\u003C\u002Fli\u003E\r\n\u003Cli\u003EМожно создать самому, написав десктоп файлы руками.\u003C\u002Fli\u003E\r\n\u003Cli\u003EМожно нажать галочку «Запускать при старте системы», в каком-нибудь софте, например, в телеграм клиенте и тогда уже софт сам создаст в \u003Ccode\u003E$XDG_CONFIG_HOME\u002Fautostart\u002F\u003C\u002Fcode\u003E свой файл.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВсё хорошо. Одно плохо. Это не работает, как минимум, в \u003Cem\u003ELeftwm\u003C\u002Fem\u003E, \u003Cem\u003ESpectrwm\u003C\u002Fem\u003E, \u003Cem\u003Exmonad\u003C\u002Fem\u003E, \u003Cem\u003Ebspwm\u003C\u002Fem\u003E, \u003Cem\u003Edwm\u003C\u002Fem\u003E (без патчей точно) и, разумеется, в любимом \u003Ca href=\"https:\u002F\u002Fi3wm.org\u002F\"\u003Ei3wm\u003C\u002Fa\u003E. Просто потому, что у них отсутствует \u003Cem\u003Esession manager\u003C\u002Fem\u003E. И вот тут мы переходим к самому интересному. Встречайте! \u003Cem\u003Esystemd\u003C\u002Fem\u003E!\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003ESystemd как спасательный круг тайловых (и не очень) оконных менеджеров\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЭта глава будет самой объёмной. Тут мы разберёмся кто и как может помочь разобрать залежи desktop файлов, кто, как и когда их запустит, и при чём тут вообще \u003Cem\u003Esystemd\u003C\u002Fem\u003E. Поехали!\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ \u003Cdel\u003EDevelopers, developers, developers!\u003C\u002Fdel\u003E Генераторы, генераторы, генераторы!\u003C\u002Ffont\u003E\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003ESystemd, как известно, это не только система инициализации, логгирования событий, но и набор готовых дополнительных утилит, готовых сервисов с их юнитами, система управления сетью, and more… Среди прочего systemd может выступать в качестве системного менеджера для пользовательских сервисов — юнитов, работающих в пространстве пользователя. То есть после логина пользователя в систему запускается ещё один экземпляр \u003Ccode\u003E\u002Fusr\u002Flib\u002Fsystemd\u003C\u002Fcode\u003E только уже от пользователя и позволяет запускать юниты в пространстве пользователя, с наследованием его окружения и правами.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСреди других интересных и полезных вещей в systemd есть такая штука, как генераторы. Маленькие утилиты запускаемые на раннем этапе загрузки системы или сразу после логина пользователя и выполняющие динамическую генерацию юнитов и\u002Fили их конфигов. Например, есть генератор, который читает \u003Ccode\u003E\u002Fetc\u002Ffstab\u003C\u002Fcode\u003E и на его основе генерирует \u003Ccode\u003E*.mount\u003C\u002Fcode\u003E юниты. Или генератор, который вычитывает файлы \u003Ccode\u003E*.conf\u003C\u002Fcode\u003E из \u003Ccode\u003E\u002Fetc\u002Fenvironment.d\u002F\u003C\u002Fcode\u003E и \u003Ccode\u003E$HOME\u002F.config\u002Fenvironment.d\u002F\u003C\u002Fcode\u003E и на их основе собирает переменные которые пользователь видит набирая команду \u003Ccode\u003Eenv\u003C\u002Fcode\u003E и которые наследуются всеми \u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003Eпользовательскими\u003C\u002Ffont\u003E\u003C\u002Fb\u003E юнитами. Среди прочего есть и генератор, который пробегает по \u003Ccode\u003E$XDG_CONFIG_DIRS\u002Fautostart\u003C\u002Fcode\u003E и \u003Ccode\u003E$XDG_CONFIG_HOME\u002Fautostart\u003C\u002Fcode\u003E, вычитывает \u003Ccode\u003E*.desktop\u003C\u002Fcode\u003E файлы, генерирует пользовательские \u003Ccode\u003E*.service\u003C\u002Fcode\u003E юниты и кладёт их в \u003Ccode\u003E\u002Frun\u002Fuser\u002F&lt;UID\u003E\u002Fsystemd\u002Fgenerator.late\u003C\u002Fcode\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВсё хорошо и замечательно, но есть одно но. Если есть сервисы, их должен кто-то вовремя запустить. То есть запустить ровно тогда, когда будет запущена графическая оболочка… Если посмотреть, произвольный такой юнит, мы увидим там упоминание target-а \u003Ccode\u003Egraphical-session.target\u003C\u002Fcode\u003E (Юнит на основе десктоп файла апплета управления Bluetooth \u003Ccode\u003Ecat \u002Frun\u002Fuser\u002F1000\u002Fsystemd\u002Fgenerator.late\u002Fapp-blueman@autostart.service\u003C\u002Fcode\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E# Automatically generated by systemd-xdg-autostart-generator\n\n[Unit]\nDocumentation=man:systemd-xdg-autostart-generator(8)\nSourcePath=\u002Fetc\u002Fxdg\u002Fautostart\u002Fblueman.desktop\nPartOf=graphical-session.target\n\nDescription=Blueman Applet\nAfter=graphical-session.target\n\n[Service]\nType=exec\nExecStart=:\u002Fusr\u002Fbin\u002Fblueman-applet\nRestart=no\nTimeoutSec=5s\nSlice=app.slice\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EХорошо, но что это за \u003Cem\u003Egraphical-session.target\u003C\u002Fem\u003E? В выводе \u003Ccode\u003Esystemctl --user --type=target\u003C\u002Fcode\u003E, если выполнить команду из-под \u003Cem\u003Ei3wm\u003C\u002Fem\u003E никакого такого таргета не наблюдается. А вот если запустить из-под, например, \u003Cem\u003EGnome\u003C\u002Fem\u003E, то вполне:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EМногабукв и ничего интересного ;-)\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E  UNIT                                                LOAD   ACTIVE SUB     DESCRIPTION                                                                       \n  basic.target                                        loaded active active  Basic System                                                                      \n  default.target                                      loaded active active  Main User Target                                                                  \n  gnome-session-initialized.target                    loaded active active  GNOME Session is initialized                                                      \n  gnome-session-manager.target                        loaded active active  GNOME Session Manager is ready                                                    \n  gnome-session-pre.target                            loaded active active  Tasks to be run before GNOME Session starts                                       \n  gnome-session-x11-services.target                   loaded active active  GNOME session X11 services                                                        \n  gnome-session-x11.target                            loaded active active  GNOME X11 Session                                                                 \n  gnome-session-x11@zorin.target                      loaded active active  GNOME X11 Session (session: gnome)                                                \n  gnome-session.target                                loaded active active  GNOME Session                                                                     \n  gnome-session@gnome.target                          loaded active active  GNOME Session (session: gnome)                                                    \n  graphical-session-pre.target                        loaded active active  Session services which should run early before the graphical session is brought up\n  graphical-session.target                            loaded active active  Current graphical user session                                                    \n  org.gnome.SettingsDaemon.A11ySettings.target        loaded active active  GNOME accessibility target                                                        \n  org.gnome.SettingsDaemon.Color.target               loaded active active  GNOME color management target                                                     \n  org.gnome.SettingsDaemon.Datetime.target            loaded active active  GNOME date &amp; time target                                                          \n  org.gnome.SettingsDaemon.Housekeeping.target        loaded active active  GNOME maintenance of expirable data target                                        \n  org.gnome.SettingsDaemon.Keyboard.target            loaded active active  GNOME keyboard configuration target                                               \n  org.gnome.SettingsDaemon.MediaKeys.target           loaded active active  GNOME keyboard shortcuts target                                                   \n  org.gnome.SettingsDaemon.Power.target               loaded active active  GNOME power management target                                                     \n  org.gnome.SettingsDaemon.PrintNotifications.target  loaded active active  GNOME printer notifications target                                                \n  org.gnome.SettingsDaemon.Rfkill.target              loaded active active  GNOME RFKill support target                                                       \n  org.gnome.SettingsDaemon.ScreensaverProxy.target    loaded active active  GNOME FreeDesktop screensaver target                                              \n  org.gnome.SettingsDaemon.Sharing.target             loaded active active  GNOME file sharing target                                                         \n  org.gnome.SettingsDaemon.Smartcard.target           loaded active active  GNOME smartcard target                                                            \n  org.gnome.SettingsDaemon.Sound.target               loaded active active  GNOME sound sample caching target                                                 \n  org.gnome.SettingsDaemon.Wacom.target               loaded active active  GNOME Wacom tablet support target                                                 \n  org.gnome.SettingsDaemon.XSettings.target           loaded active active  GNOME XSettings target                                                            \n  org.gnome.Shell.target                              loaded active active  GNOME Shell                                                                       \n  paths.target                                        loaded active active  Paths                                                                             \n  sockets.target                                      loaded active active  Sockets                                                                           \n  timers.target                                       loaded active active  Timers                                                                            \n\nLOAD   = Reflects whether the unit definition was properly loaded.\nACTIVE = The high-level unit activation state, i.e. generalization of SUB.\nSUB    = The low-level unit activation state, values depend on unit type.\n\n31 loaded units listed. Pass --all to see loaded but inactive units, too.\nTo show all installed unit files use 'systemctl list-unit-files'.\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИ что же со всем этим делать и как быть? Как получить заветный \u003Cem\u003Etarget\u003C\u002Fem\u003E?\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Графическая оболочка тоже сервис. Подсматриваем в Gnome\u003C\u002Ffont\u003E\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли в Gnome запустить \u003Ccode\u003Esystemctl --user --type=service\u003C\u002Fcode\u003E можно заметить интересный сервис:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E  UNIT                                                LOAD   ACTIVE SUB     DESCRIPTION\n  at-spi-dbus-bus.service                             loaded active running Accessibility services bus\n  dbus.service                                        loaded active running D-Bus User Message Bus\n\n...\n\n  gnome-shell-x11.service                             loaded active running GNOME Shell on X11\n\n...\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСтановится всё интереснее. Значит \u003Cem\u003EGnome\u003C\u002Fem\u003E запускается как systemd сервис (\u003Ccode\u003Egnome-shell-x11.service\u003C\u002Fcode\u003E). Ну а уж из сервиса можно реализовывать любые зависимости. В принципе ожидаемо. Но как реализовывать такое для произвольной графической оболочки, которая не заточена под такие тонкие извращения? Надеемся на то не должно быть сложно… Перво-наперво смотрим в юнит (\u003Ccode\u003Esystemctl cat --user gnome-shell-x11.service\u003C\u002Fcode\u003E) и понимаем, что ничего не понимаем и что мы немножко попали…\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E# \u002Fusr\u002Flib\u002Fsystemd\u002Fuser\u002Fgnome-shell-x11.service\n[Unit]\nDescription=GNOME Shell on X11\n# On X11, try to show the GNOME Session Failed screen\nOnFailure=gnome-shell-disable-extensions.service gnome-session-failed.target\nOnFailureJobMode=replace\nCollectMode=inactive-or-failed\nRefuseManualStart=on\nRefuseManualStop=on\n\nAfter=gnome-session-manager.target\n\nRequisite=gnome-session-initialized.target\nPartOf=gnome-session-initialized.target\nBefore=gnome-session-initialized.target\n\n# The units already conflict because they use the same BusName\n#Conflicts=gnome-shell-wayland.service\n\n# Limit startup frequency more than the default\nStartLimitIntervalSec=15s\nStartLimitBurst=3\n\n[Service]\nType=notify\nExecStart=\u002Fusr\u002Fbin\u002Fgnome-shell\n# Exit code 1 means we are probably *not* dealing with an extension failure\nSuccessExitStatus=1\n# On X11 we want to restart on-success (Alt+F2 + r) and on-failure.\nRestart=always\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЛадно, чёрт с ним, идём смотреть в \u003Ccode\u003E*.desktop\u003C\u002Fcode\u003E файл xsessions(\u003Ccode\u003Ecat \u002Fusr\u002Fshare\u002Fxsessions\u002Fgnome.desktop\u003C\u002Fcode\u003E)…\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E[Desktop Entry]\nName=GNOME\nComment=This session logs you into GNOME\nExec=env GNOME_SHELL_SESSION_MODE=gnome \u002Fusr\u002Fbin\u002Fgnome-session --systemd --session=gnome\nTryExec=\u002Fusr\u002Fbin\u002Fgnome-shell\nType=Application\nDesktopNames=GNOME\nX-GDM-SessionRegisters=true\nX-Ubuntu-Gettext-Domain=gnome-session-3.0\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E… и понимаем, что попали несколько серьёзнее чем хотелось бы и что гном, в данном случае, нам мало чем поможет. Он изначально заточен под работу с systemd. Идём в эти наши интернеты.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Выходим на финишную прямую. Пишем враппер, юнит и наконец удачно стартуем\u003C\u002Ffont\u003E\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНе буду затягивать и утомлять читателя подробностями того, как и где приходилось выуживать информацию по крупицам. Это были и маны и \u003Ccode\u003EArchWiki\u003C\u002Fcode\u003E и чёрт его знает что ещё. Лучше сразу приведу готовые, в меру откомментированные файлы.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИтак, копируем дефолтный \u003Ccode\u003E\u002Fusr\u002Fshare\u002Fxsessions\u002Fi3.desktop\u003C\u002Fcode\u003E в \u003Ccode\u003E\u002Fusr\u002Fshare\u002Fxsessions\u002Fi3-systemd.desktop\u003C\u002Fcode\u003E и немного модифицируем.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E[Desktop Entry]\n### Было: ###\n# Name=i3\n### Стало: ###\nName=i3 via systemd\nComment=improved dynamic tiling window manager\n### Было: ###\n# Exec=i3\n# TryExec=i3\n### Стало: ###\nExec=i3-service\nTryExec=i3-service\nType=Application\nX-LightDM-DesktopName=i3\nDesktopNames=i3\nKeywords=tiling;wm;windowmanager;window;manager;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТеперь нам нужно написать враппер i3-service который будет подготавливать окружение и запускать i3wm в качестве сервиса. Ну и, разумеется, сам \u003Ccode\u003Ei3.service\u003C\u002Fcode\u003E файл тоже должен быть написан. Итак враппер \u003Ccode\u003E\u002Fusr\u002Flocal\u002Fbin\u002Fi3-service\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#!\u002Fusr\u002Fbin\u002Fenv sh\n\n# Импортируем и загружаем в d-bus сессию переменные из логин менеджера.\n\u002Fetc\u002FX11\u002Fxinit\u002Fxinitrc.d\u002F50-systemd-user.sh\n\nsystemctl --user import-environment XDG_SEAT XDG_VTNR XDG_SESSION_ID XDG_SESSION_TYPE XDG_SESSION_CLASS\n\nif command -v dbus-update-activation-environment \u003E\u002Fdev\u002Fnull 2\u003E&amp;1; then\n    dbus-update-activation-environment XDG_SEAT XDG_VTNR XDG_SESSION_ID XDG_SESSION_TYPE XDG_SESSION_CLASS\nfi\n\n# Загружаем иксовые ресурсы.\n\nuserresources=$HOME\u002F.Xresources\nusermodmap=$HOME\u002F.Xmodmap\nsysresources=\u002Fetc\u002FX11\u002Fxinit\u002F.Xresources\nsysmodmap=\u002Fetc\u002FX11\u002Fxinit\u002F.Xmodmap\n\nif [ -f $sysresources ]; then\n    xrdb -merge $sysresources\nfi\n\nif [ -f $sysmodmap ]; then\n    xmodmap $sysmodmap\nfi\n\nif [ -f \"$userresources\" ]; then\n    xrdb -merge \"$userresources\"\nfi\n\nif [ -f \"$usermodmap\" ]; then\n    xmodmap \"$usermodmap\"\nfi\n\n# Запускаем xinitrc* скрипты.\n\nif [ -d \u002Fetc\u002FX11\u002Fxinit\u002Fxinitrc.d ] ; then\n    for f in \u002Fetc\u002FX11\u002Fxinit\u002Fxinitrc.d\u002F?*.sh ; do\n        [ -x \"$f\" ] &amp;&amp; . \"$f\"\n    done\n    unset f\nfi\n\n# И собственно запускаем сервис.\nexec systemctl --wait --user start i3.service\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНу и наконец вишенка на нашем торте, сам \u003Ccode\u003E\u002Fetc\u002Fsystemd\u002Fuser\u002Fi3.service\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E[Unit]\nDescription=i3wm tiling window manager for X\nDocumentation=man:i3(5)\nWants=graphical-session-pre.target\nAfter=graphical-session-pre.target\n# Самое главное, биндимся к таргету графической сессии..\nBindsTo=graphical-session.target\nPartOf=graphical-session.target\n# ... и не забываем включить таргет, ради которого всё затевалось.\nBefore=xdg-desktop-autostart.target\nWants=xdg-desktop-autostart.target\n\n[Service]\nType=simple\n# Запускаем i3 через d-bus launcher. Мы же хотим, чтоб у нас работал d-bus?\nExecStart=\u002Fusr\u002Fbin\u002Fdbus-launch --sh-syntax --exit-with-session i3 --shmlog-size 0\nRestart=on-failure\nRestartSec=5\nTimeoutStopSec=10\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EЗаписываемся.\u003C\u002Fli\u003E\r\n\u003Cli\u003EДля проверки добавляем в автозагрузку, например, тот же клиент телеграма.\u003C\u002Fli\u003E\r\n\u003Cli\u003EИдём на перезагрузку и в дисплейном менеджере при старте системы, выбираем пункт «\u003Cem\u003Ei3 via systemd\u003C\u002Fem\u003E»\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EЧто в итоге?\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EРаботает автозагрузка, прямо как в каком-нить гноме.\u003C\u002Fli\u003E\r\n\u003Cli\u003EБонусом получили \u003Ccode\u003Egraphical-session.target\u003C\u002Fcode\u003E, к которому можно биндить сервисы, зависящие от запущенной графической оболочки. Например, до этого у меня падал, при загрузке юнит \u003Cem\u003Eclipboard manager\u003C\u002Fem\u003E-а, в результате приходилось костылять таймаут… Теперь не падает.\u003C\u002Fli\u003E\r\n\u003Cli\u003EМожно выкинуть из конфига i3 всё, что запускается при старте (Директива \u003Ccode\u003Eexec --no-startup-id\u003C\u002Fcode\u003E и это вот всё) и упаковать в отдельные аккуратные пользовательские \u003Ccode\u003E*.service\u003C\u002Fcode\u003E и по-человечески рулить ими в процессе работы. Например, отключать и включать \u003Cem\u003Elockscreen\u003C\u002Fem\u003E простым \u003Ccode\u003Esystemctl --user start\u003C\u002Fcode\u003E\u002F\u003Ccode\u003Estop\u003C\u002Fcode\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003EДля автозагружаемых юнитов, сгенерённых из \u003Ccode\u003E*.desktop\u003C\u002Fcode\u003E файлов, в самих этих файлах их можно отключать, добавив строчку \u003Ccode\u003EHidden=true\u003C\u002Fcode\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНу и вообще, приятно быть первооткрывателем. Ибо в процессе гугления и чтения манов, готового рецепта обнаружено не было. Так что любители wm, не относящиеся к systemd хейтерам. Пробуйте. За месяц использования был замечен ровно один косяк. Не работает \u003Ccode\u003Egvgs-*\u003C\u002Fcode\u003E функционал в \u003Cem\u003Epcman-fm\u003C\u002Fem\u003E, если его запустить хоткеем из \u003Ccode\u003Ei3\u003C\u002Fcode\u003E Но если запустить из \u003Cem\u003Erofi\u003C\u002Fem\u003E, волшебным образом всё начинает работать. Возможно я забыл импортировать какую-то переменную в \u003Cem\u003Ed-bus\u003C\u002Fem\u003E Ну и, чтоб не копипастить, \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FOxyd76\u002Fwm_via_systemd-with_xdg\"\u003Eссылка на гитхаб\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"http:\u002F\u002Fruvds.com\u002Fru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=Oxyd&amp;utm_content=vsyo_kak_u_bolshix._avtozagruzka_prilozhenij_v_okonnyx_menedzherax_linux\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fou\u002Fg5\u002Fkh\u002Foug5kh6sjydt9llengsiebnp40w.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"systemd"},{"titleHtml":"linux"},{"titleHtml":"xdg-autostart"},{"titleHtml":"autostart"},{"titleHtml":"i3wm"},{"titleHtml":"tiling wm"},{"titleHtml":"ruvds_статьи"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F8v\u002Fay\u002Fv_\u002F8vayv_if8zfzzpmbd5b81aqjcjc.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F8v\u002Fay\u002Fv_\u002F8vayv_if8zfzzpmbd5b81aqjcjc.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F583328\\\u002F\"},\"headline\":\"Всё как у больших. Автозагрузка приложений в оконных менеджерах linux\",\"datePublished\":\"2021-10-18T12:00:04+03:00\",\"dateModified\":\"2021-10-18T14:48:52+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Вадим Прилуцкий\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Вывод systemd-analyze dot --user &lsquo;i3.service&rsquo; | dot -Tpng | imv -  Как-то раз, листая сообщения в профильном systemd чате, в телеграм, я наткнулся на следующий...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F583328\\\u002F#post-content-body\",\"about\":[\"c_ruvds\",\"h_linux\",\"h_desktop_environment\",\"h_nix\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583328\\\u002F0db9e9032961c39b54a1b3026f9b0536\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F8v\\\u002Fay\\\u002Fv_\\\u002F8vayv_if8zfzzpmbd5b81aqjcjc.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fou\\\u002Fg5\\\u002Fkh\\\u002Foug5kh6sjydt9llengsiebnp40w.png\"]}","metaDescription":"Вывод systemd-analyze dot --user ‘i3.service’ | dot -Tpng | imv -\r\n\r\nКак-то раз, листая сообщения в профильном systemd чате, в телеграм, я наткнулся на следующий кусок man...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"ruvds":{"alias":"ruvds","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff27\u002Fea8\u002F5bd\u002Ff27ea85bd62fbd985c308110885af7e0.png","titleHtml":"RUVDS.com","descriptionHtml":"VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E","relatedData":null,"statistics":{"postsCount":2029,"newsCount":62,"vacanciesCount":0,"employeesCount":57,"careerRating":null,"subscribersCount":36796,"rating":2824.34,"invest":null},"foundationDate":{"year":"2015","month":"07","day":"27"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fruvds.com","staffNumber":"11–30 человек","registrationDate":"2016-03-18T05:43:01+00:00","representativeUser":{"alias":"ruvds","fullname":null},"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fruvds"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fru_vds"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fru_vds"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"33905479"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002Fb77\u002F8d5\u002Fa41\u002Fb778d5a41f83016379c6630262c3294c.png","linkUrl":"https:\u002F\u002Fruvds.com\u002Fru-rub","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E с 27 июля 2015 г.","title":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду HABR10 с 27 июля 2015 г.","keywords":["Научно-популярное","DIY или Сделай сам","Системное администрирование","Разработка веб-сайтов","Читальный зал"],"descriptionHtml":"2 029 статей от авторов компании RUVDS.com","description":"2 029 статей от авторов компании RUVDS.com"},"aDeskSettings":null,"careerAlias":"ruvds","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

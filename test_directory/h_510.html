@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Хардкорная разработка под Телеграм. Бот-модератор своими руками. Часть 3 / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583560\/"},"headline":"Хардкорная разработка под Телеграм. Бот-модератор своими руками. Часть 3","datePublished":"2021-10-14T21:49:15+03:00","dateModified":"2021-10-15T02:26:15+03:00","author":{"@type":"Person","name":"Артём Иванов"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:Часть 1. Создание ботаЧасть 2. Проверка админовЧасть 3. Команды для модерац...","url":"https:\/\/habr.com\/ru\/post\/583560\/#post-content-body","about":["h_instant_messaging","h_python","h_api","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583560\/355c37ce1e9856706741095d75ab826c\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/feb\/31f\/4f1\/feb31f4f1a12ece484a23e333e2456d4.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/a0c\/55a\/2b6\/a0c55a2b68a97d4cdb31b7f2b32914a5.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/82b\/cad\/f56\/82bcadf56850cbc528434649b3040d16.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e02\/c30\/86d\/e02c3086d4499ec007a77321747a0c20.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b5e\/af1\/1ed\/b5eaf11eda2809f3f9872e490b8b8766.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f75\/915\/0bd\/f759150bde9ba53679b37b8fe0a6cc55.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/5fd\/5a3\/963\/5fd5a39632f630ad2544a728f3502809.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/2dd\/960\/b78\/2dd960b787df4f0341105dca906f1dc0.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Хардкорная разработка под Телеграм. Бот-модератор своими руками. Часть 3" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Хардкорная разработка под Телеграм. Бот-модератор своими руками. Часть 3" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Хардкорная разработка под Телеграм. Бот-модератор своими руками. Часть 3" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:Часть 1. Создание ботаЧасть 2. Проверка админовЧасть 3. Команды для модерацииПолный код для этой части на GitHubВ..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:Часть 1. Создание ботаЧасть 2. Проверка админовЧасть 3. Команды для модерацииПолный код для этой части на GitHubВ..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:Часть 1. Создание ботаЧасть 2. Проверка админовЧасть 3. Команды для модерацииПолный код для этой части на GitHubВ..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:Часть 1. Создание ботаЧасть 2. Проверка админовЧасть 3. Команды для модерацииПолный код для этой части на GitHubВ..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:Часть 1. Создание ботаЧасть 2. Проверка админовЧасть 3. Команды для модерацииПолный код для этой части на GitHubВ..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/feb/31f/4f1/feb31f4f1a12ece484a23e333e2456d4.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/feb/31f/4f1/feb31f4f1a12ece484a23e333e2456d4.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/feb/31f/4f1/feb31f4f1a12ece484a23e333e2456d4.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/feb/31f/4f1/feb31f4f1a12ece484a23e333e2456d4.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/feb/31f/4f1/feb31f4f1a12ece484a23e333e2456d4.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583560" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-14T18:49:15.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583560/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583560/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/feb/31f/4f1/feb31f4f1a12ece484a23e333e2456d4.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583560/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/tmat/" title="tmat" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/506/92d/884/50692d884f6fec5baaf0d45f092516c9.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/tmat/" class="tm-user-info__username">
+      tmat
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-14T18:49:15.000Z" title="2021-10-14, 21:49">14  октября   в 21:49</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Хардкорная разработка под Телеграм. Бот-модератор своими руками. Часть 3</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/instant_messaging/" class="tm-article-snippet__hubs-item-link"><span>Мессенджеры</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/api/" class="tm-article-snippet__hubs-item-link"><span>API</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="442" data-src="https://habrastorage.org/getpro/habr/upload_files/feb/31f/4f1/feb31f4f1a12ece484a23e333e2456d4.png" data-width="781"/><figcaption></figcaption></figure><p>Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:</p><ul><li><p><a href="https://habr.com/ru/post/553968/" rel="noopener noreferrer nofollow">Часть 1. Создание бота</a></p></li><li><p><a href="https://habr.com/ru/post/582886/" rel="noopener noreferrer nofollow">Часть 2. Проверка админов</a></p></li><li><p>Часть 3. Команды для модерации</p></li></ul><p><a href="https://github.com/Tm-A-T/admin-bot-tutorial/tree/chapter-3" rel="noopener noreferrer nofollow">Полный код для этой части на GitHub</a></p><hr/><p>В этой части мы сделаем команды для модерации. Админы чата смогут банить участников, запрещать им писать в чате, давать предупреждения с помощью команд /ban, /mute, /warn.</p><p>Некоторые боты-администраторы используют не слэш-команды, а команды через, например, восклицательный знак: !ban, !mute. Но мы будем использовать слэш: это "нативные" команды в Телеграме. Они подсвечиваются в сообщениях, и их можно добавить в список команд для автодополнения.</p><figure class="full-width "><img src="/img/image-loader.svg" height="675" data-src="https://habrastorage.org/getpro/habr/upload_files/a0c/55a/2b6/a0c55a2b68a97d4cdb31b7f2b32914a5.png" data-width="643"/><figcaption></figcaption></figure><h2>Как обрабатывать команды</h2><p>Каждую команду будем обрабатывать отдельной функцией.</p><p>Когда кто-то отправляет команду, бот должен:</p><ol><li><p>Проверить, что этот пользователь админ.</p></li><li><p>Выполнить нужное действие.</p></li><li><p>Если сделать нужное действие не получилось из-за того, что у бота недостаточно прав администратора — сообщить об этом.</p></li></ol><p>Понятно, что не стоит писать все эти проверки заново для каждой новой функции. Вместо этого мы сделаем декоратор. Использовать его можно будет так:</p><pre><code class="python">@admin_command('greet')
+async def greet_command(event: Message):
+    await event.respond('Привет')</code></pre><p>После применения декоратора <code>admin_command(command)</code> к функции <code>greet_command</code>, она будет обрабатывать команду /greet (и добавятся нужные проверки).</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Это простой пример. Команду /greet могут использовать только админы. " title="Это простой пример. Команду /greet могут использовать только админы. " height="276" data-src="https://habrastorage.org/getpro/habr/upload_files/82b/cad/f56/82bcadf56850cbc528434649b3040d16.png" data-width="579"/><figcaption>Это простой пример. Команду /greet могут использовать только админы. </figcaption></figure><p>Давайте напишем функцию <code>admin_command</code> в <code>utils.py</code>. Тут может быть немного сложно, поэтому по шагам.</p><ol><li><p>Функция <code>admin_command(command)</code> возвращает нужный декоратор:</p><pre><code class="python">def admin_command(command: str):
+    def decorator(func):
+        # возвращает новую функцию
+
+return decorator</code></pre></li><li><p>Внутри функции <code>decorator</code> мы определяем новую функцию:</p><pre><code class="python">from telethon.errors import ChatAdminRequiredError
+from telethon.tl.custom import Message</code></pre><pre><code class="python">async def handle(event: Message):
+    if not await is_admin(event.chat.id, event.sender.id):
+        await event.respond('Эта команда доступна только админам')
+        return
+
+try:
+    await func(event)
+except ChatAdminRequiredError:
+    await event.respond('У меня нет нужных прав администратора')
+
+return handle</code></pre><p>Тут мы как раз проверяем, что пользователь — админ и что у бота есть нужные права.</p></li><li><p>Новую функцию <code>handle</code> мы сразу привязываем к событию NewMessage. Обрабатываем только сообщения из группы с текстом '/' + command:</p><pre><code class="python">from telethon import events</code></pre><pre><code class="python">pattern = f'(?i)^/{command}$'  # Регулярное выражение — принимает команду в любом регистрах
+
+@bot.on(events.NewMessage(pattern=pattern, func=lambda event: event.is_group))</code></pre><p>Тут можно обойтись без регулярки, но в будущем это может оказаться удобнее: например, если бот будет обрабатывать команды с аргументами.</p></li></ol><p>И получается такой код:</p><pre><code class="python">from telethon import events
+from telethon.errors import ChatAdminRequiredError
+from telethon.tl.custom import Message
+...
+
+def admin_command(command: str):
+    def decorator(func):
+        pattern = f'(?i)^/{command}$'
+    @bot.on(events.NewMessage(pattern=pattern, func=lambda event: event.is_group))
+    async def handle(event: Message):
+        if not await is_admin(event.chat.id, event.sender.id):
+            await event.respond('Эта команда доступна только админам')
+            return
+
+        try:
+            await func(event)
+        except ChatAdminRequiredError:
+            await event.respond('У меня нет нужных прав администратора')
+
+    return handle
+return decorator</code></pre><h2>Команды модерации</h2><p>Сейчас мы хотим реализовать команды для модерации: для бана, мута, предупреждений участников. Все эти команды будут отправляться в ответ на сообщение того пользователя, к которому применяется действие (как на первой картинке).</p><p>Кроме проверок, которые мы реализовали выше, для каждой такой команды нужно:</p><ol><li><p>Проверить, что эта команда отправлена ответом на другое сообщение.</p></li><li><p>Проверить, что отправитель того сообщения не администратор.</p></li><li><p>Выполнить нужное действие с отправителем.</p></li></ol><p>И да — для этого мы напишем ещё один декоратор. Вот пример его использования:</p><pre><code class="python">@admin_moderate_command('mute')
+async def mute_command(chat_id, user_id, mention):
+    await bot.edit_permissions(chat_id, user_id, send_messages=False)
+    return f'Участник {mention} теперь в муте'</code></pre><p>Здесь функция <code>mute_command</code>:</p><ol><li><p>Принимает айди чата, айди пользователя и упоминание пользователя.</p></li><li><p>Изменяет разрешения участника в чате (чтобы он не мог отправлять сообщения).</p></li><li><p>Возвращает текст сообщения о том, что команда выполнена: "Участник такой-то помещён в мут". Для этого и используется упоминание пользователя.</p></li></ol><p>Если что, упоминание — это элемент разметки сообщений (ссылка вида tg://user?id=123).</p><figure class=""><img src="/img/image-loader.svg" height="83" data-src="https://habrastorage.org/getpro/habr/upload_files/e02/c30/86d/e02c3086d4499ec007a77321747a0c20.png" data-width="395"/><figcaption></figcaption></figure><p>Для удобства напишем функцию <code>get_mention</code>, которая будет возвращать такую ссылку с именем пользователя:</p><pre><code class="python">from telethon.tl.types import User
+...
+
+def get_mention(user: User):
+    name = user.first_name 
+    if user.last_name:
+        user += ' ' + user.last_name
+    return f'&lt;a href="tg://user?id={user.id}">{name}&lt;/a>'</code></pre><p>Ну и приступаем к функции <code>admin_moderate_command</code>. Она будет похожа на <code>admin_command</code>.</p><ol><li><p>Функция возвращает декоратор:</p><pre><code class="python">def admin_moderate_command(command: str):
+    def decorator(func):
+        # возвращает новую функцию
+
+return decorator</code></pre></li><li><p>Декоратор возвращает новую функцию:</p><pre><code class="python">async def handle(event: Message):
+    if not event.is_reply:
+        await event.respond('Пожалуйста, напишите эту команду в ответ на сообщение пользователя')
+        return
+
+reply_to = await event.get_reply_message()
+
+if await is_admin(event.chat.id, reply_to.sender.id):
+    await event.respond('Эту команду нельзя применять к админам')
+    return
+
+result = await func(event.chat.id, reply_to.sender_id, get_mention(reply_to.sender))
+await event.respond(result)
+
+return handle</code></pre><p>Функция выполняет две проверки и вызывает <code>func</code> с нужными аргументами. Потом отправляет сообщение с результатом.</p></li><li><p>Команду command нужно обрабатывать как команду админов функцией <code>handle</code>:</p><pre><code class="python">@admin_command(command)</code></pre></li></ol><p>И в итоге:</p><pre><code class="python">def admin_moderate_command(command: str):
+    def decorator(func):
+        @admin_command(command)
+        async def handle(event: Message):
+            if not event.is_reply:
+                await event.respond('Пожалуйста, напишите эту команду в ответ на сообщение пользователя')
+                return
+
+        reply_to = await event.get_reply_message()
+
+        if reply_to.sender.bot:
+            await event.respond('Эту команду нельзя применять к ботам')
+            return
+
+        if await is_admin(event.chat.id, reply_to.sender.id):
+            await event.respond('Эту команду нельзя применять к админам')
+            return
+
+        result = await func(event.chat.id, reply_to.sender_id, get_mention(reply_to.sender))
+        await event.respond(result)
+
+    return handle
+return decorator</code></pre><p>Готово. Теперь можно быстренько написать нужные команды.</p><h2>Простые команды</h2><p>Итак, команда /mute и противоположная ей /unmute:</p><pre><code class="python">@admin_moderate_command('mute')
+async def mute_command(chat_id: int, user_id: int, mention: str):
+    await bot.edit_permissions(chat_id, user_id, send_messages=False)
+    return f'Участник {mention} теперь в муте'
+
+@admin_moderate_command('unmute')
+async def unmute_command(chat_id: int, user_id: int, mention: str):
+    await bot.edit_permissions(chat_id, user_id, send_messages=True)
+    return f'Участник {mention} больше не в муте'</code></pre><figure class="full-width "><img src="/img/image-loader.svg" height="442" data-src="https://habrastorage.org/getpro/habr/upload_files/b5e/af1/1ed/b5eaf11eda2809f3f9872e490b8b8766.png" data-width="577"/><figcaption></figcaption></figure><p>Команда /ban будет удалять пользователя из группы. Он не сможет войти снова, пока не будет разбанен — для этого есть команда /unban.</p><p>(Для этого нужно просто изменить разрешение участника <code>view_messages</code>.)</p><pre><code class="python">@admin_moderate_command('ban')
+async def ban_command(chat_id: int, user_id: int, mention: str):
+    await bot.edit_permissions(chat_id, user_id, view_messages=False)
+    return f'Участник {mention} забанен'
+
+@admin_moderate_command('unban')
+async def unban_command(chat_id: int, user_id: int, mention: str):
+    await bot.edit_permissions(chat_id, user_id, view_messages=True)
+    return f'Участник {mention} разбанен'</code></pre><figure class="full-width "><img src="/img/image-loader.svg" height="530" data-src="https://habrastorage.org/getpro/habr/upload_files/f75/915/0bd/f759150bde9ba53679b37b8fe0a6cc55.png" data-width="580"/><figcaption></figcaption></figure><p>Можно сделать команду /kick, которая будет просто кикать участника из группы (он сможет зайти снова). По сути это просто бан+разбан, но в Telethon есть отдельная функция для этого:</p><pre><code class="python">@admin_moderate_command('kick')
+async def kick_command(chat_id: int, user_id: int, mention: str):
+    await bot.kick_participant(chat_id, user_id)
+    return f'Участник {mention} исключен из группы'</code></pre><p>Можете добавить другие команды. Например, запретить отправлять медиа в чат: <code>bot.edit_permissions(chat_id, user_id, send_media=False)</code>.</p><h2>Предупреждения</h2><p>Давайте добавим команду <code>/warn</code>, которая будет давать участнику предупреждение. Как только участник будет набирать три предупреждения, он будет получать мут.</p><p>Для каждого участника будем хранить количество набранных предупреждений:</p><pre><code class="python">class ChatMember(Model):
+    ...
+    warns = fields.IntField(default=0)</code></pre><p>Делаем миграцию БД с названием add_warns:</p><pre><code>$ aerich migrate --name add_warns</code></pre><p>Команда /warn получает увеличивает число предупреждений участника (максимум 3).</p><p>Если предупреждений стало 3, бот пробует дать мут участнику. Если недостаточно прав — сообщает об этом.</p><p>В <code>handlers.py</code>:</p><pre><code class="python">@admin_moderate_command('warn')
+async def warn_command(chat_id: int, user_id: int, mention: str):
+    member = await ChatMember.get_or_none(chat_id=chat_id, user_id=user_id)
+    warns = member.warns if member else 0
+    warns = min(warns + 1, 3)
+    await update_chat_member(chat_id, user_id, warns=warns)
+
+if warns == 3:
+    try:
+        await bot.edit_permissions(chat_id, user_id, send_messages=False)
+    except ChatAdminRequiredError:
+        return f'Участник {mention} получил 3 предупреждения. У меня недостаточно прав администратора, ' \\
+               f'чтобы дать ему мут'
+    else:
+        return f'Участник {mention} получил 3 предупреждения. Теперь он в муте'
+
+return f'Участнику {mention} выдано предупреждение ({warns}/3)'
+</code></pre><figure class="full-width "><img src="/img/image-loader.svg" height="787" data-src="https://habrastorage.org/getpro/habr/upload_files/5fd/5a3/963/5fd5a39632f630ad2544a728f3502809.png" data-width="579"/><figcaption></figcaption></figure><p>Команда /unwarn похожа на /warn. Если у участника уже 0 предупреждений, то бот сообщает об этом. Иначе уменьшает предупреждения на один. Если теперь предупреждений стало 2 — бот пробует размутить участника.</p><pre><code class="python">@admin_moderate_command('unwarn')
+async def unwarn_command(chat_id: int, user_id: int, mention: str):
+    member = await ChatMember.get_or_none(chat_id=chat_id, user_id=user_id)
+    warns = member.warns if member else 0
+    if warns == 0:
+        return f'У участника {mention} уже 0/3 предупреждений'
+    warns -= 1
+    await update_chat_member(chat_id, user_id, warns=warns)
+
+if warns == 2:
+    try:
+        await bot.edit_permissions(chat_id, user_id, send_messages=True)
+    except ChatAdminRequiredError:
+        return f'Предупреждение участнику {mention} отменено ({warns}/3). Он больше не должен быть в муте'
+    else:
+        return f'Предупреждение участнику {mention} отменено ({warns}/3). Он больше не в муте'
+
+return f'Предупреждение участнику {mention} отменено ({warns}/3)'</code></pre><figure class="full-width "><img src="/img/image-loader.svg" height="752" data-src="https://habrastorage.org/getpro/habr/upload_files/2dd/960/b78/2dd960b787df4f0341105dca906f1dc0.png" data-width="581"/><figcaption></figcaption></figure><h2>В следующей части</h2><p>Мы сделаем более сложные команды для админов и сообщения с кнопками. Админы смогут удалять последние сообщения в чате, изменять приветствие в чате и другие настройки.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Btelegram%5D" class="tm-tags-list__link">telegram</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bbot%5D" class="tm-tags-list__link">bot</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Btelethon%5D" class="tm-tags-list__link">telethon</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/instant_messaging/" class="tm-hubs-list__link">
+    Мессенджеры
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/api/" class="tm-hubs-list__link">
+    API
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 8: ↑8 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 8: ↑8 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+8</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">3.3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    48
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/tmat/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/506/92d/884/50692d884f6fec5baaf0d45f092516c9.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 86 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    46
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">15</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Артём Иванов</span> <a href="/ru/users/tmat/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @tmat
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583560/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментировать 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583560/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583560/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583560":{"id":"583560","timePublished":"2021-10-14T18:49:15+00:00","isCorporative":false,"lang":"ru","titleHtml":"Хардкорная разработка под Телеграм. Бот-модератор своими руками. Часть 3","leadData":{"textHtml":"\u003Cp\u003EПродолжаем писать своего крутого бота-модератора чатов на Python.\u003C\u002Fp\u003E\u003Cp\u003EВ этой части мы сделаем команды для модерации. Админы чата смогут банить участников, запрещать им писать в чате, давать предупреждения с помощью команд \u002Fban, \u002Fmute, \u002Fwarn.\u003C\u002Fp\u003E\u003Cp\u003EНекоторые боты-администраторы используют не слэш-команды, а команды через, например, восклицательный знак: !ban, !mute. Но мы будем использовать слэш: это \"нативные\" команды в Телеграме. Они подсвечиваются в сообщениях, и их можно добавить в список команд для автодополнения.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffeb\u002F31f\u002F4f1\u002Ffeb31f4f1a12ece484a23e333e2456d4.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffeb\u002F31f\u002F4f1\u002Ffeb31f4f1a12ece484a23e333e2456d4.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":46,"votesCount":86},"rating":15,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1853971","alias":"tmat","fullname":"Артём Иванов","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F506\u002F92d\u002F884\u002F50692d884f6fec5baaf0d45f092516c9.jpg","speciality":null},"statistics":{"commentsCount":0,"favoritesCount":48,"readingCount":3334,"score":8,"votesCount":8},"hubs":[{"relatedData":null,"id":"92","alias":"instant_messaging","type":"collective","title":"Мессенджеры","titleHtml":"Мессенджеры","isProfiled":true},{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true},{"relatedData":null,"id":"17690","alias":"api","type":"collective","title":"API","titleHtml":"API","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"442\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffeb\u002F31f\u002F4f1\u002Ffeb31f4f1a12ece484a23e333e2456d4.png\" data-width=\"781\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПродолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F553968\u002F\" rel=\"noopener noreferrer nofollow\"\u003EЧасть 1. Создание бота\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582886\u002F\" rel=\"noopener noreferrer nofollow\"\u003EЧасть 2. Проверка админов\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЧасть 3. Команды для модерации\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FTm-A-T\u002Fadmin-bot-tutorial\u002Ftree\u002Fchapter-3\" rel=\"noopener noreferrer nofollow\"\u003EПолный код для этой части на GitHub\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Chr\u002F\u003E\u003Cp\u003EВ этой части мы сделаем команды для модерации. Админы чата смогут банить участников, запрещать им писать в чате, давать предупреждения с помощью команд \u002Fban, \u002Fmute, \u002Fwarn.\u003C\u002Fp\u003E\u003Cp\u003EНекоторые боты-администраторы используют не слэш-команды, а команды через, например, восклицательный знак: !ban, !mute. Но мы будем использовать слэш: это \"нативные\" команды в Телеграме. Они подсвечиваются в сообщениях, и их можно добавить в список команд для автодополнения.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"675\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fa0c\u002F55a\u002F2b6\u002Fa0c55a2b68a97d4cdb31b7f2b32914a5.png\" data-width=\"643\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EКак обрабатывать команды\u003C\u002Fh2\u003E\u003Cp\u003EКаждую команду будем обрабатывать отдельной функцией.\u003C\u002Fp\u003E\u003Cp\u003EКогда кто-то отправляет команду, бот должен:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EПроверить, что этот пользователь админ.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВыполнить нужное действие.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЕсли сделать нужное действие не получилось из-за того, что у бота недостаточно прав администратора — сообщить об этом.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EПонятно, что не стоит писать все эти проверки заново для каждой новой функции. Вместо этого мы сделаем декоратор. Использовать его можно будет так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin_command('greet')\nasync def greet_command(event: Message):\n    await event.respond('Привет')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПосле применения декоратора \u003Ccode\u003Eadmin_command(command)\u003C\u002Fcode\u003E к функции \u003Ccode\u003Egreet_command\u003C\u002Fcode\u003E, она будет обрабатывать команду \u002Fgreet (и добавятся нужные проверки).\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Это простой пример. Команду \u002Fgreet могут использовать только админы. \" title=\"Это простой пример. Команду \u002Fgreet могут использовать только админы. \" height=\"276\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F82b\u002Fcad\u002Ff56\u002F82bcadf56850cbc528434649b3040d16.png\" data-width=\"579\"\u002F\u003E\u003Cfigcaption\u003EЭто простой пример. Команду \u002Fgreet могут использовать только админы. \u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EДавайте напишем функцию \u003Ccode\u003Eadmin_command\u003C\u002Fcode\u003E в \u003Ccode\u003Eutils.py\u003C\u002Fcode\u003E. Тут может быть немного сложно, поэтому по шагам.\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EФункция \u003Ccode\u003Eadmin_command(command)\u003C\u002Fcode\u003E возвращает нужный декоратор:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Edef admin_command(command: str):\n    def decorator(func):\n        # возвращает новую функцию\n\nreturn decorator\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВнутри функции \u003Ccode\u003Edecorator\u003C\u002Fcode\u003E мы определяем новую функцию:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom telethon.errors import ChatAdminRequiredError\nfrom telethon.tl.custom import Message\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def handle(event: Message):\n    if not await is_admin(event.chat.id, event.sender.id):\n        await event.respond('Эта команда доступна только админам')\n        return\n\ntry:\n    await func(event)\nexcept ChatAdminRequiredError:\n    await event.respond('У меня нет нужных прав администратора')\n\nreturn handle\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТут мы как раз проверяем, что пользователь — админ и что у бота есть нужные права.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EНовую функцию \u003Ccode\u003Ehandle\u003C\u002Fcode\u003E мы сразу привязываем к событию NewMessage. Обрабатываем только сообщения из группы с текстом '\u002F' + command:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom telethon import events\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Epattern = f'(?i)^\u002F{command}$'  # Регулярное выражение — принимает команду в любом регистрах\n\n@bot.on(events.NewMessage(pattern=pattern, func=lambda event: event.is_group))\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТут можно обойтись без регулярки, но в будущем это может оказаться удобнее: например, если бот будет обрабатывать команды с аргументами.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EИ получается такой код:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom telethon import events\nfrom telethon.errors import ChatAdminRequiredError\nfrom telethon.tl.custom import Message\n...\n\ndef admin_command(command: str):\n    def decorator(func):\n        pattern = f'(?i)^\u002F{command}$'\n    @bot.on(events.NewMessage(pattern=pattern, func=lambda event: event.is_group))\n    async def handle(event: Message):\n        if not await is_admin(event.chat.id, event.sender.id):\n            await event.respond('Эта команда доступна только админам')\n            return\n\n        try:\n            await func(event)\n        except ChatAdminRequiredError:\n            await event.respond('У меня нет нужных прав администратора')\n\n    return handle\nreturn decorator\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EКоманды модерации\u003C\u002Fh2\u003E\u003Cp\u003EСейчас мы хотим реализовать команды для модерации: для бана, мута, предупреждений участников. Все эти команды будут отправляться в ответ на сообщение того пользователя, к которому применяется действие (как на первой картинке).\u003C\u002Fp\u003E\u003Cp\u003EКроме проверок, которые мы реализовали выше, для каждой такой команды нужно:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EПроверить, что эта команда отправлена ответом на другое сообщение.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПроверить, что отправитель того сообщения не администратор.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВыполнить нужное действие с отправителем.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EИ да — для этого мы напишем ещё один декоратор. Вот пример его использования:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin_moderate_command('mute')\nasync def mute_command(chat_id, user_id, mention):\n    await bot.edit_permissions(chat_id, user_id, send_messages=False)\n    return f'Участник {mention} теперь в муте'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗдесь функция \u003Ccode\u003Emute_command\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EПринимает айди чата, айди пользователя и упоминание пользователя.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EИзменяет разрешения участника в чате (чтобы он не мог отправлять сообщения).\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВозвращает текст сообщения о том, что команда выполнена: \"Участник такой-то помещён в мут\". Для этого и используется упоминание пользователя.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EЕсли что, упоминание — это элемент разметки сообщений (ссылка вида tg:\u002F\u002Fuser?id=123).\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"83\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe02\u002Fc30\u002F86d\u002Fe02c3086d4499ec007a77321747a0c20.png\" data-width=\"395\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EДля удобства напишем функцию \u003Ccode\u003Eget_mention\u003C\u002Fcode\u003E, которая будет возвращать такую ссылку с именем пользователя:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom telethon.tl.types import User\n...\n\ndef get_mention(user: User):\n    name = user.first_name \n    if user.last_name:\n        user += ' ' + user.last_name\n    return f'&lt;a href=\"tg:\u002F\u002Fuser?id={user.id}\"\u003E{name}&lt;\u002Fa\u003E'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНу и приступаем к функции \u003Ccode\u003Eadmin_moderate_command\u003C\u002Fcode\u003E. Она будет похожа на \u003Ccode\u003Eadmin_command\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EФункция возвращает декоратор:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Edef admin_moderate_command(command: str):\n    def decorator(func):\n        # возвращает новую функцию\n\nreturn decorator\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДекоратор возвращает новую функцию:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def handle(event: Message):\n    if not event.is_reply:\n        await event.respond('Пожалуйста, напишите эту команду в ответ на сообщение пользователя')\n        return\n\nreply_to = await event.get_reply_message()\n\nif await is_admin(event.chat.id, reply_to.sender.id):\n    await event.respond('Эту команду нельзя применять к админам')\n    return\n\nresult = await func(event.chat.id, reply_to.sender_id, get_mention(reply_to.sender))\nawait event.respond(result)\n\nreturn handle\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФункция выполняет две проверки и вызывает \u003Ccode\u003Efunc\u003C\u002Fcode\u003E с нужными аргументами. Потом отправляет сообщение с результатом.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EКоманду command нужно обрабатывать как команду админов функцией \u003Ccode\u003Ehandle\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin_command(command)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EИ в итоге:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Edef admin_moderate_command(command: str):\n    def decorator(func):\n        @admin_command(command)\n        async def handle(event: Message):\n            if not event.is_reply:\n                await event.respond('Пожалуйста, напишите эту команду в ответ на сообщение пользователя')\n                return\n\n        reply_to = await event.get_reply_message()\n\n        if reply_to.sender.bot:\n            await event.respond('Эту команду нельзя применять к ботам')\n            return\n\n        if await is_admin(event.chat.id, reply_to.sender.id):\n            await event.respond('Эту команду нельзя применять к админам')\n            return\n\n        result = await func(event.chat.id, reply_to.sender_id, get_mention(reply_to.sender))\n        await event.respond(result)\n\n    return handle\nreturn decorator\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EГотово. Теперь можно быстренько написать нужные команды.\u003C\u002Fp\u003E\u003Ch2\u003EПростые команды\u003C\u002Fh2\u003E\u003Cp\u003EИтак, команда \u002Fmute и противоположная ей \u002Funmute:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin_moderate_command('mute')\nasync def mute_command(chat_id: int, user_id: int, mention: str):\n    await bot.edit_permissions(chat_id, user_id, send_messages=False)\n    return f'Участник {mention} теперь в муте'\n\n@admin_moderate_command('unmute')\nasync def unmute_command(chat_id: int, user_id: int, mention: str):\n    await bot.edit_permissions(chat_id, user_id, send_messages=True)\n    return f'Участник {mention} больше не в муте'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"442\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb5e\u002Faf1\u002F1ed\u002Fb5eaf11eda2809f3f9872e490b8b8766.png\" data-width=\"577\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EКоманда \u002Fban будет удалять пользователя из группы. Он не сможет войти снова, пока не будет разбанен — для этого есть команда \u002Funban.\u003C\u002Fp\u003E\u003Cp\u003E(Для этого нужно просто изменить разрешение участника \u003Ccode\u003Eview_messages\u003C\u002Fcode\u003E.)\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin_moderate_command('ban')\nasync def ban_command(chat_id: int, user_id: int, mention: str):\n    await bot.edit_permissions(chat_id, user_id, view_messages=False)\n    return f'Участник {mention} забанен'\n\n@admin_moderate_command('unban')\nasync def unban_command(chat_id: int, user_id: int, mention: str):\n    await bot.edit_permissions(chat_id, user_id, view_messages=True)\n    return f'Участник {mention} разбанен'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"530\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff75\u002F915\u002F0bd\u002Ff759150bde9ba53679b37b8fe0a6cc55.png\" data-width=\"580\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EМожно сделать команду \u002Fkick, которая будет просто кикать участника из группы (он сможет зайти снова). По сути это просто бан+разбан, но в Telethon есть отдельная функция для этого:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin_moderate_command('kick')\nasync def kick_command(chat_id: int, user_id: int, mention: str):\n    await bot.kick_participant(chat_id, user_id)\n    return f'Участник {mention} исключен из группы'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EМожете добавить другие команды. Например, запретить отправлять медиа в чат: \u003Ccode\u003Ebot.edit_permissions(chat_id, user_id, send_media=False)\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Ch2\u003EПредупреждения\u003C\u002Fh2\u003E\u003Cp\u003EДавайте добавим команду \u003Ccode\u003E\u002Fwarn\u003C\u002Fcode\u003E, которая будет давать участнику предупреждение. Как только участник будет набирать три предупреждения, он будет получать мут.\u003C\u002Fp\u003E\u003Cp\u003EДля каждого участника будем хранить количество набранных предупреждений:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eclass ChatMember(Model):\n    ...\n    warns = fields.IntField(default=0)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДелаем миграцию БД с названием add_warns:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E$ aerich migrate --name add_warns\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКоманда \u002Fwarn получает увеличивает число предупреждений участника (максимум 3).\u003C\u002Fp\u003E\u003Cp\u003EЕсли предупреждений стало 3, бот пробует дать мут участнику. Если недостаточно прав — сообщает об этом.\u003C\u002Fp\u003E\u003Cp\u003EВ \u003Ccode\u003Ehandlers.py\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin_moderate_command('warn')\nasync def warn_command(chat_id: int, user_id: int, mention: str):\n    member = await ChatMember.get_or_none(chat_id=chat_id, user_id=user_id)\n    warns = member.warns if member else 0\n    warns = min(warns + 1, 3)\n    await update_chat_member(chat_id, user_id, warns=warns)\n\nif warns == 3:\n    try:\n        await bot.edit_permissions(chat_id, user_id, send_messages=False)\n    except ChatAdminRequiredError:\n        return f'Участник {mention} получил 3 предупреждения. У меня недостаточно прав администратора, ' \\\\\n               f'чтобы дать ему мут'\n    else:\n        return f'Участник {mention} получил 3 предупреждения. Теперь он в муте'\n\nreturn f'Участнику {mention} выдано предупреждение ({warns}\u002F3)'\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"787\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F5fd\u002F5a3\u002F963\u002F5fd5a39632f630ad2544a728f3502809.png\" data-width=\"579\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EКоманда \u002Funwarn похожа на \u002Fwarn. Если у участника уже 0 предупреждений, то бот сообщает об этом. Иначе уменьшает предупреждения на один. Если теперь предупреждений стало 2 — бот пробует размутить участника.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin_moderate_command('unwarn')\nasync def unwarn_command(chat_id: int, user_id: int, mention: str):\n    member = await ChatMember.get_or_none(chat_id=chat_id, user_id=user_id)\n    warns = member.warns if member else 0\n    if warns == 0:\n        return f'У участника {mention} уже 0\u002F3 предупреждений'\n    warns -= 1\n    await update_chat_member(chat_id, user_id, warns=warns)\n\nif warns == 2:\n    try:\n        await bot.edit_permissions(chat_id, user_id, send_messages=True)\n    except ChatAdminRequiredError:\n        return f'Предупреждение участнику {mention} отменено ({warns}\u002F3). Он больше не должен быть в муте'\n    else:\n        return f'Предупреждение участнику {mention} отменено ({warns}\u002F3). Он больше не в муте'\n\nreturn f'Предупреждение участнику {mention} отменено ({warns}\u002F3)'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"752\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F2dd\u002F960\u002Fb78\u002F2dd960b787df4f0341105dca906f1dc0.png\" data-width=\"581\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EВ следующей части\u003C\u002Fh2\u003E\u003Cp\u003EМы сделаем более сложные команды для админов и сообщения с кнопками. Админы смогут удалять последние сообщения в чате, изменять приветствие в чате и другие настройки.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"telegram"},{"titleHtml":"bot"},{"titleHtml":"telethon"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffeb\u002F31f\u002F4f1\u002Ffeb31f4f1a12ece484a23e333e2456d4.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffeb\u002F31f\u002F4f1\u002Ffeb31f4f1a12ece484a23e333e2456d4.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583560\\\u002F\"},\"headline\":\"Хардкорная разработка под Телеграм. Бот-модератор своими руками. Часть 3\",\"datePublished\":\"2021-10-14T21:49:15+03:00\",\"dateModified\":\"2021-10-15T02:26:15+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Артём Иванов\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:Часть 1. Создание ботаЧасть 2. Проверка админовЧасть 3. Команды для модерац...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583560\\\u002F#post-content-body\",\"about\":[\"h_instant_messaging\",\"h_python\",\"h_api\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583560\\\u002F355c37ce1e9856706741095d75ab826c\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ffeb\\\u002F31f\\\u002F4f1\\\u002Ffeb31f4f1a12ece484a23e333e2456d4.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fa0c\\\u002F55a\\\u002F2b6\\\u002Fa0c55a2b68a97d4cdb31b7f2b32914a5.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F82b\\\u002Fcad\\\u002Ff56\\\u002F82bcadf56850cbc528434649b3040d16.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe02\\\u002Fc30\\\u002F86d\\\u002Fe02c3086d4499ec007a77321747a0c20.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb5e\\\u002Faf1\\\u002F1ed\\\u002Fb5eaf11eda2809f3f9872e490b8b8766.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff75\\\u002F915\\\u002F0bd\\\u002Ff759150bde9ba53679b37b8fe0a6cc55.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F5fd\\\u002F5a3\\\u002F963\\\u002F5fd5a39632f630ad2544a728f3502809.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F2dd\\\u002F960\\\u002Fb78\\\u002F2dd960b787df4f0341105dca906f1dc0.png\"]}","metaDescription":"Продолжаем писать своего крутого бота-модератора чатов на Python. Все части туториала:Часть 1. Создание ботаЧасть 2. Проверка админовЧасть 3. Команды для модерацииПолный код для этой части на GitHubВ...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"instant_messaging,python,api"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

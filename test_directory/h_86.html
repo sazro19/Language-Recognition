@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Практическое применение сервера FreeACS для обслуживания устройств Mikrotik по протоколу TR-069 (часть 1) / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/584894\/"},"headline":"Практическое применение сервера FreeACS для обслуживания устройств Mikrotik по протоколу TR-069 (часть 1)","datePublished":"2021-10-24T01:01:51+03:00","dateModified":"2021-10-25T01:12:01+03:00","author":{"@type":"Person","name":"Louie"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Данная статья является логическим продолжением экспериментов с тестовым сервером FreeACS. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментат...","url":"https:\/\/habr.com\/ru\/post\/584894\/#post-content-body","about":["h_sys_admin","h_it-infrastructure","h_nix","h_network_hardware","h_internet_of_things","f_admin","f_popsci"],"image":["https:\/\/habr.com\/share\/publication\/584894\/5eae7387e4d9a31bbf4c8fe2865fcf86\/"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Практическое применение сервера FreeACS для обслуживания устройств Mikrotik по протоколу TR-069 (часть 1)" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Практическое применение сервера FreeACS для обслуживания устройств Mikrotik по протоколу TR-069 (часть 1)" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Практическое применение сервера FreeACS для обслуживания устройств Mikrotik по протоколу TR-069 (часть 1)" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Данная статья является логическим продолжением экспериментов с тестовым сервером FreeACS. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что,..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Данная статья является логическим продолжением экспериментов с тестовым сервером FreeACS. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что,..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Данная статья является логическим продолжением экспериментов с тестовым сервером FreeACS. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что,..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Данная статья является логическим продолжением экспериментов с тестовым сервером FreeACS. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что,..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Данная статья является логическим продолжением экспериментов с тестовым сервером FreeACS. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что,..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/584894/5eae7387e4d9a31bbf4c8fe2865fcf86/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/584894/5eae7387e4d9a31bbf4c8fe2865fcf86/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/584894/5eae7387e4d9a31bbf4c8fe2865fcf86/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/584894/5eae7387e4d9a31bbf4c8fe2865fcf86/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/584894/5eae7387e4d9a31bbf4c8fe2865fcf86/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="584894" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-23T22:01:51.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/584894/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/584894/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/584894/5eae7387e4d9a31bbf4c8fe2865fcf86/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Louie/" title="Louie" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/1f0/535/3b1/1f05353b16cb22aa8bf55e669cc850b8.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Louie/" class="tm-user-info__username">
+      Louie
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-23T22:01:51.000Z" title="2021-10-24, 01:01">вчера в 01:01</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Практическое применение сервера FreeACS для обслуживания устройств Mikrotik по протоколу TR-069 (часть 1)</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/sys_admin/" class="tm-article-snippet__hubs-item-link"><span>Системное администрирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/it-infrastructure/" class="tm-article-snippet__hubs-item-link"><span>IT-инфраструктура</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/nix/" class="tm-article-snippet__hubs-item-link"><span>*nix</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/network_hardware/" class="tm-article-snippet__hubs-item-link"><span>Сетевое оборудование</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/internet_of_things/" class="tm-article-snippet__hubs-item-link"><span>Интернет вещей</span> <!----></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml">Данная статья является логическим продолжением <a href="https://habr.com/ru/post/468241/">экспериментов с тестовым сервером FreeACS</a>. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что, сегодня мы установим сервер, настроим до рабочего состояния и прикрутим ssl-сертификат. А во второй части — разберем настройки и режимы, прогоним основные рабочие сценарии обслуживания устройств Mikrotik и слегка коснемся автоконфигурации IP-телефонов.<br/>
+<a name="habracut"></a><br/>
+Перед стартом, хочу кратко напомнить основные постулаты: <br/>
+<br/>
+1. <a href="https://ru.wikipedia.org/wiki/TR-069" rel="nofollow noopener noreferrer">Протокол TR-069</a> используется десятками миллионов устройств, и, де факто, является стандартом для обновления ПО, диагностики и конфигурации сетевого оборудования. В документации FreeACS, необходимые системные требования к серверу начинаются с 50 тыс. обслуживаемых устройств, и заканчиваются на 2 млн. Это могучий специализированный инструмент.<br/>
+<br/>
+2. Системы управления конфигурациями (SCM), такие как Ansible, могут быть использованы, в том числе, для удаленного выполнения команд и скриптов в RouterOS, но не являются альтернативой ACS.<br/>
+<br/>
+3. Проблемы безопасности TR-069 кратко описаны <a href="https://routercheck.com/2014/08/14/major-problems-tr-069/" rel="nofollow noopener noreferrer">здесь</a>, и состоят в том, что протокол предполагает использование шифрования, но не обязывает. Поэтому 80% устройств передают данные открыто, а часть использует самоподписанные сертификаты. Не надо так.<br/>
+<br/>
+<h2>Часть1. Установка FreeACS + SSL</h2><br/>
+<h4>0. Подготовка</h4><br/>
+<b>Ресурсы</b>: Минимум 4 GB RAM, 10 GB HDD, Centos 7/8<br/>
+<br/>
+<b>Домен</b>: Сервер будет доступен из Интернет, поэтому необходимо купить домен или добавить DNS-запись поддомена, указывающую на внешний ip-адрес FreeACS. И соответственно настроить FQDN имя хоста.<br/>
+<br/>
+<b>Сертификат</b>: Если у вас уже есть рабочий домен и доступен какой-то из способов проверки подлинности сертификата — можно сразу выпустить сертификат. Я использовал самый дешевый <i>Sectigo Positive SSL</i>, доступный повсеместно за 500-1000 руб./год<br/>
+Если рабочего домена нет — выпустим сертификат после установки сервера, с проверкой по Хэш-файлу. Идеи с Letsencrypt и иже с ним — «экономия на спичках».<br/>
+<br/>
+<h4>1. Установка FreeACS</h4><br/>
+Как и в предыдущей статье, проще всего это сделать скриптом.<br/>
+<br/>
+<pre><code class="bash">wget https://raw.githubusercontent.com/freeacs/freeacs/master/scripts/install_centos.sh
+chmod +x install_centos.sh
+./ install_centos.sh</code></pre><br/>
+Скрипт установит все необходимое. Останется лишь немного доработать.<br/>
+<pre><code class="bash"># Установить часовой пояс 
+timedatectl set-timezone Asia/Novosibirsk
+# Установить Xorg-fonts. Без этого, в веб-интерфейсе не будет графиков
+yum -y install xorg-x11-fonts-misc
+# MySQL часовой пояс и лимиты. Без этого в веб-интерфейсе будет UTC и файлы не загрузятся
+# /etc/my.cnf
+default-time-zone='+07:00'
+max_allowed_packet=32M
+innodb_buffer_pool_size=1024M</code></pre><br/>
+Проверьте работу веб-интерфейса по http://&lt;серый адрес хоста>, смените дефолтный пароль и можно ехать дальше<br/>
+<br/>
+<h4>2. Nginx</h4><br/>
+Пора настроить Nginx. Если вы еще не получили сертификат — давайте его получать и подтверждать.<br/>
+<br/>
+Например, вы купили домен mydomain.ru, настроили DNS запись acs и заказали сертификат для acs.mydomain.ru с подтверждением владения по Хэш-файлу.<br/>
+<br/>
+Поставщик предоставит информацию, типа:<br/>
+<br/>
+<pre><code class="plaintext">Хеш файл должен быть доступен по адресу:
+http://mydomain.ru/.well-known/pki-validation/5C7E984684D01FAF787171DB395A6F4A.txt
+Содержимое файла:
+75D5AB94B09B408A2A7DD93696BA69B736CA8A5E0DFD80DBB45186EF70AB1A77
+comodoca.com</code></pre><br/>
+Т.е. проверка сертификата поддомена acs проходит через подтверждение владением доменом 2-го уровня, и если на нем у вас уже есть какой-то веб-ресурс, то файл надо разместить там.<br/>
+Если такого нет, то Хэш-файл можно разместить на сервере с FreeACS, предварительно изменив DNS-запись mydomain.ru. Надо создать директорию с данным файлом:<br/>
+<br/>
+<pre><code class="bash">mkdir -p /var/www/.well-known/pki-validation
+vi /var/www/.well-known/pki-validation/5C7E984684D01FAF787171DB395A6F4A.txt
+#сюда аккуратно скопировать содержимое
+</code></pre><br/>
+И добавить дополнительную секцию server в конфиге Nginx. Удобно сделать нестандартный порт, чтобы потом открыть наружу по http только нужное<br/>
+<br/>
+<pre><code class="bash"> # /etc/nginx.conf
+...
+ server {
+    listen       8044;
+    server_name  mydomain.ru;
+
+    location /.well-known/pki-validation/ {
+    root /var/www/;
+     }
+...
+</code></pre><br/>
+После рестарта Nginx и проброса 80 внешнего порта на порт 8044 хоста FreeACS, файл .http://mydomain.ru/.well-known/pki-validation/5C7E984684D01FAF787171DB395A6F4A.txt должен быть виден из интернета. А значит, как только пройдет проверка, поставщик выдаст вам сертификат, цепочку промежуточных сертификатов и закрытый ключ. Будет что-то типа <i>acs_mydomain_ru.crt, acs_mydomain_ru.ca-bundle</i> и <i>11005566.key</i><br/>
+<br/>
+Для Nginx сертификаты надо слепить, ключ переименовать, и оба файла положить в /etc/pki<br/>
+<br/>
+<pre><code class="bash">cat acs_mydomain_ru.crt acs_mydomain_ru.ca-bundle > acs_mydomain_ru.chained.crt
+mv 11005566.key acs_mydomain_ru.key
+cp acs_mydomain_ru.chained.crt /etc/pki
+cp acs_mydomain_ru.key /etc/pki</code></pre><br/>
+Теперь добавим ssl в конфиг Nginx. Порт для проксирования TR-069 будет тоже нестандартным 8099. <br/>
+<br/>
+На данном этапе, весь конфиг будет выглядеть как-то так:<br/>
+<br/>
+<pre><code class="bash">events {
+  worker_connections  19000;
+}
+
+http {
+
+client_max_body_size 32m;
+
+  server {
+    listen       8099 ssl;
+    server_name  acs.mydomain.ru;
+
+        # SSL
+        ssl_certificate /etc/pki/acs_mydomain_ru.chained.crt ;
+        ssl_certificate_key /etc/pki/acs_mydomain_ru.key;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers on;
+
+        #ssl connections for CPE
+
+      location /tr069/ {        
+      proxy_set_header Host      $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_set_header HTTPS YES;
+      proxy_headers_hash_max_size 512;
+      proxy_headers_hash_bucket_size 128;
+      proxy_pass http://localhost:8085/tr069/;
+   }
+
+}
+  server {
+    #SSL hash check
+    listen       8044;
+    server_name  mydomain.ru;
+    
+    location /.well-known/pki-validation/ {
+      root /var/www/;
+     }
+}
+
+  server {
+    listen       80;
+    server_name  10.110.0.117;
+
+    location = / {
+      return 301 /web/index;
+      proxy_headers_hash_max_size 512;
+      proxy_headers_hash_bucket_size 128;
+    }
+    location /tr069/ {
+      proxy_set_header Host      $host;
+      proxy_set_header X-Real-IP $remote_addr;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Proto $scheme;
+      proxy_headers_hash_max_size 512;
+      proxy_headers_hash_bucket_size 128;
+      proxy_pass http://localhost:8085/tr069/;
+    }
+    location /web/ {
+      proxy_pass http://localhost:8081/web/;
+      proxy_headers_hash_max_size 512;
+      proxy_headers_hash_bucket_size 128;
+    }
+    location /monitor/ {
+      proxy_pass http://localhost:8090/monitor/;
+    }
+    location /webservice/ {
+      proxy_pass http://localhost:8088/webservice/;
+    }
+    location /syslog/ {
+      proxy_pass http://localhost:8086/syslog/;
+    }
+    location /core/ {
+      proxy_pass http://localhost:8083/core/;
+    }
+    location /stun/ {
+      proxy_pass http://localhost:8087/stun/;
+    }
+  }
+}
+</code></pre><br/>
+Перезапускаем Nginx. Пробрасываем 8099 на хост с FreeACS. Теперь у нас есть сервер, который может обслуживать клиентов TR-069 по адресу: .https://acs.mydomain.ru:8099/tr069/prov <br/>
+Откройте этот адрес в браузере из Интернет. Если в ответ выдается 404 с валидным сертификатом, то пора пробовать подключать устройства.<br/>
+<br/>
+Для начала надо включить автоопределение моделей устройств.<br/>
+<br/>
+<pre><code class="bash">#/opt/freeacs-tr069/config/application-config.conf 
+# Discovery Mode can be set to true if you want to automatically add a new
+# unittype and unit. This mode is violating the security of the system,
+# because it allows unknown units to connect and then changes will be performed
+# in the database. So use this option with caution, preferably when you want to
+# add a new unittype to the system. Default is false.
+#discovery.mode = false
+discovery.mode = true
+</code></pre><br/>
+Потом эту опцию можно будет отключить, завести второй сервер для обучения новым моделям, а потом переносить на прод через экспорт/импорт, но для старта она очень полезна.<br/>
+<br/>
+На вашем пробном Mikrotik надо импортировать сертификат, который мы делали для Nginx — <i>acs_mydomain_ru.chained.crt</i> в <i>System/Certificates/Import</i>. <br/>
+Затем поставить пакет tr069-client и указать ACS URL: .https://acs.mydomain.ru:8099/tr069/prov Username:&lt;серийный номер>. И готово. <br/>
+<br/>
+По нажатию Apply, устройство соединится с сервером по https, в окошке изменится Periodic inform interval, а на сервере появится новый Unit type и, соответственно, Unit<br/>
+<br/>
+На этом первая часть закончена. У нас есть рабочий сервер автоконфигурации, обслуживающий устройства по защищенному соединению на отдельном порту, который легко мониторить. Во второй части будут картинки, скрипты и опыт боевой работы с устройствами.<br/>
+<br/>
+Спасибо всем, кто читал. Буду рад любым комментариям и поправкам.</div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bacs%5D" class="tm-tags-list__link">acs</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Btr-069%5D" class="tm-tags-list__link">tr-069</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmikrotik%5D" class="tm-tags-list__link">mikrotik</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bfreeacs%5D" class="tm-tags-list__link">freeacs</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Brouteros%5D" class="tm-tags-list__link">routeros</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/sys_admin/" class="tm-hubs-list__link">
+    Системное администрирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/it-infrastructure/" class="tm-hubs-list__link">
+    IT-инфраструктура
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/nix/" class="tm-hubs-list__link">
+    *nix
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/network_hardware/" class="tm-hubs-list__link">
+    Сетевое оборудование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/internet_of_things/" class="tm-hubs-list__link">
+    Интернет вещей
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 8: ↑6 и ↓2</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 8: ↑6 и ↓2" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+4</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">3.3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    21
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Louie/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/1f0/535/3b1/1f05353b16cb22aa8bf55e669cc850b8.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 19 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    13
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">4</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/Louie/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Louie
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/584894/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 2 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/584894/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/584894/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"584894":{"id":"584894","timePublished":"2021-10-23T22:01:51+00:00","isCorporative":false,"lang":"ru","titleHtml":"Практическое применение сервера FreeACS для обслуживания устройств Mikrotik по протоколу TR-069 (часть 1)","leadData":{"textHtml":"Данная статья является логическим продолжением \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F468241\u002F\"\u003Eэкспериментов с тестовым сервером FreeACS\u003C\u002Fa\u003E. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что, сегодня мы установим сервер, настроим до рабочего состояния и прикрутим ssl-сертификат. А во второй части — разберем настройки и режимы, прогоним основные рабочие сценарии обслуживания устройств Mikrotik и слегка коснемся автоконфигурации IP-телефонов.\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":13,"votesCount":19},"rating":4,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"884265","alias":"Louie","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F1f0\u002F535\u002F3b1\u002F1f05353b16cb22aa8bf55e669cc850b8.png","speciality":"Пользователь"},"statistics":{"commentsCount":2,"favoritesCount":21,"readingCount":3337,"score":4,"votesCount":8},"hubs":[{"relatedData":null,"id":"221","alias":"sys_admin","type":"collective","title":"Системное администрирование","titleHtml":"Системное администрирование","isProfiled":true},{"relatedData":null,"id":"6398","alias":"it-infrastructure","type":"collective","title":"IT-инфраструктура","titleHtml":"IT-инфраструктура","isProfiled":true},{"relatedData":null,"id":"7289","alias":"nix","type":"collective","title":"*nix","titleHtml":"*nix","isProfiled":true},{"relatedData":null,"id":"21958","alias":"network_hardware","type":"collective","title":"Сетевое оборудование","titleHtml":"Сетевое оборудование","isProfiled":false},{"relatedData":null,"id":"21970","alias":"internet_of_things","type":"collective","title":"Интернет вещей","titleHtml":"Интернет вещей","isProfiled":false}],"flows":[{"id":"6","alias":"admin","title":"Администрирование"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003EДанная статья является логическим продолжением \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F468241\u002F\"\u003Eэкспериментов с тестовым сервером FreeACS\u003C\u002Fa\u003E. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что, сегодня мы установим сервер, настроим до рабочего состояния и прикрутим ssl-сертификат. А во второй части — разберем настройки и режимы, прогоним основные рабочие сценарии обслуживания устройств Mikrotik и слегка коснемся автоконфигурации IP-телефонов.\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nПеред стартом, хочу кратко напомнить основные постулаты: \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n1. \u003Ca href=\"https:\u002F\u002Fru.wikipedia.org\u002Fwiki\u002FTR-069\" rel=\"nofollow noopener noreferrer\"\u003EПротокол TR-069\u003C\u002Fa\u003E используется десятками миллионов устройств, и, де факто, является стандартом для обновления ПО, диагностики и конфигурации сетевого оборудования. В документации FreeACS, необходимые системные требования к серверу начинаются с 50 тыс. обслуживаемых устройств, и заканчиваются на 2 млн. Это могучий специализированный инструмент.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n2. Системы управления конфигурациями (SCM), такие как Ansible, могут быть использованы, в том числе, для удаленного выполнения команд и скриптов в RouterOS, но не являются альтернативой ACS.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n3. Проблемы безопасности TR-069 кратко описаны \u003Ca href=\"https:\u002F\u002Froutercheck.com\u002F2014\u002F08\u002F14\u002Fmajor-problems-tr-069\u002F\" rel=\"nofollow noopener noreferrer\"\u003Eздесь\u003C\u002Fa\u003E, и состоят в том, что протокол предполагает использование шифрования, но не обязывает. Поэтому 80% устройств передают данные открыто, а часть использует самоподписанные сертификаты. Не надо так.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EЧасть1. Установка FreeACS + SSL\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Ch4\u003E0. Подготовка\u003C\u002Fh4\u003E\u003Cbr\u002F\u003E\r\n\u003Cb\u003EРесурсы\u003C\u002Fb\u003E: Минимум 4 GB RAM, 10 GB HDD, Centos 7\u002F8\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003EДомен\u003C\u002Fb\u003E: Сервер будет доступен из Интернет, поэтому необходимо купить домен или добавить DNS-запись поддомена, указывающую на внешний ip-адрес FreeACS. И соответственно настроить FQDN имя хоста.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003EСертификат\u003C\u002Fb\u003E: Если у вас уже есть рабочий домен и доступен какой-то из способов проверки подлинности сертификата — можно сразу выпустить сертификат. Я использовал самый дешевый \u003Ci\u003ESectigo Positive SSL\u003C\u002Fi\u003E, доступный повсеместно за 500-1000 руб.\u002Fгод\u003Cbr\u002F\u003E\r\nЕсли рабочего домена нет — выпустим сертификат после установки сервера, с проверкой по Хэш-файлу. Идеи с Letsencrypt и иже с ним — «экономия на спичках».\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch4\u003E1. Установка FreeACS\u003C\u002Fh4\u003E\u003Cbr\u002F\u003E\r\nКак и в предыдущей статье, проще всего это сделать скриптом.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Ewget https:\u002F\u002Fraw.githubusercontent.com\u002Ffreeacs\u002Ffreeacs\u002Fmaster\u002Fscripts\u002Finstall_centos.sh\nchmod +x install_centos.sh\n.\u002F install_centos.sh\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nСкрипт установит все необходимое. Останется лишь немного доработать.\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E# Установить часовой пояс \ntimedatectl set-timezone Asia\u002FNovosibirsk\n# Установить Xorg-fonts. Без этого, в веб-интерфейсе не будет графиков\nyum -y install xorg-x11-fonts-misc\n# MySQL часовой пояс и лимиты. Без этого в веб-интерфейсе будет UTC и файлы не загрузятся\n# \u002Fetc\u002Fmy.cnf\ndefault-time-zone='+07:00'\nmax_allowed_packet=32M\ninnodb_buffer_pool_size=1024M\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПроверьте работу веб-интерфейса по http:\u002F\u002F&lt;серый адрес хоста\u003E, смените дефолтный пароль и можно ехать дальше\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch4\u003E2. Nginx\u003C\u002Fh4\u003E\u003Cbr\u002F\u003E\r\nПора настроить Nginx. Если вы еще не получили сертификат — давайте его получать и подтверждать.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНапример, вы купили домен mydomain.ru, настроили DNS запись acs и заказали сертификат для acs.mydomain.ru с подтверждением владения по Хэш-файлу.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПоставщик предоставит информацию, типа:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003EХеш файл должен быть доступен по адресу:\nhttp:\u002F\u002Fmydomain.ru\u002F.well-known\u002Fpki-validation\u002F5C7E984684D01FAF787171DB395A6F4A.txt\nСодержимое файла:\n75D5AB94B09B408A2A7DD93696BA69B736CA8A5E0DFD80DBB45186EF70AB1A77\ncomodoca.com\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nТ.е. проверка сертификата поддомена acs проходит через подтверждение владением доменом 2-го уровня, и если на нем у вас уже есть какой-то веб-ресурс, то файл надо разместить там.\u003Cbr\u002F\u003E\r\nЕсли такого нет, то Хэш-файл можно разместить на сервере с FreeACS, предварительно изменив DNS-запись mydomain.ru. Надо создать директорию с данным файлом:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Emkdir -p \u002Fvar\u002Fwww\u002F.well-known\u002Fpki-validation\nvi \u002Fvar\u002Fwww\u002F.well-known\u002Fpki-validation\u002F5C7E984684D01FAF787171DB395A6F4A.txt\n#сюда аккуратно скопировать содержимое\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИ добавить дополнительную секцию server в конфиге Nginx. Удобно сделать нестандартный порт, чтобы потом открыть наружу по http только нужное\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E # \u002Fetc\u002Fnginx.conf\n...\n server {\n    listen       8044;\n    server_name  mydomain.ru;\n\n    location \u002F.well-known\u002Fpki-validation\u002F {\n    root \u002Fvar\u002Fwww\u002F;\n     }\n...\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПосле рестарта Nginx и проброса 80 внешнего порта на порт 8044 хоста FreeACS, файл .http:\u002F\u002Fmydomain.ru\u002F.well-known\u002Fpki-validation\u002F5C7E984684D01FAF787171DB395A6F4A.txt должен быть виден из интернета. А значит, как только пройдет проверка, поставщик выдаст вам сертификат, цепочку промежуточных сертификатов и закрытый ключ. Будет что-то типа \u003Ci\u003Eacs_mydomain_ru.crt, acs_mydomain_ru.ca-bundle\u003C\u002Fi\u003E и \u003Ci\u003E11005566.key\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля Nginx сертификаты надо слепить, ключ переименовать, и оба файла положить в \u002Fetc\u002Fpki\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Ecat acs_mydomain_ru.crt acs_mydomain_ru.ca-bundle \u003E acs_mydomain_ru.chained.crt\nmv 11005566.key acs_mydomain_ru.key\ncp acs_mydomain_ru.chained.crt \u002Fetc\u002Fpki\ncp acs_mydomain_ru.key \u002Fetc\u002Fpki\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nТеперь добавим ssl в конфиг Nginx. Порт для проксирования TR-069 будет тоже нестандартным 8099. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНа данном этапе, весь конфиг будет выглядеть как-то так:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eevents {\n  worker_connections  19000;\n}\n\nhttp {\n\nclient_max_body_size 32m;\n\n  server {\n    listen       8099 ssl;\n    server_name  acs.mydomain.ru;\n\n        # SSL\n        ssl_certificate \u002Fetc\u002Fpki\u002Facs_mydomain_ru.chained.crt ;\n        ssl_certificate_key \u002Fetc\u002Fpki\u002Facs_mydomain_ru.key;\n        ssl_session_cache shared:SSL:10m;\n        ssl_session_timeout 10m;\n        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;\n        ssl_ciphers HIGH:!aNULL:!MD5;\n        ssl_prefer_server_ciphers on;\n\n        #ssl connections for CPE\n\n      location \u002Ftr069\u002F {        \n      proxy_set_header Host      $host;\n      proxy_set_header X-Real-IP $remote_addr;\n      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n      proxy_set_header X-Forwarded-Proto $scheme;\n      proxy_set_header HTTPS YES;\n      proxy_headers_hash_max_size 512;\n      proxy_headers_hash_bucket_size 128;\n      proxy_pass http:\u002F\u002Flocalhost:8085\u002Ftr069\u002F;\n   }\n\n}\n  server {\n    #SSL hash check\n    listen       8044;\n    server_name  mydomain.ru;\n    \n    location \u002F.well-known\u002Fpki-validation\u002F {\n      root \u002Fvar\u002Fwww\u002F;\n     }\n}\n\n  server {\n    listen       80;\n    server_name  10.110.0.117;\n\n    location = \u002F {\n      return 301 \u002Fweb\u002Findex;\n      proxy_headers_hash_max_size 512;\n      proxy_headers_hash_bucket_size 128;\n    }\n    location \u002Ftr069\u002F {\n      proxy_set_header Host      $host;\n      proxy_set_header X-Real-IP $remote_addr;\n      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n      proxy_set_header X-Forwarded-Proto $scheme;\n      proxy_headers_hash_max_size 512;\n      proxy_headers_hash_bucket_size 128;\n      proxy_pass http:\u002F\u002Flocalhost:8085\u002Ftr069\u002F;\n    }\n    location \u002Fweb\u002F {\n      proxy_pass http:\u002F\u002Flocalhost:8081\u002Fweb\u002F;\n      proxy_headers_hash_max_size 512;\n      proxy_headers_hash_bucket_size 128;\n    }\n    location \u002Fmonitor\u002F {\n      proxy_pass http:\u002F\u002Flocalhost:8090\u002Fmonitor\u002F;\n    }\n    location \u002Fwebservice\u002F {\n      proxy_pass http:\u002F\u002Flocalhost:8088\u002Fwebservice\u002F;\n    }\n    location \u002Fsyslog\u002F {\n      proxy_pass http:\u002F\u002Flocalhost:8086\u002Fsyslog\u002F;\n    }\n    location \u002Fcore\u002F {\n      proxy_pass http:\u002F\u002Flocalhost:8083\u002Fcore\u002F;\n    }\n    location \u002Fstun\u002F {\n      proxy_pass http:\u002F\u002Flocalhost:8087\u002Fstun\u002F;\n    }\n  }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПерезапускаем Nginx. Пробрасываем 8099 на хост с FreeACS. Теперь у нас есть сервер, который может обслуживать клиентов TR-069 по адресу: .https:\u002F\u002Facs.mydomain.ru:8099\u002Ftr069\u002Fprov \u003Cbr\u002F\u003E\r\nОткройте этот адрес в браузере из Интернет. Если в ответ выдается 404 с валидным сертификатом, то пора пробовать подключать устройства.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля начала надо включить автоопределение моделей устройств.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#\u002Fopt\u002Ffreeacs-tr069\u002Fconfig\u002Fapplication-config.conf \n# Discovery Mode can be set to true if you want to automatically add a new\n# unittype and unit. This mode is violating the security of the system,\n# because it allows unknown units to connect and then changes will be performed\n# in the database. So use this option with caution, preferably when you want to\n# add a new unittype to the system. Default is false.\n#discovery.mode = false\ndiscovery.mode = true\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПотом эту опцию можно будет отключить, завести второй сервер для обучения новым моделям, а потом переносить на прод через экспорт\u002Fимпорт, но для старта она очень полезна.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНа вашем пробном Mikrotik надо импортировать сертификат, который мы делали для Nginx — \u003Ci\u003Eacs_mydomain_ru.chained.crt\u003C\u002Fi\u003E в \u003Ci\u003ESystem\u002FCertificates\u002FImport\u003C\u002Fi\u003E. \u003Cbr\u002F\u003E\r\nЗатем поставить пакет tr069-client и указать ACS URL: .https:\u002F\u002Facs.mydomain.ru:8099\u002Ftr069\u002Fprov Username:&lt;серийный номер\u003E. И готово. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПо нажатию Apply, устройство соединится с сервером по https, в окошке изменится Periodic inform interval, а на сервере появится новый Unit type и, соответственно, Unit\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНа этом первая часть закончена. У нас есть рабочий сервер автоконфигурации, обслуживающий устройства по защищенному соединению на отдельном порту, который легко мониторить. Во второй части будут картинки, скрипты и опыт боевой работы с устройствами.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСпасибо всем, кто читал. Буду рад любым комментариям и поправкам.\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"acs"},{"titleHtml":"tr-069"},{"titleHtml":"mikrotik"},{"titleHtml":"freeacs"},{"titleHtml":"routeros"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F584894\u002F5eae7387e4d9a31bbf4c8fe2865fcf86\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F584894\u002F5eae7387e4d9a31bbf4c8fe2865fcf86\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584894\\\u002F\"},\"headline\":\"Практическое применение сервера FreeACS для обслуживания устройств Mikrotik по протоколу TR-069 (часть 1)\",\"datePublished\":\"2021-10-24T01:01:51+03:00\",\"dateModified\":\"2021-10-25T01:12:01+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Louie\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Данная статья является логическим продолжением экспериментов с тестовым сервером FreeACS. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментат...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584894\\\u002F#post-content-body\",\"about\":[\"h_sys_admin\",\"h_it-infrastructure\",\"h_nix\",\"h_network_hardware\",\"h_internet_of_things\",\"f_admin\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F584894\\\u002F5eae7387e4d9a31bbf4c8fe2865fcf86\\\u002F\"]}","metaDescription":"Данная статья является логическим продолжением экспериментов с тестовым сервером FreeACS. Тогда я влюбился в этот инструмент, и обещал немногочисленным комментаторам довести дело до продакшн. Так что,...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"sys_admin,it-infrastructure,nix,network_hardware,internet_of_things"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

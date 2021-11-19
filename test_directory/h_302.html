@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Минимизация файла ELF – попробуем в 2021? / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/583576\/"},"headline":"Минимизация файла ELF – попробуем в 2021?","datePublished":"2021-10-19T16:00:02+03:00","dateModified":"2021-10-19T16:03:23+03:00","author":{"@type":"Person","name":"Дмитрий Брайт"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начал...","url":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/583576\/#post-content-body","about":["c_ruvds","h_crazydev","h_assembler","h_nix","h_linux_dev","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/583576\/56de48010d22f3136c8c09dba723980f\/","https:\/\/habrastorage.org\/webt\/xt\/pp\/vg\/xtppvgng1dwp-cirseicjxm0hj0.png","https:\/\/habrastorage.org\/webt\/hf\/ak\/-4\/hfak-4xalmlwi3x6pvfryjcsj24.png","https:\/\/habrastorage.org\/webt\/iz\/-r\/im\/iz-rimtihpn_ecy01mdoe5rob14.png","https:\/\/habrastorage.org\/webt\/n0\/sg\/5q\/n0sg5qeihrn3b_sqb6huwsbcvwm.png","https:\/\/habrastorage.org\/webt\/nh\/el\/ry\/nhelryswdntriiomttl8g_4vjsy.png","https:\/\/habrastorage.org\/webt\/br\/gr\/_a\/brgr_atfea7-5gf78dsujd-be8k.png","https:\/\/habrastorage.org\/webt\/gi\/cw\/hi\/gicwhiqwuzmmk7b6kxz3tfxprfs.png","https:\/\/habrastorage.org\/webt\/5h\/oi\/_6\/5hoi_6fjevvsskoq-4xaczt5x8g.png","https:\/\/habrastorage.org\/webt\/ou\/g5\/kh\/oug5kh6sjydt9llengsiebnp40w.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Минимизация файла ELF – попробуем в 2021?" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Минимизация файла ELF – попробуем в 2021?" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Минимизация файла ELF – попробуем в 2021?" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/xt/pp/vg/xtppvgng1dwp-cirseicjxm0hj0.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/xt/pp/vg/xtppvgng1dwp-cirseicjxm0hj0.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/xt/pp/vg/xtppvgng1dwp-cirseicjxm0hj0.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/xt/pp/vg/xtppvgng1dwp-cirseicjxm0hj0.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/xt/pp/vg/xtppvgng1dwp-cirseicjxm0hj0.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583576" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-19T13:00:02.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583576/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/ruvds/blog/583576/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/xt/pp/vg/xtppvgng1dwp-cirseicjxm0hj0.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="ruvds" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://ruvds.com/ru-rub"><img src="//habrastorage.org/getpro/habr/branding/b77/8d5/a41/b778d5a41f83016379c6630262c3294c.png" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/ruvds/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">2823.09</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/ruvds/profile/" class="tm-company-card__name">
+        RUVDS.com
+      </a> <div class="tm-company-card__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Bright_Translate/" title="Bright_Translate" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/f9c/ff9/7d9/f9cff97d9c0677af28dab451897f88e4.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Bright_Translate/" class="tm-user-info__username">
+      Bright_Translate
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-19T13:00:02.000Z" title="2021-10-19, 16:00">19  октября   в 16:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Минимизация файла ELF – попробуем в 2021?</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/ruvds/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании RUVDS.com</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/crazydev/" class="tm-article-snippet__hubs-item-link"><span>Ненормальное программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/assembler/" class="tm-article-snippet__hubs-item-link"><span>Assembler</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/nix/" class="tm-article-snippet__hubs-item-link"><span>*nix</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка под Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://nathanotterness.com/2021/10/tiny_elf_modernized.html" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Nathan Otterness
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><a href="https://habr.com/ru/company/ruvds/blog/583576/"><div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/xt/pp/vg/xtppvgng1dwp-cirseicjxm0hj0.png"/></div></a><br/>
+Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера рабочего файла в 45 байтов, но с тех пор ядро сильно изменилось. Каков же будет минимальный жизнеспособный ELF в 2021? <a name="habracut"></a><br/>
+<br/>
+Небольшое дополнение: пока я работаю над полноценным обновлением, хочу отметить, что несколько участников на reddit и hackernews указали способы для уменьшения общего размера программы до 112 байт с сохранением вывода всей строки «Hello, world!». Вот несколько приёмов, о которых при написании статьи я не знал:<br/>
+<br/>
+<ul>
+<li><a href="https://old.reddit.com/r/programming/comments/q6mnz1/what_is_the_smallest_linux_elf_executable_2021/hgdpee0/">Более короткий способ инициализации регистров.</a></li>
+<li><a href="https://news.ycombinator.com/item?id=28849680">В начале выполнения Linux инициализирует состоянии регистров как 0.</a></li>
+<li><a href="https://news.ycombinator.com/item?id=28849680">(Тот же пост, что и выше) Поле заголовка программы size in file может быть больше, чем сам файл при условии, что будет вписываться в объём памяти.</a> </li>
+<li>Можно переписать количество заголовков разделов, если размер заголовка раздела установлен на <code>0</code>. </li>
+</ul><br/>
+<h2><font color="#3AC1EF">Мотив проекта</font></h2><br/>
+Много лет назад я наткнулся на <a href="http://www.muppetlabs.com/~breadbox/software/tiny/teensy.html">известную статью</a>, которая сильно повлияла на дальнейшее развитие моей карьеры. В то время я в качестве стажёра работал над системой сборки для откровенно большой базы Java-кода. Именно поэтому меня особо привлекла статья, в которой автор стремился сделать противоположное «энтерпрайзной Java»: удалить все, кроме наиболее важных компонентов, необходимых для определения валидной программы Linux. (А потом удалить ещё!).<br/>
+<br/>
+Если вкратце, то та статья описывает создание двоичного файла Linux размером 45 байт (!). И даже при том, что итоговый бинарник явно нельзя назвать «валидным» файлом ELF, в Linux он всё же запускался. По крайней мере в то время. Не знаю, к сожалению или к лучшему, но позже эта ОС стала более строгой в отношении загрузки ELF (Точную дату публикации оригинальной статьи отследить мне не удалось, но в начале 2000-х она уже точно была, а миграция многих систем на 64-битные CPU снизила актуальность 32-битных ELF-ов).<br/>
+<br/>
+<h2><font color="#3AC1EF">Мои цели</font></h2><br/>
+Как и автор той самой вдохновившей меня статьи, я намерен создать наименьший ELF-файл, способный выполняться в современной среде Linux (на момент написания ядро 5.14). При этом я буду, как и в оригинальной публикации, также <a href="https://nasm.us/">использовать ассемблер NASM</a>, поскольку его легко установить, мне нравится его синтаксис, и он остаётся одним из лучших ассемблеров для x86 из доступных.<br/>
+<br/>
+Тем не менее некоторые из моих целей отличаются от задач оригинальной статьи:<br/>
+<br/>
+<ul>
+<li>Я буду создавать файл под x64_64 (64-битная архитектура AMD/Intel) Linux, так как будет преувеличением заявить, что 32-битный формат Intel (использованный в оригинале) актуален в настоящее время.</li>
+<li>В качестве дополнительной задачи я решил создать программу <code>Hello, world!</code> (выводящую в stdout текст<code>Hello, world!</code>, сопровождаемый переносом строки), вместо менее впечатляющего варианта из оригинала, где программа завершалась с кодом <code>42</code>. Как станет ясно позже, в итоге это потребовало совсем немного байтов.</li>
+<li>Моя программа должна успешно завершаться с кодом <code>0</code>.</li>
+</ul><br/>
+<h3><font color="#3AC1EF">Справка по формату ELF64</font></h3><br/>
+Файлы ELF используются в Linux (да и во многих других ОС) повсеместно и служат в качестве простых исполняемых программ, статических библиотек, создаваемых компиляторами, динамических библиотек и другого. Двоичный файл ELF, который и станет героем этой статьи, содержит следующие компоненты:<br/>
+<br/>
+<ul>
+<li>Заголовок ELF верхнего уровня.</li>
+<li>Таблицу заголовков программы, где указано, какие части файла и куда нужно загружать в память. Иногда она также называется таблица заголовков сегментов.</li>
+<li>Таблица заголовков разделов, где указываются разделы файла ELF. Для простой загрузки файла она не является обязательной, но информация о разделах важна для другой функциональности ELF, например компоновки.</li>
+<li>Фактический исполняемый байткод и любые нужные ему данные.</li>
+</ul><br/>
+В формате ELF на удивление мало жёстких требований к расположению разных элементов метаданных, кроме того, что заголовок верхнего уровня должен находиться в начале. Таблица заголовков программы и таблица заголовков разделов могут находиться в любом месте файла, так как заголовок верхнего уровня будет содержать их смещения.<br/>
+<br/>
+В качестве дополнительного пояснения приведу схематическое изображение структуры формата ELF.<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/hf/ak/-4/hfak-4xalmlwi3x6pvfryjcsj24.png"/><br/>
+<i><font color="#999999">Полномасштабная версия схемы <a href="https://upload.wikimedia.org/wikipedia/commons/e/e4/ELF_Executable_and_Linkable_Format_diagram_by_Ange_Albertini.png">тут</a></font></i><br/>
+<br/>
+<h2><font color="#3AC1EF">Начало: минимальный, но валидный ELF «Hello world»</font></h2><br/>
+Даже те, кто в них не заглядывал, наверняка поняли, что типичные создаваемые <code>gcc </code>бинарники полны элементов, вовсе не обязательных для простого <code>Hello world</code>. Для тех же, кто хочет в этом убедиться, в <a href="http://www.muppetlabs.com/~breadbox/software/tiny/teensy.html">оригинальной статье</a> рассматривается несколько итераций версии на Си, которая не требует обновления для актуального использования даже в современных средах.<br/>
+<br/>
+Так что вместо того, чтобы воссоздавать полный аналог предыдущей статьи, я перейду сразу к коду ассемблера и определю весь валидный ELF-файл.<br/>
+<br/>
+Вот что у меня получилось:<br/>
+<br/>
+<pre><code class="bash">; Использование ассемблера:
+;    nasm -f bin -o hello_world hello_world.asm
+[bits 64]
+
+; Виртуальный адрес, в который наш ELF должен отображаться в памяти.
+; Его выбор произволен, но он не должен быть 0 и лучше, если он
+; будет выровнен по страницам.
+file_load_va: equ 4096 * 40
+
+; Заголовок ELF.
+
+; Сигнатура.
+db 0x7f, 'E', 'L', 'F'
+; "Class" = 2, 64-bit
+db 2
+; Порядок следования байтов = 1, от младшего к старшему.
+db 1
+; Версия ELF = 1
+db 1
+; OS ABI, не используется, должен быть 0.
+db 0
+; Байт расширенного ABI + 7 байт заполнения. Оставляем 0, они игнорируются.
+dq 0
+; Типа файла ELF. 2 = исполняемый
+dw 2
+; Целевая архитектура. 0x3e = x86_64
+dw 0x3e
+; Дополнительная информация о версии ELF. Оставляем как 1.
+dd 1
+; Адрес точки входа.
+dq entry_point + file_load_va
+; Смещение заголовка программы. Мы поместим его сразу после заголовка ELF.
+dq program_headers_start
+; Смещение заголовка раздела. Поместим его после заголовков программы.
+dq section_headers_start
+; Дополнительные флаги. Насколько знаю, не используются.
+dd 0
+; Размер этого заголовка, 64 байта.
+dw 64
+; Размер записи заголовка программы.
+dw 0x38
+; Количество записей заголовков программы.
+dw 1
+; Размер записи заголовка раздела.
+dw 0x40
+; Количество записей заголовков разделов.
+dw 3
+; Индекс раздела, содержащего таблицу строк с именами разделов. 
+dw 2
+
+
+program_headers_start:
+; Первое поле: тип заголовка программы. 1 = загружаемый сегмент.
+dd 1
+; Флаги заголовка программы. 5 = без возможности записи. (биты 0, 1 и 2 = исполняемый, с 
+;возможностью записи и чтения соответственно).
+dd 5
+; Смещение загружаемого сегмента в файле. Оно будет содержать весь файл, значит 
+ ;устанавливаем 0.
+
+dq 0
+; Виртуальный адрес для размещения сегмента.
+dq file_load_va
+; "Физический адрес". Не думайте, что он используется, установите то же значение, что и для 
+;виртуального.
+dq file_load_va
+; Размер сегмента в файле. Заканчивается в таблице строк.
+dq string_table
+; Размер сегмента в памяти.
+dq string_table
+; Выравнивание сегмента.
+dq 0x200000
+
+
+; У нас будет только два раздела: .text и .shstrtab. Хотя заголовок первого должен быть NULL.
+
+section_headers_start:
+; Заголовок раздела в индексе 0 является нулевым заголовком раздела, заполненным нулём.
+times 0x40 db 0
+
+; Смещение имени ".text" в таблице строк.
+dd text_section_name - string_table
+; Его тип – загружаемый раздел "bits"
+dd 1
+; Флаги для раздела. Биты 0, 1 и 2 означают "с возможностью записи", "размещённый" и
+; "исполняемый" соответственно.
+dq 6
+; "Виртуальный адрес" раздела.
+dq file_load_va
+; Смещение в файле.
+dq 0
+; Размер раздела.
+dq file_end
+; Связанный индекс раздела. Оставляем 0.
+dd 0
+; "info" раздела. Оставляем 0 (может с ним нужно что-то ;сделать?)
+dd 0
+; Выравнивание. Неважно.
+dq 16
+; Размер записи раздела. 0.
+dq 0
+
+; Далее, раздел таблицы строк.
+dd string_table_name - string_table
+; Раздел таблицы строк.
+dd 3
+; Не нужно загружать.
+dq 0
+; Этот раздел содержит только таблицу строк, но не весь файл
+dq file_load_va + string_table
+dq string_table
+dq string_table_end - string_table
+dd 0
+dd 0
+dq 1
+dq 0
+
+
+; Мы прошли все заголовки программы и разделов. Далее идёт фактический код.
+entry_point:
+  ; Номер системного вызова 1: write.
+  mov rax, 1
+  ; Номер файлового дескриптора 1.
+  mov rdi, 1
+  ; Буфер.
+  mov rsi, file_load_va + message
+  ; Длина буфера.
+  mov rdx, message_length
+  syscall
+  ; Номер системного вызова 60: exit.
+  mov rax, 60
+  ; Код выхода.
+  mov rdi, 0
+  syscall
+
+message: db `Hello, world!\n`, 0
+message_length: equ $ - message</code></pre><br/>
+<a href="https://nathanotterness.com/2021/10/hello_world_long_nocomments.html">Здесь</a> доступна версия без комментариев.<br/>
+<br/>
+Если кому нужно, то вот краткая справка по синтаксису <code>nasm</code>:<br/>
+<br/>
+<ul>
+<li>Строки, начинающиеся с <code>;</code> являются комментариями.</li>
+<li><code>db</code>, <code>dw</code>, <code>dd </code>и <code>dq </code>– это псевдоинструкции, выводящие инициализированные байты, 2-байтовые слова, 4-байтовые двойные слова и 8-байтовые счетверённые слова соответственно.</li>
+<li>Метки размещаются в начале строки и заканчиваются на <code>:</code>. NASM позволяет использовать их в простых арифметических выражениях вместо чисел.</li>
+<li>Директива <code>equ</code> используется для связывания метки не с расположением в файле, а с произвольным числом.</li>
+<li>Символ <code>$</code> можно использовать в выражениях для представления в байткоде текущего смещения в байтах. (Здесь есть и другие нюансы, но при создании плоского двоичного файла они обычно не имеют значения).</li>
+<li>Весь код написан с помощью синтаксиса ассемблера в формате Intel x86.</li>
+</ul><br/>
+Этот ассемблер напрямую определяет необходимые для 64-битного исполняемого ELF метаданные, так что линкер для его получения вам не потребуется. Вместо этого мы соберём его, используя возможность NASM, позволяющую выводить плоские бинарники, и с помощью вызова <code>chmod</code> отметим его как исполняемый.<br/>
+<br/>
+При условии сохранения файла как <code>hello_world.asm</code> можете скомпилировать и выполнить его так:<br/>
+<br/>
+<pre><code class="bash">nasm -f bin -o hello_world hello_world.asm
+chmod +x hello_world
+./hello_world</code></pre><br/>
+Очевидно, что вам нужно будет использовать 64-битный Linux с <code>nasm</code>, установленным и доступным в <code>PATH</code>. <code>nasm </code>совсем невелик, и я рекомендую использовать его всем, кто пишет много кода на ассемблере x86.<br/>
+<br/>
+<h2><font color="#3AC1EF">Что включено в файл?</font></h2><br/>
+По сути, это минимальный «рабочий» файл ELF, какой я смог получить. Он содержит список разделов, включая <code>.text</code> для исполняемого кода и <code>.shstrtab</code> (<b>S</b>ection <b>H</b>eader <b>Str</b>ing <b>Tab</b>le), где содержатся имена всех разделов (включая его собственное). Весь файл после сборки занял 383 байта, что уже весьма немного, хотя и далеко от возможного.<br/>
+<br/>
+Так как эта начальная версия делалась сообразно формату ELF, просмотр её содержимого при помощи стандартных инструментов Linux работает исправно. По мере удаления из неё содержимого мы будем постепенно эту возможность утрачивать. Например, сейчас <code>readelf -SW</code> показывает, что наши разделы <code>.text</code> и <code>.shstrtab</code> определены верно:<br/>
+<br/>
+<pre><code class="bash">В смещении 0x78 находятся три заголовка разделов:
+
+Section Headers:
+  [Nr] Name              Type            Address          Off    Size   ES Flg Lk Inf Al
+  [ 0]                   NULL            0000000000000000 000000 000000 00      0   0  0
+  [ 1] .text             PROGBITS        0000000000028138 000138 000027 00  AX  0   0 16
+  [ 2] .shstrtab         STRTAB          000000000002816e 00016e 000011 00      0   0  1</code></pre><br/>
+Аналогичным образом <code>objdump -M intel -d</code> без проблем дизассемблирует код в разделе <code>.text</code>:<br/>
+<br/>
+<pre><code class="bash">Дизассемблированный .text:
+
+0000000000028138 &lt;.text>:
+   28138:	b8 01 00 00 00       	mov    eax,0x1
+   2813d:	bf 01 00 00 00       	mov    edi,0x1
+   28142:	48 be 5f 81 02 00 00 	movabs rsi,0x2815f
+   28149:	00 00 00 
+   2814c:	ba 0f 00 00 00       	mov    edx,0xf
+   28151:	0f 05                	syscall 
+   28153:	b8 3c 00 00 00       	mov    eax,0x3c
+   28158:	bf 00 00 00 00       	mov    edi,0x0
+   2815d:	0f 05</code></pre><br/>
+Прежде чем продолжать, можно взглянуть на фактические байты в нашем ELF и подписать их роль в нем:<br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/iz/-r/im/iz-rimtihpn_ecy01mdoe5rob14.png"/></div><br/>
+Даже навскидку связанная с разделами информация занимает слишком много места. Как я уже говорил, всё это не нужно, если нас интересует лишь загрузка ELF в память и его запуск. Но можно ли взять и просто эту информацию удалить?<br/>
+<br/>
+<h2><font color="#3AC1EF">Удаление информации разделов</font></h2><br/>
+Ответ: «Да».<br/>
+<br/>
+Для этого устанавливаем количество заголовков разделов на <code>0</code> и удаляем эти разделы. Ниже показано, как выглядит код после. Его можно собрать и выполнить так же, как и предыдущую версию. Кроме того, я дополнительно убрал все комментарии, кроме аннотаций изменённых строк: <br/>
+<br/>
+<pre><code class="bash">[bits 64]
+
+file_load_va: equ 4096 * 40
+
+db 0x7f, 'E', 'L', 'F'
+db 2
+db 1
+db 1
+db 0
+dq 0
+dw 2
+dw 0x3e
+dd 1
+dq entry_point + file_load_va
+dq program_headers_start
+; Смещение заголовка раздела. Разделов у нас нет, значит пусть он пока будет 0.
+dq 0
+dd 0
+dw 64
+dw 0x38
+dw 1
+; Размер записи заголовка раздела.
+dw 0x40
+; Количество записей заголовков разделов. Сейчас 0, так как у нас их нет.
+dw 0
+; Раздел, содержащий имена разделов. Больше не используется, значит устанавливаем как 0.
+dw 0
+
+program_headers_start:
+dd 1
+dd 5
+dq 0
+dq file_load_va
+dq file_load_va
+; Мы изменим наш единственный заголовок программы, включив в него весь файл.
+dq file_end
+dq file_end
+dq 0x200000
+
+entry_point:
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, file_load_va + message
+  mov rdx, message_length
+  syscall
+  mov rax, 60
+  mov rdi, 0
+  syscall
+code_end:
+
+message: db `Hello, world!\n`
+message_length: equ $ - message
+
+file_end:</code></pre><br/>
+Удаление информации разделов сокращает размер файла до 173 байтов, экономя более 200 байт в сравнении с первым вариантом, который уже был мал. Очевидно, что так наш файл теряет кое-какие полезные метаданные, в результате чего некоторые утилиты, та же <code>objdump</code>, не смогут найти нужный код. Но при этом работоспособность не нарушена полностью. К примеру, <code>readelf –SW</code> по-прежнему работает и корректно указывает, что ELF не содержит разделов.<br/>
+<br/>
+Если заглянуть в байткод ELF, то здесь ничего особо интересного. Все, как и раньше, только нет информации разделов:<br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/n0/sg/5q/n0sg5qeihrn3b_sqb6huwsbcvwm.png"/></div><br/>
+Итак, что дальше? Другую информацию просто так удалить нельзя: нам нужен код, строка <code>Hello, world!</code>, заголовок ELF и заголовок программы. Однако есть одна деталь, которую можно уменьшить, ничего не сломав: сам код.<br/>
+<br/>
+<h2><font color="#3AC1EF">Уменьшение размера кода</font></h2><br/>
+Байткод х86 определенно не является самой большой частью файла, но он всё равно недостаточно оптимизирован по размеру, занимая 39 из 173 байтов. В данный момент весь код программы состоит из всего восьми инструкций. Неплохо! Но можно заменить эти инструкции более короткими альтернативами. Поскольку изначально их всего восемь, то я просто пройдусь по ним поочерёдно:<br/>
+<br/>
+<ul>
+<li><code>mov rax, 1</code>: для начала устанавливаем регистр <code>rax </code>на хранение номера системного вызова <code>write</code>: 1. (Если не знакомы с номерами системных вызовов в Linux, то рекомендую заглянуть <a href="https://filippo.io/linux-syscall-table/">сюда</a>. С их помощью мы просим Linux выполнить нужную работу от лица программы). Если вы изучили дизассемблированный код выше, то могли заметить, что наш ассемблер автоматически конвертировал эту инструкцию в <code>mov eax, 1</code>, так как установка <code>eax </code>(младшие 32 бита <code>rax</code>) автоматически очищает старшие 32 бита <code>rax</code>. И всё же <code>mov eax, 1</code> занимает целых 5 байтов. Можно это улучшить:<br/>
+ <ul>
+<li><code>xor eax, eax</code>: обнулить все биты в регистре <code>eax </code>. Это также обнулит все старшие биты <code>rax </code>, всего заняв два байта.</li>
+<li><code>inc eax</code>: инкрементировать <code>eax </code>на 1, что тоже займёт два байта.</li>
+</ul></li>
+</ul><br/>
+Вместе эти две инструкции займут 4 байта, сэкономив нам 1 байт в сравнении с <code>mov eax, 1</code>.<br/>
+<br/>
+<ul>
+<li><code>mov rdi, 1</code>: далее мы устанавливаем первый аргумент системного вызова в регистре <code>rax</code>, чего требует <a href="https://en.wikibooks.org/wiki/X86_Assembly/Interfacing_with_Linux#Via_dedicated_system_call_invocation_instruction">интерфейс системных вызовов Linux x86_64</a>. Файловым дескриптором для stdout является 1, значит устанавливаем <code>rdi </code>на <code>1</code>. Опять же, ассемблер автоматически заменил эту инструкцию на её 5-байтовый эквивалент <code>mov edi, eax</code>. Однако мы уже установили <code>rax </code>на <code>1</code>, поэтому можно вместо этого использовать <code>mov edi, eax</code>, чтобы скопировать содержимое <code>eax</code> в <code>edi</code> (и очистить старшие биты <code>rdi</code>). Эта новая инструкция занимает два байта, то есть мы экономим ещё 3.</li>
+<li><code>mov rsi, file_load_va + message</code>: очередной аргумент системного вызова, виртуальный адрес выводимой строки, отправляется в регистр <code>rsi</code>. Мы вычисляем его здесь на основе произвольного виртуального адреса файла, который выбираем сами, и смещения строки в файле. В итоге эта инструкция занимает 10 байтов: два байта для кода операции и 8 полных байтов для адреса. Можно заменить её на <code>mov esi, file_load_va + message</code>, сэкономив 5 байтов: переход на <code>esi </code>требует на один байт меньше для опкода и использует четырехбайтовый непосредственный операнд. (Не сработает этот приём, только если <code>file_load_va</code> не вместится в 32 бита).</li>
+<li><code>mov rdx, message_length</code>: последним аргументом для системного вызова будет длина выводимой строки. Здесь, как и в предыдущих случаях, произошла автоматическая замена на эквивалент <code>mov edx, message_length</code>. Тем не менее эта инструкция занимает аж 5 байтов, что вполне можно оптимизировать так:<br/>
+<ul>
+<li><code>xor edx, edx</code>: установить <code>edx </code>(и, как следствие, <code>rdx</code>) на <code>0</code>, что займет два байта.</li>
+<li><code>mov dl, message_length</code>: установить младшие 8 бит <code>rdx </code>на длину сообщения. Это также займёт два байта и будет работать при условии, что длина строки менее 256.</li>
+</ul></li>
+</ul><br/>
+Итак, мы сократили код с 5 байт до 4.<br/>
+<br/>
+<ul>
+<li><code>syscall</code>: эта инструкция будет вызывать системный вызов <code>write </code>для вывода строки и займёт два байта. Здесь, насколько я понимаю, улучшить уже ничего нельзя.</li>
+<li><code>mov rax, 60</code>: теперь, когда мы активировали системный вызов <code>write</code>, нужно активировать системный вызов <code>exit</code>. Его номер 60. Эта инструкция занимает 5 байтов, и в этом случае можно получить куда меньший размер, если предположить, что <code>write </code>выполнится успешно: возвращаемое системным вызовом значение записывается в регистр <code>rax </code>и в случае успеха должно быть <code>0</code>. Предполагая, что так и есть, нам не потребуется обнулять биты <code>rax</code>, и мы сможем просто установить его младший байт на 60, используя инструкцию <code>mov al, 60</code>. Всё это займёт всего два байта, экономя нам ещё 3.</li>
+<li><code>mov rdi, 0</code>: единственным аргументом для системного вызова <code>exit </code>будет код выхода. В случае успеха он должен быть <code>0</code>, значит устанавливаем <code>rdi </code>на <code>0</code>. И здесь NASM снова сформирует 5-байтовую инструкцию, которую можно заменить на <code>xor edi, edi</code>. Таким образом, мы добьёмся того же результата, уложившись в два байта.</li>
+<li><code>syscall</code>: теперь осуществляем системный вызов <code>exit</code>, чтобы завершить программу. В данном случае более краткой альтернативы я не знаю. </li>
+</ul><br/>
+После всех этих манипуляций код будет выглядеть так:<br/>
+<br/>
+<pre><code class="bash">[bits 64]
+
+file_load_va: equ 4096 * 40
+
+db 0x7f, 'E', 'L', 'F'
+db 2
+db 1
+db 1
+db 0
+dq 0
+dw 2
+dw 0x3e
+dd 1
+dq entry_point + file_load_va
+dq program_headers_start
+dq 0
+dd 0
+dw 64
+dw 0x38
+dw 1
+dw 0x40
+dw 0
+dw 0
+
+program_headers_start:
+dd 1
+dd 5
+dq 0
+dq file_load_va
+dq file_load_va
+dq file_end
+dq file_end
+dq 0x200000
+
+entry_point:
+  ; Устанавливаем eax (и, как следствие, rax) на 1. (Номер системного вызова write).
+  xor eax, eax
+  inc eax
+  ; Устанавливаем edi (и, как следствие, rdi) на 1. (Файловый дескриптор для stdout).
+  mov edi, eax
+  ; Устанавливаем esi (и, как следствие, rsi) на виртуальный адрес строки.
+  mov esi, file_load_va + message
+  ; Устанавливаем edx (и, как следствие, rdx) на длину строки.
+  xor edx, edx
+  mov dl, message_length
+  ; Осуществляем системный вызов write.
+  syscall
+  ; Предполагая успешность write, rax уже равен 0, значит устанавливаем номер следующего 
+  ;системного вызова на 60 для совершения exit.
+
+  mov al, 60
+  ; Устанавливаем статус exit на 0.
+  xor edi, edi
+  ; Выходим из программы.
+  syscall
+code_end:
+
+message: db `Hello, world!\n`
+message_length: equ $ - message
+
+file_end:</code></pre><br/>
+Его можно собрать и выполнить аналогично предыдущим примерам, и укорачивание исполняемого байткода никак не повлияет на формат ELF. Внесение этих изменений сократило размер файла до 157 байт – то есть минус ещё 16. При этом он всё ещё остаётся вполне дееспособным бинарником Linux. Мы перешли от восьми инструкций, занимавших 39 байтов, к десяти, которые занимают 23. Шестнадцатеричный дамп байтов с прошлого раза изменился не сильно:<br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/nh/el/ry/nhelryswdntriiomttl8g_4vjsy.png"/></div><br/>
+<br/>
+Код заметно сократился, и размер в 157 байт можно назвать очень мелким для исполняемого файла. Кроме того, несмотря на недостаток большого количества метаданных, ничто в программе не «сломано» полностью – в ней есть полные, пока ещё заполненные, заголовок ELF и заголовок программы, а также небольшой блок кода для выполнения. Другими словами, у Linux нет серьёзных оснований для отказа в его выполнении. Но это скоро изменится.<br/>
+<br/>
+<h2><font color="#3AC1EF">Перемещение кода</font></h2><br/>
+Оказывается, что сокращение кода имеет и ещё одно преимущество: в нём используются более короткие инструкции, которые можно разбить на сжатые детализированные части и объединить с помощью инструкций <code>jmp</code>. Но в чем здесь польза?<br/>
+<br/>
+Если вы следовали ходу моей мысли и прочли раздел «Мотивация» в начале статьи, то наверняка поймеёте, что я имеют в виду: несколько полей в заголовке ELF и заголовке программы загрузчиком ELF в Linux не проверяются, и мы можем переписать их собственным кодом. Это позволит полностью удалить байты, занимаемые кодом, переназначив имеющиеся байты заголовков для двух задач. <br/>
+<br/>
+Но какие байты заголовков можно переписать? Это легко проверить: заменить их в ассемблере на произвольное содержимое и посмотреть, заработает ли программа. Так я и поступил, а результаты записал в таблицу:<br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/br/gr/_a/brgr_atfea7-5gf78dsujd-be8k.png"/></div><br/>
+В этой таблице каждый байт в заголовке ELF и заголовке программы показаны в отдельных строках. Поля, которые можно переписать мусором, выделены зелёным, а те, которые проверяются или являются необходимыми – красным. Мы воспользуемся этой информацией, чтобы упаковать код (и даже строку <code>Hello, world!\n</code>) в неиспользуемые байты (по факту, непроверяемые байты). Обновлённый код получится таким:<br/>
+<br/>
+<pre><code class="bash">[bits 64]
+file_load_va: equ 4096 * 40
+
+db 0x7f, 'E', 'L', 'F'
+db 2
+db 1
+db 1
+db 0
+
+; Мы перепишем поле EABI + 7 байт заполнения нашими 8 байтами
+;кода. (Я наперёд проверил, чтобы эти инструкции занимали ровно 8 байтов).
+entry_point:
+  xor eax, eax
+  inc eax
+  mov edi, eax
+  ; Переходим к следующему месту, которое можно заместить нашим кодом, так как следующее 
+  ;поле заместить не можем (тип ELF).
+  jmp code_chunk_2
+
+dw 2
+dw 0x3e
+dd 1
+dq entry_point + file_load_va
+dq program_headers_start
+
+; Далее мы перепишем 8-байтовое поле смещения заголовка раздела, а также 4-байтовое поле 
+;“flags”, идущее за ним.
+code_chunk_2:
+  mov esi, file_load_va + message
+  xor edx, edx
+  mov dl, message_length
+
+  ; Перескакиваем к заключительной части кода и добавляем один байт нулей, заполняя 12-й 
+  ;байт двух перезаписываемых полей.
+
+  jmp code_chunk_3
+db 0
+
+dw 64
+dw 0x38
+dw 1
+dw 0x40
+dw 0
+dw 0
+
+program_headers_start:
+dd 1
+dd 5
+dq 0
+dq file_load_va
+
+; Мы перепишем 8-байтовое поле "physical address"в заголовке программы нашими 8 байтами 
+;кода. Эти четыре инструкции займут ровно 8 байтов.
+
+code_chunk_3:
+  syscall
+  mov al, 60
+  xor edi, edi
+  syscall
+
+dq file_end
+dq file_end
+
+; Мы можем переписать заключительное 8-байтовое поле "alignment" в заголовке программы и 
+;сделаем это первыми 8 байтами строки "Hello, world!".
+message: db `Hello, world!\n`
+message_length: equ $ - message
+
+file_end:</code></pre><br/>
+И снова его можно собрать и выполнить подобно всем предыдущим примерам. Теперь он занимает всего 126 байтов: 31 байт мы сократили за счёт удаления всех байтов кода и 8 байт за счёт строки <code>Hello, world!</code>. К сожалению, мы не можем упаковать всю строку в какой-либо из доступных промежутков, так как ей требуется 14 байтов, а в заголовках нет последовательности из 14 допускающих замещение байтов. В таком виде заголовок ELF и заголовок программы занимают 120 байтов, и строка «выпирает» из-за последнего ещё 6 байтами. <br/>
+<br/>
+Вот теперь несколько стандартных инструментов, о которых я говорил ранее, уже не одобряют тот факт, что мы заместили так много полей в заголовках. Например, <code>readelf – WlS</code> начала жаловаться, что смещение заголовка раздела не равно нулю. Утилита <code>objdump </code>при попытке её применения к файлу просто выдаёт ошибку <code>File truncated</code>. И хоть конкретики в этой ошибке нет, я полагаю, что она также вызвана смещением заголовка раздела, так как другие поля, которые мы заместили, представляли просто заполнение, неиспользуемый физический адрес и выравнивание сегмента в памяти. Несмотря на то, что с виду к утрате функционала <code>objdump </code>может привести замещение выравнивания, я убедился, что это не так: установка выравнивания сегмента обратно на <code>1</code> (его значение до его замещения строкой) не восстановило работоспособность <code>objdump</code>.<br/>
+<br/>
+В завершение hex-дамп текущей версии стал весьма интересен и отлично демонстрирует то, как мы исковеркали файл:<br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/gi/cw/hi/gicwhiqwuzmmk7b6kxz3tfxprfs.png"/></div><br/>
+Но на этом ещё не все!<br/>
+<br/>
+<h2><font color="#3AC1EF">Финальная версия</font></h2><br/>
+Мы можем сделать ещё кое-что: аналогично тому, как мы наложили код, можно также наложить сами заголовки.<br/>
+<br/>
+В конце заголовка ELF указано количество заголовков программы, сопровождаемое размером и количеством заголовков разделов, после чего идёт индекс раздела, содержащий таблицу имён разделов. Нам однозначно нужно оставить количество заголовков программы как <code>1</code>, а количество заголовков разделов как <code>0</code>, но оказывается, что размер заголовка раздела и индекс таблицы имён разделов можно переписать при условии, что мы не будем определять какие-либо разделы. По отдельности каждое из этих полей занимает всего два байта.<br/>
+<br/>
+А что произойдёт, если начать первый заголовок программы сразу после количества этих заголовков? Как оказалось, это отлично сработает: несмотря на то, что заголовок программы начинается с четырехбайтового поля <code>type</code>, которое не должно быть нулевым, у этого поля установлен только нижний байт – остальные представлены нулями. Так что, если мы начнём наши шесть байт заголовка программы до завершения заголовка ELF, то поле <code>type </code>перехлёстывается с допускающим наложение <code>section header size</code>; полем заголовка ELF, а также количеством заголовков разделов. Однако байты, перекрывающие количество заголовков разделов, представлены нулями: что нам и нужно. <br/>
+<br/>
+Далее поле <code>flags </code>заголовка программы (которое тоже не может быть равно нулю) перекрывает поле таблицы строк имён разделов, которое мы, как и говорилось, не используем ввиду отсутствия самих разделов.<br/>
+<br/>
+В итоге код ассемблера изменился не сильно, но уже представляет финальную версию:<br/>
+<br/>
+<pre><code class="bash">[bits 64]
+file_load_va: equ 4096 * 40
+
+db 0x7f, 'E', 'L', 'F'
+db 2
+db 1
+db 1
+db 0
+entry_point:
+  xor eax, eax
+  inc eax
+  mov edi, eax
+  jmp code_chunk_2
+dw 2
+dw 0x3e
+dd 1
+dq entry_point + file_load_va
+dq program_headers_start
+code_chunk_2:
+  mov esi, file_load_va + message
+  xor edx, edx
+  mov dl, message_length
+  jmp code_chunk_3
+db 0
+dw 64
+dw 0x38
+dw 1
+; Мы просто удалили три двухбайтовых поля, которые раньше здесь были. Единственное, которое ;имело значение – количество заголовков разделов – по-прежнему будет нулевым, так как два ;старших байта этого поля в начале заголовка программы нулевые.
+
+program_headers_start:
+; Следующие два поля также служат в качестве последних шести байт заголовка ELF.
+dd 1
+dd 5
+dq 0
+dq file_load_va
+code_chunk_3:
+  syscall
+  mov al, 60
+  xor edi, edi
+  syscall
+dq file_end
+dq file_end
+
+message: db `Hello, world!\n`
+message_length: equ $ - message
+
+file_end:</code></pre><br/>
+Как и прежде, этот код можно собрать и выполнить аналогично самому первому примеру. После реализации шестибайтового нахлеста между заголовками он сократился до 120 байтов. В обычных условиях этот размер был бы равен суммарному размеру заголовка ELF и одного заголовка программы — наименьшему, какой можно ожидать от исполняемого файла ELF без кода. Для полноты можно также заглянуть в итоговый байткод:<br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/5h/oi/_6/5hoi_6fjevvsskoq-4xaczt5x8g.png"/></div><br/>
+<h2><font color="#3AC1EF">Можно ли пойти ещё дальше?</font></h2><br/>
+120 байт – это серьёзный результат. Такой файл может уместиться в одно текстовое сообщение. Он занимает меньше 1/34 от 4Кб-страницы, что намного меньше, чем можно было желать. Если бы мы отклонились от изначальной цели написать полноценную программу <code>Hello, world!</code>, то могли бы срезать ещё шесть байт, получив итоговый размер 114. Можете попробовать сами, изменив код так, чтобы строка <code>Hello, world!\n</code> занимала ровно 8 байт. Например, если заменить соответствующую строку на <code>message: db ‘Hi!!!!!\n’</code>, то в итоге получится рабочий 114-байтовый файл.<br/>
+<br/>
+Попытки ещё больше укоротить эту строку приведут к чрезмерному сокращению заголовка программы, создав исполняемый файл, который Linux откажется запускать. И здесь открывается интересный нюанс. Это значит, что если мы решим использовать программу <code>return 42</code> из оригинальной статьи, а не нашу версию с <code>Hello, world!</code>, то меньше 114 байт уже не опустимся – ограничивающим фактором становится наша невозможность дальнейшего наложения поверх заголовка ELF и одного необходимого заголовка программы.<br/>
+<br/>
+А можно вообще больше не накладывать ничего поверх заголовков? Всё же автор оригинальной статьи смог уменьшить свой ELF вплоть до 45 байтов. К сожалению, это более не является возможным: для этого нужно, чтобы Linux автоматически заполняла незавершённые остатки заголовка ELF и заголовка программы нулями, чего эта система больше не делает. Однако в оригинальной 45-байтовой версии заголовок программы идёт сразу после сигнатуры <code>0x7f, E, L, F</code> в начале файла. Неужели для нас действительно невозможно найти лучший способ перекрыть заголовок ELF и заголовок программы?<br/>
+<br/>
+К сожалению, мне кажется, что здесь мы добиваемся наилучшего из возможных на сегодня результатов. Вернитесь ещё раз к скриншоту таблицы, где показано, какие байты можно заместить в заголовке ELF и заголовке программы. Увеличенный размер 64-битного заголовка программы существенно ограничивает возможности наложения, и после тщательной проверки байт за байтом я могу уверенно сказать, что лучшего не добиться, по крайней мере в современных сборках Linux x86-64. Для полноты я приведу шаги, которым следовал, чтобы прийти к такому заключению:<br/>
+<br/>
+<ol>
+<li><code>program header offset</code> в заголовке ELF и поле <code>size in file</code> в заголовке программы должны оба вписываться в один байт (в противном случае получится файл размером больше 255 байтов). При этом они не могут быть идентичны, так что эти 8-байтовые поля вообще не могут накладываться.</li>
+<li>Размер заголовков и тот факт, что заголовок ELF должен идти в начале файла, вместе с предыдущим доводом означают, что поле <code>size in file</code> в заголовке программы должно идти полностью после поля <code>program header offset</code> в заголовке ELF.</li>
+<li>Если попробовать обойти предыдущий пункт, разместив поле <code>size in file</code> сразу после поля <code>program header offset</code>, то поля <code>type </code>и <code>flags </code>заголовка программы (которые не могут быть нулевыми) окажутся в поле <code>program header offset</code>, которое, как говорилось, переписывать нельзя.</li>
+<li>Если и предыдущий пункт попробовать обойти, поместив поля <code>flags </code>и <code>type </code>сразу после поля <code>program header offset</code>, тогда поля <code>ELF header size</code> и <code>program header entry size</code> в заголовке ELF перекроются полем заголовка программы <code>offset in file</code>, который должен быть не более одного байта, не может совпадать с размерами заголовка ELF или заголовка программы и, следовательно, не может быть переписан. К сожалению, эти поля размеров проверяются ядром Linux (чего во времена написания оригинальной статьи не происходило).</li>
+<li>Если мы переместим поля <code>flags </code>и <code>type </code>заголовка программы так, что они будут идти сразу после двух вышеупомянутых полей размера, тогда они перекроют поле <code>number of program headers</code> заголовка ELF, которое должно быть <code>1</code>. Поле заголовка программы также равно <code>1</code>, и это, вроде бы, должно радовать. Но нет, не сработает…поскольку в результате этого наложения поле <code>flags </code>ляжет поверх количества заголовков разделов. Количество заголовков разделов должно быть равно нулю, а флаги нулевыми быть не могут, потому что биты <code>readable+executable</code> должны быть установлены. </li>
+<li>Наконец, если мы переместим поле заголовка программы за размеры заголовка ELF и заголовка программы, то оно перекроет поле <code>section header size</code> в заголовке ELF. Такой вариант сработает, причины чего описывались выше, и именно на этом заканчивается наша финальная версия.</li>
+</ol><br/>
+<h2><font color="#3AC1EF">Заключение</font></h2><br/>
+Несмотря на то, что это далеко не так впечатляет, как 45-байтовый исполняемый файл в уже далёком прошлом, многие из крайних приёмов оптимизации до сих пор остаются возможными в современных 64-битных системах Linux. 120 байт (или даже минимум в 114 байтов) – это невероятно крохотная программа по меркам времени, когда раздутое ПО очень уж часто принимается как должное.<br/>
+<br/>
+Конечно, многое из проделанного нами ушло далеко за устранение «раздутости», но посыл при этом сохраняется: «Наверняка можно устранить куда больше программных излишеств, чем кажется на первый взгляд. А вот вопрос «Стоит ли это приложенных усилий?» уже заслуживает отдельного обсуждения».<br/>
+<br/>
+<a href="http://ruvds.com/ru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=Bright_Translate&amp;utm_content=minimizaciya_fajla_elf_%E2%80%93_poprobuem_v_2021?"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ou/g5/kh/oug5kh6sjydt9llengsiebnp40w.png"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bruvds_%D0%BF%D0%B5%D1%80%D0%B5%D0%B2%D0%BE%D0%B4%5D" class="tm-tags-list__link">ruvds_перевод</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Belf.%20Linux%5D" class="tm-tags-list__link">elf. Linux</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D1%81%D1%81%D0%B5%D0%BC%D0%B1%D0%BB%D0%B5%D1%80%20%28x86%29%5D" class="tm-tags-list__link">ассемблер (x86)</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/ruvds/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании RUVDS.com
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/crazydev/" class="tm-hubs-list__link">
+    Ненормальное программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/assembler/" class="tm-hubs-list__link">
+    Assembler
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/nix/" class="tm-hubs-list__link">
+    *nix
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/linux_dev/" class="tm-hubs-list__link">
+    Разработка под Linux
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 75: ↑74 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 75: ↑74 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+73</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">7.2K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    63
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__title">RUVDS.com</a> <div class="tm-company-snippet__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/ruvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Bright_Translate/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/f9c/ff9/7d9/f9cff97d9c0677af28dab451897f88e4.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 198 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    103.5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">203</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Дмитрий Брайт</span> <a href="/ru/users/Bright_Translate/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Bright_Translate
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Переводчик</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/ruvds/blog/583576/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 9 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-07-26T21:00:00.000Z" title="2015-07-27, 00:00">27  июля  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://ruvds.com" target="_blank" class="tm-company-basic-info__link">
+      ruvds.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    11–30 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2016-03-18T05:43:01.000Z" title="2016-03-18, 08:43">18  марта  2016</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/ruvds/" class="tm-company-basic-info__link">
+      ruvds
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/ruvds/blog/583576/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/ruvds/blog/583576/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583576":{"id":"583576","timePublished":"2021-10-19T13:00:02+00:00","isCorporative":true,"lang":"ru","titleHtml":"Минимизация файла ELF – попробуем в 2021?","leadData":{"textHtml":"\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F583576\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxt\u002Fpp\u002Fvg\u002Fxtppvgng1dwp-cirseicjxm0hj0.png\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u003E\r\nЭкспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера рабочего файла в 45 байтов, но с тех пор ядро сильно изменилось. Каков же будет минимальный жизнеспособный ELF в 2021?","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Nathan Otterness","originalUrl":"https:\u002F\u002Fnathanotterness.com\u002F2021\u002F10\u002Ftiny_elf_modernized.html"}},{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":103.5,"votesCount":198},"rating":203,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2488151","alias":"Bright_Translate","fullname":"Дмитрий Брайт","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Ff9c\u002Fff9\u002F7d9\u002Ff9cff97d9c0677af28dab451897f88e4.jpg","speciality":"Переводчик"},"statistics":{"commentsCount":9,"favoritesCount":63,"readingCount":7232,"score":73,"votesCount":75},"hubs":[{"relatedData":null,"id":"19791","alias":"ruvds","type":"corporative","title":"Блог компании RUVDS.com","titleHtml":"Блог компании RUVDS.com","isProfiled":false},{"relatedData":null,"id":"84","alias":"crazydev","type":"collective","title":"Ненормальное программирование","titleHtml":"Ненормальное программирование","isProfiled":true},{"relatedData":null,"id":"595","alias":"assembler","type":"collective","title":"Assembler","titleHtml":"Assembler","isProfiled":true},{"relatedData":null,"id":"7289","alias":"nix","type":"collective","title":"*nix","titleHtml":"*nix","isProfiled":true},{"relatedData":null,"id":"19727","alias":"linux_dev","type":"collective","title":"Разработка под Linux","titleHtml":"Разработка под Linux","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F583576\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxt\u002Fpp\u002Fvg\u002Fxtppvgng1dwp-cirseicjxm0hj0.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nЭкспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера рабочего файла в 45 байтов, но с тех пор ядро сильно изменилось. Каков же будет минимальный жизнеспособный ELF в 2021? \u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНебольшое дополнение: пока я работаю над полноценным обновлением, хочу отметить, что несколько участников на reddit и hackernews указали способы для уменьшения общего размера программы до 112 байт с сохранением вывода всей строки «Hello, world!». Вот несколько приёмов, о которых при написании статьи я не знал:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fold.reddit.com\u002Fr\u002Fprogramming\u002Fcomments\u002Fq6mnz1\u002Fwhat_is_the_smallest_linux_elf_executable_2021\u002Fhgdpee0\u002F\"\u003EБолее короткий способ инициализации регистров.\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fnews.ycombinator.com\u002Fitem?id=28849680\"\u003EВ начале выполнения Linux инициализирует состоянии регистров как 0.\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fnews.ycombinator.com\u002Fitem?id=28849680\"\u003E(Тот же пост, что и выше) Поле заголовка программы size in file может быть больше, чем сам файл при условии, что будет вписываться в объём памяти.\u003C\u002Fa\u003E \u003C\u002Fli\u003E\r\n\u003Cli\u003EМожно переписать количество заголовков разделов, если размер заголовка раздела установлен на \u003Ccode\u003E0\u003C\u002Fcode\u003E. \u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EМотив проекта\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nМного лет назад я наткнулся на \u003Ca href=\"http:\u002F\u002Fwww.muppetlabs.com\u002F~breadbox\u002Fsoftware\u002Ftiny\u002Fteensy.html\"\u003Eизвестную статью\u003C\u002Fa\u003E, которая сильно повлияла на дальнейшее развитие моей карьеры. В то время я в качестве стажёра работал над системой сборки для откровенно большой базы Java-кода. Именно поэтому меня особо привлекла статья, в которой автор стремился сделать противоположное «энтерпрайзной Java»: удалить все, кроме наиболее важных компонентов, необходимых для определения валидной программы Linux. (А потом удалить ещё!).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли вкратце, то та статья описывает создание двоичного файла Linux размером 45 байт (!). И даже при том, что итоговый бинарник явно нельзя назвать «валидным» файлом ELF, в Linux он всё же запускался. По крайней мере в то время. Не знаю, к сожалению или к лучшему, но позже эта ОС стала более строгой в отношении загрузки ELF (Точную дату публикации оригинальной статьи отследить мне не удалось, но в начале 2000-х она уже точно была, а миграция многих систем на 64-битные CPU снизила актуальность 32-битных ELF-ов).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EМои цели\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nКак и автор той самой вдохновившей меня статьи, я намерен создать наименьший ELF-файл, способный выполняться в современной среде Linux (на момент написания ядро 5.14). При этом я буду, как и в оригинальной публикации, также \u003Ca href=\"https:\u002F\u002Fnasm.us\u002F\"\u003Eиспользовать ассемблер NASM\u003C\u002Fa\u003E, поскольку его легко установить, мне нравится его синтаксис, и он остаётся одним из лучших ассемблеров для x86 из доступных.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТем не менее некоторые из моих целей отличаются от задач оригинальной статьи:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EЯ буду создавать файл под x64_64 (64-битная архитектура AMD\u002FIntel) Linux, так как будет преувеличением заявить, что 32-битный формат Intel (использованный в оригинале) актуален в настоящее время.\u003C\u002Fli\u003E\r\n\u003Cli\u003EВ качестве дополнительной задачи я решил создать программу \u003Ccode\u003EHello, world!\u003C\u002Fcode\u003E (выводящую в stdout текст\u003Ccode\u003EHello, world!\u003C\u002Fcode\u003E, сопровождаемый переносом строки), вместо менее впечатляющего варианта из оригинала, где программа завершалась с кодом \u003Ccode\u003E42\u003C\u002Fcode\u003E. Как станет ясно позже, в итоге это потребовало совсем немного байтов.\u003C\u002Fli\u003E\r\n\u003Cli\u003EМоя программа должна успешно завершаться с кодом \u003Ccode\u003E0\u003C\u002Fcode\u003E.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E\u003Cfont color=\"#3AC1EF\"\u003EСправка по формату ELF64\u003C\u002Ffont\u003E\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nФайлы ELF используются в Linux (да и во многих других ОС) повсеместно и служат в качестве простых исполняемых программ, статических библиотек, создаваемых компиляторами, динамических библиотек и другого. Двоичный файл ELF, который и станет героем этой статьи, содержит следующие компоненты:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EЗаголовок ELF верхнего уровня.\u003C\u002Fli\u003E\r\n\u003Cli\u003EТаблицу заголовков программы, где указано, какие части файла и куда нужно загружать в память. Иногда она также называется таблица заголовков сегментов.\u003C\u002Fli\u003E\r\n\u003Cli\u003EТаблица заголовков разделов, где указываются разделы файла ELF. Для простой загрузки файла она не является обязательной, но информация о разделах важна для другой функциональности ELF, например компоновки.\u003C\u002Fli\u003E\r\n\u003Cli\u003EФактический исполняемый байткод и любые нужные ему данные.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nВ формате ELF на удивление мало жёстких требований к расположению разных элементов метаданных, кроме того, что заголовок верхнего уровня должен находиться в начале. Таблица заголовков программы и таблица заголовков разделов могут находиться в любом месте файла, так как заголовок верхнего уровня будет содержать их смещения.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ качестве дополнительного пояснения приведу схематическое изображение структуры формата ELF.\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fhf\u002Fak\u002F-4\u002Fhfak-4xalmlwi3x6pvfryjcsj24.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EПолномасштабная версия схемы \u003Ca href=\"https:\u002F\u002Fupload.wikimedia.org\u002Fwikipedia\u002Fcommons\u002Fe\u002Fe4\u002FELF_Executable_and_Linkable_Format_diagram_by_Ange_Albertini.png\"\u003Eтут\u003C\u002Fa\u003E\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EНачало: минимальный, но валидный ELF «Hello world»\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nДаже те, кто в них не заглядывал, наверняка поняли, что типичные создаваемые \u003Ccode\u003Egcc \u003C\u002Fcode\u003Eбинарники полны элементов, вовсе не обязательных для простого \u003Ccode\u003EHello world\u003C\u002Fcode\u003E. Для тех же, кто хочет в этом убедиться, в \u003Ca href=\"http:\u002F\u002Fwww.muppetlabs.com\u002F~breadbox\u002Fsoftware\u002Ftiny\u002Fteensy.html\"\u003Eоригинальной статье\u003C\u002Fa\u003E рассматривается несколько итераций версии на Си, которая не требует обновления для актуального использования даже в современных средах.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТак что вместо того, чтобы воссоздавать полный аналог предыдущей статьи, я перейду сразу к коду ассемблера и определю весь валидный ELF-файл.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВот что у меня получилось:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E; Использование ассемблера:\n;    nasm -f bin -o hello_world hello_world.asm\n[bits 64]\n\n; Виртуальный адрес, в который наш ELF должен отображаться в памяти.\n; Его выбор произволен, но он не должен быть 0 и лучше, если он\n; будет выровнен по страницам.\nfile_load_va: equ 4096 * 40\n\n; Заголовок ELF.\n\n; Сигнатура.\ndb 0x7f, 'E', 'L', 'F'\n; \"Class\" = 2, 64-bit\ndb 2\n; Порядок следования байтов = 1, от младшего к старшему.\ndb 1\n; Версия ELF = 1\ndb 1\n; OS ABI, не используется, должен быть 0.\ndb 0\n; Байт расширенного ABI + 7 байт заполнения. Оставляем 0, они игнорируются.\ndq 0\n; Типа файла ELF. 2 = исполняемый\ndw 2\n; Целевая архитектура. 0x3e = x86_64\ndw 0x3e\n; Дополнительная информация о версии ELF. Оставляем как 1.\ndd 1\n; Адрес точки входа.\ndq entry_point + file_load_va\n; Смещение заголовка программы. Мы поместим его сразу после заголовка ELF.\ndq program_headers_start\n; Смещение заголовка раздела. Поместим его после заголовков программы.\ndq section_headers_start\n; Дополнительные флаги. Насколько знаю, не используются.\ndd 0\n; Размер этого заголовка, 64 байта.\ndw 64\n; Размер записи заголовка программы.\ndw 0x38\n; Количество записей заголовков программы.\ndw 1\n; Размер записи заголовка раздела.\ndw 0x40\n; Количество записей заголовков разделов.\ndw 3\n; Индекс раздела, содержащего таблицу строк с именами разделов. \ndw 2\n\n\nprogram_headers_start:\n; Первое поле: тип заголовка программы. 1 = загружаемый сегмент.\ndd 1\n; Флаги заголовка программы. 5 = без возможности записи. (биты 0, 1 и 2 = исполняемый, с \n;возможностью записи и чтения соответственно).\ndd 5\n; Смещение загружаемого сегмента в файле. Оно будет содержать весь файл, значит \n ;устанавливаем 0.\n\ndq 0\n; Виртуальный адрес для размещения сегмента.\ndq file_load_va\n; \"Физический адрес\". Не думайте, что он используется, установите то же значение, что и для \n;виртуального.\ndq file_load_va\n; Размер сегмента в файле. Заканчивается в таблице строк.\ndq string_table\n; Размер сегмента в памяти.\ndq string_table\n; Выравнивание сегмента.\ndq 0x200000\n\n\n; У нас будет только два раздела: .text и .shstrtab. Хотя заголовок первого должен быть NULL.\n\nsection_headers_start:\n; Заголовок раздела в индексе 0 является нулевым заголовком раздела, заполненным нулём.\ntimes 0x40 db 0\n\n; Смещение имени \".text\" в таблице строк.\ndd text_section_name - string_table\n; Его тип – загружаемый раздел \"bits\"\ndd 1\n; Флаги для раздела. Биты 0, 1 и 2 означают \"с возможностью записи\", \"размещённый\" и\n; \"исполняемый\" соответственно.\ndq 6\n; \"Виртуальный адрес\" раздела.\ndq file_load_va\n; Смещение в файле.\ndq 0\n; Размер раздела.\ndq file_end\n; Связанный индекс раздела. Оставляем 0.\ndd 0\n; \"info\" раздела. Оставляем 0 (может с ним нужно что-то ;сделать?)\ndd 0\n; Выравнивание. Неважно.\ndq 16\n; Размер записи раздела. 0.\ndq 0\n\n; Далее, раздел таблицы строк.\ndd string_table_name - string_table\n; Раздел таблицы строк.\ndd 3\n; Не нужно загружать.\ndq 0\n; Этот раздел содержит только таблицу строк, но не весь файл\ndq file_load_va + string_table\ndq string_table\ndq string_table_end - string_table\ndd 0\ndd 0\ndq 1\ndq 0\n\n\n; Мы прошли все заголовки программы и разделов. Далее идёт фактический код.\nentry_point:\n  ; Номер системного вызова 1: write.\n  mov rax, 1\n  ; Номер файлового дескриптора 1.\n  mov rdi, 1\n  ; Буфер.\n  mov rsi, file_load_va + message\n  ; Длина буфера.\n  mov rdx, message_length\n  syscall\n  ; Номер системного вызова 60: exit.\n  mov rax, 60\n  ; Код выхода.\n  mov rdi, 0\n  syscall\n\nmessage: db `Hello, world!\\n`, 0\nmessage_length: equ $ - message\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fnathanotterness.com\u002F2021\u002F10\u002Fhello_world_long_nocomments.html\"\u003EЗдесь\u003C\u002Fa\u003E доступна версия без комментариев.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли кому нужно, то вот краткая справка по синтаксису \u003Ccode\u003Enasm\u003C\u002Fcode\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EСтроки, начинающиеся с \u003Ccode\u003E;\u003C\u002Fcode\u003E являются комментариями.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Edb\u003C\u002Fcode\u003E, \u003Ccode\u003Edw\u003C\u002Fcode\u003E, \u003Ccode\u003Edd \u003C\u002Fcode\u003Eи \u003Ccode\u003Edq \u003C\u002Fcode\u003E– это псевдоинструкции, выводящие инициализированные байты, 2-байтовые слова, 4-байтовые двойные слова и 8-байтовые счетверённые слова соответственно.\u003C\u002Fli\u003E\r\n\u003Cli\u003EМетки размещаются в начале строки и заканчиваются на \u003Ccode\u003E:\u003C\u002Fcode\u003E. NASM позволяет использовать их в простых арифметических выражениях вместо чисел.\u003C\u002Fli\u003E\r\n\u003Cli\u003EДиректива \u003Ccode\u003Eequ\u003C\u002Fcode\u003E используется для связывания метки не с расположением в файле, а с произвольным числом.\u003C\u002Fli\u003E\r\n\u003Cli\u003EСимвол \u003Ccode\u003E$\u003C\u002Fcode\u003E можно использовать в выражениях для представления в байткоде текущего смещения в байтах. (Здесь есть и другие нюансы, но при создании плоского двоичного файла они обычно не имеют значения).\u003C\u002Fli\u003E\r\n\u003Cli\u003EВесь код написан с помощью синтаксиса ассемблера в формате Intel x86.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nЭтот ассемблер напрямую определяет необходимые для 64-битного исполняемого ELF метаданные, так что линкер для его получения вам не потребуется. Вместо этого мы соберём его, используя возможность NASM, позволяющую выводить плоские бинарники, и с помощью вызова \u003Ccode\u003Echmod\u003C\u002Fcode\u003E отметим его как исполняемый.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри условии сохранения файла как \u003Ccode\u003Ehello_world.asm\u003C\u002Fcode\u003E можете скомпилировать и выполнить его так:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Enasm -f bin -o hello_world hello_world.asm\nchmod +x hello_world\n.\u002Fhello_world\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nОчевидно, что вам нужно будет использовать 64-битный Linux с \u003Ccode\u003Enasm\u003C\u002Fcode\u003E, установленным и доступным в \u003Ccode\u003EPATH\u003C\u002Fcode\u003E. \u003Ccode\u003Enasm \u003C\u002Fcode\u003Eсовсем невелик, и я рекомендую использовать его всем, кто пишет много кода на ассемблере x86.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EЧто включено в файл?\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nПо сути, это минимальный «рабочий» файл ELF, какой я смог получить. Он содержит список разделов, включая \u003Ccode\u003E.text\u003C\u002Fcode\u003E для исполняемого кода и \u003Ccode\u003E.shstrtab\u003C\u002Fcode\u003E (\u003Cb\u003ES\u003C\u002Fb\u003Eection \u003Cb\u003EH\u003C\u002Fb\u003Eeader \u003Cb\u003EStr\u003C\u002Fb\u003Eing \u003Cb\u003ETab\u003C\u002Fb\u003Ele), где содержатся имена всех разделов (включая его собственное). Весь файл после сборки занял 383 байта, что уже весьма немного, хотя и далеко от возможного.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТак как эта начальная версия делалась сообразно формату ELF, просмотр её содержимого при помощи стандартных инструментов Linux работает исправно. По мере удаления из неё содержимого мы будем постепенно эту возможность утрачивать. Например, сейчас \u003Ccode\u003Ereadelf -SW\u003C\u002Fcode\u003E показывает, что наши разделы \u003Ccode\u003E.text\u003C\u002Fcode\u003E и \u003Ccode\u003E.shstrtab\u003C\u002Fcode\u003E определены верно:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EВ смещении 0x78 находятся три заголовка разделов:\n\nSection Headers:\n  [Nr] Name              Type            Address          Off    Size   ES Flg Lk Inf Al\n  [ 0]                   NULL            0000000000000000 000000 000000 00      0   0  0\n  [ 1] .text             PROGBITS        0000000000028138 000138 000027 00  AX  0   0 16\n  [ 2] .shstrtab         STRTAB          000000000002816e 00016e 000011 00      0   0  1\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nАналогичным образом \u003Ccode\u003Eobjdump -M intel -d\u003C\u002Fcode\u003E без проблем дизассемблирует код в разделе \u003Ccode\u003E.text\u003C\u002Fcode\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EДизассемблированный .text:\n\n0000000000028138 &lt;.text\u003E:\n   28138:\tb8 01 00 00 00       \tmov    eax,0x1\n   2813d:\tbf 01 00 00 00       \tmov    edi,0x1\n   28142:\t48 be 5f 81 02 00 00 \tmovabs rsi,0x2815f\n   28149:\t00 00 00 \n   2814c:\tba 0f 00 00 00       \tmov    edx,0xf\n   28151:\t0f 05                \tsyscall \n   28153:\tb8 3c 00 00 00       \tmov    eax,0x3c\n   28158:\tbf 00 00 00 00       \tmov    edi,0x0\n   2815d:\t0f 05\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПрежде чем продолжать, можно взглянуть на фактические байты в нашем ELF и подписать их роль в нем:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fiz\u002F-r\u002Fim\u002Fiz-rimtihpn_ecy01mdoe5rob14.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nДаже навскидку связанная с разделами информация занимает слишком много места. Как я уже говорил, всё это не нужно, если нас интересует лишь загрузка ELF в память и его запуск. Но можно ли взять и просто эту информацию удалить?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EУдаление информации разделов\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nОтвет: «Да».\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля этого устанавливаем количество заголовков разделов на \u003Ccode\u003E0\u003C\u002Fcode\u003E и удаляем эти разделы. Ниже показано, как выглядит код после. Его можно собрать и выполнить так же, как и предыдущую версию. Кроме того, я дополнительно убрал все комментарии, кроме аннотаций изменённых строк: \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E[bits 64]\n\nfile_load_va: equ 4096 * 40\n\ndb 0x7f, 'E', 'L', 'F'\ndb 2\ndb 1\ndb 1\ndb 0\ndq 0\ndw 2\ndw 0x3e\ndd 1\ndq entry_point + file_load_va\ndq program_headers_start\n; Смещение заголовка раздела. Разделов у нас нет, значит пусть он пока будет 0.\ndq 0\ndd 0\ndw 64\ndw 0x38\ndw 1\n; Размер записи заголовка раздела.\ndw 0x40\n; Количество записей заголовков разделов. Сейчас 0, так как у нас их нет.\ndw 0\n; Раздел, содержащий имена разделов. Больше не используется, значит устанавливаем как 0.\ndw 0\n\nprogram_headers_start:\ndd 1\ndd 5\ndq 0\ndq file_load_va\ndq file_load_va\n; Мы изменим наш единственный заголовок программы, включив в него весь файл.\ndq file_end\ndq file_end\ndq 0x200000\n\nentry_point:\n  mov rax, 1\n  mov rdi, 1\n  mov rsi, file_load_va + message\n  mov rdx, message_length\n  syscall\n  mov rax, 60\n  mov rdi, 0\n  syscall\ncode_end:\n\nmessage: db `Hello, world!\\n`\nmessage_length: equ $ - message\n\nfile_end:\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nУдаление информации разделов сокращает размер файла до 173 байтов, экономя более 200 байт в сравнении с первым вариантом, который уже был мал. Очевидно, что так наш файл теряет кое-какие полезные метаданные, в результате чего некоторые утилиты, та же \u003Ccode\u003Eobjdump\u003C\u002Fcode\u003E, не смогут найти нужный код. Но при этом работоспособность не нарушена полностью. К примеру, \u003Ccode\u003Ereadelf –SW\u003C\u002Fcode\u003E по-прежнему работает и корректно указывает, что ELF не содержит разделов.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли заглянуть в байткод ELF, то здесь ничего особо интересного. Все, как и раньше, только нет информации разделов:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fn0\u002Fsg\u002F5q\u002Fn0sg5qeihrn3b_sqb6huwsbcvwm.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nИтак, что дальше? Другую информацию просто так удалить нельзя: нам нужен код, строка \u003Ccode\u003EHello, world!\u003C\u002Fcode\u003E, заголовок ELF и заголовок программы. Однако есть одна деталь, которую можно уменьшить, ничего не сломав: сам код.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EУменьшение размера кода\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nБайткод х86 определенно не является самой большой частью файла, но он всё равно недостаточно оптимизирован по размеру, занимая 39 из 173 байтов. В данный момент весь код программы состоит из всего восьми инструкций. Неплохо! Но можно заменить эти инструкции более короткими альтернативами. Поскольку изначально их всего восемь, то я просто пройдусь по ним поочерёдно:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003Emov rax, 1\u003C\u002Fcode\u003E: для начала устанавливаем регистр \u003Ccode\u003Erax \u003C\u002Fcode\u003Eна хранение номера системного вызова \u003Ccode\u003Ewrite\u003C\u002Fcode\u003E: 1. (Если не знакомы с номерами системных вызовов в Linux, то рекомендую заглянуть \u003Ca href=\"https:\u002F\u002Ffilippo.io\u002Flinux-syscall-table\u002F\"\u003Eсюда\u003C\u002Fa\u003E. С их помощью мы просим Linux выполнить нужную работу от лица программы). Если вы изучили дизассемблированный код выше, то могли заметить, что наш ассемблер автоматически конвертировал эту инструкцию в \u003Ccode\u003Emov eax, 1\u003C\u002Fcode\u003E, так как установка \u003Ccode\u003Eeax \u003C\u002Fcode\u003E(младшие 32 бита \u003Ccode\u003Erax\u003C\u002Fcode\u003E) автоматически очищает старшие 32 бита \u003Ccode\u003Erax\u003C\u002Fcode\u003E. И всё же \u003Ccode\u003Emov eax, 1\u003C\u002Fcode\u003E занимает целых 5 байтов. Можно это улучшить:\u003Cbr\u002F\u003E\r\n \u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003Exor eax, eax\u003C\u002Fcode\u003E: обнулить все биты в регистре \u003Ccode\u003Eeax \u003C\u002Fcode\u003E. Это также обнулит все старшие биты \u003Ccode\u003Erax \u003C\u002Fcode\u003E, всего заняв два байта.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Einc eax\u003C\u002Fcode\u003E: инкрементировать \u003Ccode\u003Eeax \u003C\u002Fcode\u003Eна 1, что тоже займёт два байта.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nВместе эти две инструкции займут 4 байта, сэкономив нам 1 байт в сравнении с \u003Ccode\u003Emov eax, 1\u003C\u002Fcode\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003Emov rdi, 1\u003C\u002Fcode\u003E: далее мы устанавливаем первый аргумент системного вызова в регистре \u003Ccode\u003Erax\u003C\u002Fcode\u003E, чего требует \u003Ca href=\"https:\u002F\u002Fen.wikibooks.org\u002Fwiki\u002FX86_Assembly\u002FInterfacing_with_Linux#Via_dedicated_system_call_invocation_instruction\"\u003Eинтерфейс системных вызовов Linux x86_64\u003C\u002Fa\u003E. Файловым дескриптором для stdout является 1, значит устанавливаем \u003Ccode\u003Erdi \u003C\u002Fcode\u003Eна \u003Ccode\u003E1\u003C\u002Fcode\u003E. Опять же, ассемблер автоматически заменил эту инструкцию на её 5-байтовый эквивалент \u003Ccode\u003Emov edi, eax\u003C\u002Fcode\u003E. Однако мы уже установили \u003Ccode\u003Erax \u003C\u002Fcode\u003Eна \u003Ccode\u003E1\u003C\u002Fcode\u003E, поэтому можно вместо этого использовать \u003Ccode\u003Emov edi, eax\u003C\u002Fcode\u003E, чтобы скопировать содержимое \u003Ccode\u003Eeax\u003C\u002Fcode\u003E в \u003Ccode\u003Eedi\u003C\u002Fcode\u003E (и очистить старшие биты \u003Ccode\u003Erdi\u003C\u002Fcode\u003E). Эта новая инструкция занимает два байта, то есть мы экономим ещё 3.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Emov rsi, file_load_va + message\u003C\u002Fcode\u003E: очередной аргумент системного вызова, виртуальный адрес выводимой строки, отправляется в регистр \u003Ccode\u003Ersi\u003C\u002Fcode\u003E. Мы вычисляем его здесь на основе произвольного виртуального адреса файла, который выбираем сами, и смещения строки в файле. В итоге эта инструкция занимает 10 байтов: два байта для кода операции и 8 полных байтов для адреса. Можно заменить её на \u003Ccode\u003Emov esi, file_load_va + message\u003C\u002Fcode\u003E, сэкономив 5 байтов: переход на \u003Ccode\u003Eesi \u003C\u002Fcode\u003Eтребует на один байт меньше для опкода и использует четырехбайтовый непосредственный операнд. (Не сработает этот приём, только если \u003Ccode\u003Efile_load_va\u003C\u002Fcode\u003E не вместится в 32 бита).\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Emov rdx, message_length\u003C\u002Fcode\u003E: последним аргументом для системного вызова будет длина выводимой строки. Здесь, как и в предыдущих случаях, произошла автоматическая замена на эквивалент \u003Ccode\u003Emov edx, message_length\u003C\u002Fcode\u003E. Тем не менее эта инструкция занимает аж 5 байтов, что вполне можно оптимизировать так:\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003Exor edx, edx\u003C\u002Fcode\u003E: установить \u003Ccode\u003Eedx \u003C\u002Fcode\u003E(и, как следствие, \u003Ccode\u003Erdx\u003C\u002Fcode\u003E) на \u003Ccode\u003E0\u003C\u002Fcode\u003E, что займет два байта.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Emov dl, message_length\u003C\u002Fcode\u003E: установить младшие 8 бит \u003Ccode\u003Erdx \u003C\u002Fcode\u003Eна длину сообщения. Это также займёт два байта и будет работать при условии, что длина строки менее 256.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nИтак, мы сократили код с 5 байт до 4.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003Esyscall\u003C\u002Fcode\u003E: эта инструкция будет вызывать системный вызов \u003Ccode\u003Ewrite \u003C\u002Fcode\u003Eдля вывода строки и займёт два байта. Здесь, насколько я понимаю, улучшить уже ничего нельзя.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Emov rax, 60\u003C\u002Fcode\u003E: теперь, когда мы активировали системный вызов \u003Ccode\u003Ewrite\u003C\u002Fcode\u003E, нужно активировать системный вызов \u003Ccode\u003Eexit\u003C\u002Fcode\u003E. Его номер 60. Эта инструкция занимает 5 байтов, и в этом случае можно получить куда меньший размер, если предположить, что \u003Ccode\u003Ewrite \u003C\u002Fcode\u003Eвыполнится успешно: возвращаемое системным вызовом значение записывается в регистр \u003Ccode\u003Erax \u003C\u002Fcode\u003Eи в случае успеха должно быть \u003Ccode\u003E0\u003C\u002Fcode\u003E. Предполагая, что так и есть, нам не потребуется обнулять биты \u003Ccode\u003Erax\u003C\u002Fcode\u003E, и мы сможем просто установить его младший байт на 60, используя инструкцию \u003Ccode\u003Emov al, 60\u003C\u002Fcode\u003E. Всё это займёт всего два байта, экономя нам ещё 3.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Emov rdi, 0\u003C\u002Fcode\u003E: единственным аргументом для системного вызова \u003Ccode\u003Eexit \u003C\u002Fcode\u003Eбудет код выхода. В случае успеха он должен быть \u003Ccode\u003E0\u003C\u002Fcode\u003E, значит устанавливаем \u003Ccode\u003Erdi \u003C\u002Fcode\u003Eна \u003Ccode\u003E0\u003C\u002Fcode\u003E. И здесь NASM снова сформирует 5-байтовую инструкцию, которую можно заменить на \u003Ccode\u003Exor edi, edi\u003C\u002Fcode\u003E. Таким образом, мы добьёмся того же результата, уложившись в два байта.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Esyscall\u003C\u002Fcode\u003E: теперь осуществляем системный вызов \u003Ccode\u003Eexit\u003C\u002Fcode\u003E, чтобы завершить программу. В данном случае более краткой альтернативы я не знаю. \u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nПосле всех этих манипуляций код будет выглядеть так:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E[bits 64]\n\nfile_load_va: equ 4096 * 40\n\ndb 0x7f, 'E', 'L', 'F'\ndb 2\ndb 1\ndb 1\ndb 0\ndq 0\ndw 2\ndw 0x3e\ndd 1\ndq entry_point + file_load_va\ndq program_headers_start\ndq 0\ndd 0\ndw 64\ndw 0x38\ndw 1\ndw 0x40\ndw 0\ndw 0\n\nprogram_headers_start:\ndd 1\ndd 5\ndq 0\ndq file_load_va\ndq file_load_va\ndq file_end\ndq file_end\ndq 0x200000\n\nentry_point:\n  ; Устанавливаем eax (и, как следствие, rax) на 1. (Номер системного вызова write).\n  xor eax, eax\n  inc eax\n  ; Устанавливаем edi (и, как следствие, rdi) на 1. (Файловый дескриптор для stdout).\n  mov edi, eax\n  ; Устанавливаем esi (и, как следствие, rsi) на виртуальный адрес строки.\n  mov esi, file_load_va + message\n  ; Устанавливаем edx (и, как следствие, rdx) на длину строки.\n  xor edx, edx\n  mov dl, message_length\n  ; Осуществляем системный вызов write.\n  syscall\n  ; Предполагая успешность write, rax уже равен 0, значит устанавливаем номер следующего \n  ;системного вызова на 60 для совершения exit.\n\n  mov al, 60\n  ; Устанавливаем статус exit на 0.\n  xor edi, edi\n  ; Выходим из программы.\n  syscall\ncode_end:\n\nmessage: db `Hello, world!\\n`\nmessage_length: equ $ - message\n\nfile_end:\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЕго можно собрать и выполнить аналогично предыдущим примерам, и укорачивание исполняемого байткода никак не повлияет на формат ELF. Внесение этих изменений сократило размер файла до 157 байт – то есть минус ещё 16. При этом он всё ещё остаётся вполне дееспособным бинарником Linux. Мы перешли от восьми инструкций, занимавших 39 байтов, к десяти, которые занимают 23. Шестнадцатеричный дамп байтов с прошлого раза изменился не сильно:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fnh\u002Fel\u002Fry\u002Fnhelryswdntriiomttl8g_4vjsy.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКод заметно сократился, и размер в 157 байт можно назвать очень мелким для исполняемого файла. Кроме того, несмотря на недостаток большого количества метаданных, ничто в программе не «сломано» полностью – в ней есть полные, пока ещё заполненные, заголовок ELF и заголовок программы, а также небольшой блок кода для выполнения. Другими словами, у Linux нет серьёзных оснований для отказа в его выполнении. Но это скоро изменится.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EПеремещение кода\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nОказывается, что сокращение кода имеет и ещё одно преимущество: в нём используются более короткие инструкции, которые можно разбить на сжатые детализированные части и объединить с помощью инструкций \u003Ccode\u003Ejmp\u003C\u002Fcode\u003E. Но в чем здесь польза?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли вы следовали ходу моей мысли и прочли раздел «Мотивация» в начале статьи, то наверняка поймеёте, что я имеют в виду: несколько полей в заголовке ELF и заголовке программы загрузчиком ELF в Linux не проверяются, и мы можем переписать их собственным кодом. Это позволит полностью удалить байты, занимаемые кодом, переназначив имеющиеся байты заголовков для двух задач. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо какие байты заголовков можно переписать? Это легко проверить: заменить их в ассемблере на произвольное содержимое и посмотреть, заработает ли программа. Так я и поступил, а результаты записал в таблицу:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fbr\u002Fgr\u002F_a\u002Fbrgr_atfea7-5gf78dsujd-be8k.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nВ этой таблице каждый байт в заголовке ELF и заголовке программы показаны в отдельных строках. Поля, которые можно переписать мусором, выделены зелёным, а те, которые проверяются или являются необходимыми – красным. Мы воспользуемся этой информацией, чтобы упаковать код (и даже строку \u003Ccode\u003EHello, world!\\n\u003C\u002Fcode\u003E) в неиспользуемые байты (по факту, непроверяемые байты). Обновлённый код получится таким:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E[bits 64]\nfile_load_va: equ 4096 * 40\n\ndb 0x7f, 'E', 'L', 'F'\ndb 2\ndb 1\ndb 1\ndb 0\n\n; Мы перепишем поле EABI + 7 байт заполнения нашими 8 байтами\n;кода. (Я наперёд проверил, чтобы эти инструкции занимали ровно 8 байтов).\nentry_point:\n  xor eax, eax\n  inc eax\n  mov edi, eax\n  ; Переходим к следующему месту, которое можно заместить нашим кодом, так как следующее \n  ;поле заместить не можем (тип ELF).\n  jmp code_chunk_2\n\ndw 2\ndw 0x3e\ndd 1\ndq entry_point + file_load_va\ndq program_headers_start\n\n; Далее мы перепишем 8-байтовое поле смещения заголовка раздела, а также 4-байтовое поле \n;“flags”, идущее за ним.\ncode_chunk_2:\n  mov esi, file_load_va + message\n  xor edx, edx\n  mov dl, message_length\n\n  ; Перескакиваем к заключительной части кода и добавляем один байт нулей, заполняя 12-й \n  ;байт двух перезаписываемых полей.\n\n  jmp code_chunk_3\ndb 0\n\ndw 64\ndw 0x38\ndw 1\ndw 0x40\ndw 0\ndw 0\n\nprogram_headers_start:\ndd 1\ndd 5\ndq 0\ndq file_load_va\n\n; Мы перепишем 8-байтовое поле \"physical address\"в заголовке программы нашими 8 байтами \n;кода. Эти четыре инструкции займут ровно 8 байтов.\n\ncode_chunk_3:\n  syscall\n  mov al, 60\n  xor edi, edi\n  syscall\n\ndq file_end\ndq file_end\n\n; Мы можем переписать заключительное 8-байтовое поле \"alignment\" в заголовке программы и \n;сделаем это первыми 8 байтами строки \"Hello, world!\".\nmessage: db `Hello, world!\\n`\nmessage_length: equ $ - message\n\nfile_end:\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИ снова его можно собрать и выполнить подобно всем предыдущим примерам. Теперь он занимает всего 126 байтов: 31 байт мы сократили за счёт удаления всех байтов кода и 8 байт за счёт строки \u003Ccode\u003EHello, world!\u003C\u002Fcode\u003E. К сожалению, мы не можем упаковать всю строку в какой-либо из доступных промежутков, так как ей требуется 14 байтов, а в заголовках нет последовательности из 14 допускающих замещение байтов. В таком виде заголовок ELF и заголовок программы занимают 120 байтов, и строка «выпирает» из-за последнего ещё 6 байтами. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВот теперь несколько стандартных инструментов, о которых я говорил ранее, уже не одобряют тот факт, что мы заместили так много полей в заголовках. Например, \u003Ccode\u003Ereadelf – WlS\u003C\u002Fcode\u003E начала жаловаться, что смещение заголовка раздела не равно нулю. Утилита \u003Ccode\u003Eobjdump \u003C\u002Fcode\u003Eпри попытке её применения к файлу просто выдаёт ошибку \u003Ccode\u003EFile truncated\u003C\u002Fcode\u003E. И хоть конкретики в этой ошибке нет, я полагаю, что она также вызвана смещением заголовка раздела, так как другие поля, которые мы заместили, представляли просто заполнение, неиспользуемый физический адрес и выравнивание сегмента в памяти. Несмотря на то, что с виду к утрате функционала \u003Ccode\u003Eobjdump \u003C\u002Fcode\u003Eможет привести замещение выравнивания, я убедился, что это не так: установка выравнивания сегмента обратно на \u003Ccode\u003E1\u003C\u002Fcode\u003E (его значение до его замещения строкой) не восстановило работоспособность \u003Ccode\u003Eobjdump\u003C\u002Fcode\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ завершение hex-дамп текущей версии стал весьма интересен и отлично демонстрирует то, как мы исковеркали файл:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fgi\u002Fcw\u002Fhi\u002Fgicwhiqwuzmmk7b6kxz3tfxprfs.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nНо на этом ещё не все!\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EФинальная версия\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nМы можем сделать ещё кое-что: аналогично тому, как мы наложили код, можно также наложить сами заголовки.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ конце заголовка ELF указано количество заголовков программы, сопровождаемое размером и количеством заголовков разделов, после чего идёт индекс раздела, содержащий таблицу имён разделов. Нам однозначно нужно оставить количество заголовков программы как \u003Ccode\u003E1\u003C\u002Fcode\u003E, а количество заголовков разделов как \u003Ccode\u003E0\u003C\u002Fcode\u003E, но оказывается, что размер заголовка раздела и индекс таблицы имён разделов можно переписать при условии, что мы не будем определять какие-либо разделы. По отдельности каждое из этих полей занимает всего два байта.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nА что произойдёт, если начать первый заголовок программы сразу после количества этих заголовков? Как оказалось, это отлично сработает: несмотря на то, что заголовок программы начинается с четырехбайтового поля \u003Ccode\u003Etype\u003C\u002Fcode\u003E, которое не должно быть нулевым, у этого поля установлен только нижний байт – остальные представлены нулями. Так что, если мы начнём наши шесть байт заголовка программы до завершения заголовка ELF, то поле \u003Ccode\u003Etype \u003C\u002Fcode\u003Eперехлёстывается с допускающим наложение \u003Ccode\u003Esection header size\u003C\u002Fcode\u003E; полем заголовка ELF, а также количеством заголовков разделов. Однако байты, перекрывающие количество заголовков разделов, представлены нулями: что нам и нужно. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДалее поле \u003Ccode\u003Eflags \u003C\u002Fcode\u003Eзаголовка программы (которое тоже не может быть равно нулю) перекрывает поле таблицы строк имён разделов, которое мы, как и говорилось, не используем ввиду отсутствия самих разделов.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ итоге код ассемблера изменился не сильно, но уже представляет финальную версию:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E[bits 64]\nfile_load_va: equ 4096 * 40\n\ndb 0x7f, 'E', 'L', 'F'\ndb 2\ndb 1\ndb 1\ndb 0\nentry_point:\n  xor eax, eax\n  inc eax\n  mov edi, eax\n  jmp code_chunk_2\ndw 2\ndw 0x3e\ndd 1\ndq entry_point + file_load_va\ndq program_headers_start\ncode_chunk_2:\n  mov esi, file_load_va + message\n  xor edx, edx\n  mov dl, message_length\n  jmp code_chunk_3\ndb 0\ndw 64\ndw 0x38\ndw 1\n; Мы просто удалили три двухбайтовых поля, которые раньше здесь были. Единственное, которое ;имело значение – количество заголовков разделов – по-прежнему будет нулевым, так как два ;старших байта этого поля в начале заголовка программы нулевые.\n\nprogram_headers_start:\n; Следующие два поля также служат в качестве последних шести байт заголовка ELF.\ndd 1\ndd 5\ndq 0\ndq file_load_va\ncode_chunk_3:\n  syscall\n  mov al, 60\n  xor edi, edi\n  syscall\ndq file_end\ndq file_end\n\nmessage: db `Hello, world!\\n`\nmessage_length: equ $ - message\n\nfile_end:\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nКак и прежде, этот код можно собрать и выполнить аналогично самому первому примеру. После реализации шестибайтового нахлеста между заголовками он сократился до 120 байтов. В обычных условиях этот размер был бы равен суммарному размеру заголовка ELF и одного заголовка программы — наименьшему, какой можно ожидать от исполняемого файла ELF без кода. Для полноты можно также заглянуть в итоговый байткод:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F5h\u002Foi\u002F_6\u002F5hoi_6fjevvsskoq-4xaczt5x8g.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EМожно ли пойти ещё дальше?\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n120 байт – это серьёзный результат. Такой файл может уместиться в одно текстовое сообщение. Он занимает меньше 1\u002F34 от 4Кб-страницы, что намного меньше, чем можно было желать. Если бы мы отклонились от изначальной цели написать полноценную программу \u003Ccode\u003EHello, world!\u003C\u002Fcode\u003E, то могли бы срезать ещё шесть байт, получив итоговый размер 114. Можете попробовать сами, изменив код так, чтобы строка \u003Ccode\u003EHello, world!\\n\u003C\u002Fcode\u003E занимала ровно 8 байт. Например, если заменить соответствующую строку на \u003Ccode\u003Emessage: db ‘Hi!!!!!\\n’\u003C\u002Fcode\u003E, то в итоге получится рабочий 114-байтовый файл.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПопытки ещё больше укоротить эту строку приведут к чрезмерному сокращению заголовка программы, создав исполняемый файл, который Linux откажется запускать. И здесь открывается интересный нюанс. Это значит, что если мы решим использовать программу \u003Ccode\u003Ereturn 42\u003C\u002Fcode\u003E из оригинальной статьи, а не нашу версию с \u003Ccode\u003EHello, world!\u003C\u002Fcode\u003E, то меньше 114 байт уже не опустимся – ограничивающим фактором становится наша невозможность дальнейшего наложения поверх заголовка ELF и одного необходимого заголовка программы.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nА можно вообще больше не накладывать ничего поверх заголовков? Всё же автор оригинальной статьи смог уменьшить свой ELF вплоть до 45 байтов. К сожалению, это более не является возможным: для этого нужно, чтобы Linux автоматически заполняла незавершённые остатки заголовка ELF и заголовка программы нулями, чего эта система больше не делает. Однако в оригинальной 45-байтовой версии заголовок программы идёт сразу после сигнатуры \u003Ccode\u003E0x7f, E, L, F\u003C\u002Fcode\u003E в начале файла. Неужели для нас действительно невозможно найти лучший способ перекрыть заголовок ELF и заголовок программы?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nК сожалению, мне кажется, что здесь мы добиваемся наилучшего из возможных на сегодня результатов. Вернитесь ещё раз к скриншоту таблицы, где показано, какие байты можно заместить в заголовке ELF и заголовке программы. Увеличенный размер 64-битного заголовка программы существенно ограничивает возможности наложения, и после тщательной проверки байт за байтом я могу уверенно сказать, что лучшего не добиться, по крайней мере в современных сборках Linux x86-64. Для полноты я приведу шаги, которым следовал, чтобы прийти к такому заключению:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eprogram header offset\u003C\u002Fcode\u003E в заголовке ELF и поле \u003Ccode\u003Esize in file\u003C\u002Fcode\u003E в заголовке программы должны оба вписываться в один байт (в противном случае получится файл размером больше 255 байтов). При этом они не могут быть идентичны, так что эти 8-байтовые поля вообще не могут накладываться.\u003C\u002Fli\u003E\r\n\u003Cli\u003EРазмер заголовков и тот факт, что заголовок ELF должен идти в начале файла, вместе с предыдущим доводом означают, что поле \u003Ccode\u003Esize in file\u003C\u002Fcode\u003E в заголовке программы должно идти полностью после поля \u003Ccode\u003Eprogram header offset\u003C\u002Fcode\u003E в заголовке ELF.\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли попробовать обойти предыдущий пункт, разместив поле \u003Ccode\u003Esize in file\u003C\u002Fcode\u003E сразу после поля \u003Ccode\u003Eprogram header offset\u003C\u002Fcode\u003E, то поля \u003Ccode\u003Etype \u003C\u002Fcode\u003Eи \u003Ccode\u003Eflags \u003C\u002Fcode\u003Eзаголовка программы (которые не могут быть нулевыми) окажутся в поле \u003Ccode\u003Eprogram header offset\u003C\u002Fcode\u003E, которое, как говорилось, переписывать нельзя.\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли и предыдущий пункт попробовать обойти, поместив поля \u003Ccode\u003Eflags \u003C\u002Fcode\u003Eи \u003Ccode\u003Etype \u003C\u002Fcode\u003Eсразу после поля \u003Ccode\u003Eprogram header offset\u003C\u002Fcode\u003E, тогда поля \u003Ccode\u003EELF header size\u003C\u002Fcode\u003E и \u003Ccode\u003Eprogram header entry size\u003C\u002Fcode\u003E в заголовке ELF перекроются полем заголовка программы \u003Ccode\u003Eoffset in file\u003C\u002Fcode\u003E, который должен быть не более одного байта, не может совпадать с размерами заголовка ELF или заголовка программы и, следовательно, не может быть переписан. К сожалению, эти поля размеров проверяются ядром Linux (чего во времена написания оригинальной статьи не происходило).\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли мы переместим поля \u003Ccode\u003Eflags \u003C\u002Fcode\u003Eи \u003Ccode\u003Etype \u003C\u002Fcode\u003Eзаголовка программы так, что они будут идти сразу после двух вышеупомянутых полей размера, тогда они перекроют поле \u003Ccode\u003Enumber of program headers\u003C\u002Fcode\u003E заголовка ELF, которое должно быть \u003Ccode\u003E1\u003C\u002Fcode\u003E. Поле заголовка программы также равно \u003Ccode\u003E1\u003C\u002Fcode\u003E, и это, вроде бы, должно радовать. Но нет, не сработает…поскольку в результате этого наложения поле \u003Ccode\u003Eflags \u003C\u002Fcode\u003Eляжет поверх количества заголовков разделов. Количество заголовков разделов должно быть равно нулю, а флаги нулевыми быть не могут, потому что биты \u003Ccode\u003Ereadable+executable\u003C\u002Fcode\u003E должны быть установлены. \u003C\u002Fli\u003E\r\n\u003Cli\u003EНаконец, если мы переместим поле заголовка программы за размеры заголовка ELF и заголовка программы, то оно перекроет поле \u003Ccode\u003Esection header size\u003C\u002Fcode\u003E в заголовке ELF. Такой вариант сработает, причины чего описывались выше, и именно на этом заканчивается наша финальная версия.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EЗаключение\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nНесмотря на то, что это далеко не так впечатляет, как 45-байтовый исполняемый файл в уже далёком прошлом, многие из крайних приёмов оптимизации до сих пор остаются возможными в современных 64-битных системах Linux. 120 байт (или даже минимум в 114 байтов) – это невероятно крохотная программа по меркам времени, когда раздутое ПО очень уж часто принимается как должное.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКонечно, многое из проделанного нами ушло далеко за устранение «раздутости», но посыл при этом сохраняется: «Наверняка можно устранить куда больше программных излишеств, чем кажется на первый взгляд. А вот вопрос «Стоит ли это приложенных усилий?» уже заслуживает отдельного обсуждения».\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"http:\u002F\u002Fruvds.com\u002Fru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=Bright_Translate&amp;utm_content=minimizaciya_fajla_elf_%E2%80%93_poprobuem_v_2021?\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fou\u002Fg5\u002Fkh\u002Foug5kh6sjydt9llengsiebnp40w.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"ruvds_перевод"},{"titleHtml":"elf. Linux"},{"titleHtml":"ассемблер (x86)"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxt\u002Fpp\u002Fvg\u002Fxtppvgng1dwp-cirseicjxm0hj0.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxt\u002Fpp\u002Fvg\u002Fxtppvgng1dwp-cirseicjxm0hj0.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F583576\\\u002F\"},\"headline\":\"Минимизация файла ELF – попробуем в 2021?\",\"datePublished\":\"2021-10-19T16:00:02+03:00\",\"dateModified\":\"2021-10-19T16:03:23+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Дмитрий Брайт\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начал...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F583576\\\u002F#post-content-body\",\"about\":[\"c_ruvds\",\"h_crazydev\",\"h_assembler\",\"h_nix\",\"h_linux_dev\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583576\\\u002F56de48010d22f3136c8c09dba723980f\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fxt\\\u002Fpp\\\u002Fvg\\\u002Fxtppvgng1dwp-cirseicjxm0hj0.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fhf\\\u002Fak\\\u002F-4\\\u002Fhfak-4xalmlwi3x6pvfryjcsj24.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fiz\\\u002F-r\\\u002Fim\\\u002Fiz-rimtihpn_ecy01mdoe5rob14.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fn0\\\u002Fsg\\\u002F5q\\\u002Fn0sg5qeihrn3b_sqb6huwsbcvwm.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fnh\\\u002Fel\\\u002Fry\\\u002Fnhelryswdntriiomttl8g_4vjsy.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fbr\\\u002Fgr\\\u002F_a\\\u002Fbrgr_atfea7-5gf78dsujd-be8k.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fgi\\\u002Fcw\\\u002Fhi\\\u002Fgicwhiqwuzmmk7b6kxz3tfxprfs.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F5h\\\u002Foi\\\u002F_6\\\u002F5hoi_6fjevvsskoq-4xaczt5x8g.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fou\\\u002Fg5\\\u002Fkh\\\u002Foug5kh6sjydt9llengsiebnp40w.png\"]}","metaDescription":"Экспериментальный проект по максимальному уменьшению ELF-файла с программой Hello, World! под целевую систему Linux x64 с помощью NASM. В предыдущем опыте начала 2000-х удалось добиться размера...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"ruvds":{"alias":"ruvds","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff27\u002Fea8\u002F5bd\u002Ff27ea85bd62fbd985c308110885af7e0.png","titleHtml":"RUVDS.com","descriptionHtml":"VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E","relatedData":null,"statistics":{"postsCount":2029,"newsCount":62,"vacanciesCount":0,"employeesCount":57,"careerRating":null,"subscribersCount":36796,"rating":2823.09,"invest":null},"foundationDate":{"year":"2015","month":"07","day":"27"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fruvds.com","staffNumber":"11–30 человек","registrationDate":"2016-03-18T05:43:01+00:00","representativeUser":{"alias":"ruvds","fullname":null},"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fruvds"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fru_vds"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fru_vds"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"33905479"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002Fb77\u002F8d5\u002Fa41\u002Fb778d5a41f83016379c6630262c3294c.png","linkUrl":"https:\u002F\u002Fruvds.com\u002Fru-rub","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E с 27 июля 2015 г.","title":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду HABR10 с 27 июля 2015 г.","keywords":["Научно-популярное","DIY или Сделай сам","Системное администрирование","Разработка веб-сайтов","Читальный зал"],"descriptionHtml":"2 029 статей от авторов компании RUVDS.com","description":"2 029 статей от авторов компании RUVDS.com"},"aDeskSettings":null,"careerAlias":"ruvds","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

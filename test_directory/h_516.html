@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Общение двух процессоров 1967BH028 по LVDS с использованием DMA и прерываний / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583400\/"},"headline":"Общение двух процессоров 1967BH028 по LVDS с использованием DMA и прерываний","datePublished":"2021-10-14T18:00:01+03:00","dateModified":"2021-10-14T20:37:43+03:00","author":{"@type":"Person","name":"mikrizh"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимс...","url":"https:\/\/habr.com\/ru\/post\/583400\/#post-content-body","about":["h_assembler","h_controllers","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583400\/7747d56f347a7b98eb35a8427b85013c\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/1f8\/d1d\/8a3\/1f8d1d8a303aa7737fed1171341778dc.PNG","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/ff4\/4c6\/3f9\/ff44c63f9e566cf947c92b389eef30e1.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/47a\/847\/ca4\/47a847ca4e1f98664270ddb22662d77b.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f8e\/9b7\/adc\/f8e9b7adcc174da59e77a38bd529a5cd.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/c3f\/44a\/587\/c3f44a5874e2dcc6ff6a05b609adc16f.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/be7\/41e\/151\/be741e151b0ccc2d14d9f29f948ea799.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/740\/f7d\/053\/740f7d0535cf6e3086322ee60f069279.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/781\/ecf\/040\/781ecf0407847d10bc9cd474381cd0b8.PNG","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/220\/eb4\/f67\/220eb4f67c2e91efbcceee5fa46d22bd.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Общение двух процессоров 1967BH028 по LVDS с использованием DMA и прерываний" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Общение двух процессоров 1967BH028 по LVDS с использованием DMA и прерываний" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Общение двух процессоров 1967BH028 по LVDS с использованием DMA и прерываний" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/1f8/d1d/8a3/1f8d1d8a303aa7737fed1171341778dc.PNG" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/1f8/d1d/8a3/1f8d1d8a303aa7737fed1171341778dc.PNG" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/1f8/d1d/8a3/1f8d1d8a303aa7737fed1171341778dc.PNG" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/1f8/d1d/8a3/1f8d1d8a303aa7737fed1171341778dc.PNG" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/1f8/d1d/8a3/1f8d1d8a303aa7737fed1171341778dc.PNG" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583400" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-14T15:00:01.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583400/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583400/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/1f8/d1d/8a3/1f8d1d8a303aa7737fed1171341778dc.PNG" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583400/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/mikrizh/" title="mikrizh" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/mikrizh/" class="tm-user-info__username">
+      mikrizh
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-14T15:00:01.000Z" title="2021-10-14, 18:00">14  октября   в 18:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Общение двух процессоров 1967BH028 по LVDS с использованием DMA и прерываний</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/assembler/" class="tm-article-snippet__hubs-item-link"><span>Assembler</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/controllers/" class="tm-article-snippet__hubs-item-link"><span>Программирование микроконтроллеров</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="https://habrastorage.org/getpro/habr/upload_files/1f8/d1d/8a3/1f8d1d8a303aa7737fed1171341778dc.PNG" width="571" height="676"/><figcaption></figcaption></figure><p>В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы вызова прерываний в этом процессоре и задействуем прерывание по завершению работы канала DMA. Данная статья является продолжением статьи <a href="https://habr.com/ru/post/582110/" rel="noopener noreferrer nofollow">https://habr.com/ru/post/582110/</a>.</p><p>Для начала обратимся к уже известной по прошлому моему обзору табличке, описывающей к каким разъемам DVI выведен какой из LINK портов (он же LVDS порт).</p><figure class="full-width "><img src="/img/image-loader.svg" height="237" data-src="https://habrastorage.org/getpro/habr/upload_files/ff4/4c6/3f9/ff44c63f9e566cf947c92b389eef30e1.png" data-width="1084"/><figcaption></figcaption></figure><figure class="full-width "><img src="/img/image-loader.svg" height="362" data-src="https://habrastorage.org/getpro/habr/upload_files/47a/847/ca4/47a847ca4e1f98664270ddb22662d77b.png" data-width="1079"/><figcaption></figcaption></figure><p>И к табличке с описанием допустимых соединений для LINK портов обоих размещенных на плате процессоров.</p><figure class="full-width "><img src="/img/image-loader.svg" height="722" data-src="https://habrastorage.org/getpro/habr/upload_files/f8e/9b7/adc/f8e9b7adcc174da59e77a38bd529a5cd.png" data-width="1071"/><figcaption></figcaption></figure><p>Для начала выберем между однобитным и четырех битным форматом приёма/передачи. Сразу определимся, что брать от жизни стоит все до чего дотягиваются руки и исходя из этого соображения обмен данными будем осуществлять в формате 4 бит. Следовательно, в таблице допустимых соединений у нас отпадают варианты поддерживающие только однобитную передачу. Процессором D6 будем принимать через приемник второго порта, а процессором D5 будем слать данные через передатчик также второго порта. Как видим из таблички такой вариант соединения допустим. Для реализации физического соединения этих портов соединим DVI кабелем разъемы XS4 и XS9 исходя из информации в первой приведенной табличке. Теперь можно переходить к написанию кода.</p><p>Код для передатчика будет следующим:</p><p>Для начала объявим массив который будет содержать передаваемые данные - arrt</p><pre><code>#include &lt;defts201.h>
+.SECTION /DOUBLE64 /CHAR32 .data;
+.ALIGN 4;
+.var arrt[4096];</code></pre><p>Далее включим индикацию и заполним массив передачи данными</p><pre><code>.SECTION .program;
+.ALIGN_CODE 4;
+.GLOBAL _main;
+_main: 
+SQCTL = 0x1200;;//переход в режим супервизора
+j0=0x1f;;
+FLAGREG=j0;; //включим индикацию
+j0=arrt;;
+//заполняем массив передачи
+xr0=0;;
+lc0 = 4096;;
+wr_tr:
+[j0+=1]=xr0;;
+xr0=r0+1;;
+ if nlc0e, jump wr_tr;;</code></pre><p>После чего перейдем к настройке передатчика. Включим LINK, дадим лишнее время приемнику подготовиться и включим DMA.</p><pre><code>//Включаем линк передатчика
+j0=(1&lt;&lt;4)+(4&lt;&lt;5);;//формат 4 бит
+LtCTL2=j0;;
+lc0 = 10;;
+dly_p1: if nlc0e, jump dly_p1;; //подождем
+//включаем
+j0=1+(1&lt;&lt;4)+(4&lt;&lt;5);;
+LtCTL2=j0;;
+lc0 = 1000;;
+dly_p2: if nlc0e, jump dly_p2;; // дадим приемнику время подготовиться
+//Настраиваем и включаем DMA передатчика
+xr0=arrt;;
+xr1=0x4000004;; //передаем 1024 4-байтных слова
+xr2=0;;
+xr3=0x40000000/*выбираем внутреннюю память*/+ (6&lt;&lt;19)/*выбираем номер порта линк и направление
+*/ + (3&lt;&lt;25) /*ставим длину данных 
+*/
+q[j31+task_T]=xr3:0;;
+dc6=xr3:0;;</code></pre><p>Далее провалимся в бесконечный цикл. Буфер передачи мы сделали в 4  раза больше чем передаем данных, это пригодится нам для имитации потока данных больше приемного буфера.</p><p>Теперь приемник.</p><p>Объявляем два массива приема. Второй массив также пригодится для отработки приема данных в режиме автобуфера, но сначала отработаем однократный прием.</p><pre><code>#include &lt;defts201.h>
+.SECTION /DOUBLE64 /CHAR32 .data;
+.ALIGN 4;
+//Буфер приема из двух частей
+.var arrr[1024];
+.var arrr1[1024];</code></pre><p>Далее произведем для приемника операции аналогичные тем, что мы произвели для передатчика.</p><pre><code>.SECTION .program;
+.ALIGN_CODE 4;
+.GLOBAL _main;
+_main:
+SQCTL = 0x1200;;//переход в режим супервизора
+j1=0x5f;;
+FLAGREG=j1;; //включим индикацию
+//чистим буферы
+j1=arrr;;
+j2=arrr1;;
+xr0=0;;
+lc0 = 1024;;
+wr_res:
+[j1+=1]=xr0;;
+[j2+=1]=xr0;;
+if nlc0e, jump wr_res;;</code></pre><p>Включим LINK порт и затем DMA, после чего провалимся в бесконечный цикл</p><pre><code>//Включаем линк приемника
+j1=(1&lt;&lt;4);;//формат 4 бит
+LRCTL2=j1;;
+lc0 = 10;;
+dly_p1: if nlc0e, jump dly_p1;nop;nop;;
+j1=1+(1&lt;&lt;4);;
+LRCTL2=j1;;
+//настраиваем и включаем DMA приемника
+xr0 = arrr1;;
+xr1=0x4000004;;
+xr2=0;;
+xr3=0x40000000/*выбираем внутреннюю память*/+(2&lt;&lt;19)/*выбираем номер порта линк и направление
+*/ +(1&lt;&lt;24)/*разрешаем прерывание по завершению работы канала
+*/ +(3&lt;&lt;25) /*ставим длину данных
+*/ 
+dc10=xr3:0;;
+_main_loop:
+nop;nop;nop;;
+nop;nop;nop;;
+nop;nop;nop;;
+nop;nop;nop;;
+nop;nop;nop;;
+nop;nop;nop;;
+jump _main_loop;nop;;
+_main.end:</code></pre><p>Запустим и посмотрим, что получилось. Как видно в процессе отладки данные успешно загрузились.</p><figure class="full-width "><img src="/img/image-loader.svg" height="270" data-src="https://habrastorage.org/getpro/habr/upload_files/c3f/44a/587/c3f44a5874e2dcc6ff6a05b609adc16f.png" data-width="831"/><figcaption></figcaption></figure><p>Теперь стоит отработать вариант с непрерывным потоком данных, ведь очень часто мы не можем прогнозировать сколько конкретно данных надо еще принять и к тому же данных от внешнего источника может оказаться больше чем возможно уместить в буфер приема или же это может быть вообще непрерывный поток данных.  DMA обычно имеет возможность работы в режиме автобуфера. Тут такая возможность тоже имеется если дать разрешение цепочки. Цепочка разрешается в 22 бите регистра DP входящего в группу настроечных регистров DMA. Разрешение цепочки позволяет по окончанию работы DMA взять по адресу прописанном в первых 18 битах регистра DP. Буфер приема будет у нас состоять из двух частей arrr и arrr1, которые будут по очереди обновляться. Для проверки в передатчике изменим количество передаваемых квадрослов с 1024 на 4096 заменив в его коде:</p><pre><code>xr1=0x10000004;;</code></pre><p>В приемнике добавим два массива для настройки цепочек.</p><pre><code>.var task_R[4]={0,0,0,0};
+.var task_R1[4]={0,0,0,0};</code></pre><p>Соответственно в приемнике изменим процесс настройки DMA добавив разрешение цепочки и указатель настройки на следующую цепочку. Причем сделаем так чтоб цепочки чередовались. Каждая из цепочек в качестве указателя следующей цепочки содержит адрес другой цепочки. Таким образом загрузка идет то в один буфер то в другой.</p><pre><code>//настраиваем и включаем приемник
+xr0 = arrr1;;
+xr1=0x4000004;;
+xr2=0;;
+xr3=0x40000000/*выбираем внутреннюю память*/+(2&lt;&lt;19)/*выбираем номер порта линк и направление
+*/ +(3&lt;&lt;25) /*ставим длину данных*/ + (1&lt;&lt;22)/* разрешение след приема
+*/ + (task_R/4);; //указатель на след цепочку выравненный по квадрословам
+q[j31+task_R1]=xr3:0;;
+xr0 = arrr;;
+xr3=0x40000000/*выбираем внутреннюю память*/+(2&lt;&lt;19)/*выбираем номер порта линк и направление*/ +(3&lt;&lt;25) /*ставим длинну данных
+*/ + (1&lt;&lt;22)/* разрешение след приема
+*/ + (task_R1/4);; //указатель на след цепочку выравненный по квадрословам
+q[j31+task_R]=xr3:0;;
+xr0 = arrr;;
+dc10=xr3:0;;</code></pre><p>Проверим работу. Мы отправляли значения от 0 до 4096, каждый буфер имеет по 1024 места. И как видно из скриншотов ниже конечные значения буферов такие какими должны быть</p><figure class="bordered full-width "><img src="/img/image-loader.svg" height="264" data-src="https://habrastorage.org/getpro/habr/upload_files/be7/41e/151/be741e151b0ccc2d14d9f29f948ea799.png" data-width="831"/><figcaption></figcaption></figure><figure class="bordered full-width "><img src="/img/image-loader.svg" height="259" data-src="https://habrastorage.org/getpro/habr/upload_files/740/f7d/053/740f7d0535cf6e3086322ee60f069279.png" data-width="831"/><figcaption></figcaption></figure><p>Также, чтоб понимать, когда очередной буфер закончил заполняться чтоб перейти к его обработке мы можем воспользоваться прерыванием по завершению работы DMA. </p><p>Тут стоит сказать несколько слов о работе с прерываниями в процессоре 1967BH028.</p><p>Прерывания в данном процессоре организованы отлично от привычной многим схемы, где прерывания при сработке, отсылают в таблицу векторов прерываний расположенную в памяти с нулевого адреса, а в таблице соответственно содержатся уже переходы на обработчики соответствующих прерываний. Здесь таблицы векторов нет как таковой. Зато под каждое прерывание есть отдельный регистр, в который мы и можем положить адрес обработчика. В документации говорится</p><p>«…Обработка прерывания начинается в контроллере прерываний. Контроллер прерываний принимает запрос в регистр ILAT, далее смотрит разрешен ли полученный запрос в регистре IMASK. Если прерывание разрешено, анализируется регистр PMASK, который содержит в себе информацию о текущих обрабатываемых прерываниях. Если приоритет поступившего запроса прерывания выше приоритета обрабатываемого прерывания (либо нет обрабатываемых прерываний), контроллер формирует номер прерывания, считывает из таблицы векторов прерываний соответствующее значение адреса процедуры обслуживания прерывания и отсылает всю эту информацию в устройство управления…»</p><p>Ниже приведено описание младших регистров ILATL, IMASKL, PMASKL</p><figure class="full-width "><img src="https://habrastorage.org/getpro/habr/upload_files/781/ecf/040/781ecf0407847d10bc9cd474381cd0b8.PNG" width="820" height="750"/><figcaption></figcaption></figure><p>Затем происходит проверка глобального разрешения прерываний. За это отвечает бит GIE регистра управления SQCTL. Если прерывания разрешены, то мы проваливаемся в обработчик.</p><p>            Для разбора работы с прерываниями поставим цель генерировать прерывания по окончанию акта приема/передачи DMA. Код будет сделан на основе кода из прошлой  заметки о работе LVDS порта. Там для передачи был использован DMA6, а для приема DMA10. Их регистры векторов прерываний IVDMA6, IVDMA10, и нам будет достаточно прерывания по приему.</p><p>Внесем изменения в код приемника. Разрешим прерывания глобально. </p><pre><code>SQCTL = 0x1204;;//переход в режим супервизора + глобальное разрешение прерываний</code></pre><p>Разрешим нужное прерывание в регистре маскирования прерываний</p><pre><code>//Разрешим прерывание DMA10 в регистре маскирования прерываний
+j0=(1&lt;&lt;31);;
+imaskl=j0;;</code></pre><p>Загрузим в IVDMA10 адрес функции обработчика, у меня она зовется «dma10_interrupt». Добавим в начало программного тела:</p><pre><code>k0=dma10_interrupt;;
+ivdma10=k0;;</code></pre><p>Далее, по логике, надо разрешить прерывание в регистре настройки DMA канала (в tcb). За это отвечает 24 разряд регистра DP</p><figure class="full-width "><img src="/img/image-loader.svg" height="92" data-src="https://habrastorage.org/getpro/habr/upload_files/220/eb4/f67/220eb4f67c2e91efbcceee5fa46d22bd.png" data-width="821"/><figcaption></figcaption></figure><p>Теперь настройка этого регистра выглядит так</p><pre><code>//настраиваем и включаем приемник
+xr0 = arrr1;;
+xr1=0x4000004;;
+xr2=0;;
+xr3=0x40000000/*выбираем внутреннюю память*/+(2&lt;&lt;19)/*выбираем номер порта линк и направление
+*/ +(1&lt;&lt;24)/*разрешаем прерывание по завершению работы канала
+*/ +(3&lt;&lt;25) /*ставим длину данных*/ + (1&lt;&lt;22)/* разрешение след приема
+*/ + (task_R/4);; //указатель на след цепочку выравненный по квадрословам
+q[j31+task_R1]=xr3:0;;
+xr0 = arrr;;
+xr3=0x40000000/*выбираем внутреннюю память*/+(2&lt;&lt;19)/*выбираем номер порта линк и направление
+*/ +(1&lt;&lt;24)/*разрешаем прерывание по завершению работы канала
+*/ +(3&lt;&lt;25) /*ставим длину данных*/ + (1&lt;&lt;22)/* разрешение след приема
+*/ + (task_R1/4);; //указатель на след цепочку выравненный по квадрословам
+q[j31+task_R]=xr3:0;;
+xr0 = arrr;;
+dc10=xr3:0;;</code></pre><p>В данном случае мы обслуживаем только одно прерывание, и по сути мы можем просто в него провалиться и вернуться командой RTI. При переходе в обработчик, адрес возврата кладется в регистр RETI и это значение используется командой RTI при возврате из обработчика. Но в случае, если у нас прерываний будет несколько, могут возникнуть проблемы. При одновременном вызове нескольких прерываний сработает прерывание с большим приоритетом (согласно таблице приоритетов, в спецификации). Однако при сработке прерывания и переходе в обработчик, обработка любых прерываний до конца обработки будет запрещена, в том числе и прерываний с большим приоритетом. Так как будет поднят флаг EXE_ISR показывающий, что идет обработка. Чтобы такого не происходило стоит в начале обработчика считать значение регистра RETI например командой «j0 = RETIB;;»  это вызовет копирование регистра RETI в регистр j0 и сброс флага EXE_ISR.  Значение j0 надо сохранить на стеке и перед операцией выхода из прерывания записать обратно «RETIВ = j0;;». В нашем случае мы сохранять RETIB не будем так как прерывание включать планируем только одно. Также для внешней индикации отработки прерывания будем в обработчике менять светики. Обработчик в итоге выглядит вот так:</p><pre><code>dma10_interrupt:
+j1=0x3f;;
+FLAGREG=j1;;
+/*код обработчика*/ 
+RTI(np);;
+dma10_interrupt.end:</code></pre><p>Теперь при приеме потока данных когда один из буферов будет заполнен произойдет вызов прерывания и мы будем знать, что можно приступать к обработке собранных в него данных. А на этом закончу, спасибо за внимание.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B1967bh028%5D" class="tm-tags-list__link">1967bh028</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdsp%5D" class="tm-tags-list__link">dsp</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bassembler%5D" class="tm-tags-list__link">assembler</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D1%82%D0%B5%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%B5%D0%BD%D0%BD%D1%8B%D0%B9%20%D0%BF%D1%80%D0%BE%D0%B8%D0%B7%D0%B2%D0%BE%D0%B4%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%5D" class="tm-tags-list__link">отечественный производитель</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/assembler/" class="tm-hubs-list__link">
+    Assembler
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/controllers/" class="tm-hubs-list__link">
+    Программирование микроконтроллеров
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 30: ↑29 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 30: ↑29 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+28</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">2.9K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    19
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/mikrizh/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 19 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    17
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">58</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/mikrizh/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @mikrizh
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583400/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 5 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583400/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583400/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583400":{"id":"583400","timePublished":"2021-10-14T15:00:01+00:00","isCorporative":false,"lang":"ru","titleHtml":"Общение двух процессоров 1967BH028 по LVDS с использованием DMA и прерываний","leadData":{"textHtml":"\u003Cp\u003EВ этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы вызова прерываний в этом процессоре и задействуем прерывание по завершению работы канала DMA.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F1f8\u002Fd1d\u002F8a3\u002F1f8d1d8a303aa7737fed1171341778dc.PNG","buttonTextHtml":"кнопка чтобы нажЫмац","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F1f8\u002Fd1d\u002F8a3\u002F1f8d1d8a303aa7737fed1171341778dc.PNG","fit":"cover","positionY":37.272727272727,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":17,"votesCount":19},"rating":58,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2718593","alias":"mikrizh","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":5,"favoritesCount":19,"readingCount":2859,"score":28,"votesCount":30},"hubs":[{"relatedData":null,"id":"595","alias":"assembler","type":"collective","title":"Assembler","titleHtml":"Assembler","isProfiled":true},{"relatedData":null,"id":"19737","alias":"controllers","type":"collective","title":"Программирование микроконтроллеров","titleHtml":"Программирование микроконтроллеров","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F1f8\u002Fd1d\u002F8a3\u002F1f8d1d8a303aa7737fed1171341778dc.PNG\" width=\"571\" height=\"676\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВ этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы вызова прерываний в этом процессоре и задействуем прерывание по завершению работы канала DMA. Данная статья является продолжением статьи \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582110\u002F\" rel=\"noopener noreferrer nofollow\"\u003Ehttps:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582110\u002F\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EДля начала обратимся к уже известной по прошлому моему обзору табличке, описывающей к каким разъемам DVI выведен какой из LINK портов (он же LVDS порт).\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"237\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fff4\u002F4c6\u002F3f9\u002Fff44c63f9e566cf947c92b389eef30e1.png\" data-width=\"1084\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"362\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F47a\u002F847\u002Fca4\u002F47a847ca4e1f98664270ddb22662d77b.png\" data-width=\"1079\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EИ к табличке с описанием допустимых соединений для LINK портов обоих размещенных на плате процессоров.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"722\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff8e\u002F9b7\u002Fadc\u002Ff8e9b7adcc174da59e77a38bd529a5cd.png\" data-width=\"1071\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EДля начала выберем между однобитным и четырех битным форматом приёма\u002Fпередачи. Сразу определимся, что брать от жизни стоит все до чего дотягиваются руки и исходя из этого соображения обмен данными будем осуществлять в формате 4 бит. Следовательно, в таблице допустимых соединений у нас отпадают варианты поддерживающие только однобитную передачу. Процессором D6 будем принимать через приемник второго порта, а процессором D5 будем слать данные через передатчик также второго порта. Как видим из таблички такой вариант соединения допустим. Для реализации физического соединения этих портов соединим DVI кабелем разъемы XS4 и XS9 исходя из информации в первой приведенной табличке. Теперь можно переходить к написанию кода.\u003C\u002Fp\u003E\u003Cp\u003EКод для передатчика будет следующим:\u003C\u002Fp\u003E\u003Cp\u003EДля начала объявим массив который будет содержать передаваемые данные - arrt\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E#include &lt;defts201.h\u003E\n.SECTION \u002FDOUBLE64 \u002FCHAR32 .data;\n.ALIGN 4;\n.var arrt[4096];\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее включим индикацию и заполним массив передачи данными\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E.SECTION .program;\n.ALIGN_CODE 4;\n.GLOBAL _main;\n_main: \nSQCTL = 0x1200;;\u002F\u002Fпереход в режим супервизора\nj0=0x1f;;\nFLAGREG=j0;; \u002F\u002Fвключим индикацию\nj0=arrt;;\n\u002F\u002Fзаполняем массив передачи\nxr0=0;;\nlc0 = 4096;;\nwr_tr:\n[j0+=1]=xr0;;\nxr0=r0+1;;\n if nlc0e, jump wr_tr;;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПосле чего перейдем к настройке передатчика. Включим LINK, дадим лишнее время приемнику подготовиться и включим DMA.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E\u002F\u002FВключаем линк передатчика\nj0=(1&lt;&lt;4)+(4&lt;&lt;5);;\u002F\u002Fформат 4 бит\nLtCTL2=j0;;\nlc0 = 10;;\ndly_p1: if nlc0e, jump dly_p1;; \u002F\u002Fподождем\n\u002F\u002Fвключаем\nj0=1+(1&lt;&lt;4)+(4&lt;&lt;5);;\nLtCTL2=j0;;\nlc0 = 1000;;\ndly_p2: if nlc0e, jump dly_p2;; \u002F\u002F дадим приемнику время подготовиться\n\u002F\u002FНастраиваем и включаем DMA передатчика\nxr0=arrt;;\nxr1=0x4000004;; \u002F\u002Fпередаем 1024 4-байтных слова\nxr2=0;;\nxr3=0x40000000\u002F*выбираем внутреннюю память*\u002F+ (6&lt;&lt;19)\u002F*выбираем номер порта линк и направление\n*\u002F + (3&lt;&lt;25) \u002F*ставим длину данных \n*\u002F\nq[j31+task_T]=xr3:0;;\ndc6=xr3:0;;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее провалимся в бесконечный цикл. Буфер передачи мы сделали в 4  раза больше чем передаем данных, это пригодится нам для имитации потока данных больше приемного буфера.\u003C\u002Fp\u003E\u003Cp\u003EТеперь приемник.\u003C\u002Fp\u003E\u003Cp\u003EОбъявляем два массива приема. Второй массив также пригодится для отработки приема данных в режиме автобуфера, но сначала отработаем однократный прием.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E#include &lt;defts201.h\u003E\n.SECTION \u002FDOUBLE64 \u002FCHAR32 .data;\n.ALIGN 4;\n\u002F\u002FБуфер приема из двух частей\n.var arrr[1024];\n.var arrr1[1024];\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее произведем для приемника операции аналогичные тем, что мы произвели для передатчика.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E.SECTION .program;\n.ALIGN_CODE 4;\n.GLOBAL _main;\n_main:\nSQCTL = 0x1200;;\u002F\u002Fпереход в режим супервизора\nj1=0x5f;;\nFLAGREG=j1;; \u002F\u002Fвключим индикацию\n\u002F\u002Fчистим буферы\nj1=arrr;;\nj2=arrr1;;\nxr0=0;;\nlc0 = 1024;;\nwr_res:\n[j1+=1]=xr0;;\n[j2+=1]=xr0;;\nif nlc0e, jump wr_res;;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВключим LINK порт и затем DMA, после чего провалимся в бесконечный цикл\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E\u002F\u002FВключаем линк приемника\nj1=(1&lt;&lt;4);;\u002F\u002Fформат 4 бит\nLRCTL2=j1;;\nlc0 = 10;;\ndly_p1: if nlc0e, jump dly_p1;nop;nop;;\nj1=1+(1&lt;&lt;4);;\nLRCTL2=j1;;\n\u002F\u002Fнастраиваем и включаем DMA приемника\nxr0 = arrr1;;\nxr1=0x4000004;;\nxr2=0;;\nxr3=0x40000000\u002F*выбираем внутреннюю память*\u002F+(2&lt;&lt;19)\u002F*выбираем номер порта линк и направление\n*\u002F +(1&lt;&lt;24)\u002F*разрешаем прерывание по завершению работы канала\n*\u002F +(3&lt;&lt;25) \u002F*ставим длину данных\n*\u002F \ndc10=xr3:0;;\n_main_loop:\nnop;nop;nop;;\nnop;nop;nop;;\nnop;nop;nop;;\nnop;nop;nop;;\nnop;nop;nop;;\nnop;nop;nop;;\njump _main_loop;nop;;\n_main.end:\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗапустим и посмотрим, что получилось. Как видно в процессе отладки данные успешно загрузились.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"270\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3f\u002F44a\u002F587\u002Fc3f44a5874e2dcc6ff6a05b609adc16f.png\" data-width=\"831\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EТеперь стоит отработать вариант с непрерывным потоком данных, ведь очень часто мы не можем прогнозировать сколько конкретно данных надо еще принять и к тому же данных от внешнего источника может оказаться больше чем возможно уместить в буфер приема или же это может быть вообще непрерывный поток данных.  DMA обычно имеет возможность работы в режиме автобуфера. Тут такая возможность тоже имеется если дать разрешение цепочки. Цепочка разрешается в 22 бите регистра DP входящего в группу настроечных регистров DMA. Разрешение цепочки позволяет по окончанию работы DMA взять по адресу прописанном в первых 18 битах регистра DP. Буфер приема будет у нас состоять из двух частей arrr и arrr1, которые будут по очереди обновляться. Для проверки в передатчике изменим количество передаваемых квадрослов с 1024 на 4096 заменив в его коде:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Exr1=0x10000004;;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ приемнике добавим два массива для настройки цепочек.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E.var task_R[4]={0,0,0,0};\n.var task_R1[4]={0,0,0,0};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСоответственно в приемнике изменим процесс настройки DMA добавив разрешение цепочки и указатель настройки на следующую цепочку. Причем сделаем так чтоб цепочки чередовались. Каждая из цепочек в качестве указателя следующей цепочки содержит адрес другой цепочки. Таким образом загрузка идет то в один буфер то в другой.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E\u002F\u002Fнастраиваем и включаем приемник\nxr0 = arrr1;;\nxr1=0x4000004;;\nxr2=0;;\nxr3=0x40000000\u002F*выбираем внутреннюю память*\u002F+(2&lt;&lt;19)\u002F*выбираем номер порта линк и направление\n*\u002F +(3&lt;&lt;25) \u002F*ставим длину данных*\u002F + (1&lt;&lt;22)\u002F* разрешение след приема\n*\u002F + (task_R\u002F4);; \u002F\u002Fуказатель на след цепочку выравненный по квадрословам\nq[j31+task_R1]=xr3:0;;\nxr0 = arrr;;\nxr3=0x40000000\u002F*выбираем внутреннюю память*\u002F+(2&lt;&lt;19)\u002F*выбираем номер порта линк и направление*\u002F +(3&lt;&lt;25) \u002F*ставим длинну данных\n*\u002F + (1&lt;&lt;22)\u002F* разрешение след приема\n*\u002F + (task_R1\u002F4);; \u002F\u002Fуказатель на след цепочку выравненный по квадрословам\nq[j31+task_R]=xr3:0;;\nxr0 = arrr;;\ndc10=xr3:0;;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПроверим работу. Мы отправляли значения от 0 до 4096, каждый буфер имеет по 1024 места. И как видно из скриншотов ниже конечные значения буферов такие какими должны быть\u003C\u002Fp\u003E\u003Cfigure class=\"bordered full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"264\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fbe7\u002F41e\u002F151\u002Fbe741e151b0ccc2d14d9f29f948ea799.png\" data-width=\"831\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cfigure class=\"bordered full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"259\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F740\u002Ff7d\u002F053\u002F740f7d0535cf6e3086322ee60f069279.png\" data-width=\"831\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EТакже, чтоб понимать, когда очередной буфер закончил заполняться чтоб перейти к его обработке мы можем воспользоваться прерыванием по завершению работы DMA. \u003C\u002Fp\u003E\u003Cp\u003EТут стоит сказать несколько слов о работе с прерываниями в процессоре 1967BH028.\u003C\u002Fp\u003E\u003Cp\u003EПрерывания в данном процессоре организованы отлично от привычной многим схемы, где прерывания при сработке, отсылают в таблицу векторов прерываний расположенную в памяти с нулевого адреса, а в таблице соответственно содержатся уже переходы на обработчики соответствующих прерываний. Здесь таблицы векторов нет как таковой. Зато под каждое прерывание есть отдельный регистр, в который мы и можем положить адрес обработчика. В документации говорится\u003C\u002Fp\u003E\u003Cp\u003E«…Обработка прерывания начинается в контроллере прерываний. Контроллер прерываний принимает запрос в регистр ILAT, далее смотрит разрешен ли полученный запрос в регистре IMASK. Если прерывание разрешено, анализируется регистр PMASK, который содержит в себе информацию о текущих обрабатываемых прерываниях. Если приоритет поступившего запроса прерывания выше приоритета обрабатываемого прерывания (либо нет обрабатываемых прерываний), контроллер формирует номер прерывания, считывает из таблицы векторов прерываний соответствующее значение адреса процедуры обслуживания прерывания и отсылает всю эту информацию в устройство управления…»\u003C\u002Fp\u003E\u003Cp\u003EНиже приведено описание младших регистров ILATL, IMASKL, PMASKL\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F781\u002Fecf\u002F040\u002F781ecf0407847d10bc9cd474381cd0b8.PNG\" width=\"820\" height=\"750\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЗатем происходит проверка глобального разрешения прерываний. За это отвечает бит GIE регистра управления SQCTL. Если прерывания разрешены, то мы проваливаемся в обработчик.\u003C\u002Fp\u003E\u003Cp\u003E            Для разбора работы с прерываниями поставим цель генерировать прерывания по окончанию акта приема\u002Fпередачи DMA. Код будет сделан на основе кода из прошлой  заметки о работе LVDS порта. Там для передачи был использован DMA6, а для приема DMA10. Их регистры векторов прерываний IVDMA6, IVDMA10, и нам будет достаточно прерывания по приему.\u003C\u002Fp\u003E\u003Cp\u003EВнесем изменения в код приемника. Разрешим прерывания глобально. \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003ESQCTL = 0x1204;;\u002F\u002Fпереход в режим супервизора + глобальное разрешение прерываний\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EРазрешим нужное прерывание в регистре маскирования прерываний\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E\u002F\u002FРазрешим прерывание DMA10 в регистре маскирования прерываний\nj0=(1&lt;&lt;31);;\nimaskl=j0;;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗагрузим в IVDMA10 адрес функции обработчика, у меня она зовется «dma10_interrupt». Добавим в начало программного тела:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Ek0=dma10_interrupt;;\nivdma10=k0;;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее, по логике, надо разрешить прерывание в регистре настройки DMA канала (в tcb). За это отвечает 24 разряд регистра DP\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"92\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F220\u002Feb4\u002Ff67\u002F220eb4f67c2e91efbcceee5fa46d22bd.png\" data-width=\"821\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EТеперь настройка этого регистра выглядит так\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E\u002F\u002Fнастраиваем и включаем приемник\nxr0 = arrr1;;\nxr1=0x4000004;;\nxr2=0;;\nxr3=0x40000000\u002F*выбираем внутреннюю память*\u002F+(2&lt;&lt;19)\u002F*выбираем номер порта линк и направление\n*\u002F +(1&lt;&lt;24)\u002F*разрешаем прерывание по завершению работы канала\n*\u002F +(3&lt;&lt;25) \u002F*ставим длину данных*\u002F + (1&lt;&lt;22)\u002F* разрешение след приема\n*\u002F + (task_R\u002F4);; \u002F\u002Fуказатель на след цепочку выравненный по квадрословам\nq[j31+task_R1]=xr3:0;;\nxr0 = arrr;;\nxr3=0x40000000\u002F*выбираем внутреннюю память*\u002F+(2&lt;&lt;19)\u002F*выбираем номер порта линк и направление\n*\u002F +(1&lt;&lt;24)\u002F*разрешаем прерывание по завершению работы канала\n*\u002F +(3&lt;&lt;25) \u002F*ставим длину данных*\u002F + (1&lt;&lt;22)\u002F* разрешение след приема\n*\u002F + (task_R1\u002F4);; \u002F\u002Fуказатель на след цепочку выравненный по квадрословам\nq[j31+task_R]=xr3:0;;\nxr0 = arrr;;\ndc10=xr3:0;;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ данном случае мы обслуживаем только одно прерывание, и по сути мы можем просто в него провалиться и вернуться командой RTI. При переходе в обработчик, адрес возврата кладется в регистр RETI и это значение используется командой RTI при возврате из обработчика. Но в случае, если у нас прерываний будет несколько, могут возникнуть проблемы. При одновременном вызове нескольких прерываний сработает прерывание с большим приоритетом (согласно таблице приоритетов, в спецификации). Однако при сработке прерывания и переходе в обработчик, обработка любых прерываний до конца обработки будет запрещена, в том числе и прерываний с большим приоритетом. Так как будет поднят флаг EXE_ISR показывающий, что идет обработка. Чтобы такого не происходило стоит в начале обработчика считать значение регистра RETI например командой «j0 = RETIB;;»  это вызовет копирование регистра RETI в регистр j0 и сброс флага EXE_ISR.  Значение j0 надо сохранить на стеке и перед операцией выхода из прерывания записать обратно «RETIВ = j0;;». В нашем случае мы сохранять RETIB не будем так как прерывание включать планируем только одно. Также для внешней индикации отработки прерывания будем в обработчике менять светики. Обработчик в итоге выглядит вот так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Edma10_interrupt:\nj1=0x3f;;\nFLAGREG=j1;;\n\u002F*код обработчика*\u002F \nRTI(np);;\ndma10_interrupt.end:\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь при приеме потока данных когда один из буферов будет заполнен произойдет вызов прерывания и мы будем знать, что можно приступать к обработке собранных в него данных. А на этом закончу, спасибо за внимание.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"1967bh028"},{"titleHtml":"dsp"},{"titleHtml":"assembler"},{"titleHtml":"отечественный производитель"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F1f8\u002Fd1d\u002F8a3\u002F1f8d1d8a303aa7737fed1171341778dc.PNG","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F1f8\u002Fd1d\u002F8a3\u002F1f8d1d8a303aa7737fed1171341778dc.PNG","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583400\\\u002F\"},\"headline\":\"Общение двух процессоров 1967BH028 по LVDS с использованием DMA и прерываний\",\"datePublished\":\"2021-10-14T18:00:01+03:00\",\"dateModified\":\"2021-10-14T20:37:43+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"mikrizh\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимс...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583400\\\u002F#post-content-body\",\"about\":[\"h_assembler\",\"h_controllers\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583400\\\u002F7747d56f347a7b98eb35a8427b85013c\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F1f8\\\u002Fd1d\\\u002F8a3\\\u002F1f8d1d8a303aa7737fed1171341778dc.PNG\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fff4\\\u002F4c6\\\u002F3f9\\\u002Fff44c63f9e566cf947c92b389eef30e1.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F47a\\\u002F847\\\u002Fca4\\\u002F47a847ca4e1f98664270ddb22662d77b.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff8e\\\u002F9b7\\\u002Fadc\\\u002Ff8e9b7adcc174da59e77a38bd529a5cd.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fc3f\\\u002F44a\\\u002F587\\\u002Fc3f44a5874e2dcc6ff6a05b609adc16f.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fbe7\\\u002F41e\\\u002F151\\\u002Fbe741e151b0ccc2d14d9f29f948ea799.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F740\\\u002Ff7d\\\u002F053\\\u002F740f7d0535cf6e3086322ee60f069279.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F781\\\u002Fecf\\\u002F040\\\u002F781ecf0407847d10bc9cd474381cd0b8.PNG\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F220\\\u002Feb4\\\u002Ff67\\\u002F220eb4f67c2e91efbcceee5fa46d22bd.png\"]}","metaDescription":"В этой заметке рассмотрим процесс обмена данными между двумя процессорами 1967BH028 через интерфейс LVDS с использованием каналов DMA. А также вкратце ознакомимся с особенностями организации системы...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"assembler,controllers"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

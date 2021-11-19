@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>PWA: управление service-worker&#x27;ом / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582366\/"},"headline":"PWA: управление service-worker'ом","datePublished":"2021-10-08T12:23:49+03:00","dateModified":"2021-10-08T12:23:49+03:00","author":{"@type":"Person","name":"Alex Gusev"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Прочитал я хорошую статью &quot;Обновление вашего PWA в продакшене&quot; и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service wo...","url":"https:\/\/habr.com\/ru\/post\/582366\/#post-content-body","about":["h_webdev","h_javascript","h_mobile_dev","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582366\/b66f2bdab2e991d51b984236c2003809\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/018\/e10\/31c\/018e1031cb374667bf08d2f2f998a501.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/348\/000\/67e\/34800067e49091c64de25790b144a924.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/ab2\/263\/f92\/ab2263f923c056dfd1f19aa11af039c9.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/97b\/7af\/589\/97b7af58964ec65feee56459f253eff3.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/99b\/7ad\/526\/99b7ad526ec2422995ac42cf3770d5c0.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="PWA: управление service-worker&#x27;ом" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="PWA: управление service-worker&#x27;ом" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="PWA: управление service-worker&#x27;ом" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Прочитал я хорошую статью &amp;quot;Обновление вашего PWA в продакшене&amp;quot; и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Прочитал я хорошую статью &amp;quot;Обновление вашего PWA в продакшене&amp;quot; и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Прочитал я хорошую статью &amp;quot;Обновление вашего PWA в продакшене&amp;quot; и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Прочитал я хорошую статью &amp;quot;Обновление вашего PWA в продакшене&amp;quot; и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Прочитал я хорошую статью &amp;quot;Обновление вашего PWA в продакшене&amp;quot; и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/c58/c7d/a02/c58c7da02d5e909bdb376768db6b723d.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/c58/c7d/a02/c58c7da02d5e909bdb376768db6b723d.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/c58/c7d/a02/c58c7da02d5e909bdb376768db6b723d.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/c58/c7d/a02/c58c7da02d5e909bdb376768db6b723d.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/c58/c7d/a02/c58c7da02d5e909bdb376768db6b723d.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582366" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-08T09:23:49.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582366/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582366/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/c58/c7d/a02/c58c7da02d5e909bdb376768db6b723d.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582366/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/flancer/" title="flancer" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/145/a17/476/145a174765de52693e6d543149f8f74b.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/flancer/" class="tm-user-info__username">
+      flancer
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-08T09:23:49.000Z" title="2021-10-08, 12:23">8  октября   в 12:23</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>PWA: управление service-worker'ом</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/webdev/" class="tm-article-snippet__hubs-item-link"><span>Разработка веб-сайтов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/javascript/" class="tm-article-snippet__hubs-item-link"><span>JavaScript</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/mobile_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка мобильных приложений</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Прочитал я хорошую статью "<a href="https://habr.com/ru/post/535428/" rel="noopener noreferrer nofollow">Обновление вашего PWA в продакшене</a>" и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по сути? "Прокладка" (прокси) между приложением, работающим в браузере, и внешними серверами, с которых это приложение тянет нужные ему ресурсы. По большому счёту, функционал service worker'а сводится к некоторому <a href="https://developers.google.com/web/tools/workbox/modules/workbox-strategies" rel="noopener noreferrer nofollow">набору стратегий</a> и пониманию того, к какому ресурсу какую стратегию применять и когда (я сейчас не рассматриваю <a href="https://developers.google.com/web/ilt/pwa/introduction-to-push-notifications" rel="noopener noreferrer nofollow">push notifications</a> и <a href="https://developers.google.com/web/updates/2015/12/background-sync" rel="noopener noreferrer nofollow">background sync</a>, но изложенное в какой-то степени применимо и к ним).</p><p>То есть, код service worker'а более стабилен по сравнению с кодом приложения и во многих случаях для его "обновления" достаточно программно обнулить кэш-хранилище браузера и обновить "<em>понимание того, к какому ресурсу какую стратегию применять</em>" - обновить конфигурацию service worker'а. А для этого нужно приложению нужно иметь возможность каким-то образом управлять состоянием service worker'а и передавать ему данные, что осложняется тем, что приложение и service worker работают в различных потоках.</p><p>Под катом пример того, каким образом можно настроить управление service worker'ом из основного приложения при помощи <a href="https://developer.mozilla.org/en-US/docs/Web/API/Channel_Messaging_API" rel="noopener noreferrer nofollow">Channel Messaging API</a>.</p><p>В русскоязычной среде нет устоявшегося аналога английского service worker. В тексте данной публикации я буду использовать словосочетание "<em>сервис-служба</em>" в качестве перевода для "<em>service worker</em>" просто для того, чтобы реже переключать раскладку клавиатуры, пусть даже оно и звучит как "<em>масляное масло</em>". Появится лучший перевод - буду использовать его.</p><h2>Принцип взаимодействия</h2><p>Код сервис-службы выполняется в отдельном потоке и является событийно-ориентированным по своей архитектуре (т.е., полностью асинхронным). Поэтому общение приложения с сервис-службой также асинхронно - обе стороны подписываются на событие <code>message</code>, а затем каким-то образом реагируют на получаемые сообщения и отправляют свои. Схематически это можно отобразить таким образом:</p><figure class="full-width "><img src="/img/image-loader.svg" height="703" data-src="https://habrastorage.org/getpro/habr/upload_files/018/e10/31c/018e1031cb374667bf08d2f2f998a501.png" data-width="653"/><figcaption></figcaption></figure><ul><li><p>Приложение, на своей стороне, формирует сообщение к сервис-службе и регистрирует контекст сообщения, включающий (при необходимости) <em>callback</em>-функцию, которая обработает результат, планируемый к получению в будущем от сервис-службы.</p></li><li><p>Приложение отправляет сообщение сервис-службе в соседний поток.</p></li><li><p>Сервис-служба получает сообщение и выполняет запрошенную операцию (например, изменяет конфигурацию или обновляет кэш).</p></li><li><p>После выполнения операции сервис-служба отправляет приложению обратное сообщение.</p></li><li><p>Приложение получает сообщение от сервис-службы и находит в реестре контекст, соответствующий полученному сообщению.</p></li><li><p>Приложение передаёт в контекст данные, полученные от сервис-службы, и выполняет (при необходимости) <em>callback</em>-функцию.</p></li></ul><h2>Базовый код</h2><h3>Приложение</h3><p>Отправка сообщения активной сервис-службе:</p><pre><code class="javascript">const sw = await navigator.serviceWorker.ready;
+if (sw.active) sw.active.postMessage(msg);</code></pre><p>Подписка на сообщения от сервис-службы:</p><pre><code class="javascript">navigator.serviceWorker.addEventListener('message', onMessage);</code></pre><h3>Сервис-служба</h3><p>Отправка в приложение обратного сообщения осуществляется в обработчике события:</p><pre><code class="javascript">function onMessage(event) {
+    //...
+    event.source.postMessage(msg);
+}</code></pre><p>Подписка на сообщения от приложения:</p><pre><code class="javascript">self.addEventListener('message', onMessage);</code></pre><h2>Демо</h2><p>Для демонстрации  управления сервис-службой я сделал приложение:</p><ul><li><p><a href="https://github.com/flancer64/habr_pwa_sw_control" rel="noopener noreferrer nofollow">код</a></p></li><li><p><a href="https://control.sw.pwa.habr.demo.teqfw.com/" rel="noopener noreferrer nofollow">демо</a></p></li></ul><blockquote><p>Для корректной работы приложения должно быть отключено <em>собственное кэширование</em> в браузере (в Chrome - панель инструментов, вкладка <code>Network</code>, <code>Disable cache</code>), в противном случае повторные запросы на картинки даже не доходят до сервис-службы.</p></blockquote><p>Приложение по очереди загружает два изображения: первичное и вторичное. Первичное изображение (<code>./img/primary.svg</code>) всегда содержит картинку лошади, а вторичное (<code>./img/secondary.svg</code>) - картинку кошки или собаки, в зависимости от состояния сервис-службы:</p><figure class=""><img src="/img/image-loader.svg" height="702" data-src="https://habrastorage.org/getpro/habr/upload_files/348/000/67e/34800067e49091c64de25790b144a924.png" data-width="486"/><figcaption></figcaption></figure><p>Замещение изображения происходит по кнопке "Заместить":</p><figure class=""><img src="/img/image-loader.svg" height="703" data-src="https://habrastorage.org/getpro/habr/upload_files/ab2/263/f92/ab2263f923c056dfd1f19aa11af039c9.png" data-width="487"/><figcaption></figcaption></figure><p>Переключение сервис-службы происходит в режиме просмотра первичного изображения при помощи радио-кнопки. Вот лог в консоли браузера, отображающий процессы получения текущего состояния сервис-службы (для инициализации радио-кнопки) и однократного переключения состояния:</p><figure class="full-width "><img src="/img/image-loader.svg" height="272" data-src="https://habrastorage.org/getpro/habr/upload_files/97b/7af/589/97b7af58964ec65feee56459f253eff3.png" data-width="609"/><figcaption></figcaption></figure><p>Состояние сервис-службы сохраняется в переменной <code>_useCat</code>, изменения отслеживаются через отладчик:</p><figure class="full-width "><img src="/img/image-loader.svg" height="564" data-src="https://habrastorage.org/getpro/habr/upload_files/99b/7ad/526/99b7ad526ec2422995ac42cf3770d5c0.png" data-width="1092"/><figcaption></figcaption></figure><h3>Структура сообщения</h3><p>DTO-объект для передачи информации от приложения в сервис-службу и обратно:</p><pre><code class="javascript">class Dto {
+    id;
+    payload;
+    type;
+}</code></pre><p>В демо-приложении возможны два типа сообщений: <code>get_state</code> и <code>set_state</code>.</p><h3>Контроллер</h3><p>Контроллер обеспечивает синхронизацию отправки сообщений сервис-службе и сопоставление отправленным сообщениям обратных сообщений от сервис-службы. Приложение может использовать команды контроллера (<code>getState()</code>, <code>setState(replaceWithCat)</code>) для управления сервис-службой:</p><pre><code class="javascript">class Controller {
+    constructor(spec) {
+        const _queue = {};
+        const generateMsgId = () => `${(new Date()).getTime()}`;
+        this.getState = function () {};
+        this.setState = function (replaceWithCat = true) {};
+        function onMessage(event) {}
+        self.navigator.serviceWorker
+            .addEventListener('message', onMessage);
+    }
+}</code></pre><p>Вот основа кода регистрации сообщения в реестре и отправки сообщения сервис-службе:</p><pre><code class="javascript">this.setState = function (replaceWithCat = true) {
+    const id = generateMsgId();
+    return new Promise(async (resolve) => {
+        _queue[id] = resolve;
+        const msg = new Dto();
+        msg.id = id;
+        //...
+        const sw = await navigator.serviceWorker.ready;
+        sw.active.postMessage(msg);
+    });
+};</code></pre><p>А это код получения обратного сообщения от сервис-службы и разрешения зарегистрированного ранее промиса:</p><pre><code class="javascript">function onMessage(event) {
+    const id = event.data.id;
+    const payload = event.data.payload;
+    if (typeof _queue[id] === 'function') _queue[id](payload);
+}</code></pre><h3>Сервис-служба</h3><p>В сервис-службе весь функционал умещается в одном обработчике:</p><pre><code class="javascript">function onMessage(event) {
+    const msg = event.data;
+    const res = {};
+    res.id = msg.id;
+    if (msg.type === 'get_state') {...} 
+    else if (msg.type === 'set_state') {...}
+    event.source.postMessage(res);
+}</code></pre><p>Обработчик принимает сообщение, выполняет запрошенную операцию и возвращает результат вместе с <code>id</code> операции обратным сообщением.</p><h3>Приложение</h3><p>Приложение общается через контроллер, поэтому тут совсем всё тривиально:</p><pre><code class="javascript">const isCat = await swControl.getState();</code></pre><h2>Резюме</h2><ul><li><p>Если функционал сервис-службы отделить от её конфигурации (список ресурсов и стратегии кэширования), то обновления самой сервис-службы нужно будет делать реже.</p></li><li><p>Функционал по зачистке кэша, используемого сервис-службой, лучше ставить до вывода приложения в прод, чтобы избежать ситуации "<em>установил ServiceWorker - пора менять домен</em>".</p></li><li><p>В силу асинхронной природы сервис-службы для управления её состоянием из приложения приходится использовать асинхронный подход (при этом данные "туда" и "обратно" передаются по-значению, а не по ссылке).</p></li><li><p>Добавление промежуточного контроллера, завязанного по управляющему функционалу на возможности сервис-службы, позволяют замаскировать асинхронную природу связи для остального приложения (сопоставление ответа запросу делается в контроллере).</p></li><li><p>Использование отладчика в браузере очень сильно способствует пониманию процессов, происходящих внутри программы.</p></li></ul></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bprogressive%20web%20applications%5D" class="tm-tags-list__link">progressive web applications</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpwa%5D" class="tm-tags-list__link">pwa</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bserviceworker%5D" class="tm-tags-list__link">serviceworker</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bevent-driven%5D" class="tm-tags-list__link">event-driven</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmessage-passing%5D" class="tm-tags-list__link">message-passing</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/webdev/" class="tm-hubs-list__link">
+    Разработка веб-сайтов
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/javascript/" class="tm-hubs-list__link">
+    JavaScript
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/mobile_dev/" class="tm-hubs-list__link">
+    Разработка мобильных приложений
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 2: ↑2 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 2: ↑2 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+2</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.6K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    28
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/flancer/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/145/a17/476/145a174765de52693e6d543149f8f74b.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 152 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    32.2
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">10</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Alex Gusev</span> <a href="/ru/users/flancer/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @flancer
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Разработка PWA для мобильных устройств</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582366/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 1 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582366/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582366/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582366":{"id":"582366","timePublished":"2021-10-08T09:23:49+00:00","isCorporative":false,"lang":"ru","titleHtml":"PWA: управление service-worker'ом","leadData":{"textHtml":"\u003Cp\u003EПрочитал я хорошую статью \"\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F535428\u002F\" rel=\"noopener noreferrer nofollow\"\u003EОбновление вашего PWA в продакшене\u003C\u002Fa\u003E\" и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по сути? \"Прокладка\" (прокси) между приложением, работающим в браузере, и внешними серверами, с которых это приложение тянет нужные ему ресурсы. По большому счёту, функционал service worker'а сводится к некоторому \u003Ca href=\"https:\u002F\u002Fdevelopers.google.com\u002Fweb\u002Ftools\u002Fworkbox\u002Fmodules\u002Fworkbox-strategies\" rel=\"noopener noreferrer nofollow\"\u003Eнабору стратегий\u003C\u002Fa\u003E и пониманию того, к какому ресурсу какую стратегию применять и когда (я сейчас не рассматриваю \u003Ca href=\"https:\u002F\u002Fdevelopers.google.com\u002Fweb\u002Filt\u002Fpwa\u002Fintroduction-to-push-notifications\" rel=\"noopener noreferrer nofollow\"\u003Epush notifications\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fdevelopers.google.com\u002Fweb\u002Fupdates\u002F2015\u002F12\u002Fbackground-sync\" rel=\"noopener noreferrer nofollow\"\u003Ebackground sync\u003C\u002Fa\u003E, но изложенное в какой-то степени применимо и к ним).\u003C\u002Fp\u003E\u003Cp\u003EТо есть, код service worker'а более стабилен по сравнению с кодом приложения и во многих случаях для его \"обновления\" достаточно программно обнулить кэш-хранилище браузера и обновить \"\u003Cem\u003Eпонимание того, к какому ресурсу какую стратегию применять\u003C\u002Fem\u003E\" - обновить конфигурацию service worker'а. А для этого нужно приложению нужно иметь возможность каким-то образом управлять состоянием service worker'а и передавать ему данные, что осложняется тем, что приложение и service worker работают в различных потоках.\u003C\u002Fp\u003E\u003Cp\u003EПод катом пример того, каким образом можно настроить управление service worker'ом из основного приложения при помощи \u003Ca href=\"https:\u002F\u002Fdeveloper.mozilla.org\u002Fen-US\u002Fdocs\u002FWeb\u002FAPI\u002FChannel_Messaging_API\" rel=\"noopener noreferrer nofollow\"\u003EChannel Messaging API\u003C\u002Fa\u003E.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc58\u002Fc7d\u002Fa02\u002Fc58c7da02d5e909bdb376768db6b723d.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc58\u002Fc7d\u002Fa02\u002Fc58c7da02d5e909bdb376768db6b723d.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":32.2,"votesCount":152},"rating":10,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"241153","alias":"flancer","fullname":"Alex Gusev","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F145\u002Fa17\u002F476\u002F145a174765de52693e6d543149f8f74b.png","speciality":"Разработка PWA для мобильных устройств"},"statistics":{"commentsCount":1,"favoritesCount":28,"readingCount":1639,"score":2,"votesCount":2},"hubs":[{"relatedData":null,"id":"91","alias":"webdev","type":"collective","title":"Разработка веб-сайтов","titleHtml":"Разработка веб-сайтов","isProfiled":true},{"relatedData":null,"id":"357","alias":"javascript","type":"collective","title":"JavaScript","titleHtml":"JavaScript","isProfiled":true},{"relatedData":null,"id":"6345","alias":"mobile_dev","type":"collective","title":"Разработка мобильных приложений","titleHtml":"Разработка мобильных приложений","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EПрочитал я хорошую статью \"\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F535428\u002F\" rel=\"noopener noreferrer nofollow\"\u003EОбновление вашего PWA в продакшене\u003C\u002Fa\u003E\" и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по сути? \"Прокладка\" (прокси) между приложением, работающим в браузере, и внешними серверами, с которых это приложение тянет нужные ему ресурсы. По большому счёту, функционал service worker'а сводится к некоторому \u003Ca href=\"https:\u002F\u002Fdevelopers.google.com\u002Fweb\u002Ftools\u002Fworkbox\u002Fmodules\u002Fworkbox-strategies\" rel=\"noopener noreferrer nofollow\"\u003Eнабору стратегий\u003C\u002Fa\u003E и пониманию того, к какому ресурсу какую стратегию применять и когда (я сейчас не рассматриваю \u003Ca href=\"https:\u002F\u002Fdevelopers.google.com\u002Fweb\u002Filt\u002Fpwa\u002Fintroduction-to-push-notifications\" rel=\"noopener noreferrer nofollow\"\u003Epush notifications\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fdevelopers.google.com\u002Fweb\u002Fupdates\u002F2015\u002F12\u002Fbackground-sync\" rel=\"noopener noreferrer nofollow\"\u003Ebackground sync\u003C\u002Fa\u003E, но изложенное в какой-то степени применимо и к ним).\u003C\u002Fp\u003E\u003Cp\u003EТо есть, код service worker'а более стабилен по сравнению с кодом приложения и во многих случаях для его \"обновления\" достаточно программно обнулить кэш-хранилище браузера и обновить \"\u003Cem\u003Eпонимание того, к какому ресурсу какую стратегию применять\u003C\u002Fem\u003E\" - обновить конфигурацию service worker'а. А для этого нужно приложению нужно иметь возможность каким-то образом управлять состоянием service worker'а и передавать ему данные, что осложняется тем, что приложение и service worker работают в различных потоках.\u003C\u002Fp\u003E\u003Cp\u003EПод катом пример того, каким образом можно настроить управление service worker'ом из основного приложения при помощи \u003Ca href=\"https:\u002F\u002Fdeveloper.mozilla.org\u002Fen-US\u002Fdocs\u002FWeb\u002FAPI\u002FChannel_Messaging_API\" rel=\"noopener noreferrer nofollow\"\u003EChannel Messaging API\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EВ русскоязычной среде нет устоявшегося аналога английского service worker. В тексте данной публикации я буду использовать словосочетание \"\u003Cem\u003Eсервис-служба\u003C\u002Fem\u003E\" в качестве перевода для \"\u003Cem\u003Eservice worker\u003C\u002Fem\u003E\" просто для того, чтобы реже переключать раскладку клавиатуры, пусть даже оно и звучит как \"\u003Cem\u003Eмасляное масло\u003C\u002Fem\u003E\". Появится лучший перевод - буду использовать его.\u003C\u002Fp\u003E\u003Ch2\u003EПринцип взаимодействия\u003C\u002Fh2\u003E\u003Cp\u003EКод сервис-службы выполняется в отдельном потоке и является событийно-ориентированным по своей архитектуре (т.е., полностью асинхронным). Поэтому общение приложения с сервис-службой также асинхронно - обе стороны подписываются на событие \u003Ccode\u003Emessage\u003C\u002Fcode\u003E, а затем каким-то образом реагируют на получаемые сообщения и отправляют свои. Схематически это можно отобразить таким образом:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"703\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F018\u002Fe10\u002F31c\u002F018e1031cb374667bf08d2f2f998a501.png\" data-width=\"653\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EПриложение, на своей стороне, формирует сообщение к сервис-службе и регистрирует контекст сообщения, включающий (при необходимости) \u003Cem\u003Ecallback\u003C\u002Fem\u003E-функцию, которая обработает результат, планируемый к получению в будущем от сервис-службы.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПриложение отправляет сообщение сервис-службе в соседний поток.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСервис-служба получает сообщение и выполняет запрошенную операцию (например, изменяет конфигурацию или обновляет кэш).\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПосле выполнения операции сервис-служба отправляет приложению обратное сообщение.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПриложение получает сообщение от сервис-службы и находит в реестре контекст, соответствующий полученному сообщению.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПриложение передаёт в контекст данные, полученные от сервис-службы, и выполняет (при необходимости) \u003Cem\u003Ecallback\u003C\u002Fem\u003E-функцию.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Ch2\u003EБазовый код\u003C\u002Fh2\u003E\u003Ch3\u003EПриложение\u003C\u002Fh3\u003E\u003Cp\u003EОтправка сообщения активной сервис-службе:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econst sw = await navigator.serviceWorker.ready;\nif (sw.active) sw.active.postMessage(msg);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПодписка на сообщения от сервис-службы:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Enavigator.serviceWorker.addEventListener('message', onMessage);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EСервис-служба\u003C\u002Fh3\u003E\u003Cp\u003EОтправка в приложение обратного сообщения осуществляется в обработчике события:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Efunction onMessage(event) {\n    \u002F\u002F...\n    event.source.postMessage(msg);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПодписка на сообщения от приложения:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eself.addEventListener('message', onMessage);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EДемо\u003C\u002Fh2\u003E\u003Cp\u003EДля демонстрации  управления сервис-службой я сделал приложение:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fflancer64\u002Fhabr_pwa_sw_control\" rel=\"noopener noreferrer nofollow\"\u003Eкод\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fcontrol.sw.pwa.habr.demo.teqfw.com\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eдемо\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cblockquote\u003E\u003Cp\u003EДля корректной работы приложения должно быть отключено \u003Cem\u003Eсобственное кэширование\u003C\u002Fem\u003E в браузере (в Chrome - панель инструментов, вкладка \u003Ccode\u003ENetwork\u003C\u002Fcode\u003E, \u003Ccode\u003EDisable cache\u003C\u002Fcode\u003E), в противном случае повторные запросы на картинки даже не доходят до сервис-службы.\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EПриложение по очереди загружает два изображения: первичное и вторичное. Первичное изображение (\u003Ccode\u003E.\u002Fimg\u002Fprimary.svg\u003C\u002Fcode\u003E) всегда содержит картинку лошади, а вторичное (\u003Ccode\u003E.\u002Fimg\u002Fsecondary.svg\u003C\u002Fcode\u003E) - картинку кошки или собаки, в зависимости от состояния сервис-службы:\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"702\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F348\u002F000\u002F67e\u002F34800067e49091c64de25790b144a924.png\" data-width=\"486\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЗамещение изображения происходит по кнопке \"Заместить\":\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"703\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fab2\u002F263\u002Ff92\u002Fab2263f923c056dfd1f19aa11af039c9.png\" data-width=\"487\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПереключение сервис-службы происходит в режиме просмотра первичного изображения при помощи радио-кнопки. Вот лог в консоли браузера, отображающий процессы получения текущего состояния сервис-службы (для инициализации радио-кнопки) и однократного переключения состояния:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"272\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F97b\u002F7af\u002F589\u002F97b7af58964ec65feee56459f253eff3.png\" data-width=\"609\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EСостояние сервис-службы сохраняется в переменной \u003Ccode\u003E_useCat\u003C\u002Fcode\u003E, изменения отслеживаются через отладчик:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"564\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F99b\u002F7ad\u002F526\u002F99b7ad526ec2422995ac42cf3770d5c0.png\" data-width=\"1092\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch3\u003EСтруктура сообщения\u003C\u002Fh3\u003E\u003Cp\u003EDTO-объект для передачи информации от приложения в сервис-службу и обратно:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eclass Dto {\n    id;\n    payload;\n    type;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ демо-приложении возможны два типа сообщений: \u003Ccode\u003Eget_state\u003C\u002Fcode\u003E и \u003Ccode\u003Eset_state\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Ch3\u003EКонтроллер\u003C\u002Fh3\u003E\u003Cp\u003EКонтроллер обеспечивает синхронизацию отправки сообщений сервис-службе и сопоставление отправленным сообщениям обратных сообщений от сервис-службы. Приложение может использовать команды контроллера (\u003Ccode\u003EgetState()\u003C\u002Fcode\u003E, \u003Ccode\u003EsetState(replaceWithCat)\u003C\u002Fcode\u003E) для управления сервис-службой:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eclass Controller {\n    constructor(spec) {\n        const _queue = {};\n        const generateMsgId = () =\u003E `${(new Date()).getTime()}`;\n        this.getState = function () {};\n        this.setState = function (replaceWithCat = true) {};\n        function onMessage(event) {}\n        self.navigator.serviceWorker\n            .addEventListener('message', onMessage);\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВот основа кода регистрации сообщения в реестре и отправки сообщения сервис-службе:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Ethis.setState = function (replaceWithCat = true) {\n    const id = generateMsgId();\n    return new Promise(async (resolve) =\u003E {\n        _queue[id] = resolve;\n        const msg = new Dto();\n        msg.id = id;\n        \u002F\u002F...\n        const sw = await navigator.serviceWorker.ready;\n        sw.active.postMessage(msg);\n    });\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА это код получения обратного сообщения от сервис-службы и разрешения зарегистрированного ранее промиса:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Efunction onMessage(event) {\n    const id = event.data.id;\n    const payload = event.data.payload;\n    if (typeof _queue[id] === 'function') _queue[id](payload);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EСервис-служба\u003C\u002Fh3\u003E\u003Cp\u003EВ сервис-службе весь функционал умещается в одном обработчике:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Efunction onMessage(event) {\n    const msg = event.data;\n    const res = {};\n    res.id = msg.id;\n    if (msg.type === 'get_state') {...} \n    else if (msg.type === 'set_state') {...}\n    event.source.postMessage(res);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОбработчик принимает сообщение, выполняет запрошенную операцию и возвращает результат вместе с \u003Ccode\u003Eid\u003C\u002Fcode\u003E операции обратным сообщением.\u003C\u002Fp\u003E\u003Ch3\u003EПриложение\u003C\u002Fh3\u003E\u003Cp\u003EПриложение общается через контроллер, поэтому тут совсем всё тривиально:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econst isCat = await swControl.getState();\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EРезюме\u003C\u002Fh2\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EЕсли функционал сервис-службы отделить от её конфигурации (список ресурсов и стратегии кэширования), то обновления самой сервис-службы нужно будет делать реже.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EФункционал по зачистке кэша, используемого сервис-службой, лучше ставить до вывода приложения в прод, чтобы избежать ситуации \"\u003Cem\u003Eустановил ServiceWorker - пора менять домен\u003C\u002Fem\u003E\".\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ силу асинхронной природы сервис-службы для управления её состоянием из приложения приходится использовать асинхронный подход (при этом данные \"туда\" и \"обратно\" передаются по-значению, а не по ссылке).\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДобавление промежуточного контроллера, завязанного по управляющему функционалу на возможности сервис-службы, позволяют замаскировать асинхронную природу связи для остального приложения (сопоставление ответа запросу делается в контроллере).\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EИспользование отладчика в браузере очень сильно способствует пониманию процессов, происходящих внутри программы.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"progressive web applications"},{"titleHtml":"pwa"},{"titleHtml":"serviceworker"},{"titleHtml":"event-driven"},{"titleHtml":"message-passing"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc58\u002Fc7d\u002Fa02\u002Fc58c7da02d5e909bdb376768db6b723d.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc58\u002Fc7d\u002Fa02\u002Fc58c7da02d5e909bdb376768db6b723d.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582366\\\u002F\"},\"headline\":\"PWA: управление service-worker'ом\",\"datePublished\":\"2021-10-08T12:23:49+03:00\",\"dateModified\":\"2021-10-08T12:23:49+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Alex Gusev\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Прочитал я хорошую статью &quot;Обновление вашего PWA в продакшене&quot; и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service wo...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582366\\\u002F#post-content-body\",\"about\":[\"h_webdev\",\"h_javascript\",\"h_mobile_dev\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582366\\\u002Fb66f2bdab2e991d51b984236c2003809\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F018\\\u002Fe10\\\u002F31c\\\u002F018e1031cb374667bf08d2f2f998a501.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F348\\\u002F000\\\u002F67e\\\u002F34800067e49091c64de25790b144a924.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fab2\\\u002F263\\\u002Ff92\\\u002Fab2263f923c056dfd1f19aa11af039c9.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F97b\\\u002F7af\\\u002F589\\\u002F97b7af58964ec65feee56459f253eff3.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F99b\\\u002F7ad\\\u002F526\\\u002F99b7ad526ec2422995ac42cf3770d5c0.png\"]}","metaDescription":"Прочитал я хорошую статью &quot;Обновление вашего PWA в продакшене&quot; и задался вопросом - а как часто при обновлении PWA нужно обновлять непосредственно сам service worker? Ведь что такое service worker по...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"webdev,javascript,mobile_dev"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Мы опубликовали модель, расставляющую знаки препинания и заглавные буквы в тексте на четырех языках / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/581946\/"},"headline":"Мы опубликовали модель, расставляющую знаки препинания и заглавные буквы в тексте на четырех языках","datePublished":"2021-10-06T16:56:19+03:00","dateModified":"2021-10-07T00:57:00+03:00","author":{"@type":"Person","name":"Alexander Veysov"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"При разработке систем распознавания речи мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и...","url":"https:\/\/habr.com\/ru\/post\/581946\/#post-content-body","about":["h_python","h_bigdata","h_machine_learning","h_natural_language_processing","f_develop"],"image":["https:\/\/habrastorage.org\/webt\/bk\/s0\/em\/bks0em_c-b35thcmsmpu2vpuok8.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/f4b\/2a9\/316\/f4b2a931637833ba516509a93f28f40b.svg","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/b0d\/dd7\/eff\/b0ddd7eff7515a826c77d73472b667f3.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/e60\/867\/9b9\/e608679b9262718a5853e9def3bdd6e3.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/975\/533\/226\/97553322662b06413e811c24715ecfdd.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/dfc\/5f6\/e58\/dfc5f6e58ec82416f4bd217f5dd9ce52.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/d34\/1cd\/42e\/d341cd42e726abd75d66a46c2e5c2c43.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/7a5\/95b\/a9a\/7a595ba9a3fe0117edba1d74fd5ca1c4.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/f94\/84a\/67a\/f9484a67a11de747ee1b879f0ef5242a.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/a7d\/a68\/8cb\/a7da688cb5ac0b25be20da9e5d379825.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Мы опубликовали модель, расставляющую знаки препинания и заглавные буквы в тексте на четырех языках" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Мы опубликовали модель, расставляющую знаки препинания и заглавные буквы в тексте на четырех языках" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Мы опубликовали модель, расставляющую знаки препинания и заглавные буквы в тексте на четырех языках" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="При разработке систем распознавания речи мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="При разработке систем распознавания речи мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="При разработке систем распознавания речи мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="При разработке систем распознавания речи мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="При разработке систем распознавания речи мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/581946/c9de4f7c9554d44ee83b128823d371df/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/581946/c9de4f7c9554d44ee83b128823d371df/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/581946/c9de4f7c9554d44ee83b128823d371df/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/581946/c9de4f7c9554d44ee83b128823d371df/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/581946/c9de4f7c9554d44ee83b128823d371df/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="581946" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-06T13:56:19.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/581946/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/581946/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/581946/c9de4f7c9554d44ee83b128823d371df/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/snakers4/" title="snakers4" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/0f8/128/b86/0f8128b86dc8be4a3b664f0b65722ca8.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/snakers4/" class="tm-user-info__username">
+      snakers4
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-06T13:56:19.000Z" title="2021-10-06, 16:56">6  октября   в 16:56</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Мы опубликовали модель, расставляющую знаки препинания и заглавные буквы в тексте на четырех языках</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/bigdata/" class="tm-article-snippet__hubs-item-link"><span>Big Data</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/machine_learning/" class="tm-article-snippet__hubs-item-link"><span>Машинное обучение</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/natural_language_processing/" class="tm-article-snippet__hubs-item-link"><span>Natural Language Processing</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><p><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/bk/s0/em/bks0em_c-b35thcmsmpu2vpuok8.png"/></p><br/>
+<p><a href="https://colab.research.google.com/github/snakers4/silero-models/blob/master/examples_te.ipynb" rel="nofollow noopener noreferrer"><img src="https://habrastorage.org/getpro/habr/post_images/f4b/2a9/316/f4b2a931637833ba516509a93f28f40b.svg" alt="Open In Colab"/></a></p><br/>
+<p>При разработке систем <a href="https://habr.com/ru/post/559640/">распознавания речи</a> мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений является то, что в устной речи якобы "можно услышать" грамматически верные знаки препинания и пробелы между словами, когда по факту реальная устная речь и грамотная письменная речь очень сильно отличаются (устная речь скорее похожа на "поток" слегка разделенный паузами и интонацией, поэтому люди так не любят монотонно бубнящих докладчиков).</p><br/>
+<p>Понятно, что можно просто начинать каждое высказывание с большой буквы и ставить точку в конце. Но хотелось бы иметь какое-то относительно простое и универсальное средство расстановки знаков препинания и заглавных букв в предложениях, которые генерирует наша система распознавания речи. Совсем хорошо бы было, если бы такая система в принципе работала с любыми текстами.</p><br/>
+<p>По этой причине мы бы хотели поделиться с сообществом системой, которая:</p><br/>
+<ul>
+<li>Расставляет заглавные буквы и основные знаки препинания (точка, запятая, дефис, вопросительный знак, восклицательный знак, тире для русского языка);</li>
+<li>Работает на 4 языках (русский, английский, немецкий, испанский);</li>
+<li>По построению должна работать максимально абстрактно на любом тексте и не основана на каких-то фиксированных правилах;</li>
+<li>Имеет минимальные нетривиальные метрики и выполняет задачу улучшения читабельности текста;</li>
+</ul><br/>
+<p>На всякий случай явно повторюсь — цель такой системы — лишь улучшать читабельность текста. Она не добавляет в текст информации, которой в нем изначально не было.</p><a name="habracut"></a><br/>
+<h2 id="postanovka-zadachi-i-metod-ee-resheniya">Постановка задачи и метод ее решения</h2><br/>
+<p>На вход подается предложение, записанное строчными буквами и без какой-либо пунктуации — как мы обычно получаем на выходе <a href="https://github.com/snakers4/silero-models#speech-to-text" rel="nofollow noopener noreferrer">системы распознавания речи</a>. Требуется разработать модель, восстанавливающую его грамотную запись в смысле использования заглавных букв и знаков препинания. Набор знаков препинания <code>.,—!?-</code> был выбран исходя из оценки того, отсутствие каких символов наиболее бросается в глаза в предложениях, которые в среднем встречаются в речи в целевых доменах.</p><br/>
+<p>Кроме того, модель разрабатывалась из предположения, что после, и только после каждого токена сетке следует проставить только одну метку — знака препинания или просто пробела. Это автоматически исключает сложные случаи расстановки пунктуации в начале предложения или из нескольких символов (самый яркий пример — разнообразная прямая речь в литературе). Это упрощение сделано намеренно, т.к. нам показалось, что такое ограничение более конструктивно, чем учет всех малочисленных краевых случаев. И вообще главная задача, скорее, в улучшении читабельности, чем в идеальной записи составной прямой речи с обращениями и описаниями.</p><br/>
+<p>Задачу предполагалось сразу решать для нескольких основных языков. При этом модель по построению может быть легко расширена на произвольное количество языков, с которыми мы работаем, при наличии потребности и соответствующих корпусов данных.</p><br/>
+<p>Решение виделось прежде всего в виде какой-то малой бертоподобной модели с классифицирующими слоями поверх. В качестве данных для обучения использовались приватные корпуса, уже имевшиеся в наличии.</p><br/>
+<p>Мы ознакомились с недавним решением смежной задачи от <a href="https://habr.com/ru/company/barsgroup/blog/563854/">коллег</a>, однако, для наших целей требовалась:</p><br/>
+<ul>
+<li>Более легкая модель с более общей специализацией;</li>
+<li>Реализация, не использующая напрямую внешние АПИ и не имеющая такое большое число зависимостей.</li>
+</ul><br/>
+<p>В результате у нашего решения из значительных зависимостей только сам PyTorch, никаких специализированных библиотек.</p><br/>
+<h2 id="poisk-bazovoy-modeli">Поиск базовой модели</h2><br/>
+<p>По возможности мы хотели взять небольшую предобученную языковую модель. Однако, поиск по списку готовых моделей, доступных на <a href="https://huggingface.co/" rel="nofollow noopener noreferrer">https://huggingface.co/</a>, дает не самые обнадеживающие результаты: требование мультиязычности и уменьшения модели, например, дистилляции, по сути приводят нас к единственной <a href="https://huggingface.co/distilbert-base-multilingual-cased/tree/main" rel="nofollow noopener noreferrer">доступной опции</a>, и то с весом в полгигабайта.</p><br/>
+<p>Здесь, наверное можно сделать ремарку про степень полезности "революции трансформеров" в NLP, но напрашивающиеся выводы мы оставим на усмотрение читателя.</p><br/>
+<h2 id="itogovyy-razmer-modeli-i-ee-szhatie">Итоговый размер модели и ее сжатие</h2><br/>
+<p>Мы экспериментировали с разными архитектурами, но в итоге остановились на самой простой, и итоговый размер модели составил 520 мегабайт. </p><br/>
+<p>Такой размер дистилированного берта в основе нас не вполне устроил, и мы попробовали <a href="https://habr.com/ru/post/563778/">сжать</a> обученную модель. Самый простой и эффективный способ — конечно, квантизация (причем сочетание статической и динамической как <a href="https://github.com/pytorch/pytorch/issues/65185#issue-998785028" rel="nofollow noopener noreferrer">здесь</a>) — и в результате модель была ужата до 130 мегабайт без значимой потери качества, потому всюду далее будут именно метрики финальной квантизованной модели.</p><br/>
+<p>Кроме того, мы сократили избыточный для нашей задачи словарь, выкинув токены для других языков, что позволило сжать эмбеддинг размера 120 тысяч токенов (размер токена — аж 768) до более приятных 75 тысяч. Наверняка можно было еще подрезать не самые часто используемые токены и применить оставшиеся более продвинутые методы сжатия моделей (факторизацию и замену механизма "внимания" на более простые аналоги), но мы решили остановиться, поскольку модель уже стала меньше 100 мегабайт.</p><br/>
+<h2 id="ispolzuemye-metriki">Используемые метрики</h2><br/>
+<p>Вопреки всеобщему тренду на сенсационализм и утрату рационального мышления, во всех наших статьях мы стараемся показывать максимально подробные, информативные и честные метрики на разных данных. В данном случае приведем метрики полученной модели на:</p><br/>
+<ul>
+<li>Валидационных сабсетах наших приватных текстовых корпусов (<code>5,000</code> предложений на каждый язык);</li>
+<li>Текстах аудиокниг, будем использовать датасет <a href="http://www.caito.de/2019/01/the-m-ailabs-speech-dataset/" rel="nofollow noopener noreferrer">caito</a>, в котором как раз есть тексты на всех языках, на которых обучалась модель (<code>20,000</code> случайных предложений на каждый язык);</li>
+</ul><br/>
+<p>В качестве метрик в этой задаче используем:</p><br/>
+<ul>
+<li>WER (word error rate) в процентах, причем отдельно рассчитанный для пунктуации (оба предложения при этом приведены к строчному виду) — <code>WER_p</code> и для расставления заглавных букв (а здесь выбрасываем всю пунктуацию) — <code>WER_c</code>;</li>
+<li>Precision / recall / F1 для проверки качества классификации: между пробелом и упомянутыми выше знаками пунктуации <code>.,—!?-</code>, а для расстановки заглавных букв — между классами <em>токен из строчных букв</em> / <em>токен начинается с заглавной</em> / <em>токен из всех заглавных</em>. Также для наглядности вы можете посмотреть на confusion матрицы;</li>
+</ul><br/>
+<h2 id="rezultaty">Результаты</h2><br/>
+<p>Для корректного и информативного расчета метрик из текстов были выброшены:</p><br/>
+<ul>
+<li>Пунктуационные символы помимо <code>.,—!?-</code>;</li>
+<li>Пунктуация в начале предложения;</li>
+<li>Пунктуационные символы после первого в случае комбинации из нескольких пунктуационных знаков;</li>
+<li>Для испанского <code>¿¡</code> из предсказаний модели были отброшены, т.к. в текстах книжек их тоже нет, но вообще модель их расставляет;</li>
+</ul><br/>
+<p><strong>На вход модели подавались отдельные предложения, а не наборы предложений.</strong></p><br/>
+<h3 id="wer">WER</h3><br/>
+<p>В ячейках указан <code>WER_p</code> / <code>WER_c</code>, а наивный бейзлайн состоит в постановке заглавной буквы в начале предложения и точки в конце.</p><br/>
+<p><strong>Домен — валидационные данные:</strong></p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th>Языки</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>en</td>
+<td>de</td>
+<td>ru</td>
+<td>es</td>
+</tr>
+<tr>
+<td>бейзлайн</td>
+<td>20 / 26</td>
+<td>13 / 36</td>
+<td>18 / 17</td>
+<td>8 / 13</td>
+</tr>
+<tr>
+<td>модель</td>
+<td>8 / 8</td>
+<td>7 / 7</td>
+<td>13 / 6</td>
+<td>6 / 5</td>
+</tr>
+</tbody>
+</table></div><br/>
+<p><strong>Домен — книги:</strong></p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+<th>Языки</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>en</td>
+<td>de</td>
+<td>ru</td>
+<td>es</td>
+</tr>
+<tr>
+<td>бейзлайн</td>
+<td>14 / 13</td>
+<td>13 / 22</td>
+<td>20 / 11</td>
+<td>14 / 7</td>
+</tr>
+<tr>
+<td>модель</td>
+<td>14 / 8</td>
+<td>11 / 6</td>
+<td>21 / 7</td>
+<td>13 / 6</td>
+</tr>
+</tbody>
+</table></div><br/>
+<h3 id="precision--recall--f1">Precision / Recall / F1</h3><br/>
+<p><strong>Домен — валидационные данные:</strong></p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>' '</th>
+<th>.</th>
+<th>,</th>
+<th>-</th>
+<th>!</th>
+<th>?</th>
+<th>—</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>en</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.98</td>
+<td>0.97</td>
+<td>0.78</td>
+<td>0.91</td>
+<td>0.80</td>
+<td>0.89</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.98</td>
+<td>0.64</td>
+<td>0.75</td>
+<td>0.67</td>
+<td>0.78</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.98</td>
+<td>0.71</td>
+<td>0.82</td>
+<td>0.73</td>
+<td>0.84</td>
+<td>nan</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>de</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.98</td>
+<td>0.98</td>
+<td>0.86</td>
+<td>0.81</td>
+<td>0.74</td>
+<td>0.90</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.99</td>
+<td>0.68</td>
+<td>0.60</td>
+<td>0.70</td>
+<td>0.71</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.99</td>
+<td>0.98</td>
+<td>0.76</td>
+<td>0.69</td>
+<td>0.72</td>
+<td>0.79</td>
+<td>nan</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>ru</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.98</td>
+<td>0.97</td>
+<td>0.80</td>
+<td>0.90</td>
+<td>0.80</td>
+<td>0.84</td>
+<td>0</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.98</td>
+<td>0.99</td>
+<td>0.74</td>
+<td>0.70</td>
+<td>0.58</td>
+<td>0.78</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.98</td>
+<td>0.77</td>
+<td>0.78</td>
+<td>0.67</td>
+<td>0.81</td>
+<td>nan</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>es</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.98</td>
+<td>0.96</td>
+<td>0.70</td>
+<td>0.74</td>
+<td>0.85</td>
+<td>0.83</td>
+<td>0</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.98</td>
+<td>0.60</td>
+<td>0.29</td>
+<td>0.60</td>
+<td>0.70</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.98</td>
+<td>0.64</td>
+<td>0.42</td>
+<td>0.70</td>
+<td>0.76</td>
+<td>nan</td>
+</tr>
+</tbody>
+</table></div><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>a</th>
+<th>A</th>
+<th>AAA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td>en</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.98</td>
+<td>0.94</td>
+<td>0.97</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.91</td>
+<td>0.70</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.92</td>
+<td>0.81</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>de</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.99</td>
+<td>0.98</td>
+<td>0.89</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.98</td>
+<td>0.53</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.99</td>
+<td>0.98</td>
+<td>0.66</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>ru</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.99</td>
+<td>0.96</td>
+<td>0.99</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.92</td>
+<td>0.99</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.99</td>
+<td>0.94</td>
+<td>0.99</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>es</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.99</td>
+<td>0.95</td>
+<td>0.98</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.90</td>
+<td>0.82</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.99</td>
+<td>0.92</td>
+<td>0.89</td>
+</tr>
+</tbody>
+</table></div><br/>
+<p><strong>Домен — книги:</strong></p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>' '</th>
+<th>.</th>
+<th>,</th>
+<th>-</th>
+<th>!</th>
+<th>?</th>
+<th>—</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>en</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.96</td>
+<td>0.80</td>
+<td>0.59</td>
+<td>0.82</td>
+<td>0.23</td>
+<td>0.39</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.73</td>
+<td>0.23</td>
+<td>0.13</td>
+<td>0.58</td>
+<td>0.85</td>
+<td>0</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.97</td>
+<td>0.77</td>
+<td>0.33</td>
+<td>0.22</td>
+<td>0.33</td>
+<td>0.53</td>
+<td>nan</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>de</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.97</td>
+<td>0.75</td>
+<td>0.80</td>
+<td>0.55</td>
+<td>0.21</td>
+<td>0.41</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.71</td>
+<td>0.49</td>
+<td>0.35</td>
+<td>0.58</td>
+<td>0.67</td>
+<td>0</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.73</td>
+<td>0.61</td>
+<td>0.43</td>
+<td>0.30</td>
+<td>0.51</td>
+<td>nan</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>ru</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.97</td>
+<td>0.77</td>
+<td>0.69</td>
+<td>0.90</td>
+<td>0.17</td>
+<td>0.49</td>
+<td>0</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.98</td>
+<td>0.60</td>
+<td>0.55</td>
+<td>0.61</td>
+<td>0.68</td>
+<td>0.75</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.68</td>
+<td>0.61</td>
+<td>0.72</td>
+<td>0.28</td>
+<td>0.60</td>
+<td>nan</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td>es</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.96</td>
+<td>0.57</td>
+<td>0.59</td>
+<td>0.96</td>
+<td>0.30</td>
+<td>0.24</td>
+<td>nan</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.98</td>
+<td>0.70</td>
+<td>0.29</td>
+<td>0.02</td>
+<td>0.40</td>
+<td>0.68</td>
+<td>0</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.97</td>
+<td>0.63</td>
+<td>0.38</td>
+<td>0.04</td>
+<td>0.34</td>
+<td>0.36</td>
+<td>nan</td>
+</tr>
+</tbody>
+</table></div><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>a</th>
+<th>A</th>
+<th>AAA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td>en</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.99</td>
+<td>0.80</td>
+<td>0.94</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.98</td>
+<td>0.89</td>
+<td>0.95</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.85</td>
+<td>0.94</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>de</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.99</td>
+<td>0.90</td>
+<td>0.77</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.98</td>
+<td>0.94</td>
+<td>0.62</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.92</td>
+<td>0.70</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>ru</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.99</td>
+<td>0.81</td>
+<td>0.82</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.99</td>
+<td>0.87</td>
+<td>0.96</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.99</td>
+<td>0.84</td>
+<td>0.89</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td>es</td>
+<td></td>
+</tr>
+<tr>
+<td>precision</td>
+<td>0.99</td>
+<td>0.71</td>
+<td>0.45</td>
+</tr>
+<tr>
+<td>recall</td>
+<td>0.98</td>
+<td>0.82</td>
+<td>0.91</td>
+</tr>
+<tr>
+<td>f1</td>
+<td>0.98</td>
+<td>0.76</td>
+<td>0.60</td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Как можно заметить из таблиц — даже для русского, значения дефиса остались пустыми, потому что на использовавшихся для расчета метрик данных модель предлагала его не проставлять вовсе, либо заменять дефис каким-нибудь иным символом (как видно в матрицах ниже); похоже, он лучше расставляется в случае предложений в форме определений (см. пример в конце статьи).</p><br/>
+<h3 id="dlya-konteksta">Для контекста</h3><br/>
+<p>Приведем доступные F1 метрики из разных статей, где решались смежные задачи — здесь разные языки, разные валидационные данные, поэтому напрямую сравнить не удастся, но можно оценить порядок цифр. Cистема классов в таких работах тоже обычно иная — <code>COMMA, PERIOD, QUESTION</code>:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>Источник</th>
+<th>COMMA</th>
+<th>PERIOD</th>
+<th>QUESTION</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="http://noisy-text.github.io/2020/pdf/2020.d200-1.18.pdf" rel="nofollow noopener noreferrer">Статья 1 — en</a></td>
+<td>76.7</td>
+<td>88.9</td>
+<td>87.8</td>
+</tr>
+<tr>
+<td><a href="https://www.researchgate.net/publication/348618580_Automatic_punctuation_restoration_with_BERT_models" rel="nofollow noopener noreferrer">Статья 2 — en</a></td>
+<td>71.8</td>
+<td>84.2</td>
+<td>85.7</td>
+</tr>
+<tr>
+<td><a href="http://rua.ua.es/dspace/bitstream/10045/117479/1/PLN_67_05.pdf" rel="nofollow noopener noreferrer">Статья 3 — es</a></td>
+<td>80.2</td>
+<td>87.0</td>
+<td>59.7</td>
+</tr>
+<tr>
+<td><a href="https://github.com/benob/recasepunc" rel="nofollow noopener noreferrer">Репозиторий 4 — fr</a></td>
+<td>67.9</td>
+<td>72.9</td>
+<td>57.6</td>
+</tr>
+</tbody>
+</table></div><br/>
+<h3 id="sonfusion-matrices">Сonfusion matrices</h3><br/>
+<p>Матрицы по книжкам:</p><br/>
+<h4 id="en">en</h4><br/>
+<p><img src="/img/image-loader.svg" alt="en_p_cm" data-src="https://habrastorage.org/getpro/habr/post_images/b0d/dd7/eff/b0ddd7eff7515a826c77d73472b667f3.png"/><br/>
+<img src="/img/image-loader.svg" alt="en_c_cm" data-src="https://habrastorage.org/getpro/habr/post_images/e60/867/9b9/e608679b9262718a5853e9def3bdd6e3.png"/></p><br/>
+<h4 id="de">de</h4><br/>
+<p><img src="/img/image-loader.svg" alt="de_p_cm" data-src="https://habrastorage.org/getpro/habr/post_images/975/533/226/97553322662b06413e811c24715ecfdd.png"/><br/>
+<img src="/img/image-loader.svg" alt="de_c_cm" data-src="https://habrastorage.org/getpro/habr/post_images/dfc/5f6/e58/dfc5f6e58ec82416f4bd217f5dd9ce52.png"/></p><br/>
+<h4 id="ru">ru</h4><br/>
+<p><img src="/img/image-loader.svg" alt="ru_p_cm" data-src="https://habrastorage.org/getpro/habr/post_images/d34/1cd/42e/d341cd42e726abd75d66a46c2e5c2c43.png"/><br/>
+<img src="/img/image-loader.svg" alt="ru_c_cm" data-src="https://habrastorage.org/getpro/habr/post_images/7a5/95b/a9a/7a595ba9a3fe0117edba1d74fd5ca1c4.png"/></p><br/>
+<h4 id="es">es</h4><br/>
+<p><img src="/img/image-loader.svg" alt="es_p_cm" data-src="https://habrastorage.org/getpro/habr/post_images/f94/84a/67a/f9484a67a11de747ee1b879f0ef5242a.png"/><br/>
+<img src="/img/image-loader.svg" alt="es_c_cm" data-src="https://habrastorage.org/getpro/habr/post_images/a7d/a68/8cb/a7da688cb5ac0b25be20da9e5d379825.png"/></p><br/>
+<h3 id="primery-raboty-modeli">Примеры работы модели</h3><br/>
+<p>Глядя на то, что для домена книг все же не везде метрики выглядят информативными и иногда совпадают с тривиальным решением, мы добавили и примеры именно текстов — для сравнения оригинальной расстановки пунктуации и заглавных букв с результатом работы модели. </p><br/>
+<p>Здесь более наглядны особенности работы модели:</p><br/>
+<ul>
+<li>Где-то модель расставляет знаки препинания и заглавные буквы вполне неплохо, но не как в оригинальном тексте;</li>
+<li>Где-то пропускает или ошибается, а еще в книжках она выставляет вопросы и восклицания чересчур усердно;</li>
+</ul><br/>
+<p>Но тут нет ничего удивительного — новой информации модель не создает (никак неиссякаемая тугая струя желтых статей про "zoom and enhance" на Хабре удручает), мысли автора текста не читает и вообще по сути просто делает текст более привычным глазу.</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>Оригинал</th>
+<th>Модель</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>She heard Missis Gibson talking on in a sweet monotone, and wished to attend to what she was saying, but the Squires visible annoyance struck sharper on her mind.</td>
+<td>She heard Missis Gibson talking on in a sweet monotone and wished to attend to what she was saying, but the squires visible annoyance struck sharper on her mind.</td>
+</tr>
+<tr>
+<td>Yet she blushed, as if with guilt, when Cynthia, reading her thoughts, said to her one day, Molly, youre very glad to get rid of us, are not you?</td>
+<td>Yet she blushed as if with guilt when Cynthia reading her thoughts said to her one day, Molly youre very glad to get rid of us, are not you?</td>
+</tr>
+<tr>
+<td>And I dont think Lady Harriet took it as such.</td>
+<td>And I dont think Lady Harriet took it as such.</td>
+</tr>
+<tr>
+<td>--</td>
+<td>--</td>
+</tr>
+<tr>
+<td>Alles das in begrenztem Kreis, hingestellt wie zum Exempel und Experiment, im Herzen Deutschlands.</td>
+<td>Alles das in begrenztem Kreis hingestellt, wie zum Exempel und Experiment im Herzen Deutschlands.</td>
+</tr>
+<tr>
+<td>Sein Leben nahm die Gestalt an, wie es der Leser zu Beginn dieses Kapitels gesehen hat er verbrachte es im Liegen und im Müßiggang.</td>
+<td>Sein Leben nahm die Gestalt an, wie es der Leser zu Beginn dieses Kapitels gesehen hat er verbrachte es im Liegen und im Müßiggang.</td>
+</tr>
+<tr>
+<td>Die Flußpferde schwammen wütend gegen uns an und suchten uns zu töten.</td>
+<td>Die Flußpferde schwammen wütend gegen uns an und suchten uns zu töten.</td>
+</tr>
+<tr>
+<td>--</td>
+<td>--</td>
+</tr>
+<tr>
+<td>Пожалуйста, расскажите все это Бенедикту — послушаем, по крайней мере, что он на это ответит.</td>
+<td>Пожалуйста, расскажите все это бенедикту, послушаем, по крайней мере, что он на это ответит.</td>
+</tr>
+<tr>
+<td>Есть слух, что хороша также работа Пунка, но моя лучше.</td>
+<td>Есть слух, что хороша также работа пунка, но моя лучше!</td>
+</tr>
+<tr>
+<td>После восстания чехословацкого корпуса Россия зажглась от края до края.</td>
+<td>После восстания Чехословацкого корпуса Россия зажглась от края до края.</td>
+</tr>
+<tr>
+<td>--</td>
+<td>--</td>
+</tr>
+<tr>
+<td>En seguida se dirigió a cortar la línea por la popa del Trinidad, y como el Bucentauro, durante el fuego, se había estrechado contra este hasta el punto de tocarse los penoles,</td>
+<td>En seguida se dirigió a cortar la línea por la popa del Trinidad y como el Bucentauro, durante el fuego se había estrechado contra este hasta el punto de tocarse los penoles.</td>
+</tr>
+<tr>
+<td>Su propio padre Plutón, sus mismas tartáreas hermanas aborrecen a este monstruo Tantas y tan espantosas caras muda, tantas negras sierpes erizan su cuerpo!</td>
+<td>Su propio padre, Plutón, sus mismas tartáreas hermanas, aborrecen a este monstruo tantas y tan espantosas caras muda tantas negras sierpes erizan su cuerpo.</td>
+</tr>
+<tr>
+<td>Bien es verdad que quiero confesar ahora que, puesto que yo veía con cuán justas causas don Fernando a Luscinda alababa.</td>
+<td>Bien, es verdad que quiero confesar ahora que puesto que yo veía con cuán justas causas, don Fernando a Luscinda Alababa?</td>
+</tr>
+</tbody>
+</table></div><br/>
+<h2 id="kak-zapustit">Как запустить</h2><br/>
+<p>Модель выложена в репозитории проекта <a href="https://github.com/snakers4/silero-models" rel="nofollow noopener noreferrer">silero-models</a> и, соответственно, будет поддерживаться, как и прочие наши решения оттуда. А вот простой запуск модели (с более подробными примерами можно ознакомиться в <a href="https://colab.research.google.com/github/snakers4/silero-models/blob/master/examples_te.ipynb" rel="nofollow noopener noreferrer">colab</a>):</p><br/>
+<p><a href="https://colab.research.google.com/github/snakers4/silero-models/blob/master/examples_te.ipynb" rel="nofollow noopener noreferrer"><img src="https://habrastorage.org/getpro/habr/post_images/f4b/2a9/316/f4b2a931637833ba516509a93f28f40b.svg" alt="Open In Colab"/></a></p><br/>
+<pre><code class="plaintext">import torch
+
+model, example_texts, languages, punct, apply_te = torch.hub.load(repo_or_dir='snakers4/silero-models',
+                                                                  model='silero_te')
+
+input_text = input('Enter input text\n')
+apply_te(input_text, lan='en')</code></pre><br/>
+<h2 id="ogranicheniya">Ограничения</h2><br/>
+<p>У данной работы есть ряд ограничений и очевидных вещей, которые мы решили пока не делать (так сказать нужно же было где-то поставить точку):</p><br/>
+<ul>
+<li>На языках кроме английского модель сносно работает с длинными предложениями. Но разделять несколько предложений или целые параграфы текста на отдельные предложения она по построению пока не умеет;</li>
+<li>Не совсем понятно как делить на предложения целые "книги" и неясно нужно ли это вообще в принципе;</li>
+<li>Мы не применили факторизацию и структурированный прунинг к модели (например снижение числа голов в механизме внимания);</li>
+</ul><br/>
+<p>Нам более-менее очевидно, как сделать большую часть этих вещей, но только время и разведка боем покажет востребованность подобного рода инструментов.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bsilero%5D" class="tm-tags-list__link">silero</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpytorch%5D" class="tm-tags-list__link">pytorch</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpython%5D" class="tm-tags-list__link">python</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%B0%D1%88%D0%B8%D0%BD%D0%BD%D0%BE%D0%B5%20%D0%BE%D0%B1%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">машинное обучение</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D1%8C%5D" class="tm-tags-list__link">нейросеть</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B7%D0%B0%D0%BF%D1%8F%D1%82%D0%B0%D1%8F%5D" class="tm-tags-list__link">запятая</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B7%D0%BD%D0%B0%D0%BA%D0%B8%20%D0%BF%D1%80%D0%B5%D0%BF%D0%B8%D0%BD%D0%B0%D0%BD%D0%B8%D1%8F%5D" class="tm-tags-list__link">знаки препинания</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D0%BF%D0%B8%D1%81%D0%BD%D1%8B%D0%B5%20%D0%B1%D1%83%D0%BA%D0%B2%D1%8B%5D" class="tm-tags-list__link">прописные буквы</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/bigdata/" class="tm-hubs-list__link">
+    Big Data
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/machine_learning/" class="tm-hubs-list__link">
+    Машинное обучение
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/natural_language_processing/" class="tm-hubs-list__link">
+    Natural Language Processing
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 24: ↑24 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 24: ↑24 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+24</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    52
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/snakers4/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/0f8/128/b86/0f8128b86dc8be4a3b664f0b65722ca8.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 189 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    149
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">39.2</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Alexander Veysov</span> <a href="/ru/users/snakers4/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @snakers4
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Machine Learning / Data Science</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/581946/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 12 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/581946/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/581946/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"581946":{"id":"581946","timePublished":"2021-10-06T13:56:19+00:00","isCorporative":false,"lang":"ru","titleHtml":"Мы опубликовали модель, расставляющую знаки препинания и заглавные буквы в тексте на четырех языках","leadData":{"textHtml":"\u003Cp\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fbk\u002Fs0\u002Fem\u002Fbks0em_c-b35thcmsmpu2vpuok8.png\"\u003E\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fcolab.research.google.com\u002Fgithub\u002Fsnakers4\u002Fsilero-models\u002Fblob\u002Fmaster\u002Fexamples_te.ipynb\" rel=\"nofollow noopener noreferrer\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Ff4b\u002F2a9\u002F316\u002Ff4b2a931637833ba516509a93f28f40b.svg\" alt=\"Open In Colab\"\u003E\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EПри разработке систем \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F559640\u002F\"\u003Eраспознавания речи\u003C\u002Fa\u003E мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений является то, что в устной речи якобы &quot;можно услышать&quot; грамматически верные знаки препинания и пробелы между словами, когда по факту реальная устная речь и грамотная письменная речь очень сильно отличаются (устная речь скорее похожа на &quot;поток&quot; слегка разделенный паузами и интонацией, поэтому люди так не любят монотонно бубнящих докладчиков).\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EПонятно, что можно просто начинать каждое высказывание с большой буквы и ставить точку в конце. Но хотелось бы иметь какое-то относительно простое и универсальное средство расстановки знаков препинания и заглавных букв в предложениях, которые генерирует наша система распознавания речи. Совсем хорошо бы было, если бы такая система в принципе работала с любыми текстами.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EПо этой причине мы бы хотели поделиться с сообществом системой, которая:\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EРасставляет заглавные буквы и основные знаки препинания (точка, запятая, дефис, вопросительный знак, восклицательный знак, тире для русского языка);\u003C\u002Fli\u003E\r\n\u003Cli\u003EРаботает на 4 языках (русский, английский, немецкий, испанский);\u003C\u002Fli\u003E\r\n\u003Cli\u003EПо построению должна работать максимально абстрактно на любом тексте и не основана на каких-то фиксированных правилах;\u003C\u002Fli\u003E\r\n\u003Cli\u003EИмеет минимальные нетривиальные метрики и выполняет задачу улучшения читабельности текста;\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u003E\r\n\u003Cp\u003EНа всякий случай явно повторюсь — цель такой системы — лишь улучшать читабельность текста. Она не добавляет в текст информации, которой в нем изначально не было.\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":149,"votesCount":189},"rating":39.2,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1284924","alias":"snakers4","fullname":"Alexander Veysov","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F0f8\u002F128\u002Fb86\u002F0f8128b86dc8be4a3b664f0b65722ca8.jpg","speciality":"Machine Learning \u002F Data Science"},"statistics":{"commentsCount":12,"favoritesCount":52,"readingCount":2950,"score":24,"votesCount":24},"hubs":[{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true},{"relatedData":null,"id":"17795","alias":"bigdata","type":"collective","title":"Big Data","titleHtml":"Big Data","isProfiled":true},{"relatedData":null,"id":"19439","alias":"machine_learning","type":"collective","title":"Машинное обучение","titleHtml":"Машинное обучение","isProfiled":true},{"relatedData":null,"id":"22125","alias":"natural_language_processing","type":"collective","title":"Natural Language Processing","titleHtml":"Natural Language Processing","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fbk\u002Fs0\u002Fem\u002Fbks0em_c-b35thcmsmpu2vpuok8.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fcolab.research.google.com\u002Fgithub\u002Fsnakers4\u002Fsilero-models\u002Fblob\u002Fmaster\u002Fexamples_te.ipynb\" rel=\"nofollow noopener noreferrer\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Ff4b\u002F2a9\u002F316\u002Ff4b2a931637833ba516509a93f28f40b.svg\" alt=\"Open In Colab\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПри разработке систем \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F559640\u002F\"\u003Eраспознавания речи\u003C\u002Fa\u003E мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений является то, что в устной речи якобы \"можно услышать\" грамматически верные знаки препинания и пробелы между словами, когда по факту реальная устная речь и грамотная письменная речь очень сильно отличаются (устная речь скорее похожа на \"поток\" слегка разделенный паузами и интонацией, поэтому люди так не любят монотонно бубнящих докладчиков).\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПонятно, что можно просто начинать каждое высказывание с большой буквы и ставить точку в конце. Но хотелось бы иметь какое-то относительно простое и универсальное средство расстановки знаков препинания и заглавных букв в предложениях, которые генерирует наша система распознавания речи. Совсем хорошо бы было, если бы такая система в принципе работала с любыми текстами.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПо этой причине мы бы хотели поделиться с сообществом системой, которая:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EРасставляет заглавные буквы и основные знаки препинания (точка, запятая, дефис, вопросительный знак, восклицательный знак, тире для русского языка);\u003C\u002Fli\u003E\r\n\u003Cli\u003EРаботает на 4 языках (русский, английский, немецкий, испанский);\u003C\u002Fli\u003E\r\n\u003Cli\u003EПо построению должна работать максимально абстрактно на любом тексте и не основана на каких-то фиксированных правилах;\u003C\u002Fli\u003E\r\n\u003Cli\u003EИмеет минимальные нетривиальные метрики и выполняет задачу улучшения читабельности текста;\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНа всякий случай явно повторюсь — цель такой системы — лишь улучшать читабельность текста. Она не добавляет в текст информации, которой в нем изначально не было.\u003C\u002Fp\u003E\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"postanovka-zadachi-i-metod-ee-resheniya\"\u003EПостановка задачи и метод ее решения\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНа вход подается предложение, записанное строчными буквами и без какой-либо пунктуации — как мы обычно получаем на выходе \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fsnakers4\u002Fsilero-models#speech-to-text\" rel=\"nofollow noopener noreferrer\"\u003Eсистемы распознавания речи\u003C\u002Fa\u003E. Требуется разработать модель, восстанавливающую его грамотную запись в смысле использования заглавных букв и знаков препинания. Набор знаков препинания \u003Ccode\u003E.,—!?-\u003C\u002Fcode\u003E был выбран исходя из оценки того, отсутствие каких символов наиболее бросается в глаза в предложениях, которые в среднем встречаются в речи в целевых доменах.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКроме того, модель разрабатывалась из предположения, что после, и только после каждого токена сетке следует проставить только одну метку — знака препинания или просто пробела. Это автоматически исключает сложные случаи расстановки пунктуации в начале предложения или из нескольких символов (самый яркий пример — разнообразная прямая речь в литературе). Это упрощение сделано намеренно, т.к. нам показалось, что такое ограничение более конструктивно, чем учет всех малочисленных краевых случаев. И вообще главная задача, скорее, в улучшении читабельности, чем в идеальной записи составной прямой речи с обращениями и описаниями.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗадачу предполагалось сразу решать для нескольких основных языков. При этом модель по построению может быть легко расширена на произвольное количество языков, с которыми мы работаем, при наличии потребности и соответствующих корпусов данных.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРешение виделось прежде всего в виде какой-то малой бертоподобной модели с классифицирующими слоями поверх. В качестве данных для обучения использовались приватные корпуса, уже имевшиеся в наличии.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EМы ознакомились с недавним решением смежной задачи от \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fbarsgroup\u002Fblog\u002F563854\u002F\"\u003Eколлег\u003C\u002Fa\u003E, однако, для наших целей требовалась:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EБолее легкая модель с более общей специализацией;\u003C\u002Fli\u003E\r\n\u003Cli\u003EРеализация, не использующая напрямую внешние АПИ и не имеющая такое большое число зависимостей.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ результате у нашего решения из значительных зависимостей только сам PyTorch, никаких специализированных библиотек.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"poisk-bazovoy-modeli\"\u003EПоиск базовой модели\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПо возможности мы хотели взять небольшую предобученную языковую модель. Однако, поиск по списку готовых моделей, доступных на \u003Ca href=\"https:\u002F\u002Fhuggingface.co\u002F\" rel=\"nofollow noopener noreferrer\"\u003Ehttps:\u002F\u002Fhuggingface.co\u002F\u003C\u002Fa\u003E, дает не самые обнадеживающие результаты: требование мультиязычности и уменьшения модели, например, дистилляции, по сути приводят нас к единственной \u003Ca href=\"https:\u002F\u002Fhuggingface.co\u002Fdistilbert-base-multilingual-cased\u002Ftree\u002Fmain\" rel=\"nofollow noopener noreferrer\"\u003Eдоступной опции\u003C\u002Fa\u003E, и то с весом в полгигабайта.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗдесь, наверное можно сделать ремарку про степень полезности \"революции трансформеров\" в NLP, но напрашивающиеся выводы мы оставим на усмотрение читателя.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"itogovyy-razmer-modeli-i-ee-szhatie\"\u003EИтоговый размер модели и ее сжатие\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EМы экспериментировали с разными архитектурами, но в итоге остановились на самой простой, и итоговый размер модели составил 520 мегабайт. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТакой размер дистилированного берта в основе нас не вполне устроил, и мы попробовали \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F563778\u002F\"\u003Eсжать\u003C\u002Fa\u003E обученную модель. Самый простой и эффективный способ — конечно, квантизация (причем сочетание статической и динамической как \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fpytorch\u002Fpytorch\u002Fissues\u002F65185#issue-998785028\" rel=\"nofollow noopener noreferrer\"\u003Eздесь\u003C\u002Fa\u003E) — и в результате модель была ужата до 130 мегабайт без значимой потери качества, потому всюду далее будут именно метрики финальной квантизованной модели.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКроме того, мы сократили избыточный для нашей задачи словарь, выкинув токены для других языков, что позволило сжать эмбеддинг размера 120 тысяч токенов (размер токена — аж 768) до более приятных 75 тысяч. Наверняка можно было еще подрезать не самые часто используемые токены и применить оставшиеся более продвинутые методы сжатия моделей (факторизацию и замену механизма \"внимания\" на более простые аналоги), но мы решили остановиться, поскольку модель уже стала меньше 100 мегабайт.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"ispolzuemye-metriki\"\u003EИспользуемые метрики\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВопреки всеобщему тренду на сенсационализм и утрату рационального мышления, во всех наших статьях мы стараемся показывать максимально подробные, информативные и честные метрики на разных данных. В данном случае приведем метрики полученной модели на:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EВалидационных сабсетах наших приватных текстовых корпусов (\u003Ccode\u003E5,000\u003C\u002Fcode\u003E предложений на каждый язык);\u003C\u002Fli\u003E\r\n\u003Cli\u003EТекстах аудиокниг, будем использовать датасет \u003Ca href=\"http:\u002F\u002Fwww.caito.de\u002F2019\u002F01\u002Fthe-m-ailabs-speech-dataset\u002F\" rel=\"nofollow noopener noreferrer\"\u003Ecaito\u003C\u002Fa\u003E, в котором как раз есть тексты на всех языках, на которых обучалась модель (\u003Ccode\u003E20,000\u003C\u002Fcode\u003E случайных предложений на каждый язык);\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ качестве метрик в этой задаче используем:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EWER (word error rate) в процентах, причем отдельно рассчитанный для пунктуации (оба предложения при этом приведены к строчному виду) — \u003Ccode\u003EWER_p\u003C\u002Fcode\u003E и для расставления заглавных букв (а здесь выбрасываем всю пунктуацию) — \u003Ccode\u003EWER_c\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003EPrecision \u002F recall \u002F F1 для проверки качества классификации: между пробелом и упомянутыми выше знаками пунктуации \u003Ccode\u003E.,—!?-\u003C\u002Fcode\u003E, а для расстановки заглавных букв — между классами \u003Cem\u003Eтокен из строчных букв\u003C\u002Fem\u003E \u002F \u003Cem\u003Eтокен начинается с заглавной\u003C\u002Fem\u003E \u002F \u003Cem\u003Eтокен из всех заглавных\u003C\u002Fem\u003E. Также для наглядности вы можете посмотреть на confusion матрицы;\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"rezultaty\"\u003EРезультаты\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля корректного и информативного расчета метрик из текстов были выброшены:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EПунктуационные символы помимо \u003Ccode\u003E.,—!?-\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003EПунктуация в начале предложения;\u003C\u002Fli\u003E\r\n\u003Cli\u003EПунктуационные символы после первого в случае комбинации из нескольких пунктуационных знаков;\u003C\u002Fli\u003E\r\n\u003Cli\u003EДля испанского \u003Ccode\u003E¿¡\u003C\u002Fcode\u003E из предсказаний модели были отброшены, т.к. в текстах книжек их тоже нет, но вообще модель их расставляет;\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EНа вход модели подавались отдельные предложения, а не наборы предложений.\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"wer\"\u003EWER\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ ячейках указан \u003Ccode\u003EWER_p\u003C\u002Fcode\u003E \u002F \u003Ccode\u003EWER_c\u003C\u002Fcode\u003E, а наивный бейзлайн состоит в постановке заглавной буквы в начале предложения и точки в конце.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EДомен — валидационные данные:\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003E\u003C\u002Fth\u003E\r\n\u003Cth\u003E\u003C\u002Fth\u003E\r\n\u003Cth\u003E\u003C\u002Fth\u003E\r\n\u003Cth\u003EЯзыки\u003C\u002Fth\u003E\r\n\u003Cth\u003E\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Een\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ede\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eru\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ees\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eбейзлайн\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E20 \u002F 26\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E13 \u002F 36\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E18 \u002F 17\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E8 \u002F 13\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eмодель\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E8 \u002F 8\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E7 \u002F 7\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E13 \u002F 6\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E6 \u002F 5\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EДомен — книги:\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003E\u003C\u002Fth\u003E\r\n\u003Cth\u003E\u003C\u002Fth\u003E\r\n\u003Cth\u003E\u003C\u002Fth\u003E\r\n\u003Cth\u003EЯзыки\u003C\u002Fth\u003E\r\n\u003Cth\u003E\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Een\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ede\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eru\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ees\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eбейзлайн\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E14 \u002F 13\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E13 \u002F 22\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E20 \u002F 11\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E14 \u002F 7\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eмодель\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E14 \u002F 8\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E11 \u002F 6\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E21 \u002F 7\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E13 \u002F 6\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"precision--recall--f1\"\u003EPrecision \u002F Recall \u002F F1\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EДомен — валидационные данные:\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003EMetric\u003C\u002Fth\u003E\r\n\u003Cth\u003E' '\u003C\u002Fth\u003E\r\n\u003Cth\u003E.\u003C\u002Fth\u003E\r\n\u003Cth\u003E,\u003C\u002Fth\u003E\r\n\u003Cth\u003E-\u003C\u002Fth\u003E\r\n\u003Cth\u003E!\u003C\u002Fth\u003E\r\n\u003Cth\u003E?\u003C\u002Fth\u003E\r\n\u003Cth\u003E—\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Een\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.97\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.78\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.91\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.80\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.89\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.64\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.75\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.67\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.78\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.71\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.82\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.73\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.84\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ede\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.86\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.81\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.74\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.90\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.68\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.60\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.70\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.71\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.76\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.69\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.72\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.79\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eru\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.97\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.80\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.90\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.80\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.84\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.74\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.70\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.58\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.78\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.77\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.78\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.67\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.81\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ees\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.96\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.70\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.74\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.85\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.83\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.60\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.29\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.60\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.70\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.64\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.42\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.70\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.76\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003EMetric\u003C\u002Fth\u003E\r\n\u003Cth\u003Ea\u003C\u002Fth\u003E\r\n\u003Cth\u003EA\u003C\u002Fth\u003E\r\n\u003Cth\u003EAAA\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Een\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.94\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.97\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.91\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.70\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.92\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.81\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ede\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.89\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.53\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.66\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eru\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.96\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.92\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.94\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ees\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.95\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.90\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.82\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.92\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.89\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EДомен — книги:\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003EMetric\u003C\u002Fth\u003E\r\n\u003Cth\u003E' '\u003C\u002Fth\u003E\r\n\u003Cth\u003E.\u003C\u002Fth\u003E\r\n\u003Cth\u003E,\u003C\u002Fth\u003E\r\n\u003Cth\u003E-\u003C\u002Fth\u003E\r\n\u003Cth\u003E!\u003C\u002Fth\u003E\r\n\u003Cth\u003E?\u003C\u002Fth\u003E\r\n\u003Cth\u003E—\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Een\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.96\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.80\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.59\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.82\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.23\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.39\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.73\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.23\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.13\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.58\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.85\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.97\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.77\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.33\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.22\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.33\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.53\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ede\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.97\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.75\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.80\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.55\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.21\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.41\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.71\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.49\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.35\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.58\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.67\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.73\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.61\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.43\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.30\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.51\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eru\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.97\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.77\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.69\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.90\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.17\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.49\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.60\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.55\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.61\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.68\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.75\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.68\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.61\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.72\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.28\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.60\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ees\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.96\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.57\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.59\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.96\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.30\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.24\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.70\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.29\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.02\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.40\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.68\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.97\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.63\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.38\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.04\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.34\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.36\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Enan\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003EMetric\u003C\u002Fth\u003E\r\n\u003Cth\u003Ea\u003C\u002Fth\u003E\r\n\u003Cth\u003EA\u003C\u002Fth\u003E\r\n\u003Cth\u003EAAA\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Een\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.80\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.94\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.89\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.95\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.85\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.94\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ede\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.90\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.77\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.94\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.62\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.92\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.70\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eru\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.81\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.82\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.87\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.96\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.84\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.89\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Ees\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Eprecision\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.99\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.71\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.45\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erecall\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.82\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.91\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ef1\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.98\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.76\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E0.60\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКак можно заметить из таблиц — даже для русского, значения дефиса остались пустыми, потому что на использовавшихся для расчета метрик данных модель предлагала его не проставлять вовсе, либо заменять дефис каким-нибудь иным символом (как видно в матрицах ниже); похоже, он лучше расставляется в случае предложений в форме определений (см. пример в конце статьи).\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"dlya-konteksta\"\u003EДля контекста\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПриведем доступные F1 метрики из разных статей, где решались смежные задачи — здесь разные языки, разные валидационные данные, поэтому напрямую сравнить не удастся, но можно оценить порядок цифр. Cистема классов в таких работах тоже обычно иная — \u003Ccode\u003ECOMMA, PERIOD, QUESTION\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003EИсточник\u003C\u002Fth\u003E\r\n\u003Cth\u003ECOMMA\u003C\u002Fth\u003E\r\n\u003Cth\u003EPERIOD\u003C\u002Fth\u003E\r\n\u003Cth\u003EQUESTION\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003Ca href=\"http:\u002F\u002Fnoisy-text.github.io\u002F2020\u002Fpdf\u002F2020.d200-1.18.pdf\" rel=\"nofollow noopener noreferrer\"\u003EСтатья 1 — en\u003C\u002Fa\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E76.7\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E88.9\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E87.8\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003Ca href=\"https:\u002F\u002Fwww.researchgate.net\u002Fpublication\u002F348618580_Automatic_punctuation_restoration_with_BERT_models\" rel=\"nofollow noopener noreferrer\"\u003EСтатья 2 — en\u003C\u002Fa\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E71.8\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E84.2\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E85.7\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003Ca href=\"http:\u002F\u002Frua.ua.es\u002Fdspace\u002Fbitstream\u002F10045\u002F117479\u002F1\u002FPLN_67_05.pdf\" rel=\"nofollow noopener noreferrer\"\u003EСтатья 3 — es\u003C\u002Fa\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E80.2\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E87.0\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E59.7\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fbenob\u002Frecasepunc\" rel=\"nofollow noopener noreferrer\"\u003EРепозиторий 4 — fr\u003C\u002Fa\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E67.9\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E72.9\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E57.6\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"sonfusion-matrices\"\u003EСonfusion matrices\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EМатрицы по книжкам:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch4 id=\"en\"\u003Een\u003C\u002Fh4\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"en_p_cm\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Fb0d\u002Fdd7\u002Feff\u002Fb0ddd7eff7515a826c77d73472b667f3.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"en_c_cm\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Fe60\u002F867\u002F9b9\u002Fe608679b9262718a5853e9def3bdd6e3.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch4 id=\"de\"\u003Ede\u003C\u002Fh4\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"de_p_cm\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F975\u002F533\u002F226\u002F97553322662b06413e811c24715ecfdd.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"de_c_cm\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Fdfc\u002F5f6\u002Fe58\u002Fdfc5f6e58ec82416f4bd217f5dd9ce52.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch4 id=\"ru\"\u003Eru\u003C\u002Fh4\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"ru_p_cm\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Fd34\u002F1cd\u002F42e\u002Fd341cd42e726abd75d66a46c2e5c2c43.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"ru_c_cm\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F7a5\u002F95b\u002Fa9a\u002F7a595ba9a3fe0117edba1d74fd5ca1c4.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch4 id=\"es\"\u003Ees\u003C\u002Fh4\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"es_p_cm\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Ff94\u002F84a\u002F67a\u002Ff9484a67a11de747ee1b879f0ef5242a.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"es_c_cm\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Fa7d\u002Fa68\u002F8cb\u002Fa7da688cb5ac0b25be20da9e5d379825.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"primery-raboty-modeli\"\u003EПримеры работы модели\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EГлядя на то, что для домена книг все же не везде метрики выглядят информативными и иногда совпадают с тривиальным решением, мы добавили и примеры именно текстов — для сравнения оригинальной расстановки пунктуации и заглавных букв с результатом работы модели. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗдесь более наглядны особенности работы модели:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EГде-то модель расставляет знаки препинания и заглавные буквы вполне неплохо, но не как в оригинальном тексте;\u003C\u002Fli\u003E\r\n\u003Cli\u003EГде-то пропускает или ошибается, а еще в книжках она выставляет вопросы и восклицания чересчур усердно;\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНо тут нет ничего удивительного — новой информации модель не создает (никак неиссякаемая тугая струя желтых статей про \"zoom and enhance\" на Хабре удручает), мысли автора текста не читает и вообще по сути просто делает текст более привычным глазу.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003EОригинал\u003C\u002Fth\u003E\r\n\u003Cth\u003EМодель\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EShe heard Missis Gibson talking on in a sweet monotone, and wished to attend to what she was saying, but the Squires visible annoyance struck sharper on her mind.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EShe heard Missis Gibson talking on in a sweet monotone and wished to attend to what she was saying, but the squires visible annoyance struck sharper on her mind.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EYet she blushed, as if with guilt, when Cynthia, reading her thoughts, said to her one day, Molly, youre very glad to get rid of us, are not you?\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EYet she blushed as if with guilt when Cynthia reading her thoughts said to her one day, Molly youre very glad to get rid of us, are not you?\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EAnd I dont think Lady Harriet took it as such.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EAnd I dont think Lady Harriet took it as such.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E--\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E--\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EAlles das in begrenztem Kreis, hingestellt wie zum Exempel und Experiment, im Herzen Deutschlands.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EAlles das in begrenztem Kreis hingestellt, wie zum Exempel und Experiment im Herzen Deutschlands.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003ESein Leben nahm die Gestalt an, wie es der Leser zu Beginn dieses Kapitels gesehen hat er verbrachte es im Liegen und im Müßiggang.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003ESein Leben nahm die Gestalt an, wie es der Leser zu Beginn dieses Kapitels gesehen hat er verbrachte es im Liegen und im Müßiggang.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EDie Flußpferde schwammen wütend gegen uns an und suchten uns zu töten.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EDie Flußpferde schwammen wütend gegen uns an und suchten uns zu töten.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E--\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E--\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EПожалуйста, расскажите все это Бенедикту — послушаем, по крайней мере, что он на это ответит.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EПожалуйста, расскажите все это бенедикту, послушаем, по крайней мере, что он на это ответит.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EЕсть слух, что хороша также работа Пунка, но моя лучше.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EЕсть слух, что хороша также работа пунка, но моя лучше!\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EПосле восстания чехословацкого корпуса Россия зажглась от края до края.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EПосле восстания Чехословацкого корпуса Россия зажглась от края до края.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003E--\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E--\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EEn seguida se dirigió a cortar la línea por la popa del Trinidad, y como el Bucentauro, durante el fuego, se había estrechado contra este hasta el punto de tocarse los penoles,\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EEn seguida se dirigió a cortar la línea por la popa del Trinidad y como el Bucentauro, durante el fuego se había estrechado contra este hasta el punto de tocarse los penoles.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003ESu propio padre Plutón, sus mismas tartáreas hermanas aborrecen a este monstruo Tantas y tan espantosas caras muda, tantas negras sierpes erizan su cuerpo!\u003C\u002Ftd\u003E\r\n\u003Ctd\u003ESu propio padre, Plutón, sus mismas tartáreas hermanas, aborrecen a este monstruo tantas y tan espantosas caras muda tantas negras sierpes erizan su cuerpo.\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EBien es verdad que quiero confesar ahora que, puesto que yo veía con cuán justas causas don Fernando a Luscinda alababa.\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EBien, es verdad que quiero confesar ahora que puesto que yo veía con cuán justas causas, don Fernando a Luscinda Alababa?\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"kak-zapustit\"\u003EКак запустить\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EМодель выложена в репозитории проекта \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fsnakers4\u002Fsilero-models\" rel=\"nofollow noopener noreferrer\"\u003Esilero-models\u003C\u002Fa\u003E и, соответственно, будет поддерживаться, как и прочие наши решения оттуда. А вот простой запуск модели (с более подробными примерами можно ознакомиться в \u003Ca href=\"https:\u002F\u002Fcolab.research.google.com\u002Fgithub\u002Fsnakers4\u002Fsilero-models\u002Fblob\u002Fmaster\u002Fexamples_te.ipynb\" rel=\"nofollow noopener noreferrer\"\u003Ecolab\u003C\u002Fa\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fcolab.research.google.com\u002Fgithub\u002Fsnakers4\u002Fsilero-models\u002Fblob\u002Fmaster\u002Fexamples_te.ipynb\" rel=\"nofollow noopener noreferrer\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Ff4b\u002F2a9\u002F316\u002Ff4b2a931637833ba516509a93f28f40b.svg\" alt=\"Open In Colab\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Eimport torch\n\nmodel, example_texts, languages, punct, apply_te = torch.hub.load(repo_or_dir='snakers4\u002Fsilero-models',\n                                                                  model='silero_te')\n\ninput_text = input('Enter input text\\n')\napply_te(input_text, lan='en')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"ogranicheniya\"\u003EОграничения\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУ данной работы есть ряд ограничений и очевидных вещей, которые мы решили пока не делать (так сказать нужно же было где-то поставить точку):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EНа языках кроме английского модель сносно работает с длинными предложениями. Но разделять несколько предложений или целые параграфы текста на отдельные предложения она по построению пока не умеет;\u003C\u002Fli\u003E\r\n\u003Cli\u003EНе совсем понятно как делить на предложения целые \"книги\" и неясно нужно ли это вообще в принципе;\u003C\u002Fli\u003E\r\n\u003Cli\u003EМы не применили факторизацию и структурированный прунинг к модели (например снижение числа голов в механизме внимания);\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНам более-менее очевидно, как сделать большую часть этих вещей, но только время и разведка боем покажет востребованность подобного рода инструментов.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"silero"},{"titleHtml":"pytorch"},{"titleHtml":"python"},{"titleHtml":"машинное обучение"},{"titleHtml":"нейросеть"},{"titleHtml":"запятая"},{"titleHtml":"знаки препинания"},{"titleHtml":"прописные буквы"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F581946\u002Fc9de4f7c9554d44ee83b128823d371df\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F581946\u002Fc9de4f7c9554d44ee83b128823d371df\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F581946\\\u002F\"},\"headline\":\"Мы опубликовали модель, расставляющую знаки препинания и заглавные буквы в тексте на четырех языках\",\"datePublished\":\"2021-10-06T16:56:19+03:00\",\"dateModified\":\"2021-10-07T00:57:00+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Alexander Veysov\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"При разработке систем распознавания речи мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F581946\\\u002F#post-content-body\",\"about\":[\"h_python\",\"h_bigdata\",\"h_machine_learning\",\"h_natural_language_processing\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fbk\\\u002Fs0\\\u002Fem\\\u002Fbks0em_c-b35thcmsmpu2vpuok8.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Ff4b\\\u002F2a9\\\u002F316\\\u002Ff4b2a931637833ba516509a93f28f40b.svg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Fb0d\\\u002Fdd7\\\u002Feff\\\u002Fb0ddd7eff7515a826c77d73472b667f3.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Fe60\\\u002F867\\\u002F9b9\\\u002Fe608679b9262718a5853e9def3bdd6e3.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002F975\\\u002F533\\\u002F226\\\u002F97553322662b06413e811c24715ecfdd.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Fdfc\\\u002F5f6\\\u002Fe58\\\u002Fdfc5f6e58ec82416f4bd217f5dd9ce52.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Fd34\\\u002F1cd\\\u002F42e\\\u002Fd341cd42e726abd75d66a46c2e5c2c43.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002F7a5\\\u002F95b\\\u002Fa9a\\\u002F7a595ba9a3fe0117edba1d74fd5ca1c4.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Ff94\\\u002F84a\\\u002F67a\\\u002Ff9484a67a11de747ee1b879f0ef5242a.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Fa7d\\\u002Fa68\\\u002F8cb\\\u002Fa7da688cb5ac0b25be20da9e5d379825.png\"]}","metaDescription":"При разработке систем распознавания речи мы сталкиваемся с заблуждениями среди потребителей и разработчиков, в первую очередь связанными с разделением формы и сути. Одним из таких заблуждений...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"python,bigdata,machine_learning,natural_language_processing"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

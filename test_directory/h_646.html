@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Vulkan. Руководство разработчика. Layout дескрипторов и буфер / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582838\/"},"headline":"Vulkan. Руководство разработчика. Layout дескрипторов и буфер","datePublished":"2021-10-12T12:40:38+03:00","dateModified":"2021-10-12T13:09:06+03:00","author":{"@type":"Person","name":"alexandra_sky"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть здесь).  Сегодня я перехожу к след...","url":"https:\/\/habr.com\/ru\/post\/582838\/#post-content-body","about":["h_programming","h_cpp","h_3d_graphics","h_gamedev","h_cgi","f_develop","f_design"],"image":["https:\/\/habrastorage.org\/webt\/sc\/qk\/o5\/scqko5z1upafgiqpxyb1buvipbi.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Vulkan. Руководство разработчика. Layout дескрипторов и буфер" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Vulkan. Руководство разработчика. Layout дескрипторов и буфер" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Vulkan. Руководство разработчика. Layout дескрипторов и буфер" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть здесь).
+
+Сегодня я перехожу к следующему разделу — Uniform buffers, и..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть здесь).
+
+Сегодня я перехожу к следующему разделу — Uniform buffers, и..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть здесь).
+
+Сегодня я перехожу к следующему разделу — Uniform buffers, и..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть здесь).
+
+Сегодня я перехожу к следующему разделу — Uniform buffers, и..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть здесь).
+
+Сегодня я перехожу к следующему разделу — Uniform buffers, и..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/582838/4d3768c80c7e018a07af0311b6ae9f4e/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/582838/4d3768c80c7e018a07af0311b6ae9f4e/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/582838/4d3768c80c7e018a07af0311b6ae9f4e/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/582838/4d3768c80c7e018a07af0311b6ae9f4e/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/582838/4d3768c80c7e018a07af0311b6ae9f4e/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582838" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-12T09:40:38.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582838/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582838/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/582838/4d3768c80c7e018a07af0311b6ae9f4e/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/alexandra_sky/" title="alexandra_sky" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/424/cdb/ee4/424cdbee497edd2106dc08c3160d00e0.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/alexandra_sky/" class="tm-user-info__username">
+      alexandra_sky
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-12T09:40:38.000Z" title="2021-10-12, 12:40">12  октября   в 12:40</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Vulkan. Руководство разработчика. Layout дескрипторов и буфер</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/3d_graphics/" class="tm-article-snippet__hubs-item-link"><span>Работа с 3D-графикой</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/gamedev/" class="tm-article-snippet__hubs-item-link"><span>Разработка игр</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cgi/" class="tm-article-snippet__hubs-item-link"><span>CGI (графика)</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://vulkan-tutorial.com/Uniform_buffers/Descriptor_layout_and_buffer" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Alexander Overvoorde
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/sc/qk/o5/scqko5z1upafgiqpxyb1buvipbi.png"/><br/>
+<br/>
+Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть <a href="https://vulkan-tutorial.com" rel="nofollow noopener noreferrer">здесь</a>).<br/>
+<br/>
+Сегодня я перехожу к следующему разделу — Uniform buffers, и начну я с перевода статьи, которая называется Descriptor layout and buffer.<br/>
+<br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Содержание</b>
+                        <div class="spoiler_text">1. <a href="http://habr.com/ru/post/462137/">Вступление</a><br/>
+<br/>
+2. <a href="http://habr.com/ru/post/524992/">Краткий обзор</a><br/>
+<br/>
+3. <a href="https://habr.com/ru/post/526320/">Настройка окружения</a><br/>
+<br/>
+4. <a href="https://habr.com/ru/post/531196/">Рисуем треугольник</a><br/>
+<br/>
+<ol>
+<li><a href="https://habr.com/ru/post/531196/">Подготовка к работе</a><br/>
+ <ul>
+<li><a href="https://habr.com/ru/post/531196/#base">Базовый код</a></li>
+<li><a href="https://habr.com/ru/post/531196/#two">Экземпляр (instance)</a></li>
+<li><a href="https://habr.com/ru/post/535342/">Слои валидации</a></li>
+<li><a href="https://habr.com/ru/post/537208/#phys">Физические устройства и семейства очередей</a></li>
+<li><a href="https://habr.com/ru/post/537208/#logic">Логическое устройство и очереди</a></li>
+</ul></li>
+<li>Отображение на экране<br/>
+ <ul>
+<li><a href="https://habr.com/ru/post/539174/">Window surface</a></li>
+<li><a href="https://habr.com/ru/post/542942/">Swap chain</a></li>
+<li><a href="https://habr.com/ru/post/543288/">Image views</a></li>
+</ul></li>
+<li><a href="https://habr.com/ru/post/547576/">Графический конвейер (pipeline)</a> <br/>
+ <ul>
+<li><a href="https://habr.com/ru/post/547576/">Вступление</a></li>
+<li><a href="https://habr.com/ru/post/547576/#shader">Шейдерные модули</a></li>
+<li><a href="https://habr.com/ru/post/554492/">Непрограммируемые стадии конвейера</a></li>
+<li><a href="https://habr.com/ru/post/560816/">Проходы рендера (Render passes)</a></li>
+<li><a href="https://habr.com/ru/post/560816/#conclusion">Заключение</a></li>
+</ul></li>
+<li>Отрисовка<br/>
+<ul>
+<li><a href="https://habr.com/ru/post/564100/#frame">Фреймбуферы</a></li>
+<li><a href="https://habr.com/ru/post/564100/#buffer">Буферы команд</a></li>
+<li><a href="https://habr.com/ru/post/567754/">Рендеринг и отображение на экране</a></li>
+</ul></li>
+<li><a href="https://habr.com/ru/post/569912/">Пересоздание swap chain</a></li>
+</ol><br/>
+5. <a href="https://habr.com/ru/post/571944/">Вершинные буферы</a><br/>
+<br/>
+<ol>
+<li><a href="https://habr.com/ru/post/571944/">Описание входных данных вершин</a></li>
+<li><a href="https://habr.com/ru/post/573920/">Создание вершинного буфера</a></li>
+<li><a href="https://habr.com/ru/post/578956/">Промежуточный буфер</a></li>
+<li><a href="https://habr.com/ru/users/alexandra_sky/posts/">Индексный буфер</a></li>
+</ol><br/>
+6. Uniform-буферы<br/>
+<br/>
+<ol>
+<li><a href="https://habr.com/ru/post/582838/">Layout дескрипторов и буфер</a></li>
+<li>Пул дескрипторов и сеты дескрипторов</li>
+</ol><br/>
+7. Текстурирование<br/>
+<br/>
+<ol>
+<li>Изображения</li>
+<li>Image view и image sampler</li>
+<li>Комбинированный image sampler</li>
+</ol><br/>
+8. Буфер глубины<br/>
+<br/>
+9. Загрузка моделей<br/>
+<br/>
+10. Создание мип-карт<br/>
+<br/>
+11. Multisampling<br/>
+<br/>
+FAQ<br/>
+<a name="habracut"></a><br/>
+Политика конфиденциальности<br/>
+</div>
+                    </div><br/>
+<br/>
+<h2>Layout дескрипторов и буфер</h2><br/>
+<ul>
+<li><a href="#one">Вступление</a></li>
+<li><a href="#two">Вершинный шейдер</a></li>
+<li><a href="#three">Layout дескрипторов</a></li>
+<li><a href="#four">Uniform-буфер</a></li>
+<li><a href="#five">Обновление uniform-данных</a></li>
+</ul><a name="one"></a><br/>
+<br/>
+<h3>Вступление</h3><br/>
+Мы можем передавать произвольные атрибуты вершинному шейдеру, но как быть с глобальными переменными? С этой главы мы переходим к трехмерной графике, и для этого нам потребуются матричные преобразования. Мы будем использовать 3 матрицы: model — матрица преобразования из локальных координат в мировые, view — для преобразования из мировых координат во view пространство, и proj — проекционная матрица. Мы могли бы записать уже преобразованные координаты в вершинный буфер, но для этого пришлось бы выделять лишнюю память и постоянно обновлять данные. <br/>
+<br/>
+Чтобы решить эту проблему в Vulkan, нужно использовать дескрипторы ресурсов. Дескрипторы предоставляют шейдерам доступ к таким ресурсам, как буферы и images. Мы создадим буфер, содержащий матрицы преобразования, и предоставим вершинному шейдеру доступ к ним через дескриптор. Использование дескрипторов состоит из трех этапов:<br/>
+<br/>
+<ul>
+<li>Указание layout-а дескрипторов во время создания конвейера</li>
+<li>Выделение набора дескрипторов из пула дескрипторов</li>
+<li>Привязка (bind) набора дескрипторов во время рендеринга</li>
+</ul><br/>
+Есть два вида объектов для работы с дескрипторами ресурсов: layout-ы дескрипторов и сеты дескрипторов (descriptor set). Layout определяет типы ресурсов, к которым будет осуществляться доступ из конвейера, точно так же, как render pass определяет типы attachment-ов, с которыми он работает. Сет дескрипторов определяет, какие именно буферы или images нужно привязать к дескрипторам, точно так же, как фреймбуфер определяет, какие именно images использовать для работы с render pass-ом. Именно сеты привязываются к командам рисования, как вершинные буферы или фреймбуферы. <br/>
+<br/>
+Есть разные типы дескрипторов, но в этой главе мы будем работать с объектами uniform-буферов (uniform buffer objects или UBO). В дальнейшем мы рассмотрим и другие типы дескрипторов, но принцип работы у них один. <br/>
+<br/>
+Допустим, у нас есть данные, которые мы хотим расположить в вершинном шейдере в виде следующей структуры:<br/>
+<br/>
+<pre><code class="cpp">struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};</code></pre><br/>
+Затем мы можем скопировать эти данные в <b><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkBuffer.html" rel="nofollow noopener noreferrer"><code>VkBuffer</code></a></b> и получить к ним доступ из вершинного шейдера с помощью дескриптора uniform-буфера:<br/>
+<br/>
+<pre><code class="cpp">layout(binding = 0) uniform UniformBufferObject {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} ubo;
+
+void main() {
+    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);
+    fragColor = inColor;
+}</code></pre><br/>
+Мы постоянно будем обновлять матрицы model, view и proj, чтобы прямоугольник, который мы получили в предыдущей главе, вращался в 3D.<a name="two"></a><br/>
+<br/>
+<h3>Вершинный шейдер</h3><br/>
+Изменим вершинный шейдер, чтобы подключить uniform-буфер. Вероятно, вы уже знакомы с MVP преобразованиями. Если нет, см. <a href="https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/" rel="nofollow noopener noreferrer">ссылку</a>.<br/>
+<br/>
+<pre><code class="cpp">#version 450
+
+layout(binding = 0) uniform UniformBufferObject {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} ubo;
+
+layout(location = 0) in vec2 inPosition;
+layout(location = 1) in vec3 inColor;
+
+layout(location = 0) out vec3 fragColor;
+
+void main() {
+    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);
+    fragColor = inColor;
+}</code></pre><br/>
+Обратите внимание, что порядок объявлений <b><code>uniform</code></b>, <b><code>in</code></b> и <b><code>out</code></b> не имеет значения. Директива <b><code>binding</code></b> аналогична директиве <b><code>location</code></b> для атрибутов. Мы укажем на нее в layout-е дескрипторов. Строка с вычислением <b><code>gl_Position</code></b> изменена, чтобы использовать матрицы для преобразования координат. В отличие от двумерных треугольников, последний компонент координат в пространстве отсечения может быть не равен <b><code>1</code></b>, что приведет к делению при преобразовании в конечные нормализованные экранные координаты устройства. Это используется в перспективной проекции в качестве перспективного деления и необходимо для того, чтобы более близкие объекты выглядели больше, чем объекты вдалеке.<a name="three"></a><br/>
+<br/>
+<h3>Layout дескрипторов</h3><br/>
+Наш следующий шаг — описать используемый в шейдере uniform buffer на стороне C ++.<br/>
+<br/>
+<pre><code class="cpp">struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};</code></pre><br/>
+Мы дублируем описание буфера из шейдера с помощью соответствующих типов GLM. Данные в матрицах бинарно совместимы с тем, как ожидает шейдер, поэтому в дальнейшем мы можем просто скопировать <b><code>UniformBufferObject</code></b> в <b><code><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkBuffer.html" rel="nofollow noopener noreferrer">VkBuffer</a></code></b> с помощью <b><code>memcpy</code></b>.<br/>
+<br/>
+Нам нужно предоставить подробную информацию о каждом дескрипторе, используемом в шейдерах. Для этого создадим новую функцию, которая называется <b><code>createDescriptorSetLayout</code></b>. Ее нужно вызвать перед самым созданием конвейера, т. к. она нам там понадобится.<br/>
+<br/>
+<pre><code class="cpp">void initVulkan() {
+    ...
+    createDescriptorSetLayout();
+    createGraphicsPipeline();
+    ...
+}
+
+...
+
+void createDescriptorSetLayout() {
+
+}</code></pre><br/>
+Каждая привязка должна быть описана с помощью структуры <b><code><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkDescriptorSetLayoutBinding.html" rel="nofollow noopener noreferrer">VkDescriptorSetLayoutBinding</a></code></b>.<br/>
+<br/>
+<pre><code class="cpp">void createDescriptorSetLayout() {
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+}</code></pre><br/>
+Первые два поля определяют <b><code>binding</code></b>, используемый в шейдере, и тип дескриптора, который представляет собой uniform-буфер. Переменная шейдера может представлять собой массив uniform-буферов, а <b><code>descriptorCount</code></b> указывает количество значений в массиве. <br/>
+Это можно использовать, например, для указания трансформаций для каждой кости скелета в скелетной анимации. Наше MVP преобразование находится в единственном uniform-буфере, поэтому в <b><code>descriptorCount</code></b> мы укажем <b><code>1</code></b>.<br/>
+<br/>
+<pre><code class="cpp">uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;</code></pre><br/>
+Также необходимо указать, на каких этапах шейдера будет упоминаться дескриптор. В поле <b><code>stageFlags</code></b> может быть указана комбинация значений <b><code><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkShaderStageFlagBits.html" rel="nofollow noopener noreferrer">VkShaderStageFlagBits</a></code></b> или значение <b>VK_SHADER_STAGE_ALL_GRAPHICS</b>. В нашем случае мы ссылаемся на дескриптор только из вершинного шейдера.<br/>
+<br/>
+<pre><code class="cpp">uboLayoutBinding.pImmutableSamplers = nullptr; // Optional</code></pre><br/>
+Поле <b><code>pImmutableSamplers</code></b> актуально только для дескрипторов, связанных с чтением из текстур. Их мы рассмотрим позже. Здесь можно оставить значение по умолчанию.<br/>
+<br/>
+Все привязки дескрипторов объединены в один объект <b><code><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkDescriptorSetLayout.html" rel="nofollow noopener noreferrer">VkDescriptorSetLayout</a></code></b>. Определим новый член класса перед <b><code>pipelineLayout</code></b>:<br/>
+<br/>
+<pre><code class="cpp">VkDescriptorSetLayout descriptorSetLayout;
+VkPipelineLayout pipelineLayout;</code></pre><br/>
+Затем мы можем создать его с помощью <b><code><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCreateDescriptorSetLayout.html" rel="nofollow noopener noreferrer">vkCreateDescriptorSetLayout</a></code></b>. Эта функция принимает довольно простую структуру <b><code><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkDescriptorSetLayoutCreateInfo.html" rel="nofollow noopener noreferrer">VkDescriptorSetLayoutCreateInfo</a></code></b>, описывающую массив привязок:<br/>
+<br/>
+<pre><code class="cpp">VkDescriptorSetLayoutCreateInfo layoutInfo{};
+layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+layoutInfo.bindingCount = 1;
+layoutInfo.pBindings = &amp;uboLayoutBinding;
+
+if (vkCreateDescriptorSetLayout(device, &amp;layoutInfo, nullptr, &amp;descriptorSetLayout) != VK_SUCCESS) {
+    throw std::runtime_error("failed to create descriptor set layout!");
+}</code></pre><br/>
+Мы должны указать на только что созданный layout при создании конвейера, чтобы сообщить Vulkan, какие дескрипторы будут использоваться шейдерами. Layout-ы дескрипторов указываются в объекте layout-а конвейера. Изменим <b><code><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkPipelineLayoutCreateInfo.html" rel="nofollow noopener noreferrer">VkPipelineLayoutCreateInfo</a></code></b>:<br/>
+<br/>
+<pre><code class="cpp">VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+pipelineLayoutInfo.setLayoutCount = 1;
+pipelineLayoutInfo.pSetLayouts = &amp;descriptorSetLayout;</code></pre><br/>
+Вас может удивить, почему здесь возможно указать несколько layout-ов <br/>
+дескрипторов, ведь один layout уже содержит все привязки. Мы еще вернемся к этому вопросу в следующей главе, когда будем рассматривать пулы дескрипторов и сеты дескрипторов.<br/>
+<br/>
+Layout дескриптора должен быть доступен до тех пор, пока мы можем создавать новые графические конвейеры, то есть до завершения программы:<br/>
+<br/>
+<pre><code class="cpp">void cleanup() {
+    cleanupSwapChain();
+
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+
+    ...
+}</code></pre><a name="four"></a><br/>
+<br/>
+<h3>Uniform-буфер</h3><br/>
+Пришло время создать буфер для хранения наших матриц. Мы будем копировать новые данные в uniform-буфер в каждом кадре, поэтому нет необходимости создавать промежуточный буфер — он лишь приведет к снижению производительности.<br/>
+<br/>
+Сразу несколько кадров могут обрабатываться одновременно (например, один кадр рендерится, другой подготавливается к рендеру). Мы не должны допускать ситуации, когда данные из буфера считываются видеокартой и обновляются процессором в один и тот же момент, поэтому нам необходимо использовать несколько буферов. Мы можем использовать по одному uniform-буферу на кадр или на image из swap chain. Но поскольку мы ссылаемся на uniform-буферы из буфера команд, то лучше использовать свой uniform-буфер для каждого image.<br/>
+<br/>
+Для этого добавим новые члены класса для <b><code>uniformBuffers</code></b> и <b><code>uniformBuffersMemory</code></b>:<br/>
+<br/>
+<pre><code class="cpp">VkBuffer indexBuffer;
+VkDeviceMemory indexBufferMemory;
+
+std::vector&lt;VkBuffer> uniformBuffers;
+std::vector&lt;VkDeviceMemory> uniformBuffersMemory;</code></pre><br/>
+Аналогичным образом создадим новую функцию <b><code>createUniformBuffers</code></b>, которая вызывается после <b><code>createIndexBuffer</code></b> и выделяет буферы:<br/>
+<br/>
+<pre><code class="cpp">void initVulkan() {
+    ...
+    createVertexBuffer();
+    createIndexBuffer();
+    createUniformBuffers();
+    ...
+}
+
+...
+
+void createUniformBuffers() {
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    uniformBuffers.resize(swapChainImages.size());
+    uniformBuffersMemory.resize(swapChainImages.size());
+
+    for (size_t i = 0; i &lt; swapChainImages.size(); i++) {
+        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+    }
+}</code></pre><br/>
+Мы напишем отдельную функцию, которая будет обновлять буфер на каждом кадре, поэтому <b><code><a href="https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkMapMemory.html" rel="nofollow noopener noreferrer">vkMapMemory</a></code></b> здесь не используется. Uniform-данные будут использоваться для всех вызовов отрисовки, поэтому буфер, содержащий их, должен быть уничтожен только после того, как мы закончим рендеринг. Поскольку он также зависит от количества images в swap chain, которые могут измениться после пересоздания swap chain, мы удалим его в <b><code>cleanupSwapChain</code></b>:<br/>
+<br/>
+<pre><code class="cpp">void cleanupSwapChain() {
+    ...
+
+    for (size_t i = 0; i &lt; swapChainImages.size(); i++) {
+        vkDestroyBuffer(device, uniformBuffers[i], nullptr);
+        vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
+    }
+}</code></pre><br/>
+И пересоздадим в <b><code>recreateSwapChain</code></b>:<br/>
+<br/>
+<pre><code class="cpp">void recreateSwapChain() {
+    ...
+
+    createFramebuffers();
+    createUniformBuffers();
+    createCommandBuffers();
+}</code></pre><a name="five"></a><br/>
+<br/>
+<h3>Обновление uniform-данных</h3><br/>
+Создадим новую функцию <b><code>updateUniformBuffer</code></b> и вызовем ее из <b><code>drawFrame</code></b> сразу после того, как узнаем, какой image будет получен из swap chain:<br/>
+<br/>
+<pre><code class="cpp">void drawFrame() {
+    ...
+
+    uint32_t imageIndex;
+    VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &amp;imageIndex);
+
+    ...
+
+    updateUniformBuffer(imageIndex);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    ...
+}
+
+...
+
+void updateUniformBuffer(uint32_t currentImage) {
+
+}</code></pre><br/>
+Эта функция будет постоянно генерировать новое преобразование, чтобы заставить геометрию вращаться. Для реализации этой функции нам нужно подключить два новых заголовочных файла:<br/>
+<br/>
+<pre><code class="cpp">#define GLM_FORCE_RADIANS
+#include &lt;glm/glm.hpp>
+#include &lt;glm/gtc/matrix_transform.hpp>
+
+#include &lt;chrono></code></pre><br/>
+Заголовочный файл <b><code>glm/gtc/matrix_transform.hpp</code></b> предоставляет функции, которые можно использовать для генерирования model-преобразований, таких как <b><code>glm :: rotate</code></b>, view-преобразований, таких как <b><code>glm :: lookAt</code></b>, и projection-преобразований, таких как <b><code>glm::perspective</code></b>. Определение <b><code>GLM_FORCE_RADIANS</code></b> необходимо, чтобы такие функции, как <b><code>glm :: rotate</code></b>, использовали радианы в качестве аргументов во избежание любой возможной путаницы.<br/>
+<br/>
+Заголовочный файл стандартной библиотеки <b><code>chrono</code></b> предоставляет функции для точного хронометража. Мы будем использовать их, чтобы обеспечивать вращение геометрии на 90 градусов в секунду независимо от частоты кадров.<br/>
+<br/>
+<pre><code class="cpp">void updateUniformBuffer(uint32_t currentImage) {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration&lt;float, std::chrono::seconds::period>(currentTime - startTime).count();
+}</code></pre><br/>
+В начале функции <b><code>updateUniformBuffer</code></b> мы вычисляем время, прошедшее от начала рендеринга, причем используем для этого числа с плавающей запятой.<br/>
+<br/>
+Теперь вычислим model, view и proj матрицы. Трансформация в мировую систему координат (model) – это просто вращение вокруг оси Z с использованием переменной <b><code>time</code></b>:<br/>
+<br/>
+<pre><code class="cpp">UniformBufferObject ubo{};
+ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));</code></pre><br/>
+В качестве параметров функция <b><code>glm :: rotate</code></b> принимает существующее преобразование, угол вращения и ось вращения. Конструктор <b><code>glm :: mat4 (1.0f)</code></b> возвращает единичную матрицу. Использование угла вращения <b><code>time * glm :: radians (90.0f)</code></b> позволяет осуществлять вращение на 90 градусов в секунду.<br/>
+<br/>
+<pre><code class="cpp">ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));</code></pre><br/>
+Для view-преобразования я решил взглянуть на геометрию сверху под углом в 45 градусов. В качестве параметров функция <b><code>glm :: lookAt</code></b> принимает точку, в которой находится камера (eye position), точку, на которую смотрит камера (center position) и направление «вверх» для камеры (up axis).<br/>
+<br/>
+<pre><code class="cpp">ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);</code></pre><br/>
+Я решил использовать перспективную проекцию с вертикальным полем зрения в 45 градусов. Остальные параметры — это отношение сторон, ближняя плоскость отсечения и дальняя плоскость отсечения. Важно использовать текущее разрешение swap chain, чтобы рассчитать отношения сторон с учетом новой ширины и высоты после изменения размера окна.<br/>
+<br/>
+<pre><code class="cpp">ubo.proj[1][1] *= -1;</code></pre><br/>
+Изначально GLM был разработан для OpenGL, где ось Y в пространстве отсечения имеет противоположное направление. Самый простой способ компенсировать это — инвертировать знак соответствующего поля в матрице проекции. Если этого не сделать, изображение будет рендериться вверх ногами.<br/>
+<br/>
+Теперь все матрицы вычислены, поэтому мы можем скопировать данные в текущий uniform-буфер.<br/>
+<br/>
+<pre><code class="cpp">void* data;
+vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &amp;data);
+    memcpy(data, &amp;ubo, sizeof(ubo));
+vkUnmapMemory(device, uniformBuffersMemory[currentImage]);</code></pre><br/>
+Такой способ использования UBO — не самый эффективный для передачи постоянно меняющихся значений шейдеру. Для передачи небольших буферов данных эффективнее будет использовать push-константы. Мы рассмотрим их в следующих главах.<br/>
+<br/>
+В следующей главе мы рассмотрим сеты дескрипторов, которые привяжут (bind) VkBuffers к дескрипторам uniform-буферов, чтобы шейдер мог получить доступ к данным преобразований.<br/>
+<br/>
+<b><code><a href="https://vulkan-tutorial.com/code/21_descriptor_layout.cpp" rel="nofollow noopener noreferrer">Код С++</a></code></b> / <b><code><a href="https://vulkan-tutorial.com/code/21_shader_ubo.vert" rel="nofollow noopener noreferrer">Вершинный шейдер</a></code></b> / <b><code><a href="https://vulkan-tutorial.com/code/21_shader_ubo.frag" rel="nofollow noopener noreferrer">Фрагментный шейдер</a></code></b></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BVulkan%5D" class="tm-tags-list__link">Vulkan</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Btutorial%5D" class="tm-tags-list__link">tutorial</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%B5%D1%80%D0%B5%D0%B2%D0%BE%D0%B4%5D" class="tm-tags-list__link">перевод</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/3d_graphics/" class="tm-hubs-list__link">
+    Работа с 3D-графикой
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/gamedev/" class="tm-hubs-list__link">
+    Разработка игр
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cgi/" class="tm-hubs-list__link">
+    CGI (графика)
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 7: ↑7 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 7: ↑7 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+7</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">971</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    25
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/alexandra_sky/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/424/cdb/ee4/424cdbee497edd2106dc08c3160d00e0.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 29 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    25
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">4</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/alexandra_sky/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @alexandra_sky
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Переводчик ижевской IT-компании CG Tribe</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582838/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 1 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582838/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582838/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582838":{"id":"582838","timePublished":"2021-10-12T09:40:38+00:00","isCorporative":false,"lang":"ru","titleHtml":"Vulkan. Руководство разработчика. Layout дескрипторов и буфер","leadData":{"textHtml":"\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fsc\u002Fqk\u002Fo5\u002Fscqko5z1upafgiqpxyb1buvipbi.png\"\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nДобрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть \u003Ca href=\"https:\u002F\u002Fvulkan-tutorial.com\" rel=\"nofollow noopener noreferrer\"\u003Eздесь\u003C\u002Fa\u003E).\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nСегодня я перехожу к следующему разделу — Uniform buffers, и начну я с перевода статьи, которая называется Descriptor layout and buffer.\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EСодержание\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E1. \u003Ca href=\"http:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F462137\u002F\"\u003EВступление\u003C\u002Fa\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n2. \u003Ca href=\"http:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F524992\u002F\"\u003EКраткий обзор\u003C\u002Fa\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n3. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F526320\u002F\"\u003EНастройка окружения\u003C\u002Fa\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n4. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F531196\u002F\"\u003EРисуем треугольник\u003C\u002Fa\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F531196\u002F\"\u003EПодготовка к работе\u003C\u002Fa\u003E\u003Cbr\u003E\r\n \u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F531196\u002F#base\"\u003EБазовый код\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F531196\u002F#two\"\u003EЭкземпляр (instance)\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F535342\u002F\"\u003EСлои валидации\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F537208\u002F#phys\"\u003EФизические устройства и семейства очередей\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F537208\u002F#logic\"\u003EЛогическое устройство и очереди\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003EОтображение на экране\u003Cbr\u003E\r\n \u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F539174\u002F\"\u003EWindow surface\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F542942\u002F\"\u003ESwap chain\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F543288\u002F\"\u003EImage views\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547576\u002F\"\u003EГрафический конвейер (pipeline)\u003C\u002Fa\u003E \u003Cbr\u003E\r\n \u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547576\u002F\"\u003EВступление\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547576\u002F#shader\"\u003EШейдерные модули\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F554492\u002F\"\u003EНепрограммируемые стадии конвейера\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F560816\u002F\"\u003EПроходы рендера (Render passes)\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F560816\u002F#conclusion\"\u003EЗаключение\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003EОтрисовка\u003Cbr\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F564100\u002F#frame\"\u003EФреймбуферы\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F564100\u002F#buffer\"\u003EБуферы команд\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F567754\u002F\"\u003EРендеринг и отображение на экране\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F569912\u002F\"\u003EПересоздание swap chain\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u003E\r\n5. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F571944\u002F\"\u003EВершинные буферы\u003C\u002Fa\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F571944\u002F\"\u003EОписание входных данных вершин\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F573920\u002F\"\u003EСоздание вершинного буфера\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F578956\u002F\"\u003EПромежуточный буфер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fusers\u002Falexandra_sky\u002Fposts\u002F\"\u003EИндексный буфер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u003E\r\n6. Uniform-буферы\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582838\u002F\"\u003ELayout дескрипторов и буфер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003EПул дескрипторов и сеты дескрипторов\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u003E\r\n7. Текстурирование\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EИзображения\u003C\u002Fli\u003E\r\n\u003Cli\u003EImage view и image sampler\u003C\u002Fli\u003E\r\n\u003Cli\u003EКомбинированный image sampler\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u003E\r\n8. Буфер глубины\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n9. Загрузка моделей\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n10. Создание мип-карт\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n11. Multisampling\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nFAQ\u003Cbr\u003E\r\n\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Alexander Overvoorde","originalUrl":"https:\u002F\u002Fvulkan-tutorial.com\u002FUniform_buffers\u002FDescriptor_layout_and_buffer"}},{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":25,"votesCount":29},"rating":4,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2490375","alias":"alexandra_sky","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F424\u002Fcdb\u002Fee4\u002F424cdbee497edd2106dc08c3160d00e0.jpg","speciality":"Переводчик ижевской IT-компании CG Tribe"},"statistics":{"commentsCount":1,"favoritesCount":25,"readingCount":971,"score":7,"votesCount":7},"hubs":[{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true},{"relatedData":null,"id":"643","alias":"3d_graphics","type":"collective","title":"Работа с 3D-графикой","titleHtml":"Работа с 3D-графикой","isProfiled":true},{"relatedData":null,"id":"7773","alias":"gamedev","type":"collective","title":"Разработка игр","titleHtml":"Разработка игр","isProfiled":true},{"relatedData":null,"id":"19800","alias":"cgi","type":"collective","title":"CGI (графика)","titleHtml":"CGI (графика)","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"2","alias":"design","title":"Дизайн"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fsc\u002Fqk\u002Fo5\u002Fscqko5z1upafgiqpxyb1buvipbi.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДобрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть \u003Ca href=\"https:\u002F\u002Fvulkan-tutorial.com\" rel=\"nofollow noopener noreferrer\"\u003Eздесь\u003C\u002Fa\u003E).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСегодня я перехожу к следующему разделу — Uniform buffers, и начну я с перевода статьи, которая называется Descriptor layout and buffer.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EСодержание\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E1. \u003Ca href=\"http:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F462137\u002F\"\u003EВступление\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n2. \u003Ca href=\"http:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F524992\u002F\"\u003EКраткий обзор\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n3. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F526320\u002F\"\u003EНастройка окружения\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n4. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F531196\u002F\"\u003EРисуем треугольник\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F531196\u002F\"\u003EПодготовка к работе\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n \u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F531196\u002F#base\"\u003EБазовый код\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F531196\u002F#two\"\u003EЭкземпляр (instance)\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F535342\u002F\"\u003EСлои валидации\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F537208\u002F#phys\"\u003EФизические устройства и семейства очередей\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F537208\u002F#logic\"\u003EЛогическое устройство и очереди\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003EОтображение на экране\u003Cbr\u002F\u003E\r\n \u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F539174\u002F\"\u003EWindow surface\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F542942\u002F\"\u003ESwap chain\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F543288\u002F\"\u003EImage views\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547576\u002F\"\u003EГрафический конвейер (pipeline)\u003C\u002Fa\u003E \u003Cbr\u002F\u003E\r\n \u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547576\u002F\"\u003EВступление\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547576\u002F#shader\"\u003EШейдерные модули\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F554492\u002F\"\u003EНепрограммируемые стадии конвейера\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F560816\u002F\"\u003EПроходы рендера (Render passes)\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F560816\u002F#conclusion\"\u003EЗаключение\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003EОтрисовка\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F564100\u002F#frame\"\u003EФреймбуферы\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F564100\u002F#buffer\"\u003EБуферы команд\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F567754\u002F\"\u003EРендеринг и отображение на экране\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F569912\u002F\"\u003EПересоздание swap chain\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n5. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F571944\u002F\"\u003EВершинные буферы\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F571944\u002F\"\u003EОписание входных данных вершин\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F573920\u002F\"\u003EСоздание вершинного буфера\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F578956\u002F\"\u003EПромежуточный буфер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fusers\u002Falexandra_sky\u002Fposts\u002F\"\u003EИндексный буфер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n6. Uniform-буферы\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582838\u002F\"\u003ELayout дескрипторов и буфер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003EПул дескрипторов и сеты дескрипторов\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n7. Текстурирование\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EИзображения\u003C\u002Fli\u003E\r\n\u003Cli\u003EImage view и image sampler\u003C\u002Fli\u003E\r\n\u003Cli\u003EКомбинированный image sampler\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n8. Буфер глубины\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n9. Загрузка моделей\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n10. Создание мип-карт\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n11. Multisampling\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nFAQ\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nПолитика конфиденциальности\u003Cbr\u002F\u003E\r\n\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003ELayout дескрипторов и буфер\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"#one\"\u003EВступление\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#two\"\u003EВершинный шейдер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#three\"\u003ELayout дескрипторов\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#four\"\u003EUniform-буфер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#five\"\u003EОбновление uniform-данных\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Ca name=\"one\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003EВступление\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nМы можем передавать произвольные атрибуты вершинному шейдеру, но как быть с глобальными переменными? С этой главы мы переходим к трехмерной графике, и для этого нам потребуются матричные преобразования. Мы будем использовать 3 матрицы: model — матрица преобразования из локальных координат в мировые, view — для преобразования из мировых координат во view пространство, и proj — проекционная матрица. Мы могли бы записать уже преобразованные координаты в вершинный буфер, но для этого пришлось бы выделять лишнюю память и постоянно обновлять данные. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧтобы решить эту проблему в Vulkan, нужно использовать дескрипторы ресурсов. Дескрипторы предоставляют шейдерам доступ к таким ресурсам, как буферы и images. Мы создадим буфер, содержащий матрицы преобразования, и предоставим вершинному шейдеру доступ к ним через дескриптор. Использование дескрипторов состоит из трех этапов:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EУказание layout-а дескрипторов во время создания конвейера\u003C\u002Fli\u003E\r\n\u003Cli\u003EВыделение набора дескрипторов из пула дескрипторов\u003C\u002Fli\u003E\r\n\u003Cli\u003EПривязка (bind) набора дескрипторов во время рендеринга\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nЕсть два вида объектов для работы с дескрипторами ресурсов: layout-ы дескрипторов и сеты дескрипторов (descriptor set). Layout определяет типы ресурсов, к которым будет осуществляться доступ из конвейера, точно так же, как render pass определяет типы attachment-ов, с которыми он работает. Сет дескрипторов определяет, какие именно буферы или images нужно привязать к дескрипторам, точно так же, как фреймбуфер определяет, какие именно images использовать для работы с render pass-ом. Именно сеты привязываются к командам рисования, как вершинные буферы или фреймбуферы. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсть разные типы дескрипторов, но в этой главе мы будем работать с объектами uniform-буферов (uniform buffer objects или UBO). В дальнейшем мы рассмотрим и другие типы дескрипторов, но принцип работы у них один. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДопустим, у нас есть данные, которые мы хотим расположить в вершинном шейдере в виде следующей структуры:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estruct UniformBufferObject {\n    glm::mat4 model;\n    glm::mat4 view;\n    glm::mat4 proj;\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЗатем мы можем скопировать эти данные в \u003Cb\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FVkBuffer.html\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003EVkBuffer\u003C\u002Fcode\u003E\u003C\u002Fa\u003E\u003C\u002Fb\u003E и получить к ним доступ из вершинного шейдера с помощью дескриптора uniform-буфера:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Elayout(binding = 0) uniform UniformBufferObject {\n    mat4 model;\n    mat4 view;\n    mat4 proj;\n} ubo;\n\nvoid main() {\n    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);\n    fragColor = inColor;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nМы постоянно будем обновлять матрицы model, view и proj, чтобы прямоугольник, который мы получили в предыдущей главе, вращался в 3D.\u003Ca name=\"two\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003EВершинный шейдер\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nИзменим вершинный шейдер, чтобы подключить uniform-буфер. Вероятно, вы уже знакомы с MVP преобразованиями. Если нет, см. \u003Ca href=\"https:\u002F\u002Fwww.opengl-tutorial.org\u002Fbeginners-tutorials\u002Ftutorial-3-matrices\u002F\" rel=\"nofollow noopener noreferrer\"\u003Eссылку\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E#version 450\n\nlayout(binding = 0) uniform UniformBufferObject {\n    mat4 model;\n    mat4 view;\n    mat4 proj;\n} ubo;\n\nlayout(location = 0) in vec2 inPosition;\nlayout(location = 1) in vec3 inColor;\n\nlayout(location = 0) out vec3 fragColor;\n\nvoid main() {\n    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 0.0, 1.0);\n    fragColor = inColor;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nОбратите внимание, что порядок объявлений \u003Cb\u003E\u003Ccode\u003Euniform\u003C\u002Fcode\u003E\u003C\u002Fb\u003E, \u003Cb\u003E\u003Ccode\u003Ein\u003C\u002Fcode\u003E\u003C\u002Fb\u003E и \u003Cb\u003E\u003Ccode\u003Eout\u003C\u002Fcode\u003E\u003C\u002Fb\u003E не имеет значения. Директива \u003Cb\u003E\u003Ccode\u003Ebinding\u003C\u002Fcode\u003E\u003C\u002Fb\u003E аналогична директиве \u003Cb\u003E\u003Ccode\u003Elocation\u003C\u002Fcode\u003E\u003C\u002Fb\u003E для атрибутов. Мы укажем на нее в layout-е дескрипторов. Строка с вычислением \u003Cb\u003E\u003Ccode\u003Egl_Position\u003C\u002Fcode\u003E\u003C\u002Fb\u003E изменена, чтобы использовать матрицы для преобразования координат. В отличие от двумерных треугольников, последний компонент координат в пространстве отсечения может быть не равен \u003Cb\u003E\u003Ccode\u003E1\u003C\u002Fcode\u003E\u003C\u002Fb\u003E, что приведет к делению при преобразовании в конечные нормализованные экранные координаты устройства. Это используется в перспективной проекции в качестве перспективного деления и необходимо для того, чтобы более близкие объекты выглядели больше, чем объекты вдалеке.\u003Ca name=\"three\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003ELayout дескрипторов\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nНаш следующий шаг — описать используемый в шейдере uniform buffer на стороне C ++.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estruct UniformBufferObject {\n    glm::mat4 model;\n    glm::mat4 view;\n    glm::mat4 proj;\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nМы дублируем описание буфера из шейдера с помощью соответствующих типов GLM. Данные в матрицах бинарно совместимы с тем, как ожидает шейдер, поэтому в дальнейшем мы можем просто скопировать \u003Cb\u003E\u003Ccode\u003EUniformBufferObject\u003C\u002Fcode\u003E\u003C\u002Fb\u003E в \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FVkBuffer.html\" rel=\"nofollow noopener noreferrer\"\u003EVkBuffer\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E с помощью \u003Cb\u003E\u003Ccode\u003Ememcpy\u003C\u002Fcode\u003E\u003C\u002Fb\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНам нужно предоставить подробную информацию о каждом дескрипторе, используемом в шейдерах. Для этого создадим новую функцию, которая называется \u003Cb\u003E\u003Ccode\u003EcreateDescriptorSetLayout\u003C\u002Fcode\u003E\u003C\u002Fb\u003E. Ее нужно вызвать перед самым созданием конвейера, т. к. она нам там понадобится.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid initVulkan() {\n    ...\n    createDescriptorSetLayout();\n    createGraphicsPipeline();\n    ...\n}\n\n...\n\nvoid createDescriptorSetLayout() {\n\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nКаждая привязка должна быть описана с помощью структуры \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FVkDescriptorSetLayoutBinding.html\" rel=\"nofollow noopener noreferrer\"\u003EVkDescriptorSetLayoutBinding\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid createDescriptorSetLayout() {\n    VkDescriptorSetLayoutBinding uboLayoutBinding{};\n    uboLayoutBinding.binding = 0;\n    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;\n    uboLayoutBinding.descriptorCount = 1;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПервые два поля определяют \u003Cb\u003E\u003Ccode\u003Ebinding\u003C\u002Fcode\u003E\u003C\u002Fb\u003E, используемый в шейдере, и тип дескриптора, который представляет собой uniform-буфер. Переменная шейдера может представлять собой массив uniform-буферов, а \u003Cb\u003E\u003Ccode\u003EdescriptorCount\u003C\u002Fcode\u003E\u003C\u002Fb\u003E указывает количество значений в массиве. \u003Cbr\u002F\u003E\r\nЭто можно использовать, например, для указания трансформаций для каждой кости скелета в скелетной анимации. Наше MVP преобразование находится в единственном uniform-буфере, поэтому в \u003Cb\u003E\u003Ccode\u003EdescriptorCount\u003C\u002Fcode\u003E\u003C\u002Fb\u003E мы укажем \u003Cb\u003E\u003Ccode\u003E1\u003C\u002Fcode\u003E\u003C\u002Fb\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EuboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nТакже необходимо указать, на каких этапах шейдера будет упоминаться дескриптор. В поле \u003Cb\u003E\u003Ccode\u003EstageFlags\u003C\u002Fcode\u003E\u003C\u002Fb\u003E может быть указана комбинация значений \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FVkShaderStageFlagBits.html\" rel=\"nofollow noopener noreferrer\"\u003EVkShaderStageFlagBits\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E или значение \u003Cb\u003EVK_SHADER_STAGE_ALL_GRAPHICS\u003C\u002Fb\u003E. В нашем случае мы ссылаемся на дескриптор только из вершинного шейдера.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EuboLayoutBinding.pImmutableSamplers = nullptr; \u002F\u002F Optional\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПоле \u003Cb\u003E\u003Ccode\u003EpImmutableSamplers\u003C\u002Fcode\u003E\u003C\u002Fb\u003E актуально только для дескрипторов, связанных с чтением из текстур. Их мы рассмотрим позже. Здесь можно оставить значение по умолчанию.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВсе привязки дескрипторов объединены в один объект \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FVkDescriptorSetLayout.html\" rel=\"nofollow noopener noreferrer\"\u003EVkDescriptorSetLayout\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E. Определим новый член класса перед \u003Cb\u003E\u003Ccode\u003EpipelineLayout\u003C\u002Fcode\u003E\u003C\u002Fb\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EVkDescriptorSetLayout descriptorSetLayout;\nVkPipelineLayout pipelineLayout;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЗатем мы можем создать его с помощью \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FvkCreateDescriptorSetLayout.html\" rel=\"nofollow noopener noreferrer\"\u003EvkCreateDescriptorSetLayout\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E. Эта функция принимает довольно простую структуру \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FVkDescriptorSetLayoutCreateInfo.html\" rel=\"nofollow noopener noreferrer\"\u003EVkDescriptorSetLayoutCreateInfo\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E, описывающую массив привязок:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EVkDescriptorSetLayoutCreateInfo layoutInfo{};\nlayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;\nlayoutInfo.bindingCount = 1;\nlayoutInfo.pBindings = &amp;uboLayoutBinding;\n\nif (vkCreateDescriptorSetLayout(device, &amp;layoutInfo, nullptr, &amp;descriptorSetLayout) != VK_SUCCESS) {\n    throw std::runtime_error(\"failed to create descriptor set layout!\");\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nМы должны указать на только что созданный layout при создании конвейера, чтобы сообщить Vulkan, какие дескрипторы будут использоваться шейдерами. Layout-ы дескрипторов указываются в объекте layout-а конвейера. Изменим \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FVkPipelineLayoutCreateInfo.html\" rel=\"nofollow noopener noreferrer\"\u003EVkPipelineLayoutCreateInfo\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EVkPipelineLayoutCreateInfo pipelineLayoutInfo{};\npipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;\npipelineLayoutInfo.setLayoutCount = 1;\npipelineLayoutInfo.pSetLayouts = &amp;descriptorSetLayout;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВас может удивить, почему здесь возможно указать несколько layout-ов \u003Cbr\u002F\u003E\r\nдескрипторов, ведь один layout уже содержит все привязки. Мы еще вернемся к этому вопросу в следующей главе, когда будем рассматривать пулы дескрипторов и сеты дескрипторов.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nLayout дескриптора должен быть доступен до тех пор, пока мы можем создавать новые графические конвейеры, то есть до завершения программы:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid cleanup() {\n    cleanupSwapChain();\n\n    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);\n\n    ...\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ca name=\"four\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003EUniform-буфер\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nПришло время создать буфер для хранения наших матриц. Мы будем копировать новые данные в uniform-буфер в каждом кадре, поэтому нет необходимости создавать промежуточный буфер — он лишь приведет к снижению производительности.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСразу несколько кадров могут обрабатываться одновременно (например, один кадр рендерится, другой подготавливается к рендеру). Мы не должны допускать ситуации, когда данные из буфера считываются видеокартой и обновляются процессором в один и тот же момент, поэтому нам необходимо использовать несколько буферов. Мы можем использовать по одному uniform-буферу на кадр или на image из swap chain. Но поскольку мы ссылаемся на uniform-буферы из буфера команд, то лучше использовать свой uniform-буфер для каждого image.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля этого добавим новые члены класса для \u003Cb\u003E\u003Ccode\u003EuniformBuffers\u003C\u002Fcode\u003E\u003C\u002Fb\u003E и \u003Cb\u003E\u003Ccode\u003EuniformBuffersMemory\u003C\u002Fcode\u003E\u003C\u002Fb\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EVkBuffer indexBuffer;\nVkDeviceMemory indexBufferMemory;\n\nstd::vector&lt;VkBuffer\u003E uniformBuffers;\nstd::vector&lt;VkDeviceMemory\u003E uniformBuffersMemory;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nАналогичным образом создадим новую функцию \u003Cb\u003E\u003Ccode\u003EcreateUniformBuffers\u003C\u002Fcode\u003E\u003C\u002Fb\u003E, которая вызывается после \u003Cb\u003E\u003Ccode\u003EcreateIndexBuffer\u003C\u002Fcode\u003E\u003C\u002Fb\u003E и выделяет буферы:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid initVulkan() {\n    ...\n    createVertexBuffer();\n    createIndexBuffer();\n    createUniformBuffers();\n    ...\n}\n\n...\n\nvoid createUniformBuffers() {\n    VkDeviceSize bufferSize = sizeof(UniformBufferObject);\n\n    uniformBuffers.resize(swapChainImages.size());\n    uniformBuffersMemory.resize(swapChainImages.size());\n\n    for (size_t i = 0; i &lt; swapChainImages.size(); i++) {\n        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nМы напишем отдельную функцию, которая будет обновлять буфер на каждом кадре, поэтому \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fwww.khronos.org\u002Fregistry\u002Fvulkan\u002Fspecs\u002F1.2-extensions\u002Fman\u002Fhtml\u002FvkMapMemory.html\" rel=\"nofollow noopener noreferrer\"\u003EvkMapMemory\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E здесь не используется. Uniform-данные будут использоваться для всех вызовов отрисовки, поэтому буфер, содержащий их, должен быть уничтожен только после того, как мы закончим рендеринг. Поскольку он также зависит от количества images в swap chain, которые могут измениться после пересоздания swap chain, мы удалим его в \u003Cb\u003E\u003Ccode\u003EcleanupSwapChain\u003C\u002Fcode\u003E\u003C\u002Fb\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid cleanupSwapChain() {\n    ...\n\n    for (size_t i = 0; i &lt; swapChainImages.size(); i++) {\n        vkDestroyBuffer(device, uniformBuffers[i], nullptr);\n        vkFreeMemory(device, uniformBuffersMemory[i], nullptr);\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИ пересоздадим в \u003Cb\u003E\u003Ccode\u003ErecreateSwapChain\u003C\u002Fcode\u003E\u003C\u002Fb\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid recreateSwapChain() {\n    ...\n\n    createFramebuffers();\n    createUniformBuffers();\n    createCommandBuffers();\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ca name=\"five\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003EОбновление uniform-данных\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nСоздадим новую функцию \u003Cb\u003E\u003Ccode\u003EupdateUniformBuffer\u003C\u002Fcode\u003E\u003C\u002Fb\u003E и вызовем ее из \u003Cb\u003E\u003Ccode\u003EdrawFrame\u003C\u002Fcode\u003E\u003C\u002Fb\u003E сразу после того, как узнаем, какой image будет получен из swap chain:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid drawFrame() {\n    ...\n\n    uint32_t imageIndex;\n    VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &amp;imageIndex);\n\n    ...\n\n    updateUniformBuffer(imageIndex);\n\n    VkSubmitInfo submitInfo{};\n    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;\n\n    ...\n}\n\n...\n\nvoid updateUniformBuffer(uint32_t currentImage) {\n\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЭта функция будет постоянно генерировать новое преобразование, чтобы заставить геометрию вращаться. Для реализации этой функции нам нужно подключить два новых заголовочных файла:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E#define GLM_FORCE_RADIANS\n#include &lt;glm\u002Fglm.hpp\u003E\n#include &lt;glm\u002Fgtc\u002Fmatrix_transform.hpp\u003E\n\n#include &lt;chrono\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЗаголовочный файл \u003Cb\u003E\u003Ccode\u003Eglm\u002Fgtc\u002Fmatrix_transform.hpp\u003C\u002Fcode\u003E\u003C\u002Fb\u003E предоставляет функции, которые можно использовать для генерирования model-преобразований, таких как \u003Cb\u003E\u003Ccode\u003Eglm :: rotate\u003C\u002Fcode\u003E\u003C\u002Fb\u003E, view-преобразований, таких как \u003Cb\u003E\u003Ccode\u003Eglm :: lookAt\u003C\u002Fcode\u003E\u003C\u002Fb\u003E, и projection-преобразований, таких как \u003Cb\u003E\u003Ccode\u003Eglm::perspective\u003C\u002Fcode\u003E\u003C\u002Fb\u003E. Определение \u003Cb\u003E\u003Ccode\u003EGLM_FORCE_RADIANS\u003C\u002Fcode\u003E\u003C\u002Fb\u003E необходимо, чтобы такие функции, как \u003Cb\u003E\u003Ccode\u003Eglm :: rotate\u003C\u002Fcode\u003E\u003C\u002Fb\u003E, использовали радианы в качестве аргументов во избежание любой возможной путаницы.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЗаголовочный файл стандартной библиотеки \u003Cb\u003E\u003Ccode\u003Echrono\u003C\u002Fcode\u003E\u003C\u002Fb\u003E предоставляет функции для точного хронометража. Мы будем использовать их, чтобы обеспечивать вращение геометрии на 90 градусов в секунду независимо от частоты кадров.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid updateUniformBuffer(uint32_t currentImage) {\n    static auto startTime = std::chrono::high_resolution_clock::now();\n\n    auto currentTime = std::chrono::high_resolution_clock::now();\n    float time = std::chrono::duration&lt;float, std::chrono::seconds::period\u003E(currentTime - startTime).count();\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВ начале функции \u003Cb\u003E\u003Ccode\u003EupdateUniformBuffer\u003C\u002Fcode\u003E\u003C\u002Fb\u003E мы вычисляем время, прошедшее от начала рендеринга, причем используем для этого числа с плавающей запятой.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТеперь вычислим model, view и proj матрицы. Трансформация в мировую систему координат (model) – это просто вращение вокруг оси Z с использованием переменной \u003Cb\u003E\u003Ccode\u003Etime\u003C\u002Fcode\u003E\u003C\u002Fb\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EUniformBufferObject ubo{};\nubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВ качестве параметров функция \u003Cb\u003E\u003Ccode\u003Eglm :: rotate\u003C\u002Fcode\u003E\u003C\u002Fb\u003E принимает существующее преобразование, угол вращения и ось вращения. Конструктор \u003Cb\u003E\u003Ccode\u003Eglm :: mat4 (1.0f)\u003C\u002Fcode\u003E\u003C\u002Fb\u003E возвращает единичную матрицу. Использование угла вращения \u003Cb\u003E\u003Ccode\u003Etime * glm :: radians (90.0f)\u003C\u002Fcode\u003E\u003C\u002Fb\u003E позволяет осуществлять вращение на 90 градусов в секунду.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nДля view-преобразования я решил взглянуть на геометрию сверху под углом в 45 градусов. В качестве параметров функция \u003Cb\u003E\u003Ccode\u003Eglm :: lookAt\u003C\u002Fcode\u003E\u003C\u002Fb\u003E принимает точку, в которой находится камера (eye position), точку, на которую смотрит камера (center position) и направление «вверх» для камеры (up axis).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width \u002F (float) swapChainExtent.height, 0.1f, 10.0f);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЯ решил использовать перспективную проекцию с вертикальным полем зрения в 45 градусов. Остальные параметры — это отношение сторон, ближняя плоскость отсечения и дальняя плоскость отсечения. Важно использовать текущее разрешение swap chain, чтобы рассчитать отношения сторон с учетом новой ширины и высоты после изменения размера окна.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eubo.proj[1][1] *= -1;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИзначально GLM был разработан для OpenGL, где ось Y в пространстве отсечения имеет противоположное направление. Самый простой способ компенсировать это — инвертировать знак соответствующего поля в матрице проекции. Если этого не сделать, изображение будет рендериться вверх ногами.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТеперь все матрицы вычислены, поэтому мы можем скопировать данные в текущий uniform-буфер.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid* data;\nvkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &amp;data);\n    memcpy(data, &amp;ubo, sizeof(ubo));\nvkUnmapMemory(device, uniformBuffersMemory[currentImage]);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nТакой способ использования UBO — не самый эффективный для передачи постоянно меняющихся значений шейдеру. Для передачи небольших буферов данных эффективнее будет использовать push-константы. Мы рассмотрим их в следующих главах.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ следующей главе мы рассмотрим сеты дескрипторов, которые привяжут (bind) VkBuffers к дескрипторам uniform-буферов, чтобы шейдер мог получить доступ к данным преобразований.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fvulkan-tutorial.com\u002Fcode\u002F21_descriptor_layout.cpp\" rel=\"nofollow noopener noreferrer\"\u003EКод С++\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E \u002F \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fvulkan-tutorial.com\u002Fcode\u002F21_shader_ubo.vert\" rel=\"nofollow noopener noreferrer\"\u003EВершинный шейдер\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E \u002F \u003Cb\u003E\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fvulkan-tutorial.com\u002Fcode\u002F21_shader_ubo.frag\" rel=\"nofollow noopener noreferrer\"\u003EФрагментный шейдер\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003C\u002Fb\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"Vulkan"},{"titleHtml":"tutorial"},{"titleHtml":"перевод"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F582838\u002F4d3768c80c7e018a07af0311b6ae9f4e\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F582838\u002F4d3768c80c7e018a07af0311b6ae9f4e\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582838\\\u002F\"},\"headline\":\"Vulkan. Руководство разработчика. Layout дескрипторов и буфер\",\"datePublished\":\"2021-10-12T12:40:38+03:00\",\"dateModified\":\"2021-10-12T13:09:06+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"alexandra_sky\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть здесь).  Сегодня я перехожу к след...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582838\\\u002F#post-content-body\",\"about\":[\"h_programming\",\"h_cpp\",\"h_3d_graphics\",\"h_gamedev\",\"h_cgi\",\"f_develop\",\"f_design\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fsc\\\u002Fqk\\\u002Fo5\\\u002Fscqko5z1upafgiqpxyb1buvipbi.png\"]}","metaDescription":"Добрый день! Я продолжаю выкладывать на Хабр переводы Vulkan Tutorial на русский язык (оригинал руководства можно посмотреть здесь).\r\n\r\nСегодня я перехожу к следующему разделу — Uniform buffers, и...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"programming,cpp,3d_graphics,gamedev,cgi"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

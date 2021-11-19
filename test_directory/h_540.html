@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Добавляем GUI в EFI / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583450\/"},"headline":"Добавляем GUI в EFI","datePublished":"2021-10-14T13:16:06+03:00","dateModified":"2021-10-14T19:46:28+03:00","author":{"@type":"Person","name":"Grazinpeo"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный\/текстовый вывод и TUI для HII интерфейса. А хочется капельку красоты и...","url":"https:\/\/habr.com\/ru\/post\/583450\/#post-content-body","about":["h_UEFI","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583450\/cb4371c4a693c1c41b192076427ced54\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/d38\/ae7\/dec\/d38ae7dec8d1dc64589489eca45260e8.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/057\/a0a\/a5a\/057a0aa5ac14cc47bea910fd26fc5abe.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/806\/461\/9d6\/8064619d6cb3b9eeddad3630da6c3e43.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/61f\/db2\/ce7\/61fdb2ce78a74e8bc9e4ce78b301afec.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/44e\/31b\/c4f\/44e31bc4f9bc21bb79777f26cb86ef93.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/71b\/29f\/e68\/71b29fe687c25b4f7faaf73d7225d0ba.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Добавляем GUI в EFI" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Добавляем GUI в EFI" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Добавляем GUI в EFI" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный/текстовый вывод и TUI для HII интерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный/текстовый вывод и TUI для HII интерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный/текстовый вывод и TUI для HII интерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный/текстовый вывод и TUI для HII интерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный/текстовый вывод и TUI для HII интерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/065/76c/f3c/06576cf3c3270e83ace568942684bccf.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/065/76c/f3c/06576cf3c3270e83ace568942684bccf.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/065/76c/f3c/06576cf3c3270e83ace568942684bccf.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/065/76c/f3c/06576cf3c3270e83ace568942684bccf.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/065/76c/f3c/06576cf3c3270e83ace568942684bccf.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583450" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-14T10:16:06.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583450/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583450/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/065/76c/f3c/06576cf3c3270e83ace568942684bccf.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583450/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Grazinpeo/" title="Grazinpeo" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/Grazinpeo/" class="tm-user-info__username">
+      Grazinpeo
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-14T10:16:06.000Z" title="2021-10-14, 13:16">14  октября   в 13:16</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Добавляем GUI в EFI</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/UEFI/" class="tm-article-snippet__hubs-item-link"><span>UEFI</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Из песочницы
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="bordered "><img src="/img/image-loader.svg" height="329" data-src="https://habrastorage.org/getpro/habr/upload_files/d38/ae7/dec/d38ae7dec8d1dc64589489eca45260e8.png" data-width="282"/><figcaption></figcaption></figure><p>В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный/текстовый вывод и <a href="https://en.wikipedia.org/wiki/Text-based_user_interface" rel="noopener noreferrer nofollow">TUI</a> для <a href="https://edk2-docs.gitbook.io/edk-ii-uefi-driver-writer-s-guide/12_uefi_driver_configuration/121_hii_overview" rel="noopener noreferrer nofollow">HII </a>интерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже не ради чего-то конкретного, а просто JUST FOR FUN!</p><p>Все элементарно: берем EDK, хватаем красивый язык для описания GUI и какую-нибудь не менее красивую библиотеку для вывода. Соединяем все это вместе и плавно перемешиваем на медленном огне. Все, готово, можно есть. Ну что, попробуем?</p><p><em>Дисклеймер: в статье нет каких-либо тайных или сильно новых знаний, она просто показывает путь <s>самурая</s> по портированию проекта в EFI.</em></p><h2>Выбор</h2><p>В качестве библиотеки GUI будем использовать библиотеки под названием <a href="https://lvgl.io/" rel="noopener noreferrer nofollow">LVGL</a>. Просто потому что она мне нравится. При своей минималистичности в ней богатый функционал и есть куча всего, и плюс все это еще и активно развивается. Можно даже прямо в браузере посмотреть какие <a href="https://lvgl.io/demos" rel="noopener noreferrer nofollow">крутые штуки делают на ней разработчики</a>.</p><p>А еще она портирована на micropython, который, в принципе, подходит под “красивый язык”. Тут сразу может возникнуть вопрос: а почему не портировать его на более полный “python 3”? Ответ прост: сам micropython внутренне несколько по другому устроен по сравнению со своим старшим братом и требует сложной адаптации, которой бы не хотелось. Можно прочитать про это <a href="https://forum.lvgl.io/t/support-for-python3/1098" rel="noopener noreferrer nofollow">тут</a>. </p><p>Едем дальше! Что там у нас в EDK?! Еще в недалеком в 2018 в EDK портировали micropython, но судя по <a href="https://github.com/tianocore/edk2-staging/tree/MicroPythonTestFramework" rel="noopener noreferrer nofollow">github-у</a> он с тех пор этот проект не сильно и развивался. Мы люди не гордые - возьмем что есть и пойдем дальше. Как говорится: “работает - не трожь!”.</p><p>Итак, есть Micropython под EFI и есть LVGL под micropython под Linux/микроконтроллеры. Надо их соединить.</p><h2>Соединяем!</h2><p>Первым делом перетащим существующий micropython на новый EDK, хотя бы потому, что там много чего поменялось за последнее время и есть более классный эмулятор EFI, гораздо лучше чем раньше. Тут все просто: берем старое, Ctrl+C, берем новый EDK, Ctrl+V и пытаемся собрать. Не собралось - подредактировали - собралось. Там всего пару мелочей вроде отсутствующих в новом EDK небезопасных AsciiStrnCpy/AsciiStrCat и прочие мелкие неприятности. Собралось - отлично - едем дальше!</p><p>Далее, добавляем сам LVGL в micropython. Так как сам LVGL написан на С, то логично, что для языка micropython нужна некоторая обертка. Для генерации этой обертки существует проект <a href="https://github.com/lvgl/lv_micropython" rel="noopener noreferrer nofollow"><u>lv_micropython</u></a>. Суть проекта сводится к следующему: запускается некоторый условный “компилятор” для нашей библиотеки и генерирует на его основе с-файл с обертками для micropython-функций, которые в дальнейшем линкуются к micropython. После сборки уже в самом интерпретаторе micropython-а можно получить доступ к этим функциям библиотеки через отдельный модуль. </p><p>Было несколько попыток и мне так и не удалось запустить этот “компилятор” для текущих исходников micropython под EDK. Сделаем "workaround" и скомпилируем проект под Linux, а затем возьмем уже скомпилированный файл оберток “lv_mpy_example.c” и поместим  в существующий проект в нашем EDK.</p><p>Доступ к модулям micropython после компиляции указываются в mpconfigport.h. Необходимо добавить ссылку на структуру модуля mp_module_lvgl, описанную в “lv_mpy_example.c” в MICROPY_PORT_BUILTIN_MODULES:   </p><pre><code class="cpp">extern const struct _mp_obj_module_t mp_module_lvgl;
+
+#define MICROPY_PORT_BUILTIN_MODULES \
+...
+{ MP_OBJ_NEW_QSTR(MP_QSTR_lvgl), (mp_obj_t)&amp;mp_module_lvgl },
+...
+</code></pre><p>Здесь так же указывается идентификатор строки MP_QSTR_lvgl. Все идентификаторы, которые используются micropython хранятся в файле “qstrdefs.generated.h” в виде 3х байтового хеша и самой строки. Этот файл генерируется автоматически скриптом genhdr.py. Поэтому для обновления строки и перед компиляция его как минимум один раз надо запустить.</p><p>Добавляем все новые исходные файлы LVGL и в inf файл модуля MicroPythonDxe.inf.</p><p>Компилируем. Запускаем в Shell наш свежескомпилированный micropython.efi. Вводим в строке интерпретатора “import lvgl”, нажимаем Enter и наш micropython принимает модуль без ошибок. Автодополнение по tab тоже работает. Супер, все сделано верно!</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Игла в яйце, яйцо в утке, утка в зайце
+ В смысле Lvgl в Micropython, а он в EFI" title="Игла в яйце, яйцо в утке, утка в зайце
+ В смысле Lvgl в Micropython, а он в EFI" height="264" data-src="https://habrastorage.org/getpro/habr/upload_files/057/a0a/a5a/057a0aa5ac14cc47bea910fd26fc5abe.png" data-width="921"/><figcaption>Игла в яйце, яйцо в утке, утка в зайце
+ В смысле Lvgl в Micropython, а он в EFI</figcaption></figure><h2>Lvgl есть, а GUI нет - непорядок</h2><p>Сейчас у нас нет драйвера, который был знал как выводить Lvgl на экран. Напишем! Драйвер будет выполнен в качестве еще одного модуля micropython.</p><p>Как же написать драйвер? Тут все просто. Посмотрим как устроен уже существующий <a href="https://github.com/lvgl/lv_binding_micropython/tree/master/driver/SDL" rel="noopener noreferrer nofollow">драйвер SDL под Linux</a> и <a href="https://github.com/lvgl/lv_binding_micropython/blob/master/examples/example1.py" rel="noopener noreferrer nofollow">пример</a> как работать с ним в нашем питоне.</p><p>Начнем с вывода на экран. Так, есть функция инициализации и есть callback, который должен выводить буфер lvgl на экран</p><pre><code class="cpp">void monitor_flush(struct _disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)</code></pre><p>Окей, все понятно, пишем.</p><p>В EFI вывод на экран происходит через <abbr title="это такие интерфейсы взаимодействия между драйверами в EFI, где каждый протокол определяется своим GUID-ом">протокол </abbr><abbr title="Протоколы - это такие интерфейсы взаимодействия между драйверами в EFI, где каждый протокол определяется своим GUID-ом">EfiGopProtocol</abbr>. Он реализует простейшие функции для работы с экранным буфером. Помним, что в системе EfiGopProtocol может быть   несколько штук (например, для нескольких экранов). Делаем так, чтобы наш вывод изображения был на все из них, дабы не искать куда же вывелось изображение. Проходимся по всем EfiGopProtocol-ам и выводим буфер через функцию Blt, который пришел нам на вход.</p><details class="spoiler"><summary>Код вывода</summary><div class="spoiler__content"><pre><code class="cpp">{
+  EFI_STATUS Status;
+  UINTN Index;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL   *GraphicsOutput;
+  EFI_HANDLE *HndlBuf;
+  UINTN HndlNum;
+
+  //
+  // Get all the GOP protocol handles
+  //
+  Status = gBS->LocateHandleBuffer(ByProtocol, &amp;gEfiGraphicsOutputProtocolGuid, NULL, &amp;HndlNum,  &amp;HndlBuf);
+  if (EFI_ERROR(Status) || HndlNum == 0) {
+    return;
+  }
+  
+  for (Index = 0; Index &lt; HndlNum; Index++) {
+
+    Status = gBS->HandleProtocol (
+                    HndlBuf[Index],
+                    &amp;gEfiGraphicsOutputProtocolGuid,
+                    (VOID **) &amp;GraphicsOutput
+                    );
+    if (EFI_ERROR(Status)) {
+      continue;
+    }
+
+    //
+    // Out buffer to screen for each GOP protocol
+    //
+    GraphicsOutput->Blt(
+        GraphicsOutput,
+        (EFI_GRAPHICS_OUTPUT_BLT_PIXEL*)color_p,
+        EfiBltBufferToVideo,
+        0,
+        0,
+        area->x1,
+        area->y1,
+        w,
+        h,
+        0
+    );
+  }
+
+  gBS->FreePool(HndlBuf);
+}
+</code></pre></div></details><p>Далее сделаем из этого кода модуль для micropython:</p><details class="spoiler"><summary>Код</summary><div class="spoiler__content"><pre><code class="python">STATIC const mp_rom_map_elem_t efidirect_globals_table[] = {
+        { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_efidirect) },
+        { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&amp;mp_init_efidirect_obj) },
+        { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&amp;mp_deinit_efidirect_obj) },
+        { MP_ROM_QSTR(MP_QSTR_monitor_flush), MP_ROM_PTR(&amp;PTR_OBJ(monitor_flush))}
+};
+         
+
+STATIC MP_DEFINE_CONST_DICT (
+    mp_module_efidirect_globals,
+    efidirect_globals_table
+);
+
+const mp_obj_module_t mp_module_efidirect = {
+    .base = { &amp;mp_type_module },
+    .globals = (mp_obj_dict_t*)&amp;mp_module_efidirect_globals
+};
+</code></pre></div></details><p>Компилируем, стартуем. Запускаем тестовый скрипт:</p><details class="spoiler"><summary>Скрипт</summary><div class="spoiler__content"><pre><code class="python">import lvgl as lv
+import efidirect as ed
+
+# Screen size
+scr_width = 800
+scr_height = 600
+
+# Initialize EFI driver
+ed.init(w = scr_width, h = scr_height)
+lv.init()
+
+# Register EFI display driver
+disp_buf1 = lv.disp_buf_t()
+buf1_1 = bytearray(scr_width*scr_height*4)
+disp_buf1.init(buf1_1, None, len(buf1_1)//4)
+disp_drv = lv.disp_drv_t()
+disp_drv.init()
+disp_drv.buffer = disp_buf1
+disp_drv.flush_cb = ed.monitor_flush
+disp_drv.hor_res = scr_width
+disp_drv.ver_res = scr_height
+disp_drv.register()
+
+scr = lv.obj()
+btn = lv.btn(scr)
+btn.align(lv.scr_act(), lv.ALIGN.CENTER, 0, 0)
+label = lv.label(btn)
+label.set_text("Hello World!")
+
+# Load the screen
+lv.scr_load(scr)
+</code></pre></div></details><p>Смотрим на экран.. а там.. ничего нет! Ну как же так!   </p><p>Главное, не падать духом. В Linux с SDL работает, а у нас нет. Где-то вышла промашка. Снова изучаем <a href="https://docs.lvgl.io/latest/en/html/porting/display.html" rel="noopener noreferrer nofollow">документацию</a> и изучаем <a href="https://github.com/lvgl/lv_binding_micropython/tree/master/driver/SDL" rel="noopener noreferrer nofollow">SDL драйвер</a> и вот оно! </p><p>Дело в том, в Lvgl необходим обработчик, который должен вызываться в цикле. Для SDL это сделали в отдельном потоке при инициализации библиотеки. У нас в EFI нет отдельного потока, поэтому, для простоты, будем вызывать цикл обработки прямо в нашем скрипте:</p><pre><code class="python">while(1):
+    lv.task_handler()
+    #Дельту времени пока задаем 1. 
+    #По хорошему здесь должно быть честное вычисление дельты времени, но пока так 
+    lv.tick_inc(1)</code></pre><p> Запускаем и о чудо, it’s works!  </p><figure class="full-width "><img src="/img/image-loader.svg" alt="Привет мир!" title="Привет мир!" height="948" data-src="https://habrastorage.org/getpro/habr/upload_files/806/461/9d6/8064619d6cb3b9eeddad3630da6c3e43.png" data-width="1202"/><figcaption>Привет мир!</figcaption></figure><p>Единственное “Но” - мы в цикле, у нас ничего нет, мы ничего не может сделать. Это конец, “перезагружаемся”.</p><h2>Добавляем ввод</h2><p>Полностью аналогично предыдущему пункту. Смотрим в SDL драйвер и делаем так же. Для ввода с клавиатуры в EFI используем EfiSimpleInputProtocol. Он реализует метод ReadKeyStroke, который и возвращает нам нажатую клавишу. Упаковываем его в в callback от Lvgl, не забыв преобразовать определение клавиш с EFI в LVGL: </p><details class="spoiler"><summary>Код для клавиатуры</summary><div class="spoiler__content"><pre><code class="cpp">/**
+ * ConvertEfiKeyToLvgl
+ */
+uint32_t
+ConvertEfiKeyToLvgl(
+    EFI_INPUT_KEY *Key
+)
+{
+    switch (Key->UnicodeChar)
+    {
+    case CHAR_CARRIAGE_RETURN:
+        return LV_KEY_ENTER;
+    case CHAR_BACKSPACE:
+        return LV_KEY_BACKSPACE;
+    case CHAR_TAB:
+        return LV_KEY_NEXT;  
+    default:
+        break;
+    }
+
+    switch (Key->ScanCode)
+    {
+    case SCAN_UP:
+        return LV_KEY_UP;
+    case SCAN_DOWN:
+        return LV_KEY_DOWN;
+    case SCAN_RIGHT:
+        return LV_KEY_RIGHT;
+    case SCAN_LEFT:
+        return LV_KEY_LEFT;
+    case SCAN_DELETE:
+        return LV_KEY_DEL;
+    case SCAN_HOME:
+        return LV_KEY_HOME;
+    case SCAN_END:
+        return LV_KEY_END;
+    default:
+        break;
+    }
+
+    return Key->UnicodeChar;
+}
+
+
+bool keyboard_read(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
+{
+    EFI_STATUS Status;
+    EFI_INPUT_KEY Key;
+
+    Status = gST->ConIn->ReadKeyStroke(gST->ConIn, &amp;Key);
+    if (EFI_ERROR(Status)) {
+        data->state = LV_INDEV_STATE_REL;
+        return false;
+    }
+
+    data->key = ConvertEfiKeyToLvgl(&amp;Key);
+    data->state = LV_INDEV_STATE_PR;
+
+    return false;
+}
+</code></pre></div></details><p>Для мыши есть протокол EfiSimplePointerProtocol. Действуем аналогично. </p><details class="spoiler"><summary>Код для мыши</summary><div class="spoiler__content"><pre><code class="cpp">bool mouse_read(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
+{
+    EFI_STATUS Status;
+    EFI_SIMPLE_POINTER_STATE State;
+    STATIC lv_coord_t X = 0, Y = 0;
+    
+    if (gSimplePointer == NULL) {
+        return false;
+    }
+
+    //
+    // Get current the mouse state
+    //
+    Status = gSimplePointer->GetState(gSimplePointer, &amp;State);
+    if (EFI_ERROR(Status)) {
+        return false;
+    }
+
+    //
+    // And calculate the absolute coordinate
+    //
+    X += (lv_coord_t)(State.RelativeMovementX / (INT32)gSimplePointer->Mode->ResolutionX);
+    Y += (lv_coord_t)(State.RelativeMovementY / (INT32)gSimplePointer->Mode->ResolutionY);
+
+    X = MAX(X, 0);
+    Y = MAX(Y, 0);
+
+    //
+    // Store the collected data
+    //
+    data->point.x = X;
+    data->point.y = Y;
+    data->state = State.LeftButton ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+
+    return false;
+}
+</code></pre></div></details><p>Здесь стоит отметить только то, что если в случае с EfiSimpleInputProtocol, он уже есть в системной таблице gST, которая подается на вход программы, то EfiSimplePointerProtocol в gST нет, и его надо получить по хендлу ConsoleInHandle. </p><details class="spoiler"><summary>Получение EfiSimplePointerProtocol</summary><div class="spoiler__content"><pre><code class="cpp">EFI_SIMPLE_POINTER_PROTOCOL *gSimplePointer = NULL;
+
+...
+  
+/*
+ * Init Function
+ */
+void input_init()
+{
+    EFI_STATUS Status;
+    Status = gBS->HandleProtocol(gST->ConsoleInHandle, &amp;gEfiSimplePointerProtocolGuid, &amp;gSimplePointer);
+    if (EFI_ERROR(Status)) {
+        gSimplePointer = NULL;
+    }
+}
+</code></pre></div></details><p>Обновим тестовый скрипт. Запускаем. На этот раз работает все так как и ожидалось!</p><details class="spoiler"><summary>Скрипт micropython</summary><div class="spoiler__content"><pre><code class="python">import lvgl as lv
+import efidirect as ed
+import uctypes
+
+# Screen size
+scr_width = 800
+scr_height = 600
+
+close_flag = False
+
+# Click button handler
+def event_handler(source,evt):
+	global close_flag
+	if evt == lv.EVENT.CLICKED:
+		print("Clicked")
+		close_flag = True
+
+# Initialize EFI drivers
+ed.init(w = scr_width, h = scr_height)
+lv.init()
+
+# Register display driver.
+
+disp_buf1 = lv.disp_buf_t()
+buf1_1 = bytearray(scr_width*scr_height*4)
+disp_buf1.init(buf1_1, None, len(buf1_1)//4)
+disp_drv = lv.disp_drv_t()
+disp_drv.init()
+disp_drv.buffer = disp_buf1
+disp_drv.flush_cb = ed.monitor_flush
+disp_drv.hor_res = scr_width
+disp_drv.ver_res = scr_height
+disp_drv.register()
+
+# Regsiter mouse driver
+
+indev_drv = lv.indev_drv_t()
+indev_drv.init() 
+indev_drv.type = lv.INDEV_TYPE.POINTER;
+indev_drv.read_cb = ed.mouse_read
+mouse_indev = indev_drv.register();
+
+indev_drv = lv.indev_drv_t()
+indev_drv.init() 
+indev_drv.type = lv.INDEV_TYPE.KEYPAD;
+indev_drv.read_cb = ed.keyboard_read
+kb_indev = indev_drv.register();
+
+kb_group = lv.group_create()
+kb_indev.set_group(kb_group)
+
+scr = lv.obj()
+
+# First button
+btn = lv.btn(scr)
+btn.align(lv.scr_act(), lv.ALIGN.CENTER, 0, 0)
+label = lv.label(btn)
+label.set_text("Cancel")
+btn.set_event_cb(event_handler)
+# Set the group for 'tab' works
+kb_group.add_obj(btn)
+
+# Second button
+btn = lv.btn(scr)
+btn.align(lv.scr_act(), lv.ALIGN.CENTER, 0, 50)
+label = lv.label(btn)
+label.set_text("Hello World!")
+kb_group.add_obj(btn)
+
+
+# Load the screen
+
+lv.scr_load(scr)
+
+# Set the PLAY symbol as the cursor image
+img = lv.img(lv.scr_act(), None)
+img.set_src(lv.SYMBOL.PLAY)
+mouse_indev.set_cursor(img)
+
+while(1):
+	lv.task_handler()
+	lv.tick_inc(1)
+	key = lv.indev_t.get_key(kb_indev)
+	if close_flag:
+		break</code></pre></div></details><p>Запускаем. На этот раз работает все так как и ожидалось!  </p><figure class="full-width "><img src="/img/image-loader.svg" alt="Теперь работает и мышь и клавиатура. И да, это все еще запускается под UEFI" title="Теперь работает и мышь и клавиатура. И да, это все еще запускается под UEFI" height="948" data-src="https://habrastorage.org/getpro/habr/upload_files/61f/db2/ce7/61fdb2ce78a74e8bc9e4ce78b301afec.png" data-width="1202"/><figcaption>Теперь работает и мышь и клавиатура. И да, это все еще запускается под UEFI</figcaption></figure><p>Можно заметить одно маленькое "фи". Если запустить наше приложение со <s>скрипом</s> скриптом в эмуляторе и одновременно отобразить диспетчер задач, то можно увидеть простой факт: приложение занимает слишком много процессорного времени. </p><figure class="full-width "><img src="/img/image-loader.svg" height="115" data-src="https://habrastorage.org/getpro/habr/upload_files/44e/31b/c4f/44e31bc4f9bc21bb79777f26cb86ef93.png" data-width="646"/><figcaption></figcaption></figure><p>Да, 9% кажется мало, но вторая вкладка диспетчера задача говорит, что одно ядро процессора постоянно занято эмулятором на 100%. Необходимо чтобы обработчик LVGL не так часто выполнялся и процессор немного “отдохнул” от рутины, прежде чем начнет выполнять его заново. Другими словами, должна быть небольшая задержка в цикле обработки, который мы описали в скрипте. Функция задержка есть в EFI. Вызовем ее прямо из скрипта. Для этого на помощь нам приходит EDK модуль micropython-a "uefi":</p><details class="spoiler"><summary>HotFix</summary><div class="spoiler__content"><pre><code class="python">import Lib.Uefi.uefi as uefi
+
+…
+
+while(1):
+	lv.task_handler()
+	lv.tick_inc(1)
+  # Delay 1ms
+	uefi.bs.Stall(100)
+  #
+	key = lv.indev_t.get_key(kb_indev)
+	if close_flag:
+		break
+</code></pre></div></details><p>Все! Можно приступать к созданию GUI приложений или даже игр (если кому-то захочется) без каких-либо проблем под EFI. И главное все это делать на micropython-е. Не думаю, что сильно кому-нибудь это понадобится, но вдруг найдутся такие отважные люди.  </p><p>Исходный код всего этого безобразия есть на <a href="https://github.com/ectogigamau/EfiLvgl" rel="noopener noreferrer nofollow">Github</a><strong>.</strong></p><p>Если кто хочет поиграться с уже скомпилированной версией micropython-а с LVGL под EFI - вам <a href="https://github.com/ectogigamau/EfiLvgl/tree/master/Binary" rel="noopener noreferrer nofollow">сюда</a>. Тестовый py-файл <a href="https://github.com/ectogigamau/EfiLvgl/blob/master/Examples/test.py" rel="noopener noreferrer nofollow">здесь</a>. Документацию по API можно найти на <a href="https://docs.lvgl.io/7.11/" rel="noopener noreferrer nofollow">официальной сайте</a>.</p><p>И напоследок, быстро накидал <a href="https://github.com/ectogigamau/EfiLvgl/blob/master/Examples/2048.py" rel="noopener noreferrer nofollow">2048</a>.</p><figure class="full-width "><img src="/img/image-loader.svg" height="948" data-src="https://habrastorage.org/getpro/habr/upload_files/71b/29f/e68/71b29fe687c25b4f7faaf73d7225d0ba.png" data-width="1202"/><figcaption></figcaption></figure><p>P.S. Пока окончально дописал статью, немного отстал от жизни т.к. вышел следующий релиз LVGL за номером 8, в то время как статья базируется на LVGL 7.x. Но большой беды в этом нет, т.к. описанное почти полностью идентично если бы портировался свежий LVGL 8. </p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Buefi%5D" class="tm-tags-list__link">uefi</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmicropython%5D" class="tm-tags-list__link">micropython</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Blvgl%5D" class="tm-tags-list__link">lvgl</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%BE%D1%80%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">портирование</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/UEFI/" class="tm-hubs-list__link">
+    UEFI
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 24: ↑24 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 24: ↑24 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+24</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">4.5K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    36
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Grazinpeo/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 9 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    9
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">24</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/Grazinpeo/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Grazinpeo
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583450/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 3 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583450/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583450/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583450":{"id":"583450","timePublished":"2021-10-14T10:16:06+00:00","isCorporative":false,"lang":"ru","titleHtml":"Добавляем GUI в EFI","leadData":{"textHtml":"\u003Cp\u003EВ стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный\u002Fтекстовый вывод и \u003Ca href=\"https:\u002F\u002Fen.wikipedia.org\u002Fwiki\u002FText-based_user_interface\" rel=\"noopener noreferrer nofollow\"\u003ETUI\u003C\u002Fa\u003E для \u003Ca href=\"https:\u002F\u002Fedk2-docs.gitbook.io\u002Fedk-ii-uefi-driver-writer-s-guide\u002F12_uefi_driver_configuration\u002F121_hii_overview\" rel=\"noopener noreferrer nofollow\"\u003EHII \u003C\u002Fa\u003Eинтерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже не ради чего-то конкретного, а просто JUST FOR FUN!\u003C\u002Fp\u003E\u003Cp\u003EВсе элементарно: берем EDK, хватаем красивый язык для описания GUI и какую-нибудь не менее красивую библиотеку для вывода. Соединяем все это вместе и плавно перемешиваем на медленном огне. Все, готово, можно есть.&nbsp;Ну что, попробуем?\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F065\u002F76c\u002Ff3c\u002F06576cf3c3270e83ace568942684bccf.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F065\u002F76c\u002Ff3c\u002F06576cf3c3270e83ace568942684bccf.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"sandbox","data":null}],"author":{"scoreStats":{"score":9,"votesCount":9},"rating":24,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2771149","alias":"Grazinpeo","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":3,"favoritesCount":36,"readingCount":4463,"score":24,"votesCount":24},"hubs":[{"relatedData":null,"id":"22109","alias":"UEFI","type":"collective","title":"UEFI","titleHtml":"UEFI","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"bordered \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"329\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd38\u002Fae7\u002Fdec\u002Fd38ae7dec8d1dc64589489eca45260e8.png\" data-width=\"282\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВ стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный\u002Fтекстовый вывод и \u003Ca href=\"https:\u002F\u002Fen.wikipedia.org\u002Fwiki\u002FText-based_user_interface\" rel=\"noopener noreferrer nofollow\"\u003ETUI\u003C\u002Fa\u003E для \u003Ca href=\"https:\u002F\u002Fedk2-docs.gitbook.io\u002Fedk-ii-uefi-driver-writer-s-guide\u002F12_uefi_driver_configuration\u002F121_hii_overview\" rel=\"noopener noreferrer nofollow\"\u003EHII \u003C\u002Fa\u003Eинтерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже не ради чего-то конкретного, а просто JUST FOR FUN!\u003C\u002Fp\u003E\u003Cp\u003EВсе элементарно: берем EDK, хватаем красивый язык для описания GUI и какую-нибудь не менее красивую библиотеку для вывода. Соединяем все это вместе и плавно перемешиваем на медленном огне. Все, готово, можно есть. Ну что, попробуем?\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EДисклеймер: в статье нет каких-либо тайных или сильно новых знаний, она просто показывает путь \u003Cs\u003Eсамурая\u003C\u002Fs\u003E по портированию проекта в EFI.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Ch2\u003EВыбор\u003C\u002Fh2\u003E\u003Cp\u003EВ качестве библиотеки GUI будем использовать библиотеки под названием \u003Ca href=\"https:\u002F\u002Flvgl.io\u002F\" rel=\"noopener noreferrer nofollow\"\u003ELVGL\u003C\u002Fa\u003E. Просто потому что она мне нравится. При своей минималистичности в ней богатый функционал и есть куча всего, и плюс все это еще и активно развивается. Можно даже прямо в браузере посмотреть какие \u003Ca href=\"https:\u002F\u002Flvgl.io\u002Fdemos\" rel=\"noopener noreferrer nofollow\"\u003Eкрутые штуки делают на ней разработчики\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EА еще она портирована на micropython, который, в принципе, подходит под “красивый язык”. Тут сразу может возникнуть вопрос: а почему не портировать его на более полный “python 3”? Ответ прост: сам micropython внутренне несколько по другому устроен по сравнению со своим старшим братом и требует сложной адаптации, которой бы не хотелось. Можно прочитать про это \u003Ca href=\"https:\u002F\u002Fforum.lvgl.io\u002Ft\u002Fsupport-for-python3\u002F1098\" rel=\"noopener noreferrer nofollow\"\u003Eтут\u003C\u002Fa\u003E. \u003C\u002Fp\u003E\u003Cp\u003EЕдем дальше! Что там у нас в EDK?! Еще в недалеком в 2018 в EDK портировали micropython, но судя по \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftianocore\u002Fedk2-staging\u002Ftree\u002FMicroPythonTestFramework\" rel=\"noopener noreferrer nofollow\"\u003Egithub-у\u003C\u002Fa\u003E он с тех пор этот проект не сильно и развивался. Мы люди не гордые - возьмем что есть и пойдем дальше. Как говорится: “работает - не трожь!”.\u003C\u002Fp\u003E\u003Cp\u003EИтак, есть Micropython под EFI и есть LVGL под micropython под Linux\u002Fмикроконтроллеры. Надо их соединить.\u003C\u002Fp\u003E\u003Ch2\u003EСоединяем!\u003C\u002Fh2\u003E\u003Cp\u003EПервым делом перетащим существующий micropython на новый EDK, хотя бы потому, что там много чего поменялось за последнее время и есть более классный эмулятор EFI, гораздо лучше чем раньше. Тут все просто: берем старое, Ctrl+C, берем новый EDK, Ctrl+V и пытаемся собрать. Не собралось - подредактировали - собралось. Там всего пару мелочей вроде отсутствующих в новом EDK небезопасных AsciiStrnCpy\u002FAsciiStrCat и прочие мелкие неприятности. Собралось - отлично - едем дальше!\u003C\u002Fp\u003E\u003Cp\u003EДалее, добавляем сам LVGL в micropython. Так как сам LVGL написан на С, то логично, что для языка micropython нужна некоторая обертка. Для генерации этой обертки существует проект \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Flvgl\u002Flv_micropython\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Elv_micropython\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Суть проекта сводится к следующему: запускается некоторый условный “компилятор” для нашей библиотеки и генерирует на его основе с-файл с обертками для micropython-функций, которые в дальнейшем линкуются к micropython. После сборки уже в самом интерпретаторе micropython-а можно получить доступ к этим функциям библиотеки через отдельный модуль. \u003C\u002Fp\u003E\u003Cp\u003EБыло несколько попыток и мне так и не удалось запустить этот “компилятор” для текущих исходников micropython под EDK. Сделаем \"workaround\" и скомпилируем проект под Linux, а затем возьмем уже скомпилированный файл оберток “lv_mpy_example.c” и поместим  в существующий проект в нашем EDK.\u003C\u002Fp\u003E\u003Cp\u003EДоступ к модулям micropython после компиляции указываются в mpconfigport.h. Необходимо добавить ссылку на структуру модуля mp_module_lvgl, описанную в “lv_mpy_example.c” в MICROPY_PORT_BUILTIN_MODULES:   \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eextern const struct _mp_obj_module_t mp_module_lvgl;\n\n#define MICROPY_PORT_BUILTIN_MODULES \\\n...\n{ MP_OBJ_NEW_QSTR(MP_QSTR_lvgl), (mp_obj_t)&amp;mp_module_lvgl },\n...\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗдесь так же указывается идентификатор строки MP_QSTR_lvgl. Все идентификаторы, которые используются micropython хранятся в файле “qstrdefs.generated.h” в виде 3х байтового хеша и самой строки. Этот файл генерируется автоматически скриптом genhdr.py. Поэтому для обновления строки и перед компиляция его как минимум один раз надо запустить.\u003C\u002Fp\u003E\u003Cp\u003EДобавляем все новые исходные файлы LVGL и в inf файл модуля MicroPythonDxe.inf.\u003C\u002Fp\u003E\u003Cp\u003EКомпилируем. Запускаем в Shell наш свежескомпилированный micropython.efi. Вводим в строке интерпретатора “import lvgl”, нажимаем Enter и наш micropython принимает модуль без ошибок. Автодополнение по tab тоже работает. Супер, все сделано верно!\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Игла в яйце, яйцо в утке, утка в зайце\n В смысле Lvgl в Micropython, а он в EFI\" title=\"Игла в яйце, яйцо в утке, утка в зайце\n В смысле Lvgl в Micropython, а он в EFI\" height=\"264\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F057\u002Fa0a\u002Fa5a\u002F057a0aa5ac14cc47bea910fd26fc5abe.png\" data-width=\"921\"\u002F\u003E\u003Cfigcaption\u003EИгла в яйце, яйцо в утке, утка в зайце\n В смысле Lvgl в Micropython, а он в EFI\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003ELvgl есть, а GUI нет - непорядок\u003C\u002Fh2\u003E\u003Cp\u003EСейчас у нас нет драйвера, который был знал как выводить Lvgl на экран. Напишем! Драйвер будет выполнен в качестве еще одного модуля micropython.\u003C\u002Fp\u003E\u003Cp\u003EКак же написать драйвер? Тут все просто. Посмотрим как устроен уже существующий \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Flvgl\u002Flv_binding_micropython\u002Ftree\u002Fmaster\u002Fdriver\u002FSDL\" rel=\"noopener noreferrer nofollow\"\u003Eдрайвер SDL под Linux\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Flvgl\u002Flv_binding_micropython\u002Fblob\u002Fmaster\u002Fexamples\u002Fexample1.py\" rel=\"noopener noreferrer nofollow\"\u003Eпример\u003C\u002Fa\u003E как работать с ним в нашем питоне.\u003C\u002Fp\u003E\u003Cp\u003EНачнем с вывода на экран. Так, есть функция инициализации и есть callback, который должен выводить буфер lvgl на экран\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid monitor_flush(struct _disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОкей, все понятно, пишем.\u003C\u002Fp\u003E\u003Cp\u003EВ EFI вывод на экран происходит через \u003Cabbr title=\"это такие интерфейсы взаимодействия между драйверами в EFI, где каждый протокол определяется своим GUID-ом\"\u003Eпротокол \u003C\u002Fabbr\u003E\u003Cabbr title=\"Протоколы - это такие интерфейсы взаимодействия между драйверами в EFI, где каждый протокол определяется своим GUID-ом\"\u003EEfiGopProtocol\u003C\u002Fabbr\u003E. Он реализует простейшие функции для работы с экранным буфером. Помним, что в системе EfiGopProtocol может быть   несколько штук (например, для нескольких экранов). Делаем так, чтобы наш вывод изображения был на все из них, дабы не искать куда же вывелось изображение. Проходимся по всем EfiGopProtocol-ам и выводим буфер через функцию Blt, который пришел нам на вход.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EКод вывода\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E{\n  EFI_STATUS Status;\n  UINTN Index;\n  EFI_GRAPHICS_OUTPUT_PROTOCOL   *GraphicsOutput;\n  EFI_HANDLE *HndlBuf;\n  UINTN HndlNum;\n\n  \u002F\u002F\n  \u002F\u002F Get all the GOP protocol handles\n  \u002F\u002F\n  Status = gBS-\u003ELocateHandleBuffer(ByProtocol, &amp;gEfiGraphicsOutputProtocolGuid, NULL, &amp;HndlNum,  &amp;HndlBuf);\n  if (EFI_ERROR(Status) || HndlNum == 0) {\n    return;\n  }\n  \n  for (Index = 0; Index &lt; HndlNum; Index++) {\n\n    Status = gBS-\u003EHandleProtocol (\n                    HndlBuf[Index],\n                    &amp;gEfiGraphicsOutputProtocolGuid,\n                    (VOID **) &amp;GraphicsOutput\n                    );\n    if (EFI_ERROR(Status)) {\n      continue;\n    }\n\n    \u002F\u002F\n    \u002F\u002F Out buffer to screen for each GOP protocol\n    \u002F\u002F\n    GraphicsOutput-\u003EBlt(\n        GraphicsOutput,\n        (EFI_GRAPHICS_OUTPUT_BLT_PIXEL*)color_p,\n        EfiBltBufferToVideo,\n        0,\n        0,\n        area-\u003Ex1,\n        area-\u003Ey1,\n        w,\n        h,\n        0\n    );\n  }\n\n  gBS-\u003EFreePool(HndlBuf);\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EДалее сделаем из этого кода модуль для micropython:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EКод\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003ESTATIC const mp_rom_map_elem_t efidirect_globals_table[] = {\n        { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_efidirect) },\n        { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&amp;mp_init_efidirect_obj) },\n        { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&amp;mp_deinit_efidirect_obj) },\n        { MP_ROM_QSTR(MP_QSTR_monitor_flush), MP_ROM_PTR(&amp;PTR_OBJ(monitor_flush))}\n};\n         \n\nSTATIC MP_DEFINE_CONST_DICT (\n    mp_module_efidirect_globals,\n    efidirect_globals_table\n);\n\nconst mp_obj_module_t mp_module_efidirect = {\n    .base = { &amp;mp_type_module },\n    .globals = (mp_obj_dict_t*)&amp;mp_module_efidirect_globals\n};\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EКомпилируем, стартуем. Запускаем тестовый скрипт:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EСкрипт\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eimport lvgl as lv\nimport efidirect as ed\n\n# Screen size\nscr_width = 800\nscr_height = 600\n\n# Initialize EFI driver\ned.init(w = scr_width, h = scr_height)\nlv.init()\n\n# Register EFI display driver\ndisp_buf1 = lv.disp_buf_t()\nbuf1_1 = bytearray(scr_width*scr_height*4)\ndisp_buf1.init(buf1_1, None, len(buf1_1)\u002F\u002F4)\ndisp_drv = lv.disp_drv_t()\ndisp_drv.init()\ndisp_drv.buffer = disp_buf1\ndisp_drv.flush_cb = ed.monitor_flush\ndisp_drv.hor_res = scr_width\ndisp_drv.ver_res = scr_height\ndisp_drv.register()\n\nscr = lv.obj()\nbtn = lv.btn(scr)\nbtn.align(lv.scr_act(), lv.ALIGN.CENTER, 0, 0)\nlabel = lv.label(btn)\nlabel.set_text(\"Hello World!\")\n\n# Load the screen\nlv.scr_load(scr)\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EСмотрим на экран.. а там.. ничего нет! Ну как же так!   \u003C\u002Fp\u003E\u003Cp\u003EГлавное, не падать духом. В Linux с SDL работает, а у нас нет. Где-то вышла промашка. Снова изучаем \u003Ca href=\"https:\u002F\u002Fdocs.lvgl.io\u002Flatest\u002Fen\u002Fhtml\u002Fporting\u002Fdisplay.html\" rel=\"noopener noreferrer nofollow\"\u003Eдокументацию\u003C\u002Fa\u003E и изучаем \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Flvgl\u002Flv_binding_micropython\u002Ftree\u002Fmaster\u002Fdriver\u002FSDL\" rel=\"noopener noreferrer nofollow\"\u003ESDL драйвер\u003C\u002Fa\u003E и вот оно! \u003C\u002Fp\u003E\u003Cp\u003EДело в том, в Lvgl необходим обработчик, который должен вызываться в цикле. Для SDL это сделали в отдельном потоке при инициализации библиотеки. У нас в EFI нет отдельного потока, поэтому, для простоты, будем вызывать цикл обработки прямо в нашем скрипте:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Ewhile(1):\n    lv.task_handler()\n    #Дельту времени пока задаем 1. \n    #По хорошему здесь должно быть честное вычисление дельты времени, но пока так \n    lv.tick_inc(1)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E Запускаем и о чудо, it’s works!  \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Привет мир!\" title=\"Привет мир!\" height=\"948\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F806\u002F461\u002F9d6\u002F8064619d6cb3b9eeddad3630da6c3e43.png\" data-width=\"1202\"\u002F\u003E\u003Cfigcaption\u003EПривет мир!\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЕдинственное “Но” - мы в цикле, у нас ничего нет, мы ничего не может сделать. Это конец, “перезагружаемся”.\u003C\u002Fp\u003E\u003Ch2\u003EДобавляем ввод\u003C\u002Fh2\u003E\u003Cp\u003EПолностью аналогично предыдущему пункту. Смотрим в SDL драйвер и делаем так же. Для ввода с клавиатуры в EFI используем EfiSimpleInputProtocol. Он реализует метод ReadKeyStroke, который и возвращает нам нажатую клавишу. Упаковываем его в в callback от Lvgl, не забыв преобразовать определение клавиш с EFI в LVGL: \u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EКод для клавиатуры\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E\u002F**\n * ConvertEfiKeyToLvgl\n *\u002F\nuint32_t\nConvertEfiKeyToLvgl(\n    EFI_INPUT_KEY *Key\n)\n{\n    switch (Key-\u003EUnicodeChar)\n    {\n    case CHAR_CARRIAGE_RETURN:\n        return LV_KEY_ENTER;\n    case CHAR_BACKSPACE:\n        return LV_KEY_BACKSPACE;\n    case CHAR_TAB:\n        return LV_KEY_NEXT;  \n    default:\n        break;\n    }\n\n    switch (Key-\u003EScanCode)\n    {\n    case SCAN_UP:\n        return LV_KEY_UP;\n    case SCAN_DOWN:\n        return LV_KEY_DOWN;\n    case SCAN_RIGHT:\n        return LV_KEY_RIGHT;\n    case SCAN_LEFT:\n        return LV_KEY_LEFT;\n    case SCAN_DELETE:\n        return LV_KEY_DEL;\n    case SCAN_HOME:\n        return LV_KEY_HOME;\n    case SCAN_END:\n        return LV_KEY_END;\n    default:\n        break;\n    }\n\n    return Key-\u003EUnicodeChar;\n}\n\n\nbool keyboard_read(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data)\n{\n    EFI_STATUS Status;\n    EFI_INPUT_KEY Key;\n\n    Status = gST-\u003EConIn-\u003EReadKeyStroke(gST-\u003EConIn, &amp;Key);\n    if (EFI_ERROR(Status)) {\n        data-\u003Estate = LV_INDEV_STATE_REL;\n        return false;\n    }\n\n    data-\u003Ekey = ConvertEfiKeyToLvgl(&amp;Key);\n    data-\u003Estate = LV_INDEV_STATE_PR;\n\n    return false;\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EДля мыши есть протокол EfiSimplePointerProtocol. Действуем аналогично. \u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EКод для мыши\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Ebool mouse_read(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data)\n{\n    EFI_STATUS Status;\n    EFI_SIMPLE_POINTER_STATE State;\n    STATIC lv_coord_t X = 0, Y = 0;\n    \n    if (gSimplePointer == NULL) {\n        return false;\n    }\n\n    \u002F\u002F\n    \u002F\u002F Get current the mouse state\n    \u002F\u002F\n    Status = gSimplePointer-\u003EGetState(gSimplePointer, &amp;State);\n    if (EFI_ERROR(Status)) {\n        return false;\n    }\n\n    \u002F\u002F\n    \u002F\u002F And calculate the absolute coordinate\n    \u002F\u002F\n    X += (lv_coord_t)(State.RelativeMovementX \u002F (INT32)gSimplePointer-\u003EMode-\u003EResolutionX);\n    Y += (lv_coord_t)(State.RelativeMovementY \u002F (INT32)gSimplePointer-\u003EMode-\u003EResolutionY);\n\n    X = MAX(X, 0);\n    Y = MAX(Y, 0);\n\n    \u002F\u002F\n    \u002F\u002F Store the collected data\n    \u002F\u002F\n    data-\u003Epoint.x = X;\n    data-\u003Epoint.y = Y;\n    data-\u003Estate = State.LeftButton ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;\n\n    return false;\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EЗдесь стоит отметить только то, что если в случае с EfiSimpleInputProtocol, он уже есть в системной таблице gST, которая подается на вход программы, то EfiSimplePointerProtocol в gST нет, и его надо получить по хендлу ConsoleInHandle. \u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПолучение EfiSimplePointerProtocol\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EEFI_SIMPLE_POINTER_PROTOCOL *gSimplePointer = NULL;\n\n...\n  \n\u002F*\n * Init Function\n *\u002F\nvoid input_init()\n{\n    EFI_STATUS Status;\n    Status = gBS-\u003EHandleProtocol(gST-\u003EConsoleInHandle, &amp;gEfiSimplePointerProtocolGuid, &amp;gSimplePointer);\n    if (EFI_ERROR(Status)) {\n        gSimplePointer = NULL;\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EОбновим тестовый скрипт. Запускаем. На этот раз работает все так как и ожидалось!\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EСкрипт micropython\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eimport lvgl as lv\nimport efidirect as ed\nimport uctypes\n\n# Screen size\nscr_width = 800\nscr_height = 600\n\nclose_flag = False\n\n# Click button handler\ndef event_handler(source,evt):\n\tglobal close_flag\n\tif evt == lv.EVENT.CLICKED:\n\t\tprint(\"Clicked\")\n\t\tclose_flag = True\n\n# Initialize EFI drivers\ned.init(w = scr_width, h = scr_height)\nlv.init()\n\n# Register display driver.\n\ndisp_buf1 = lv.disp_buf_t()\nbuf1_1 = bytearray(scr_width*scr_height*4)\ndisp_buf1.init(buf1_1, None, len(buf1_1)\u002F\u002F4)\ndisp_drv = lv.disp_drv_t()\ndisp_drv.init()\ndisp_drv.buffer = disp_buf1\ndisp_drv.flush_cb = ed.monitor_flush\ndisp_drv.hor_res = scr_width\ndisp_drv.ver_res = scr_height\ndisp_drv.register()\n\n# Regsiter mouse driver\n\nindev_drv = lv.indev_drv_t()\nindev_drv.init() \nindev_drv.type = lv.INDEV_TYPE.POINTER;\nindev_drv.read_cb = ed.mouse_read\nmouse_indev = indev_drv.register();\n\nindev_drv = lv.indev_drv_t()\nindev_drv.init() \nindev_drv.type = lv.INDEV_TYPE.KEYPAD;\nindev_drv.read_cb = ed.keyboard_read\nkb_indev = indev_drv.register();\n\nkb_group = lv.group_create()\nkb_indev.set_group(kb_group)\n\nscr = lv.obj()\n\n# First button\nbtn = lv.btn(scr)\nbtn.align(lv.scr_act(), lv.ALIGN.CENTER, 0, 0)\nlabel = lv.label(btn)\nlabel.set_text(\"Cancel\")\nbtn.set_event_cb(event_handler)\n# Set the group for 'tab' works\nkb_group.add_obj(btn)\n\n# Second button\nbtn = lv.btn(scr)\nbtn.align(lv.scr_act(), lv.ALIGN.CENTER, 0, 50)\nlabel = lv.label(btn)\nlabel.set_text(\"Hello World!\")\nkb_group.add_obj(btn)\n\n\n# Load the screen\n\nlv.scr_load(scr)\n\n# Set the PLAY symbol as the cursor image\nimg = lv.img(lv.scr_act(), None)\nimg.set_src(lv.SYMBOL.PLAY)\nmouse_indev.set_cursor(img)\n\nwhile(1):\n\tlv.task_handler()\n\tlv.tick_inc(1)\n\tkey = lv.indev_t.get_key(kb_indev)\n\tif close_flag:\n\t\tbreak\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EЗапускаем. На этот раз работает все так как и ожидалось!  \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Теперь работает и мышь и клавиатура. И да, это все еще запускается под UEFI\" title=\"Теперь работает и мышь и клавиатура. И да, это все еще запускается под UEFI\" height=\"948\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F61f\u002Fdb2\u002Fce7\u002F61fdb2ce78a74e8bc9e4ce78b301afec.png\" data-width=\"1202\"\u002F\u003E\u003Cfigcaption\u003EТеперь работает и мышь и клавиатура. И да, это все еще запускается под UEFI\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EМожно заметить одно маленькое \"фи\". Если запустить наше приложение со \u003Cs\u003Eскрипом\u003C\u002Fs\u003E скриптом в эмуляторе и одновременно отобразить диспетчер задач, то можно увидеть простой факт: приложение занимает слишком много процессорного времени. \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"115\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F44e\u002F31b\u002Fc4f\u002F44e31bc4f9bc21bb79777f26cb86ef93.png\" data-width=\"646\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EДа, 9% кажется мало, но вторая вкладка диспетчера задача говорит, что одно ядро процессора постоянно занято эмулятором на 100%. Необходимо чтобы обработчик LVGL не так часто выполнялся и процессор немного “отдохнул” от рутины, прежде чем начнет выполнять его заново. Другими словами, должна быть небольшая задержка в цикле обработки, который мы описали в скрипте. Функция задержка есть в EFI. Вызовем ее прямо из скрипта. Для этого на помощь нам приходит EDK модуль micropython-a \"uefi\":\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EHotFix\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eimport Lib.Uefi.uefi as uefi\n\n…\n\nwhile(1):\n\tlv.task_handler()\n\tlv.tick_inc(1)\n  # Delay 1ms\n\tuefi.bs.Stall(100)\n  #\n\tkey = lv.indev_t.get_key(kb_indev)\n\tif close_flag:\n\t\tbreak\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EВсе! Можно приступать к созданию GUI приложений или даже игр (если кому-то захочется) без каких-либо проблем под EFI. И главное все это делать на micropython-е. Не думаю, что сильно кому-нибудь это понадобится, но вдруг найдутся такие отважные люди.  \u003C\u002Fp\u003E\u003Cp\u003EИсходный код всего этого безобразия есть на \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fectogigamau\u002FEfiLvgl\" rel=\"noopener noreferrer nofollow\"\u003EGithub\u003C\u002Fa\u003E\u003Cstrong\u003E.\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EЕсли кто хочет поиграться с уже скомпилированной версией micropython-а с LVGL под EFI - вам \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fectogigamau\u002FEfiLvgl\u002Ftree\u002Fmaster\u002FBinary\" rel=\"noopener noreferrer nofollow\"\u003Eсюда\u003C\u002Fa\u003E. Тестовый py-файл \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fectogigamau\u002FEfiLvgl\u002Fblob\u002Fmaster\u002FExamples\u002Ftest.py\" rel=\"noopener noreferrer nofollow\"\u003Eздесь\u003C\u002Fa\u003E. Документацию по API можно найти на \u003Ca href=\"https:\u002F\u002Fdocs.lvgl.io\u002F7.11\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eофициальной сайте\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EИ напоследок, быстро накидал \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fectogigamau\u002FEfiLvgl\u002Fblob\u002Fmaster\u002FExamples\u002F2048.py\" rel=\"noopener noreferrer nofollow\"\u003E2048\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"948\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F71b\u002F29f\u002Fe68\u002F71b29fe687c25b4f7faaf73d7225d0ba.png\" data-width=\"1202\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EP.S. Пока окончально дописал статью, немного отстал от жизни т.к. вышел следующий релиз LVGL за номером 8, в то время как статья базируется на LVGL 7.x. Но большой беды в этом нет, т.к. описанное почти полностью идентично если бы портировался свежий LVGL 8. \u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"uefi"},{"titleHtml":"micropython"},{"titleHtml":"lvgl"},{"titleHtml":"портирование"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F065\u002F76c\u002Ff3c\u002F06576cf3c3270e83ace568942684bccf.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F065\u002F76c\u002Ff3c\u002F06576cf3c3270e83ace568942684bccf.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583450\\\u002F\"},\"headline\":\"Добавляем GUI в EFI\",\"datePublished\":\"2021-10-14T13:16:06+03:00\",\"dateModified\":\"2021-10-14T19:46:28+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Grazinpeo\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный\\\u002Fтекстовый вывод и TUI для HII интерфейса. А хочется капельку красоты и...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583450\\\u002F#post-content-body\",\"about\":[\"h_UEFI\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583450\\\u002Fcb4371c4a693c1c41b192076427ced54\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fd38\\\u002Fae7\\\u002Fdec\\\u002Fd38ae7dec8d1dc64589489eca45260e8.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F057\\\u002Fa0a\\\u002Fa5a\\\u002F057a0aa5ac14cc47bea910fd26fc5abe.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F806\\\u002F461\\\u002F9d6\\\u002F8064619d6cb3b9eeddad3630da6c3e43.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F61f\\\u002Fdb2\\\u002Fce7\\\u002F61fdb2ce78a74e8bc9e4ce78b301afec.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F44e\\\u002F31b\\\u002Fc4f\\\u002F44e31bc4f9bc21bb79777f26cb86ef93.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F71b\\\u002F29f\\\u002Fe68\\\u002F71b29fe687c25b4f7faaf73d7225d0ba.png\"]}","metaDescription":"В стандартном EDK нет поддержки графического интерфейса. Есть только из коробки пиксельный\u002Fтекстовый вывод и TUI для HII интерфейса. А хочется капельку красоты и человеческий GUI. Дак добавим же! Даже...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"UEFI"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

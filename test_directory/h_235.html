@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Ускоряем pow / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/584662\/"},"headline":"Ускоряем pow","datePublished":"2021-10-21T01:15:33+03:00","dateModified":"2021-10-21T23:48:15+03:00","author":{"@type":"Person","name":"Алексей"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравни...","url":"https:\/\/habr.com\/ru\/post\/584662\/#post-content-body","about":["h_hi","h_java","h_cpp","h_asp","h_csharp","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/584662\/757c5e229b7171137696de55b9ebfbb7\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/cd4\/660\/447\/cd46604474f82fde278d880fd92a5c1c.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/530\/242\/2d5\/5302422d559a92ddfc8c3b105cec644c.svg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/0f2\/f38\/2dc\/0f2f382dc7f108fec02ca2727a455944.svg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/8d3\/a1f\/044\/8d3a1f04400ccec2c8e64a81cedd2b74.svg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/291\/4e7\/f68\/2914e7f683101fb28c37a435c140f816.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/9ac\/6d0\/343\/9ac6d034339c1f68d81fc31fee5bfa5f.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/89d\/9b8\/ced\/89d9b8cedc688817d35986835621b9cc.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b7c\/dff\/f7e\/b7cdfff7e1371b38339bb0941187c568.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/d23\/623\/c41\/d23623c41bac5ab470b5ae31df4a0766.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/1bf\/0cd\/7c2\/1bf0cd7c287128052773610ef7e9e00f.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Ускоряем pow" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Ускоряем pow" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Ускоряем pow" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/cd4/660/447/cd46604474f82fde278d880fd92a5c1c.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/cd4/660/447/cd46604474f82fde278d880fd92a5c1c.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/cd4/660/447/cd46604474f82fde278d880fd92a5c1c.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/cd4/660/447/cd46604474f82fde278d880fd92a5c1c.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/cd4/660/447/cd46604474f82fde278d880fd92a5c1c.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="584662" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-20T22:15:33.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/584662/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/584662/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/cd4/660/447/cd46604474f82fde278d880fd92a5c1c.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/584662/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/alordash/" title="alordash" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/alordash/" class="tm-user-info__username">
+      alordash
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-20T22:15:33.000Z" title="2021-10-21, 01:15">21  октября   в 01:15</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Ускоряем pow</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/hi/" class="tm-article-snippet__hubs-item-link"><span>Высокая производительность</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/java/" class="tm-article-snippet__hubs-item-link"><span>Java</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/asp/" class="tm-article-snippet__hubs-item-link"><span>ASP</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/csharp/" class="tm-article-snippet__hubs-item-link"><span>C#</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и Java.</p><figure class="full-width "><img src="/img/image-loader.svg" alt="" title="" height="600" data-src="https://habrastorage.org/getpro/habr/upload_files/cd4/660/447/cd46604474f82fde278d880fd92a5c1c.png" data-width="1432"/><figcaption></figcaption></figure><p>Сравнить точность алгоритмов можно прямо сейчас на <a href="https://alordash.github.io/FastExponentiation/publish/wwwroot" rel="noopener noreferrer nofollow">этой странице</a>.</p><p>В конце будет краткая памятка по тому, где и когда лучше применять какой из методов. При правильном выборе можно добиться увеличения скорости вычислений в 5 раз при погрешности ~1%, а иногда и вовсе без неё.</p><h2>Содержание</h2><ol><li><p>Алгоритмы (5 штук)</p></li><li><p>Сравнение производительности</p></li><li><p>Сравнение точности</p></li><li><p>Вывод</p></li></ol><p>На повестке дня у нас есть 5 алгоритмов: "Старая аппроксимация", "Бинарная степень", "Делящая быстрая степень", "Дробная” быстрая степень" и "Другая” аппроксимация".<br/>Названия алгоритмам я придумал сам (за исключением бинарной степени), так как нигде не нашёл официальных версий, но вы можете называть их иначе.</p><p>Для расчета прироста скорости и погрешности будем сравнивать эти методы со стандартными функциями pow, Math.Pow и Math.pow в C++, C# и Java соответственно. О том, как производилось сравнение, будет сказано в частях “Сравнение производительности” и “Сравнение точности”.</p><h3>Алгоритм: "Старая аппроксимация"</h3><p><em>Увеличение скорости</em>: в ~11 раз<br/><em>Погрешность</em>: &lt;2%<br/><em>Ограничения</em>: приемлемая точность только для степеней от -1 до 1</p><p>Реализация в C++:</p><pre><code class="cpp">double OldApproximatePower(double b, double e) {
+    union {
+        double d;
+        long long i;
+    } u = { b };
+    u.i = (long long)(4606853616395542500L + e * (u.i - 4606853616395542500L));
+    return u.d;
+}</code></pre><details class="spoiler"><summary>Реализация в C# и Java</summary><div class="spoiler__content"><pre><code class="cs">// C#
+double OldApproximatePower(double b, double e) {
+    long i = BitConverter.DoubleToInt64Bits(b);
+    i = (long)(4606853616395542500L + e * (i - 4606853616395542500L));
+    return BitConverter.Int64BitsToDouble(i);
+}</code></pre><pre><code class="java">// Java
+double OldApproximatePower(double b, double e) {
+    long i = Double.doubleToLongBits(b);
+    i = (long)(4606853616395542500L + e * (i - 4606853616395542500L));
+    return Double.longBitsToDouble(i);
+}</code></pre></div></details><p>Этот метод основан на алгоритме, использованном в игре Quake III Arena 2005 года. Он<br/><br/>возводил число x в степень -0.5, т.е. находил значение: <img class="formula inline" source="\frac{1}{\sqrt{x}}" alt="\frac{1}{\sqrt{x}}" src="https://habrastorage.org/getpro/habr/upload_files/530/242/2d5/5302422d559a92ddfc8c3b105cec644c.svg"/></p><details class="spoiler"><summary>Разработчики для этого написали такую функцию</summary><div class="spoiler__content"><pre><code class="cpp">float FastInvSqrt(float x) {
+    float xhalf = 0.5f * x;
+    int i = *(int*)&amp;x;          // evil floating point bit level hacking
+    i = 0x5f3759df - (i >> 1);  // what the fuck?
+    x = *(float*)&amp;i; 
+    x = x*(1.5f-(xhalf*x*x));
+    return x;
+}</code></pre></div></details><p>Узнал я об этом методе из статьи <a href="https://habr.com/ru/company/infopulse/blog/336110/" rel="noopener noreferrer nofollow"><em><u>«Магическая константа» 0x5f3759df</u></em></a>. В ней подробно объясняется как работает этот код и как его можно улучшить для работы с любой степенью и double’ми вместо float’ов. В моих кодах также есть магическая константа <strong>4606853616395542500L</strong>. Нашёл я её по следующей формуле (она описана в <a href="https://habr.com/ru/company/infopulse/blog/336110/" rel="noopener noreferrer nofollow"><u>статье выше</u></a>):</p><pre><code class="cs">//C# or Java
+long doubleApproximator = (long)((1L &lt;&lt; 52) * ((1L &lt;&lt; 10) - 1.0730088));</code></pre><p>Число <strong>1.0730088</strong> было подобрано вручную для достижения наибольшей точности вычислений.</p><h3>Алгоритм: Бинарное возведение в степень</h3><p><em>Увеличение скорости</em>: в среднем в ~7.5 раз, преимущество сохраняется до возведения чисел в степень 134217728 в C++/C# и 4096 в Java.<br/><em>Погрешность</em>: <strong>нет</strong>, но стоит отметить, что операция умножения не ассоциативна для чисел с плавающей точкой, т.е. 1.21 * 1.21 не то же самое, что 1.1 * 1.1 * 1.1 * 1.1, однако при сравнении со стандартными функциями погрешности, как уже сказано ранее, не возникает.<br/><em>Ограничения</em>: степень должна быть целым числом не меньше 0</p><p>Реализация в C++:</p><pre><code class="cpp">double BinaryPower(double b, unsigned long long e) {
+       double v = 1.0;
+       while(e != 0) {
+              if((e &amp; 1) != 0) {
+                     v *= b;
+              }
+              b *= b;
+              e >>= 1;
+       }
+       return v;
+}</code></pre><details class="spoiler"><summary>Реализация в C# и Java</summary><div class="spoiler__content"><pre><code class="cs">// C#
+double BinaryPower(double b, UInt64 e) {
+    double v = 1d;
+    while(e != 0) {
+        if((e &amp; 1) != 0) {
+            v *= b;
+        }
+        b *= b;
+        e >>= 1;
+    }
+    return v;
+}</code></pre><pre><code class="java">// Java
+double BinaryPower(double b, long e) {
+       double v = 1d;
+       while(e > 0) {
+              if((e &amp; 1) != 0) {
+                     v *= b;
+              }
+              b *= b;
+              e >>= 1;
+       }
+       return v;
+}</code></pre></div></details><p>Широко известный алгоритм для возведения любого числа в целую степень с абсолютной точностью. Принцип действия прост: есть целая степень <strong>e</strong>, чтобы получить число <strong>b</strong> в этой степени нужно возвести это число во все степени 1, 2, 4, … 2<sup>n</sup> (в коде этому соответствует <strong>b</strong> *= <strong>b</strong>), каждый раз сдвигая биты <strong>e</strong> вправо (e >>= 1) пока оно не равно 0 и тогда, когда последний <em>бит</em> <strong>e</strong> не равен нулю ((e &amp; 1) != 0), домножать результат <strong>v</strong> на полученное <strong>b</strong>.<br/>Пример: возвести 2 в степень 5.<sub><br/></sub>v = 1, e = 5 = 101<sub>2</sub>, b = 2<br/>Шаги цикла:</p><ol><li><p>e = 101<sub>2</sub> - последний 1 → v *= b → v = 2<br/>b *= b → b = 4<br/>e >>= 1 → e = 10<sub>2</sub> = 2</p></li><li><p>e = 10<sub>2</sub> - последний 0 → пропускаем<br/>b *= b → b = 16<br/>e >>= 1 → e = 1</p></li><li><p>e = 1<sub>2</sub> - последний 0 → v *= b → v = 32<br/>...<br/>e = 0 → выход из цикла</p></li></ol><p>Результат: v = 32, что и есть 2<sup>5</sup>.</p><h3>Алгоритм: "Делящая быстрая степень"</h3><p><em>Увеличение скорости</em>: в ~3.5 раз<br/><em>Погрешность</em>: ~13%<br/>Примечание: в коде ниже присутствуют проверки для особых входных данных. Без них код работает всего на 10% быстрее, но погрешность возрастает в десятки раз (особенно при использовании отрицательных степеней).</p><p>Реализация в C++:</p><pre><code class="cpp">double FastPowerDividing(double b, double e) {
+       if(b == 1.0 || e == 0.0) {
+              return 1.0;
+       }
+ 
+       double eAbs = fabs(e);
+       double el = ceil(eAbs);
+       double basePart = OldApproximatePower(b, eAbs / el);
+       double result = BinaryPower(basePart, (long long)el);
+ 
+       if(e &lt; 0.0) {
+              return 1.0 / result;
+       }
+       return result;
+}</code></pre><details class="spoiler"><summary>Реализация в C# и Java</summary><div class="spoiler__content"><pre><code class="cs">// C#
+double FastPowerDividing(double b, double e) {
+       if(b == 1d || e == 0d) {
+              return 1d;
+       }
+       var eAbs = Math.Abs(e);
+       var el = Math.Ceiling(eAbs);
+       var basePart = OldApproximatePower(b, eAbs / el);
+       var result = BinaryPower(basePart, (long)el);
+ 
+       if(e &lt; 0d) {
+              return 1d / result;
+       }
+       return result;
+}</code></pre><pre><code class="java">// Java
+double FastPowerDividing(double b, double e) {
+       if(b == 1d || e == 0d) {
+              return 1d;
+       }
+       var eAbs = Math.abs(e);
+       var el = Math.ceil(eAbs);
+       var basePart = OldApproximatePower(b, eAbs / el);
+       var result = BinaryPower(basePart, (long)el);
+ 
+       if(e &lt; 0d) {
+              return 1d / result;
+       }
+       return result;
+}</code></pre></div></details><p>Узнав о методе аппроксимации чисел в степенях от -1 до 1 и о бинарном методе, мне захотелось объединить их для создания функции, которая могла бы быстро возводить число в любую степень. Для этого я придумал следующую формулу:</p><img class="formula" source="el = \left | \left \lceil e \right \rceil \right |\\ x^e = (x^{\frac{e}{el}})^{el}" alt="el = \left | \left \lceil e \right \rceil \right |\\ x^e = (x^{\frac{e}{el}})^{el}" src="https://habrastorage.org/getpro/habr/upload_files/0f2/f38/2dc/0f2f382dc7f108fec02ca2727a455944.svg" width="667" height="55"/><p>Мы разбиваем степень на две части: e / el, которая всегда меньше или равна 1, и el, которая является целым числом. Теперь для расчета x^(e / el) мы можем использовать “старую” аппроксимацию, а для x^el - бинарную степень.Таким образом, объединяя этих два узкоспециализированных метода, мы получили универсальный метод. Но эту идею можно реализовать по-другому.</p><h3>Алгоритм: "Дробная быстрая степень"</h3><p><em>Увеличение скорости</em>: в ~4.4 раза<br/><em>Погрешность</em>: ~0.7%</p><p>Реализация в C++:</p><pre><code class="cpp">double FastPowerFractional(double b, double e) {
+       if(b == 1.0 || e == 0.0) {
+              return 1.0;
+       }
+ 
+       double absExp = fabs(e);
+       long long eIntPart = (long long)absExp;
+       double eFractPart = absExp - eIntPart;
+       double result = OldApproximatePower(b, eFractPart) * BinaryPower(b, eIntPart);
+       if(e &lt; 0.0) {
+              return 1.0 / result;
+       }
+       return result;
+}</code></pre><details class="spoiler"><summary>Реализация в C# и Java</summary><div class="spoiler__content"><pre><code class="cs">// C#
+double FastPowerFractional(double b, double e) {
+       if(b == 1d || e == 0d) {
+              return 1d;
+       }
+ 
+       double absExp = Math.Abs(e);
+       long eIntPart = (long)absExp;
+       double eFractPart = absExp - eIntPart;
+       double result = OldApproximatePower(b, eFractPart) * BinaryPower(b, eIntPart);
+       if(e &lt; 0d) {
+              return 1d / result;
+       }
+       return result;
+}</code></pre><pre><code class="java">// Java
+double FastPowerFractional(double b, double e) {
+       if(b == 1d || e == 0d) {
+              return 1d;
+       }
+ 
+       double absExp = Math.abs(e);
+       long eIntPart = (long)absExp;
+       double eFractPart = absExp - eIntPart;
+       double result = OldApproximatePower(b, eFractPart) * BinaryPower(b, eIntPart);
+       if(e &lt; 0d) {
+              return 1d / result;
+       }
+       return result;
+}</code></pre></div></details><p>По сути, любое число состоит из суммы двух частей: целой и дробной. Целую можно использовать для возведения основания в степень при помощи бинарного возведения, а дробную - при помощи “старой” аппроксимации.</p><p>В результате получаем следующую формулу:</p><img class="formula" source="el = \left \lfloor e \right \rfloor\\ x^e = x^{el}*x^{e - el}" alt="el = \left \lfloor e \right \rfloor\\ x^e = x^{el}*x^{e - el}" src="https://habrastorage.org/getpro/habr/upload_files/8d3/a1f/044/8d3a1f04400ccec2c8e64a81cedd2b74.svg" width="667" height="48"/><p>Она, в отличии от формулы “делящего” метода, никак не искажает дробную часть. Это позволяет добиться намного большей точности.</p><h3>Алгоритм: "Другая аппроксимация"</h3><p><em>Увеличение скорости</em>: в ~9 раз<br/><em>Погрешность</em>: &lt;1.5%<br/><em>Ограничения</em>: точность стремительно падает при повышении абсолютного значения степени и остается приемлемой в промежутке [-10, 10]</p><p>Реализация в C++:</p><pre><code class="cpp">double AnotherApproximatePower(double a, double b) {
+       union {
+              double d;
+              int x[2];
+       } u = { a };
+       u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+       u.x[0] = 0;
+       return u.d;
+}</code></pre><details class="spoiler"><summary>Реализация в C# и Java</summary><div class="spoiler__content"><pre><code class="cs">double AnotherApproxPower(double a, double b) {
+       int tmp = (int)(BitConverter.DoubleToInt64Bits(a) >> 32);
+       int tmp2 = (int)(b * (tmp - 1072632447) + 1072632447);
+       return BitConverter.Int64BitsToDouble(((long)tmp2) &lt;&lt; 32);
+}</code></pre><pre><code class="java">double AnotherApproxPower(double a, double b) {
+       int tmp = (int)(Double.doubleToLongBits(a) >> 32);
+       int tmp2 = (int)(b * (tmp - 1072632447) + 1072632447);
+       return Double.longBitsToDouble(((long)tmp2) &lt;&lt; 32);
+}</code></pre></div></details><p>Про историю этого алгоритма я ничего не знаю, я просто нашёл его тут: <a href="https://martin.ankerl.com/2007/10/04/optimized-pow-approximation-for-java-and-c-c/" rel="noopener noreferrer nofollow"><u>Optimized pow() approximation for Java, C / C++, and C#</u></a>. Возможно, если использовать его в “делящей–” и “дробной быстрых степенях" вместо “старой” аппроксимации, можно достигнуть лучшей точности ценой немного меньшей скорости.</p><h2>Сравнение производительности</h2><p>Сравнение производительности производилось следующим образом: генерируем 500000 чисел-оснований в промежутке от 0.0 до 99999.0 и 500000 чисел-степеней в промежутке от A до B. Запоминаем текущее время, запускаем цикл на 500000 итераций, вычисляем значение основания в степени через функцию f и результат суммируем в calculationResult. По окончанию цикла снова замеряем время, разница во времени и есть время выполнения. Данная процедура повторяется 20 раз, конечный результат - усредненный за все 20 тестов.</p><p>Псевдокод сравнения производительности в C++:</p><pre><code class="cpp">(long long iterationsCount = 500000, double* bases, double* exps)
+  double calculationResult = 0.0;
+  double* base = bases;
+  double* exp = exps;
+  double* baseEnd = base + iterationsCount;
+  auto start = std::chrono::high_resolution_clock::now();
+  while(base &lt; baseEnd) {
+         calculationResult += f(*base++, *exp++);
+  }
+  auto finish = std::chrono::high_resolution_clock::now();
+  auto time = std::chrono::duration_cast&lt;std::chrono::nanoseconds>(finish - start).count();</code></pre><p>Аналогично измерялась скорость в C# и Java. В репозитории проекта можно посмотреть на реальный код для сравнения производительности в <a href="https://github.com/alordash/FastExponentiation/blob/main/FastExponentiation/FastExponentiationBenchmarkCpp/FastExponentiationBenchmarkCpp.cpp" rel="noopener noreferrer nofollow"><u>C++</u></a>, <a href="https://github.com/alordash/FastExponentiation/blob/main/FastExponentiation/FastExponentiationPrimitiveBenchmark/PrimitveBenchmark.cs" rel="noopener noreferrer nofollow"><u>C#</u></a> и <a href="https://github.com/alordash/FastExponentiation/blob/main/Java/FastExponentiationBenchmarkJava/src/FastExponentiationBenchmarkJava.java" rel="noopener noreferrer nofollow"><u>Java</u></a>.</p><p>Тесты производились в каждом языке для степеней в промежутках [-10.5, 0], [0, 2], [0, 10.5], [0, 25.75], [0, 55.5]. Прирост скорости каждого метода по сравнению со стандартным в каждом языке для каждого сета степеней изображен на графиках ниже:</p><figure class="full-width "><img src="/img/image-loader.svg" height="730" data-src="https://habrastorage.org/getpro/habr/upload_files/291/4e7/f68/2914e7f683101fb28c37a435c140f816.png" data-width="1198"/><figcaption></figcaption></figure><figure class="full-width "><img src="/img/image-loader.svg" height="730" data-src="https://habrastorage.org/getpro/habr/upload_files/9ac/6d0/343/9ac6d034339c1f68d81fc31fee5bfa5f.png" data-width="1198"/><figcaption></figcaption></figure><figure class="full-width "><img src="/img/image-loader.svg" height="730" data-src="https://habrastorage.org/getpro/habr/upload_files/89d/9b8/ced/89d9b8cedc688817d35986835621b9cc.png" data-width="1198"/><figcaption></figcaption></figure><p>Рассмотреть подробнее результаты тестов можно посмотреть в <a href="https://github.com/alordash/FastExponentiation/blob/main/Performance%20results/Results.xlsx" rel="noopener noreferrer nofollow"><u>этой таблице</u></a>.</p><p>Тесты проводились на i5-10300H, 19.8 DDR4 GB usable RAM, 64-битная платформа.<br/>C++: MSVC + /O2 + /Oi + /Ot<br/>C#: optimize code</p><h2>Сравнение точности</h2><p>Для рассчитывания точности я возводил очередное число в определенную степень стандартным и одним из нестандартных способами, потом делил большее из полученных чисел на меньшее, складывал все эти отношения вместе, а в конце делил их на количество сравнений. Так и получалось значение погрешности.<br/>Основания и степени генерировались также, как и в алгоритме сравнения производительности.<br/>Для более гибкого и удобного тестирования я создал <a href="https://alordash.github.io/FastExponentiation/publish/wwwroot/" rel="noopener noreferrer nofollow">Blazor страницу</a>, на которой можно построить графики реальных и полученных одним из методов значений чисел, лежащих в заданном промежутке и возведенных в указанную степень:</p><figure class="full-width "><img src="/img/image-loader.svg" height="515" data-src="https://habrastorage.org/getpro/habr/upload_files/b7c/dff/f7e/b7cdfff7e1371b38339bb0941187c568.png" data-width="1918"/><figcaption></figcaption></figure><p>Ниже на этой же странице можно самим провести сравнение точности каждого метода для всех степеней, лежащих в заданном промежутке:</p><figure class="full-width "><img src="/img/image-loader.svg" height="303" data-src="https://habrastorage.org/getpro/habr/upload_files/d23/623/c41/d23623c41bac5ab470b5ae31df4a0766.png" data-width="1143"/><figcaption></figcaption></figure><h2>Вывод</h2><p>Каждый из перечисленных мною методов дает различную точность и скорость. Поэтому, прежде чем использовать стандартную функцию возведения в степень, стоит проанализировать какие у вас будут входные данные, и насколько вам важна точность. Выбор правильного метода может существенно ускорить работу вашей программы. Чтобы сделать этот процесс проще, я подготовил вот такую шпаргалку:</p><figure class="full-width "><img src="/img/image-loader.svg" height="669" data-src="https://habrastorage.org/getpro/habr/upload_files/1bf/0cd/7c2/1bf0cd7c287128052773610ef7e9e00f.png" data-width="988"/><figcaption></figcaption></figure><hr/><p>Код всего проекта доступен на <a href="https://github.com/alordash/FastExponentiation" rel="noopener noreferrer nofollow"><u>гитхабе</u></a>. Там вы найдете и реализации всех алгоритмов в трех языках, и программы для сравнения точности для каждого языка, и код сайта.</p><p>Спасибо за внимание. Надеюсь эта статья поможет сделать ваш код немного быстрее.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%83%D1%81%D0%BA%D0%BE%D1%80%D0%B5%D0%BD%D0%B8%D0%B5%20%D0%BA%D0%BE%D0%B4%D0%B0%5D" class="tm-tags-list__link">ускорение кода</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%B8%D0%B1%D0%BB%D0%B8%D0%B6%C3%AB%D0%BD%D0%BD%D1%8B%D0%B5%20%D0%B0%D0%BB%D0%B3%D0%BE%D1%80%D0%B8%D1%82%D0%BC%D1%8B%5D" class="tm-tags-list__link">приближëнные алгоритмы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%B8%D0%B1%D0%BB%D0%B8%D0%B6%D1%91%D0%BD%D0%BD%D1%8B%D0%B5%20%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F%5D" class="tm-tags-list__link">приближённые вычисления</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%B8%D0%B1%D0%BB%D0%B8%D0%B6%D0%B5%D0%BD%D0%BD%D0%BE%D0%B5%20%D1%80%D0%B5%D1%88%D0%B5%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">приближенное решение</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D0%BB%D0%B3%D0%BE%D1%80%D0%B8%D1%82%D0%BC%D1%8B%5D" class="tm-tags-list__link">алгоритмы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%BF%D1%82%D0%B8%D0%BC%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%20%D0%BA%D0%BE%D0%B4%D0%B0%5D" class="tm-tags-list__link">оптимизация кода</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%BF%D1%82%D0%B8%D0%BC%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%20%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%5D" class="tm-tags-list__link">оптимизация программ</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/hi/" class="tm-hubs-list__link">
+    Высокая производительность
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/java/" class="tm-hubs-list__link">
+    Java
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/asp/" class="tm-hubs-list__link">
+    ASP
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/csharp/" class="tm-hubs-list__link">
+    C#
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 48: ↑48 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 48: ↑48 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+48</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">8.9K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    73
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/alordash/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 35 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    33
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">48.1</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Алексей</span> <a href="/ru/users/alordash/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @alordash
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://github.com/alordash/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Github
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/584662/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 31 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/584662/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/584662/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"584662":{"id":"584662","timePublished":"2021-10-20T22:15:33+00:00","isCorporative":false,"lang":"ru","titleHtml":"Ускоряем pow","leadData":{"textHtml":"\u003Cp\u003EВ этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и Java.\u003C\u002Fp\u003E\u003Cp\u003EСравнить точность алгоритмов можно прямо сейчас на \u003Ca href=\"https:\u002F\u002Falordash.github.io\u002FFastExponentiation\u002Fpublish\u002Fwwwroot\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eэтой странице\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EВ конце будет краткая памятка по тому, где и когда лучше применять какой из методов. При правильном выборе можно добиться увеличения скорости вычислений в 5 раз при погрешности ~1%, а иногда и вовсе без неё.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fcd4\u002F660\u002F447\u002Fcd46604474f82fde278d880fd92a5c1c.png","buttonTextHtml":"Ускорь мои степени!","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fcd4\u002F660\u002F447\u002Fcd46604474f82fde278d880fd92a5c1c.png","fit":"cover","positionY":2.9545454545455,"positionX":52.051282051282}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":33,"votesCount":35},"rating":48.1,"relatedData":null,"contacts":[{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Falordash\u002F","value":"alordash"}],"authorContacts":[{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Falordash\u002F","value":"alordash"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2403655","alias":"alordash","fullname":"Алексей","avatarUrl":null,"speciality":"Пользователь"},"statistics":{"commentsCount":31,"favoritesCount":73,"readingCount":8931,"score":48,"votesCount":48},"hubs":[{"relatedData":null,"id":"4","alias":"hi","type":"collective","title":"Высокая производительность","titleHtml":"Высокая производительность","isProfiled":true},{"relatedData":null,"id":"375","alias":"java","type":"collective","title":"Java","titleHtml":"Java","isProfiled":true},{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true},{"relatedData":null,"id":"7149","alias":"asp","type":"collective","title":"ASP","titleHtml":"ASP","isProfiled":true},{"relatedData":null,"id":"17718","alias":"csharp","type":"collective","title":"C#","titleHtml":"C#","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EВ этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и Java.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"\" title=\"\" height=\"600\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fcd4\u002F660\u002F447\u002Fcd46604474f82fde278d880fd92a5c1c.png\" data-width=\"1432\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EСравнить точность алгоритмов можно прямо сейчас на \u003Ca href=\"https:\u002F\u002Falordash.github.io\u002FFastExponentiation\u002Fpublish\u002Fwwwroot\" rel=\"noopener noreferrer nofollow\"\u003Eэтой странице\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EВ конце будет краткая памятка по тому, где и когда лучше применять какой из методов. При правильном выборе можно добиться увеличения скорости вычислений в 5 раз при погрешности ~1%, а иногда и вовсе без неё.\u003C\u002Fp\u003E\u003Ch2\u003EСодержание\u003C\u002Fh2\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EАлгоритмы (5 штук)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСравнение производительности\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСравнение точности\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВывод\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EНа повестке дня у нас есть 5 алгоритмов: \"Старая аппроксимация\", \"Бинарная степень\", \"Делящая быстрая степень\", \"Дробная” быстрая степень\" и \"Другая” аппроксимация\".\u003Cbr\u002F\u003EНазвания алгоритмам я придумал сам (за исключением бинарной степени), так как нигде не нашёл официальных версий, но вы можете называть их иначе.\u003C\u002Fp\u003E\u003Cp\u003EДля расчета прироста скорости и погрешности будем сравнивать эти методы со стандартными функциями pow, Math.Pow и Math.pow в C++, C# и Java соответственно. О том, как производилось сравнение, будет сказано в частях “Сравнение производительности” и “Сравнение точности”.\u003C\u002Fp\u003E\u003Ch3\u003EАлгоритм: \"Старая аппроксимация\"\u003C\u002Fh3\u003E\u003Cp\u003E\u003Cem\u003EУвеличение скорости\u003C\u002Fem\u003E: в ~11 раз\u003Cbr\u002F\u003E\u003Cem\u003EПогрешность\u003C\u002Fem\u003E: &lt;2%\u003Cbr\u002F\u003E\u003Cem\u003EОграничения\u003C\u002Fem\u003E: приемлемая точность только для степеней от -1 до 1\u003C\u002Fp\u003E\u003Cp\u003EРеализация в C++:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Edouble OldApproximatePower(double b, double e) {\n    union {\n        double d;\n        long long i;\n    } u = { b };\n    u.i = (long long)(4606853616395542500L + e * (u.i - 4606853616395542500L));\n    return u.d;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EРеализация в C# и Java\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cs\"\u003E\u002F\u002F C#\ndouble OldApproximatePower(double b, double e) {\n    long i = BitConverter.DoubleToInt64Bits(b);\n    i = (long)(4606853616395542500L + e * (i - 4606853616395542500L));\n    return BitConverter.Int64BitsToDouble(i);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003E\u002F\u002F Java\ndouble OldApproximatePower(double b, double e) {\n    long i = Double.doubleToLongBits(b);\n    i = (long)(4606853616395542500L + e * (i - 4606853616395542500L));\n    return Double.longBitsToDouble(i);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EЭтот метод основан на алгоритме, использованном в игре Quake III Arena 2005 года. Он\u003Cbr\u002F\u003E\u003Cbr\u002F\u003Eвозводил число x в степень -0.5, т.е. находил значение: \u003Cimg class=\"formula inline\" source=\"\\frac{1}{\\sqrt{x}}\" alt=\"\\frac{1}{\\sqrt{x}}\" src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F530\u002F242\u002F2d5\u002F5302422d559a92ddfc8c3b105cec644c.svg\"\u002F\u003E\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EРазработчики для этого написали такую функцию\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Efloat FastInvSqrt(float x) {\n    float xhalf = 0.5f * x;\n    int i = *(int*)&amp;x;          \u002F\u002F evil floating point bit level hacking\n    i = 0x5f3759df - (i \u003E\u003E 1);  \u002F\u002F what the fuck?\n    x = *(float*)&amp;i; \n    x = x*(1.5f-(xhalf*x*x));\n    return x;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EУзнал я об этом методе из статьи \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Finfopulse\u002Fblog\u002F336110\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003E\u003Cu\u003E«Магическая константа» 0x5f3759df\u003C\u002Fu\u003E\u003C\u002Fem\u003E\u003C\u002Fa\u003E. В ней подробно объясняется как работает этот код и как его можно улучшить для работы с любой степенью и double’ми вместо float’ов. В моих кодах также есть магическая константа \u003Cstrong\u003E4606853616395542500L\u003C\u002Fstrong\u003E. Нашёл я её по следующей формуле (она описана в \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Finfopulse\u002Fblog\u002F336110\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eстатье выше\u003C\u002Fu\u003E\u003C\u002Fa\u003E):\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cs\"\u003E\u002F\u002FC# or Java\nlong doubleApproximator = (long)((1L &lt;&lt; 52) * ((1L &lt;&lt; 10) - 1.0730088));\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЧисло \u003Cstrong\u003E1.0730088\u003C\u002Fstrong\u003E было подобрано вручную для достижения наибольшей точности вычислений.\u003C\u002Fp\u003E\u003Ch3\u003EАлгоритм: Бинарное возведение в степень\u003C\u002Fh3\u003E\u003Cp\u003E\u003Cem\u003EУвеличение скорости\u003C\u002Fem\u003E: в среднем в ~7.5 раз, преимущество сохраняется до возведения чисел в степень 134217728 в C++\u002FC# и 4096 в Java.\u003Cbr\u002F\u003E\u003Cem\u003EПогрешность\u003C\u002Fem\u003E: \u003Cstrong\u003Eнет\u003C\u002Fstrong\u003E, но стоит отметить, что операция умножения не ассоциативна для чисел с плавающей точкой, т.е. 1.21 * 1.21 не то же самое, что 1.1 * 1.1 * 1.1 * 1.1, однако при сравнении со стандартными функциями погрешности, как уже сказано ранее, не возникает.\u003Cbr\u002F\u003E\u003Cem\u003EОграничения\u003C\u002Fem\u003E: степень должна быть целым числом не меньше 0\u003C\u002Fp\u003E\u003Cp\u003EРеализация в C++:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Edouble BinaryPower(double b, unsigned long long e) {\n       double v = 1.0;\n       while(e != 0) {\n              if((e &amp; 1) != 0) {\n                     v *= b;\n              }\n              b *= b;\n              e \u003E\u003E= 1;\n       }\n       return v;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EРеализация в C# и Java\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cs\"\u003E\u002F\u002F C#\ndouble BinaryPower(double b, UInt64 e) {\n    double v = 1d;\n    while(e != 0) {\n        if((e &amp; 1) != 0) {\n            v *= b;\n        }\n        b *= b;\n        e \u003E\u003E= 1;\n    }\n    return v;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003E\u002F\u002F Java\ndouble BinaryPower(double b, long e) {\n       double v = 1d;\n       while(e \u003E 0) {\n              if((e &amp; 1) != 0) {\n                     v *= b;\n              }\n              b *= b;\n              e \u003E\u003E= 1;\n       }\n       return v;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EШироко известный алгоритм для возведения любого числа в целую степень с абсолютной точностью. Принцип действия прост: есть целая степень \u003Cstrong\u003Ee\u003C\u002Fstrong\u003E, чтобы получить число \u003Cstrong\u003Eb\u003C\u002Fstrong\u003E в этой степени нужно возвести это число во все степени 1, 2, 4, … 2\u003Csup\u003En\u003C\u002Fsup\u003E (в коде этому соответствует \u003Cstrong\u003Eb\u003C\u002Fstrong\u003E *= \u003Cstrong\u003Eb\u003C\u002Fstrong\u003E), каждый раз сдвигая биты \u003Cstrong\u003Ee\u003C\u002Fstrong\u003E вправо (e \u003E\u003E= 1) пока оно не равно 0 и тогда, когда последний \u003Cem\u003Eбит\u003C\u002Fem\u003E \u003Cstrong\u003Ee\u003C\u002Fstrong\u003E не равен нулю ((e &amp; 1) != 0), домножать результат \u003Cstrong\u003Ev\u003C\u002Fstrong\u003E на полученное \u003Cstrong\u003Eb\u003C\u002Fstrong\u003E.\u003Cbr\u002F\u003EПример: возвести 2 в степень 5.\u003Csub\u003E\u003Cbr\u002F\u003E\u003C\u002Fsub\u003Ev = 1, e = 5 = 101\u003Csub\u003E2\u003C\u002Fsub\u003E, b = 2\u003Cbr\u002F\u003EШаги цикла:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003Ee = 101\u003Csub\u003E2\u003C\u002Fsub\u003E - последний 1 → v *= b → v = 2\u003Cbr\u002F\u003Eb *= b → b = 4\u003Cbr\u002F\u003Ee \u003E\u003E= 1 → e = 10\u003Csub\u003E2\u003C\u002Fsub\u003E = 2\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Ee = 10\u003Csub\u003E2\u003C\u002Fsub\u003E - последний 0 → пропускаем\u003Cbr\u002F\u003Eb *= b → b = 16\u003Cbr\u002F\u003Ee \u003E\u003E= 1 → e = 1\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Ee = 1\u003Csub\u003E2\u003C\u002Fsub\u003E - последний 0 → v *= b → v = 32\u003Cbr\u002F\u003E...\u003Cbr\u002F\u003Ee = 0 → выход из цикла\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EРезультат: v = 32, что и есть 2\u003Csup\u003E5\u003C\u002Fsup\u003E.\u003C\u002Fp\u003E\u003Ch3\u003EАлгоритм: \"Делящая быстрая степень\"\u003C\u002Fh3\u003E\u003Cp\u003E\u003Cem\u003EУвеличение скорости\u003C\u002Fem\u003E: в ~3.5 раз\u003Cbr\u002F\u003E\u003Cem\u003EПогрешность\u003C\u002Fem\u003E: ~13%\u003Cbr\u002F\u003EПримечание: в коде ниже присутствуют проверки для особых входных данных. Без них код работает всего на 10% быстрее, но погрешность возрастает в десятки раз (особенно при использовании отрицательных степеней).\u003C\u002Fp\u003E\u003Cp\u003EРеализация в C++:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Edouble FastPowerDividing(double b, double e) {\n       if(b == 1.0 || e == 0.0) {\n              return 1.0;\n       }\n \n       double eAbs = fabs(e);\n       double el = ceil(eAbs);\n       double basePart = OldApproximatePower(b, eAbs \u002F el);\n       double result = BinaryPower(basePart, (long long)el);\n \n       if(e &lt; 0.0) {\n              return 1.0 \u002F result;\n       }\n       return result;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EРеализация в C# и Java\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cs\"\u003E\u002F\u002F C#\ndouble FastPowerDividing(double b, double e) {\n       if(b == 1d || e == 0d) {\n              return 1d;\n       }\n       var eAbs = Math.Abs(e);\n       var el = Math.Ceiling(eAbs);\n       var basePart = OldApproximatePower(b, eAbs \u002F el);\n       var result = BinaryPower(basePart, (long)el);\n \n       if(e &lt; 0d) {\n              return 1d \u002F result;\n       }\n       return result;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003E\u002F\u002F Java\ndouble FastPowerDividing(double b, double e) {\n       if(b == 1d || e == 0d) {\n              return 1d;\n       }\n       var eAbs = Math.abs(e);\n       var el = Math.ceil(eAbs);\n       var basePart = OldApproximatePower(b, eAbs \u002F el);\n       var result = BinaryPower(basePart, (long)el);\n \n       if(e &lt; 0d) {\n              return 1d \u002F result;\n       }\n       return result;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EУзнав о методе аппроксимации чисел в степенях от -1 до 1 и о бинарном методе, мне захотелось объединить их для создания функции, которая могла бы быстро возводить число в любую степень. Для этого я придумал следующую формулу:\u003C\u002Fp\u003E\u003Cimg class=\"formula\" source=\"el = \\left | \\left \\lceil e \\right \\rceil \\right |\\\\ x^e = (x^{\\frac{e}{el}})^{el}\" alt=\"el = \\left | \\left \\lceil e \\right \\rceil \\right |\\\\ x^e = (x^{\\frac{e}{el}})^{el}\" src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0f2\u002Ff38\u002F2dc\u002F0f2f382dc7f108fec02ca2727a455944.svg\" width=\"667\" height=\"55\"\u002F\u003E\u003Cp\u003EМы разбиваем степень на две части: e \u002F el, которая всегда меньше или равна 1, и el, которая является целым числом. Теперь для расчета x^(e \u002F el) мы можем использовать “старую” аппроксимацию, а для x^el - бинарную степень.Таким образом, объединяя этих два узкоспециализированных метода, мы получили универсальный метод. Но эту идею можно реализовать по-другому.\u003C\u002Fp\u003E\u003Ch3\u003EАлгоритм: \"Дробная быстрая степень\"\u003C\u002Fh3\u003E\u003Cp\u003E\u003Cem\u003EУвеличение скорости\u003C\u002Fem\u003E: в ~4.4 раза\u003Cbr\u002F\u003E\u003Cem\u003EПогрешность\u003C\u002Fem\u003E: ~0.7%\u003C\u002Fp\u003E\u003Cp\u003EРеализация в C++:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Edouble FastPowerFractional(double b, double e) {\n       if(b == 1.0 || e == 0.0) {\n              return 1.0;\n       }\n \n       double absExp = fabs(e);\n       long long eIntPart = (long long)absExp;\n       double eFractPart = absExp - eIntPart;\n       double result = OldApproximatePower(b, eFractPart) * BinaryPower(b, eIntPart);\n       if(e &lt; 0.0) {\n              return 1.0 \u002F result;\n       }\n       return result;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EРеализация в C# и Java\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cs\"\u003E\u002F\u002F C#\ndouble FastPowerFractional(double b, double e) {\n       if(b == 1d || e == 0d) {\n              return 1d;\n       }\n \n       double absExp = Math.Abs(e);\n       long eIntPart = (long)absExp;\n       double eFractPart = absExp - eIntPart;\n       double result = OldApproximatePower(b, eFractPart) * BinaryPower(b, eIntPart);\n       if(e &lt; 0d) {\n              return 1d \u002F result;\n       }\n       return result;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003E\u002F\u002F Java\ndouble FastPowerFractional(double b, double e) {\n       if(b == 1d || e == 0d) {\n              return 1d;\n       }\n \n       double absExp = Math.abs(e);\n       long eIntPart = (long)absExp;\n       double eFractPart = absExp - eIntPart;\n       double result = OldApproximatePower(b, eFractPart) * BinaryPower(b, eIntPart);\n       if(e &lt; 0d) {\n              return 1d \u002F result;\n       }\n       return result;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EПо сути, любое число состоит из суммы двух частей: целой и дробной. Целую можно использовать для возведения основания в степень при помощи бинарного возведения, а дробную - при помощи “старой” аппроксимации.\u003C\u002Fp\u003E\u003Cp\u003EВ результате получаем следующую формулу:\u003C\u002Fp\u003E\u003Cimg class=\"formula\" source=\"el = \\left \\lfloor e \\right \\rfloor\\\\ x^e = x^{el}*x^{e - el}\" alt=\"el = \\left \\lfloor e \\right \\rfloor\\\\ x^e = x^{el}*x^{e - el}\" src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F8d3\u002Fa1f\u002F044\u002F8d3a1f04400ccec2c8e64a81cedd2b74.svg\" width=\"667\" height=\"48\"\u002F\u003E\u003Cp\u003EОна, в отличии от формулы “делящего” метода, никак не искажает дробную часть. Это позволяет добиться намного большей точности.\u003C\u002Fp\u003E\u003Ch3\u003EАлгоритм: \"Другая аппроксимация\"\u003C\u002Fh3\u003E\u003Cp\u003E\u003Cem\u003EУвеличение скорости\u003C\u002Fem\u003E: в ~9 раз\u003Cbr\u002F\u003E\u003Cem\u003EПогрешность\u003C\u002Fem\u003E: &lt;1.5%\u003Cbr\u002F\u003E\u003Cem\u003EОграничения\u003C\u002Fem\u003E: точность стремительно падает при повышении абсолютного значения степени и остается приемлемой в промежутке [-10, 10]\u003C\u002Fp\u003E\u003Cp\u003EРеализация в C++:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Edouble AnotherApproximatePower(double a, double b) {\n       union {\n              double d;\n              int x[2];\n       } u = { a };\n       u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);\n       u.x[0] = 0;\n       return u.d;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EРеализация в C# и Java\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cs\"\u003Edouble AnotherApproxPower(double a, double b) {\n       int tmp = (int)(BitConverter.DoubleToInt64Bits(a) \u003E\u003E 32);\n       int tmp2 = (int)(b * (tmp - 1072632447) + 1072632447);\n       return BitConverter.Int64BitsToDouble(((long)tmp2) &lt;&lt; 32);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Edouble AnotherApproxPower(double a, double b) {\n       int tmp = (int)(Double.doubleToLongBits(a) \u003E\u003E 32);\n       int tmp2 = (int)(b * (tmp - 1072632447) + 1072632447);\n       return Double.longBitsToDouble(((long)tmp2) &lt;&lt; 32);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EПро историю этого алгоритма я ничего не знаю, я просто нашёл его тут: \u003Ca href=\"https:\u002F\u002Fmartin.ankerl.com\u002F2007\u002F10\u002F04\u002Foptimized-pow-approximation-for-java-and-c-c\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EOptimized pow() approximation for Java, C \u002F C++, and C#\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Возможно, если использовать его в “делящей–” и “дробной быстрых степенях\" вместо “старой” аппроксимации, можно достигнуть лучшей точности ценой немного меньшей скорости.\u003C\u002Fp\u003E\u003Ch2\u003EСравнение производительности\u003C\u002Fh2\u003E\u003Cp\u003EСравнение производительности производилось следующим образом: генерируем 500000 чисел-оснований в промежутке от 0.0 до 99999.0 и 500000 чисел-степеней в промежутке от A до B. Запоминаем текущее время, запускаем цикл на 500000 итераций, вычисляем значение основания в степени через функцию f и результат суммируем в calculationResult. По окончанию цикла снова замеряем время, разница во времени и есть время выполнения. Данная процедура повторяется 20 раз, конечный результат - усредненный за все 20 тестов.\u003C\u002Fp\u003E\u003Cp\u003EПсевдокод сравнения производительности в C++:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E(long long iterationsCount = 500000, double* bases, double* exps)\n  double calculationResult = 0.0;\n  double* base = bases;\n  double* exp = exps;\n  double* baseEnd = base + iterationsCount;\n  auto start = std::chrono::high_resolution_clock::now();\n  while(base &lt; baseEnd) {\n         calculationResult += f(*base++, *exp++);\n  }\n  auto finish = std::chrono::high_resolution_clock::now();\n  auto time = std::chrono::duration_cast&lt;std::chrono::nanoseconds\u003E(finish - start).count();\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EАналогично измерялась скорость в C# и Java. В репозитории проекта можно посмотреть на реальный код для сравнения производительности в \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Falordash\u002FFastExponentiation\u002Fblob\u002Fmain\u002FFastExponentiation\u002FFastExponentiationBenchmarkCpp\u002FFastExponentiationBenchmarkCpp.cpp\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EC++\u003C\u002Fu\u003E\u003C\u002Fa\u003E, \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Falordash\u002FFastExponentiation\u002Fblob\u002Fmain\u002FFastExponentiation\u002FFastExponentiationPrimitiveBenchmark\u002FPrimitveBenchmark.cs\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EC#\u003C\u002Fu\u003E\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Falordash\u002FFastExponentiation\u002Fblob\u002Fmain\u002FJava\u002FFastExponentiationBenchmarkJava\u002Fsrc\u002FFastExponentiationBenchmarkJava.java\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EJava\u003C\u002Fu\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EТесты производились в каждом языке для степеней в промежутках [-10.5, 0], [0, 2], [0, 10.5], [0, 25.75], [0, 55.5]. Прирост скорости каждого метода по сравнению со стандартным в каждом языке для каждого сета степеней изображен на графиках ниже:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"730\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F291\u002F4e7\u002Ff68\u002F2914e7f683101fb28c37a435c140f816.png\" data-width=\"1198\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"730\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F9ac\u002F6d0\u002F343\u002F9ac6d034339c1f68d81fc31fee5bfa5f.png\" data-width=\"1198\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"730\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F89d\u002F9b8\u002Fced\u002F89d9b8cedc688817d35986835621b9cc.png\" data-width=\"1198\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EРассмотреть подробнее результаты тестов можно посмотреть в \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Falordash\u002FFastExponentiation\u002Fblob\u002Fmain\u002FPerformance%20results\u002FResults.xlsx\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eэтой таблице\u003C\u002Fu\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EТесты проводились на i5-10300H, 19.8 DDR4 GB usable RAM, 64-битная платформа.\u003Cbr\u002F\u003EC++: MSVC + \u002FO2 + \u002FOi + \u002FOt\u003Cbr\u002F\u003EC#: optimize code\u003C\u002Fp\u003E\u003Ch2\u003EСравнение точности\u003C\u002Fh2\u003E\u003Cp\u003EДля рассчитывания точности я возводил очередное число в определенную степень стандартным и одним из нестандартных способами, потом делил большее из полученных чисел на меньшее, складывал все эти отношения вместе, а в конце делил их на количество сравнений. Так и получалось значение погрешности.\u003Cbr\u002F\u003EОснования и степени генерировались также, как и в алгоритме сравнения производительности.\u003Cbr\u002F\u003EДля более гибкого и удобного тестирования я создал \u003Ca href=\"https:\u002F\u002Falordash.github.io\u002FFastExponentiation\u002Fpublish\u002Fwwwroot\u002F\" rel=\"noopener noreferrer nofollow\"\u003EBlazor страницу\u003C\u002Fa\u003E, на которой можно построить графики реальных и полученных одним из методов значений чисел, лежащих в заданном промежутке и возведенных в указанную степень:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"515\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb7c\u002Fdff\u002Ff7e\u002Fb7cdfff7e1371b38339bb0941187c568.png\" data-width=\"1918\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EНиже на этой же странице можно самим провести сравнение точности каждого метода для всех степеней, лежащих в заданном промежутке:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"303\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd23\u002F623\u002Fc41\u002Fd23623c41bac5ab470b5ae31df4a0766.png\" data-width=\"1143\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EВывод\u003C\u002Fh2\u003E\u003Cp\u003EКаждый из перечисленных мною методов дает различную точность и скорость. Поэтому, прежде чем использовать стандартную функцию возведения в степень, стоит проанализировать какие у вас будут входные данные, и насколько вам важна точность. Выбор правильного метода может существенно ускорить работу вашей программы. Чтобы сделать этот процесс проще, я подготовил вот такую шпаргалку:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"669\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F1bf\u002F0cd\u002F7c2\u002F1bf0cd7c287128052773610ef7e9e00f.png\" data-width=\"988\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Chr\u002F\u003E\u003Cp\u003EКод всего проекта доступен на \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Falordash\u002FFastExponentiation\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eгитхабе\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Там вы найдете и реализации всех алгоритмов в трех языках, и программы для сравнения точности для каждого языка, и код сайта.\u003C\u002Fp\u003E\u003Cp\u003EСпасибо за внимание. Надеюсь эта статья поможет сделать ваш код немного быстрее.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"ускорение кода"},{"titleHtml":"приближëнные алгоритмы"},{"titleHtml":"приближённые вычисления"},{"titleHtml":"приближенное решение"},{"titleHtml":"алгоритмы"},{"titleHtml":"оптимизация кода"},{"titleHtml":"оптимизация программ"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fcd4\u002F660\u002F447\u002Fcd46604474f82fde278d880fd92a5c1c.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fcd4\u002F660\u002F447\u002Fcd46604474f82fde278d880fd92a5c1c.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584662\\\u002F\"},\"headline\":\"Ускоряем pow\",\"datePublished\":\"2021-10-21T01:15:33+03:00\",\"dateModified\":\"2021-10-21T23:48:15+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Алексей\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравни...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584662\\\u002F#post-content-body\",\"about\":[\"h_hi\",\"h_java\",\"h_cpp\",\"h_asp\",\"h_csharp\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F584662\\\u002F757c5e229b7171137696de55b9ebfbb7\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fcd4\\\u002F660\\\u002F447\\\u002Fcd46604474f82fde278d880fd92a5c1c.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F530\\\u002F242\\\u002F2d5\\\u002F5302422d559a92ddfc8c3b105cec644c.svg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F0f2\\\u002Ff38\\\u002F2dc\\\u002F0f2f382dc7f108fec02ca2727a455944.svg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F8d3\\\u002Fa1f\\\u002F044\\\u002F8d3a1f04400ccec2c8e64a81cedd2b74.svg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F291\\\u002F4e7\\\u002Ff68\\\u002F2914e7f683101fb28c37a435c140f816.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F9ac\\\u002F6d0\\\u002F343\\\u002F9ac6d034339c1f68d81fc31fee5bfa5f.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F89d\\\u002F9b8\\\u002Fced\\\u002F89d9b8cedc688817d35986835621b9cc.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb7c\\\u002Fdff\\\u002Ff7e\\\u002Fb7cdfff7e1371b38339bb0941187c568.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fd23\\\u002F623\\\u002Fc41\\\u002Fd23623c41bac5ab470b5ae31df4a0766.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F1bf\\\u002F0cd\\\u002F7c2\\\u002F1bf0cd7c287128052773610ef7e9e00f.png\"]}","metaDescription":"В этой статье я хочу поделиться несколькими нестандартными алгоритмами для быстрого возведения числа в степень, а также продемонстрировать их реализацию и сравнить их быстродействие в C++, C# и...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"hi,java,cpp,asp,csharp"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Прикладная некромантия. Перенос почтового сервера, не обновлявшегося пятнадцать лет, на iRedMail / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/first\/blog\/582416\/"},"headline":"Прикладная некромантия. Перенос почтового сервера, не обновлявшегося пятнадцать лет, на iRedMail","datePublished":"2021-10-20T10:00:01+03:00","dateModified":"2021-10-21T12:18:34+03:00","author":{"@type":"Person","name":"1shaman"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а...","url":"https:\/\/habr.com\/ru\/company\/first\/blog\/582416\/#post-content-body","about":["c_first","h_sys_admin","h_server_side_optimization","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/582416\/96d5337d5ae9a45847bdade2f36fe4ef\/","https:\/\/habrastorage.org\/webt\/-8\/jo\/tw\/-8jotwkvvmtaz87qeiaru1zp_sg.jpeg","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/d23\/873\/b7b\/d23873b7bbcc0858cd6a0e3391805a5d.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/56f\/bfa\/d74\/56fbfad7410d6586b6fe9d49dbe3c400.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Прикладная некромантия. Перенос почтового сервера, не обновлявшегося пятнадцать лет, на iRedMail" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Прикладная некромантия. Перенос почтового сервера, не обновлявшегося пятнадцать лет, на iRedMail" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Прикладная некромантия. Перенос почтового сервера, не обновлявшегося пятнадцать лет, на iRedMail" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи,..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи,..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи,..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи,..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи,..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/sx/wj/tf/sxwjtf8ujv7sv6rraeuivdznwdm.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/sx/wj/tf/sxwjtf8ujv7sv6rraeuivdznwdm.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/sx/wj/tf/sxwjtf8ujv7sv6rraeuivdznwdm.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/sx/wj/tf/sxwjtf8ujv7sv6rraeuivdznwdm.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/sx/wj/tf/sxwjtf8ujv7sv6rraeuivdznwdm.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582416" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-20T07:00:01.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582416/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/first/blog/582416/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/sx/wj/tf/sxwjtf8ujv7sv6rraeuivdznwdm.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="first" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/first/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/81e/a2b/70e/81ea2b70ebe0942cdf523ca6af7a3e2b.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">356.96</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/first/profile/" class="tm-company-card__name">
+        FirstVDS
+      </a> <div class="tm-company-card__description">Виртуальные и выделенные серверы в ДЦ в Москве</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/1shaman/" title="1shaman" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/751/c61/6ff/751c616ffb95ce8b3cd5d695ab55e10b.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/1shaman/" class="tm-user-info__username">
+      1shaman
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-20T07:00:01.000Z" title="2021-10-20, 10:00">20  октября   в 10:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Прикладная некромантия. Перенос почтового сервера, не обновлявшегося пятнадцать лет, на iRedMail</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/first/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании FirstVDS</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/sys_admin/" class="tm-article-snippet__hubs-item-link"><span>Системное администрирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/server_side_optimization/" class="tm-article-snippet__hubs-item-link"><span>Серверная оптимизация</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><img src="https://habrastorage.org/r/w780q1/webt/-8/jo/tw/-8jotwkvvmtaz87qeiaru1zp_sg.jpeg" data-src="https://habrastorage.org/webt/-8/jo/tw/-8jotwkvvmtaz87qeiaru1zp_sg.jpeg" data-blurred="true"/><br/>
+<br/>
+Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи, которые порой попадаются на пути самураев опенсорса. Об одной такой задаче я и расскажу.<a name="habracut"></a><br/>
+<br/>
+<h2><font color="#076184">Предпосылки</font></h2><br/>
+Началось всё со смены основного места работы. Полтора года назад я пошёл работать системным администратором в гражданский московский НИИ. Далеко не самый богатый и известный, но вполне современный и развивающийся. Основной челлендж был в том, что IT-отдел в институте отсутствовал. IT-инфраструктура там активно развивалась в начале нулевых отдельными энтузиастами, но люди приходили и уходили, разрозненные очаги прогресса бессистемно зажигались и гасли, многие сервисы так и остались замороженными во времени, поддерживаемые операторами без попыток глобальных обновлений.<br/>
+<br/>
+Первой и основной моей задачей, а заодно и центральным заданием на испытательный срок, стал доменный почтовый сервер. При приёме на работу пришлось обойти довольно много сотрудников, и многие, узнав, что я устраиваюсь админом, спрашивали именно про почтовый сервер.<br/>
+<br/>
+После сбора информации, добычи логинов, паролей и IP-адресов и некоторого исследования ситуация нарисовалась <s>жуткая </s>следующая:<br/>
+<br/>
+<ul>
+<li>Почтовый сервер живёт на Slackware 10.1.0.</li>
+<li>Отправка писем осуществляется по SMTP по 25 порту и только с внутренних IP.</li>
+<li>MTA — Sendmail, все почтовые пользователи заносятся скриптом как системные и живут в /etc/passwd.</li>
+<li>Есть веб-интерфейс. Очень брутальный <a href="https://squirrelmail.org/">SquirrelMail</a>. Гиперссылки в теле писем он отображать не умеет и никак не сообщает об их наличии. Последняя версия вышла в 2013 году.</li>
+<li>Первичная фильтрация спама осуществляется через блоклист, который пополняется вручную.</li>
+<li>Вторичная фильтрация спама осуществляется через старинную версию Amavis, и получение писем с кодами подтверждения регистрации от, например, «Твиттера» занимает от трёх часов — всё это время их маринует спам-фильтр. Пока идёт код подтверждения, его действие уже заканчивается.</li>
+</ul><br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/getpro/habr/post_images/d23/873/b7b/d23873b7bbcc0858cd6a0e3391805a5d.png"/></div><i><font color="#858585">Приветливая Slackware приветствует очередной мудрой цитатой.</font></i><br/>
+<br/>
+Общая задача — перевести почтовый сервер на современные рельсы.<br/>
+<br/>
+Основные подзадачи:<br/>
+<br/>
+<ul>
+<li>Актуализировать список активных почтовых аккаунтов на старом сервере.</li>
+<li>Развернуть новый сервер. Как и какой — выбор за мной.</li>
+<li>Перенести аккаунты на новый сервер, желательно без смены паролей, вместе с алиасами, списками рассылки и адресными книгами из SquirrelMail.</li>
+<li>Пережить обязательную бурю недовольства, отвечая на гневные письма вежливо и спокойно. Решать проблемы, которые обязательно последуют.</li>
+</ul><br/>
+<br/>
+<h2><font color="#076184">Подготовка</font></h2><br/>
+Актуализация аккаунтов началась с изучения Sendmail, с которым сталкивался до этого лет пятнадцать назад.<br/>
+<br/>
+В <code>/etc/mail/aliases</code> находятся алиасы, а также списки рассылки, в том числе и самый для меня на тот момент полезный — рассылка всем пользователям.<br/>
+<br/>
+В <code>/etc/mail/access</code> находятся правила обработки писем и забитая вручную первичная фильтрация. Они мне понадобятся чуть позже.<br/>
+<br/>
+Из списка рассылки получился адрес всех пользователей электронной почты, коих оказалось около пятисот. Сохранил его в файл <code>allusers</code>, отсортировал через <code>sort</code>.<br/>
+<br/>
+Главам подразделений был выслан приказ предоставить список пользователей электронной почты. Из разрозненных экселевских табличек собрался единый список активных логинов по версии подразделений. Сохранил его в файл active, отсортировал через sort.<br/>
+<br/>
+Получаю аццеслист — список активных юзеров:<br/>
+<br/>
+<pre><code class="plaintext">#comm -12 allusers active > accesslist</code></pre><br/>
+Часть указанных подразделениями аккаунтов была написана с ошибкой, часть — находилась на сторонних почтовых серверах; нескольких вообще не существовало. Это норма.<br/>
+<br/>
+Получаю чёрный список из тех, кто не вошел в acceslist:<br/>
+<br/>
+<pre><code class="plaintext">#comm -23 allusers accesslist > blocklist</code></pre><br/>
+Блоклист прогоняю через простенький скрипт, генерирующий часть конфигурации sendmail:<br/>
+<br/>
+<pre><code class="bash">#nano lockgen
+
+#!/bin/bash
+
+sed «s/^/To:/;s/$/@domain.ru        	REJECT/» blacklist > tmp1
+
+sed «s/^/From:/;s/$/@domain.ru      	550 Your mailbox is locked, contact your system administrator mail.support@domain.ru/» blocklist > tmp2
+
+paste -d»\n» tmp1 tmp2
+
+rm -f tmp1 tmp2
+
+#chmod +x lockgen
+
+#./lockgen > lockconf</code></pre><br/>
+Сгенерированный конфиг переношу в <code>/etc/mail/access</code> на старом сервере и перезапускаю sendmail.<br/>
+<br/>
+Теперь юзернеймам из чёрного списка, при попытке проверить или отправить почту, выдаётся сообщение с призывом связаться со мной. Таких набралось довольно много. И, забегая вперёд, такие пользователи появлялись и спустя полгода, уже после переезда на новый сервер.<br/>
+<br/>
+Аццеслист же был залит и на старый сервер, и на тот, о котором пойдёт речь дальше.<br/>
+<br/>
+Новой платформой я выбрал iRedMail и развернул его на виртуалке с CentOS 8 в Proxmox VE. Процесс в деталях описывать смысла нет, у iRedMail подробная документация и активное комьюнити, что и послужило основной причиной выбора. CentOS — чисто личное решение, так как больше всего работал именно с ним. Перенести всё на другую систему не будет проблемой.<br/>
+<br/>
+Платная поддержка iRedMail не приобреталась, поскольку пока не сталкивался с необходимостью, хотя допускаю, что в будущем пригодится.<br/>
+<br/>
+Процесс переезда начался с переноса аккаунтов вместе с паролями. Со старого сервера взял файл <code>/etc/shadow</code> и обработал его парой кривеньких скриптов.<br/>
+<br/>
+Чищу shadow, оставляю только строки с аккаунтами аццеслиста:<br/>
+<br/>
+<pre><code class="plaintext">#grep -f acceslist shadow > accshadow</code></pre><br/>
+В данном случае было несколько аккаунтов с короткими трёхбуквенными именами, что привело к попаданию в файл также аккаунтов, где эти буквосочетания встречались в составе более длинных имен. Но мне было быстрее временно добавить к таким логинам в аццеслисте всю строку из shadow, чем писать более сложный и универсальный скрипт.<br/>
+<br/>
+Оставляю только связку логин/хэш:<br/>
+<br/>
+<pre><code class="plaintext">cat accshadow | cut -f1,2 -d':' > userhash</code></pre><br/>
+Скорее всего, стоило пойти по более простому пути и сформировать запрос на создание аккаунтов сразу из полученного файла с хэшем. Но пошёл чуть в обход.<br/>
+<br/>
+В скрипте <a href="https://docs.iredmail.org/sql.create.mail.user.html">инструмента iRedMail для создания SQL аккаунтов</a> меняю квоту ящика по умолчанию (параметр DEFAULT_QUOTA) и создаю импорт-файл для создания аккаунтов из аццеслиста с одним и тем же паролем:<br/>
+<br/>
+<pre><code class="bash">#!/bin/bash
+
+echo «#!/bin/bash»
+
+sed «s/^/bash \/path\/to\/iRedMail-1.3.1\/tools\/create_mail_user_SQL.sh /;s/$/@domain.ru '12345678' >> addusers.sql/» accesslist
+
+Обрабатываю полученный импорт-файл, заменяя SSHA512 хэши на MD5:
+
+#nano changehash
+
+#!/bin/bash
+
+awk 'BEGIN{number=1;}
+
+{
+
+cmd=«sed \x27«number»!D;s/^.*://\x27 userhash»;
+
+cmd|getline hash;
+
+sub(/{SSHA512}.*\x27, \x27/,»{CRYPT}«hash»\x27, \x27»);
+
+print;
+
+if (/CRYPT/) number=number+1;
+
+}' addusers_temp.sql;
+
+#chmod +x changehash
+
+#./changehash > addusers.sql</code></pre><br/>
+В БД iRedMail для хранения паролей по умолчанию используются хэши SSHA512, но можно использовать и менее надёжные хэши MD5, вытащенные из shadow. Они могут мирно сосуществовать, так что при смене пароля или введении нового пользователя MD5 хэши будут потихоньку исчезать из базы.<br/>
+<br/>
+Делаю список внутренней рассылки по всем пользователям и добавляю модератора:<br/>
+<br/>
+<pre><code class="bash">MariaDB [vmail]> INSERT INTO alias (address, domain, active) VALUES ('all-users@domain.ru', 'domain.ru', 1);
+
+MariaDB [vmail]> INSERT INTO moderators (address, moderator, domain, dest_domain) VALUES ('all-users@domain.ru', 'moderatormail@domain.ru', 'domain.ru', 'domain.ru');</code></pre><br/>
+Формирую ещё один импорт-файл:<br/>
+<br/>
+<pre><code class="bash">#nano createlist
+
+#!/bin/bash
+
+while IFS= read -r username
+
+do
+
+  echo «INSERT INTO forwardings (address, forwarding, domain, dest_domain, is_list, active)»
+
+  echo «VALUES ('all-users@domain.ru', '$username@domain.ru', 'domain.ru', 'domain.ru', 1, 1);»
+
+done &lt; accesslist
+
+#chmod +x createlist
+
+#./changehash > addlist.sql</code></pre><br/>
+Этот скрипт использовался потом ещё несколько раз для создания целевых списков рассылки, например, главам отделов.<br/>
+<br/>
+Импортирую оба файла в БД:<br/>
+<br/>
+<pre><code class="plaintext">MariaDB [vmail]> SOURCE addusers.sql;
+
+MariaDB [vmail]> SOURCE addlist.sql;</code></pre><br/>
+Можно попробовать залогиниться с известным паролем в веб-интерфейс.<br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/getpro/habr/post_images/56f/bfa/d74/56fbfad7410d6586b6fe9d49dbe3c400.png"/></div><i><font color="#858585">Roundcube по умолчанию требует указывать в качестве логина почтовый адрес полностью.</font></i><br/>
+<br/>
+<h2><font color="#076184">Миграция</font></h2><br/>
+На этом этапе записи DNS были переключены на использование нового почтового сервера. Сделано это было в пятницу вечером, с предупреждением пользователей за неделю через общую рассылку. Как только волна обновлений дошла до заокеанских DNS, был подключён сертификат Let's Encrypt по мануалу iRedMail.<br/>
+<br/>
+Также на этом этапе обязательно следовало ограничить количество отсылаемых писем в день. Я это сделал гораздо позже, когда последовала волна взломов аккаунтов из-за недостаточно надёжных паролей (пользователи привыкли, что почта работает на отправку только внутри сети, и широко использовали цифровые пароли и вариации qwerty) и постовик загремел в блоклисты спамеров. Поток исходящего спама также вводил в ступор dovecot, который начинал сыпать очень странными ошибками, посылавшими меня по ложному пути поиска их причины.<br/>
+<br/>
+Сотни в день будет достаточно:<br/>
+<br/>
+<pre><code class="plaintext">MariaDB [iredapd]> INSERT INTO throttle (account, kind, priority, period, msg_size, max_msgs, max_quota) VALUES ('@domain.ru','outbound',60,86400,-1,100,-1);</code></pre><br/>
+Отдельным аккаунтам можно поднять лимиты:<br/>
+<br/>
+<pre><code class="plaintext">MariaDB [iredapd]> INSERT INTO throttle (account, kind, priority, period, msg_size, max_msgs, max_quota) VALUES ('mass@domain.ru','outbound',100,86400,-1,500,-1);</code></pre><br/>
+На старом сервере всем юзернеймам из аццеслиста выставляется один и тот же пароль:<br/>
+<br/>
+<pre><code class="plaintext">sed «s/$/:some123/» accesslist > pwdpatch
+
+chpasswd &lt; pwdbatch</code></pre><br/>
+На новом сервере создаётся управляющий аккаунт, который может управлять любым ящиком без необходимости знать его пароль:<br/>
+<br/>
+Формируем хэш (далее подразумевается пароль some456):<br/>
+<br/>
+<pre><code class="plaintext">#doveadm pw -s SSHA512</code></pre><br/>
+Помещаем полученный хэш в <code>/etc/dovecot/dovecot-master-users</code>:<br/>
+<br/>
+<pre><code class="plaintext">postmigrate@domain.ru:{SSHA512}B0VHomJaMk6aLXOPglgNgJtCU...</code></pre><br/>
+Разворачивается imapsync <a href="https://imapsync.lamiral.info/INSTALL.d/INSTALL.Centos.txt">по общедоступному мануалу.</a> Формируется скрипт массового переноса почты:<br/>
+<br/>
+<pre><code class="bash">#nano createmigrate
+
+#!/bin/bash
+
+echo «#!/bin/bash»
+
+while IFS= read -r username
+
+do
+
+  echo «/root/imapsync --nosyncacls --subscribe --syncinternaldates --nosslcheck \\»
+
+  echo «--host1 123.123.123.123  --authmech1 LOGIN --user1 $username --password1 some123 --nossl1 --notls1 \\»
+
+  echo «--host2 127.0.0.1	--authmech2 LOGIN --user2 $username@domain.ru*postmigrate@domain.ru --password2 some456 --prefix1 INBOX.  --regextrans2 \«s/&amp;BB4EQgQ,BEAEMAQyBDsENQQ9BD0ESwQ1-/Sent/\» --addheader --folder \«Sent\» --folder \»&amp;BB4EQgQ,BEAEMAQyBDsENQQ9BD0ESwQ1-\«»
+
+done &lt; accesslist
+
+#chmod +x createmigrate
+
+Запуск:
+
+# ./createmigrate > domigrate
+
+# chmod +x domigrate
+
+# nohup ./domgrate > process.out &amp;</code></pre><br/>
+На этом этапе возникло множество проблем, и скрипт несколько раз дорабатывался и запускался снова с учётом возникающих ошибок. Оказалось, что размер ящиков на старом сервере регламентирован не был, многие ящики были куда большего размера, чем изначальные 2Gb. Пришлось избирательно увеличивать квоты. С названиями почтовых директорий было ещё хуже — старый сервер стоял на костях ещё более древних реализаций почтового сервера, у части клиентов директории были на русском.<br/>
+<br/>
+Работу imapsync следует распараллеливать на несколько процессов, формировать не один большой скрипт, а несколько для разных диапазонов почтовых аккаунтов. Но с учётом постоянных столкновений с очередными проблемами синхронизации, было уже не до того. Скрипт в целом закончил работу днём понедельника. После чего были синхронизированы почтовые ящики с алиасами. Алиасов было немного, так что мне было быстрее сформировать скрипты для imapsync и импорт-файл с форвардингами вручную.<br/>
+<br/>
+Осталось перенести адресные книги в новый веб-интерфейс — Roundcube. SquirrelMail, как оказалось, лежал на другом сервере отдельно от MTA. После получения пароля от него выгрузил адресные книги в формате *.abook на новый сервер. Тут, по счастью, нашлось готовое решение — <a href="https://github.com/WebuddhaInc/squirrelmail-to-roundcube">вот это</a>.<br/>
+<br/>
+В скрипте указываются параметры БД Roundcube (лежат в его конфиге). Всё достаточно просто, почтовые книги появились в веб-интерфейсе.<br/>
+<br/>
+<h2><font color="#076184">Последствия</font></h2><br/>
+По счастью, вся вертикаль власти от меня до директора весьма прогрессивная. Поток концентрированного недовольства от консерваторов был ожидаем, и от меня требовались только корректность и терпение. Критически недовольными изменениями были всего несколько пользователей, что составило менее 2% от их общего числа. Однозначный успех мероприятия.<br/>
+<br/>
+Из-за слишком нового SSL отвалились старые версии TheBat (да, его ещё используют и даже пришлось покупать ключи от актуальной версии для совсем непримиримых пользователей).<br/>
+<br/>
+Как я уже говорил выше, для некоторых пользователей весь процесс прошёл мимо их внимания, так что некоторые аккаунты приходилось доставать со старого сервера спустя почти год после того, как они перестали работать после внесения в блоклист. Со слов пользователей, аккаунты исключительно важные и часто используемые. Поверил им на слово.<br/>
+<br/>
+Для нормальной работы оповещалок UPS-ов и части самописных сервисов института разрешил отправку сообщений с внутренних IP без авторизации с несуществующих аккаунтов:<br/>
+<br/>
+<pre><code class="plaintext">#echo "MYNETWORKS = ['123.123.123.0/23']" >> /opt/iredapd/settings.py
+#service iredapd restart</code></pre><br/>
+Что-то ещё тюнилось по мелочи типа более суровой настройки fail2ban или настройки DNS, но решения быстро находились в гугле и форуме iRedMail. Не отложилось в памяти.<br/>
+<br/>
+<h2><font color="#076184">На будущее</font></h2><br/>
+Что хотел бы реализовать, но пока не дошли руки:<br/>
+<br/>
+<ul>
+<li>Служебный Telegram-бот, в том числе с сигнализацией о выходе аккаунта за лимит отправки писем в день (что в 99% случаев означает взлом аккаунта из-за слабого пароля). При сильном выходе за лимит — автоблокировка сменой пароля. Пока приходится мониторить maillog через grep.</li>
+<li>Интеграция с Nextcloud (был параллельно развёрнут на соседней виртуалке)</li>
+<li>Интеграция с OTRS.</li>
+</ul><br/>
+На этом всё. Сервер работает с начала этого года. К концу года переедет с CentOs на что-то ещё по известным причинам. Но это будет уже совсем не так романтично, как переносить старый почтовик на Slackware.<br/>
+<br/>
+<hr/>НЛО прилетело и оставило здесь промокоды для читателей нашего блога:<br/>
+<br/>
+<b><font color="#163C51">HABRFIRSTVDS </font></b>— скидка 15% на все тарифы VDS, кроме VDS Прогрев, на сайте <a href="https://firstvds.ru/">firstvds.ru</a>.<br/>
+<br/>
+<b><font color="#163C51">HABRFIRSTDEDIC </font></b>— скидка 20% на гибкие конфигурации выделенных серверов на базе процессоров AMD Ryzen и Intel Core на сайте <a href="https://1dedic.ru/?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=product&amp;utm_content=amdryzen5">1dedic.ru</a>.<br/>
+<br/>
+Скидка применяется на весь оплаченный период (1, 3, 6 или 12 месяцев) и распространяется только на ресурсы сервера. Воспользоваться промокодом можно до 31.12.21 при заказе любого количества новых серверов.</div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BiRedMail%5D" class="tm-tags-list__link">iRedMail</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BFirstVDS%5D" class="tm-tags-list__link">FirstVDS</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BFirstDEDIC%5D" class="tm-tags-list__link">FirstDEDIC</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%BE%D1%87%D1%82%D0%BE%D0%B2%D1%8B%D0%B9%20%D1%81%D0%B5%D1%80%D0%B2%D0%B5%D1%80%5D" class="tm-tags-list__link">почтовый сервер</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BSlackware%5D" class="tm-tags-list__link">Slackware</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/first/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании FirstVDS
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/sys_admin/" class="tm-hubs-list__link">
+    Системное администрирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/server_side_optimization/" class="tm-hubs-list__link">
+    Серверная оптимизация
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 30: ↑27 и ↓3</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 30: ↑27 и ↓3" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+24</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">6.6K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    24
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/first/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/81e/a2b/70e/81ea2b70ebe0942cdf523ca6af7a3e2b.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/first/profile/" class="tm-company-snippet__title">FirstVDS</a> <div class="tm-company-snippet__description">Виртуальные и выделенные серверы в ДЦ в Москве</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://firstvds.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://1dedic.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://facebook.com/FirstVDS" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://vk.com/firstvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/1shaman/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/751/c61/6ff/751c616ffb95ce8b3cd5d695ab55e10b.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 11 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    11
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">64.1</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/1shaman/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @1shaman
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Системный администратор</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/first/blog/582416/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 16 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2002-12-05T21:00:00.000Z" title="2002-12-06, 00:00">6  декабря  2002</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="http://firstvds.ru/?aid=20152" target="_blank" class="tm-company-basic-info__link">
+      firstvds.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    51–100 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2012-09-13T06:50:30.000Z" title="2012-09-13, 10:50">13  сентября  2012</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/FirstJohn/" class="tm-company-basic-info__link">
+      FirstJohn
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/first/blog/582416/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/first/blog/582416/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582416":{"id":"582416","timePublished":"2021-10-20T07:00:01+00:00","isCorporative":true,"lang":"ru","titleHtml":"Прикладная некромантия. Перенос почтового сервера, не обновлявшегося пятнадцать лет, на iRedMail","leadData":{"textHtml":"\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F-8\u002Fjo\u002Ftw\u002F-8jotwkvvmtaz87qeiaru1zp_sg.jpeg\"\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nЯ люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи, которые порой попадаются на пути самураев опенсорса. Об одной такой задаче я и расскажу.","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":11,"votesCount":11},"rating":64.1,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2801043","alias":"1shaman","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F751\u002Fc61\u002F6ff\u002F751c616ffb95ce8b3cd5d695ab55e10b.jpg","speciality":"Системный администратор"},"statistics":{"commentsCount":16,"favoritesCount":24,"readingCount":6583,"score":24,"votesCount":30},"hubs":[{"relatedData":null,"id":"17832","alias":"first","type":"corporative","title":"Блог компании FirstVDS","titleHtml":"Блог компании FirstVDS","isProfiled":false},{"relatedData":null,"id":"221","alias":"sys_admin","type":"collective","title":"Системное администрирование","titleHtml":"Системное администрирование","isProfiled":true},{"relatedData":null,"id":"8880","alias":"server_side_optimization","type":"collective","title":"Серверная оптимизация","titleHtml":"Серверная оптимизация","isProfiled":true}],"flows":[{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002F-8\u002Fjo\u002Ftw\u002F-8jotwkvvmtaz87qeiaru1zp_sg.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F-8\u002Fjo\u002Ftw\u002F-8jotwkvvmtaz87qeiaru1zp_sg.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЯ люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи, которые порой попадаются на пути самураев опенсорса. Об одной такой задаче я и расскажу.\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003EПредпосылки\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nНачалось всё со смены основного места работы. Полтора года назад я пошёл работать системным администратором в гражданский московский НИИ. Далеко не самый богатый и известный, но вполне современный и развивающийся. Основной челлендж был в том, что IT-отдел в институте отсутствовал. IT-инфраструктура там активно развивалась в начале нулевых отдельными энтузиастами, но люди приходили и уходили, разрозненные очаги прогресса бессистемно зажигались и гасли, многие сервисы так и остались замороженными во времени, поддерживаемые операторами без попыток глобальных обновлений.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПервой и основной моей задачей, а заодно и центральным заданием на испытательный срок, стал доменный почтовый сервер. При приёме на работу пришлось обойти довольно много сотрудников, и многие, узнав, что я устраиваюсь админом, спрашивали именно про почтовый сервер.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосле сбора информации, добычи логинов, паролей и IP-адресов и некоторого исследования ситуация нарисовалась \u003Cs\u003Eжуткая \u003C\u002Fs\u003Eследующая:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EПочтовый сервер живёт на Slackware 10.1.0.\u003C\u002Fli\u003E\r\n\u003Cli\u003EОтправка писем осуществляется по SMTP по 25 порту и только с внутренних IP.\u003C\u002Fli\u003E\r\n\u003Cli\u003EMTA — Sendmail, все почтовые пользователи заносятся скриптом как системные и живут в \u002Fetc\u002Fpasswd.\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсть веб-интерфейс. Очень брутальный \u003Ca href=\"https:\u002F\u002Fsquirrelmail.org\u002F\"\u003ESquirrelMail\u003C\u002Fa\u003E. Гиперссылки в теле писем он отображать не умеет и никак не сообщает об их наличии. Последняя версия вышла в 2013 году.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПервичная фильтрация спама осуществляется через блоклист, который пополняется вручную.\u003C\u002Fli\u003E\r\n\u003Cli\u003EВторичная фильтрация спама осуществляется через старинную версию Amavis, и получение писем с кодами подтверждения регистрации от, например, «Твиттера» занимает от трёх часов — всё это время их маринует спам-фильтр. Пока идёт код подтверждения, его действие уже заканчивается.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Fd23\u002F873\u002Fb7b\u002Fd23873b7bbcc0858cd6a0e3391805a5d.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Ci\u003E\u003Cfont color=\"#858585\"\u003EПриветливая Slackware приветствует очередной мудрой цитатой.\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОбщая задача — перевести почтовый сервер на современные рельсы.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОсновные подзадачи:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EАктуализировать список активных почтовых аккаунтов на старом сервере.\u003C\u002Fli\u003E\r\n\u003Cli\u003EРазвернуть новый сервер. Как и какой — выбор за мной.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПеренести аккаунты на новый сервер, желательно без смены паролей, вместе с алиасами, списками рассылки и адресными книгами из SquirrelMail.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПережить обязательную бурю недовольства, отвечая на гневные письма вежливо и спокойно. Решать проблемы, которые обязательно последуют.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003EПодготовка\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nАктуализация аккаунтов началась с изучения Sendmail, с которым сталкивался до этого лет пятнадцать назад.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ \u003Ccode\u003E\u002Fetc\u002Fmail\u002Faliases\u003C\u002Fcode\u003E находятся алиасы, а также списки рассылки, в том числе и самый для меня на тот момент полезный — рассылка всем пользователям.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ \u003Ccode\u003E\u002Fetc\u002Fmail\u002Faccess\u003C\u002Fcode\u003E находятся правила обработки писем и забитая вручную первичная фильтрация. Они мне понадобятся чуть позже.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИз списка рассылки получился адрес всех пользователей электронной почты, коих оказалось около пятисот. Сохранил его в файл \u003Ccode\u003Eallusers\u003C\u002Fcode\u003E, отсортировал через \u003Ccode\u003Esort\u003C\u002Fcode\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nГлавам подразделений был выслан приказ предоставить список пользователей электронной почты. Из разрозненных экселевских табличек собрался единый список активных логинов по версии подразделений. Сохранил его в файл active, отсортировал через sort.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПолучаю аццеслист — список активных юзеров:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E#comm -12 allusers active \u003E accesslist\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЧасть указанных подразделениями аккаунтов была написана с ошибкой, часть — находилась на сторонних почтовых серверах; нескольких вообще не существовало. Это норма.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПолучаю чёрный список из тех, кто не вошел в acceslist:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E#comm -23 allusers accesslist \u003E blocklist\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nБлоклист прогоняю через простенький скрипт, генерирующий часть конфигурации sendmail:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#nano lockgen\n\n#!\u002Fbin\u002Fbash\n\nsed «s\u002F^\u002FTo:\u002F;s\u002F$\u002F@domain.ru        \tREJECT\u002F» blacklist \u003E tmp1\n\nsed «s\u002F^\u002FFrom:\u002F;s\u002F$\u002F@domain.ru      \t550 Your mailbox is locked, contact your system administrator mail.support@domain.ru\u002F» blocklist \u003E tmp2\n\npaste -d»\\n» tmp1 tmp2\n\nrm -f tmp1 tmp2\n\n#chmod +x lockgen\n\n#.\u002Flockgen \u003E lockconf\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nСгенерированный конфиг переношу в \u003Ccode\u003E\u002Fetc\u002Fmail\u002Faccess\u003C\u002Fcode\u003E на старом сервере и перезапускаю sendmail.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТеперь юзернеймам из чёрного списка, при попытке проверить или отправить почту, выдаётся сообщение с призывом связаться со мной. Таких набралось довольно много. И, забегая вперёд, такие пользователи появлялись и спустя полгода, уже после переезда на новый сервер.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nАццеслист же был залит и на старый сервер, и на тот, о котором пойдёт речь дальше.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНовой платформой я выбрал iRedMail и развернул его на виртуалке с CentOS 8 в Proxmox VE. Процесс в деталях описывать смысла нет, у iRedMail подробная документация и активное комьюнити, что и послужило основной причиной выбора. CentOS — чисто личное решение, так как больше всего работал именно с ним. Перенести всё на другую систему не будет проблемой.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПлатная поддержка iRedMail не приобреталась, поскольку пока не сталкивался с необходимостью, хотя допускаю, что в будущем пригодится.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПроцесс переезда начался с переноса аккаунтов вместе с паролями. Со старого сервера взял файл \u003Ccode\u003E\u002Fetc\u002Fshadow\u003C\u002Fcode\u003E и обработал его парой кривеньких скриптов.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧищу shadow, оставляю только строки с аккаунтами аццеслиста:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E#grep -f acceslist shadow \u003E accshadow\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВ данном случае было несколько аккаунтов с короткими трёхбуквенными именами, что привело к попаданию в файл также аккаунтов, где эти буквосочетания встречались в составе более длинных имен. Но мне было быстрее временно добавить к таким логинам в аццеслисте всю строку из shadow, чем писать более сложный и универсальный скрипт.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОставляю только связку логин\u002Fхэш:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ecat accshadow | cut -f1,2 -d':' \u003E userhash\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nСкорее всего, стоило пойти по более простому пути и сформировать запрос на создание аккаунтов сразу из полученного файла с хэшем. Но пошёл чуть в обход.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ скрипте \u003Ca href=\"https:\u002F\u002Fdocs.iredmail.org\u002Fsql.create.mail.user.html\"\u003Eинструмента iRedMail для создания SQL аккаунтов\u003C\u002Fa\u003E меняю квоту ящика по умолчанию (параметр DEFAULT_QUOTA) и создаю импорт-файл для создания аккаунтов из аццеслиста с одним и тем же паролем:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#!\u002Fbin\u002Fbash\n\necho «#!\u002Fbin\u002Fbash»\n\nsed «s\u002F^\u002Fbash \\\u002Fpath\\\u002Fto\\\u002FiRedMail-1.3.1\\\u002Ftools\\\u002Fcreate_mail_user_SQL.sh \u002F;s\u002F$\u002F@domain.ru '12345678' \u003E\u003E addusers.sql\u002F» accesslist\n\nОбрабатываю полученный импорт-файл, заменяя SSHA512 хэши на MD5:\n\n#nano changehash\n\n#!\u002Fbin\u002Fbash\n\nawk 'BEGIN{number=1;}\n\n{\n\ncmd=«sed \\x27«number»!D;s\u002F^.*:\u002F\u002F\\x27 userhash»;\n\ncmd|getline hash;\n\nsub(\u002F{SSHA512}.*\\x27, \\x27\u002F,»{CRYPT}«hash»\\x27, \\x27»);\n\nprint;\n\nif (\u002FCRYPT\u002F) number=number+1;\n\n}' addusers_temp.sql;\n\n#chmod +x changehash\n\n#.\u002Fchangehash \u003E addusers.sql\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВ БД iRedMail для хранения паролей по умолчанию используются хэши SSHA512, но можно использовать и менее надёжные хэши MD5, вытащенные из shadow. Они могут мирно сосуществовать, так что при смене пароля или введении нового пользователя MD5 хэши будут потихоньку исчезать из базы.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДелаю список внутренней рассылки по всем пользователям и добавляю модератора:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EMariaDB [vmail]\u003E INSERT INTO alias (address, domain, active) VALUES ('all-users@domain.ru', 'domain.ru', 1);\n\nMariaDB [vmail]\u003E INSERT INTO moderators (address, moderator, domain, dest_domain) VALUES ('all-users@domain.ru', 'moderatormail@domain.ru', 'domain.ru', 'domain.ru');\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nФормирую ещё один импорт-файл:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#nano createlist\n\n#!\u002Fbin\u002Fbash\n\nwhile IFS= read -r username\n\ndo\n\n  echo «INSERT INTO forwardings (address, forwarding, domain, dest_domain, is_list, active)»\n\n  echo «VALUES ('all-users@domain.ru', '$username@domain.ru', 'domain.ru', 'domain.ru', 1, 1);»\n\ndone &lt; accesslist\n\n#chmod +x createlist\n\n#.\u002Fchangehash \u003E addlist.sql\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЭтот скрипт использовался потом ещё несколько раз для создания целевых списков рассылки, например, главам отделов.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИмпортирую оба файла в БД:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003EMariaDB [vmail]\u003E SOURCE addusers.sql;\n\nMariaDB [vmail]\u003E SOURCE addlist.sql;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nМожно попробовать залогиниться с известным паролем в веб-интерфейс.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F56f\u002Fbfa\u002Fd74\u002F56fbfad7410d6586b6fe9d49dbe3c400.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Ci\u003E\u003Cfont color=\"#858585\"\u003ERoundcube по умолчанию требует указывать в качестве логина почтовый адрес полностью.\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003EМиграция\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nНа этом этапе записи DNS были переключены на использование нового почтового сервера. Сделано это было в пятницу вечером, с предупреждением пользователей за неделю через общую рассылку. Как только волна обновлений дошла до заокеанских DNS, был подключён сертификат Let's Encrypt по мануалу iRedMail.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТакже на этом этапе обязательно следовало ограничить количество отсылаемых писем в день. Я это сделал гораздо позже, когда последовала волна взломов аккаунтов из-за недостаточно надёжных паролей (пользователи привыкли, что почта работает на отправку только внутри сети, и широко использовали цифровые пароли и вариации qwerty) и постовик загремел в блоклисты спамеров. Поток исходящего спама также вводил в ступор dovecot, который начинал сыпать очень странными ошибками, посылавшими меня по ложному пути поиска их причины.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСотни в день будет достаточно:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003EMariaDB [iredapd]\u003E INSERT INTO throttle (account, kind, priority, period, msg_size, max_msgs, max_quota) VALUES ('@domain.ru','outbound',60,86400,-1,100,-1);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nОтдельным аккаунтам можно поднять лимиты:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003EMariaDB [iredapd]\u003E INSERT INTO throttle (account, kind, priority, period, msg_size, max_msgs, max_quota) VALUES ('mass@domain.ru','outbound',100,86400,-1,500,-1);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНа старом сервере всем юзернеймам из аццеслиста выставляется один и тот же пароль:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Esed «s\u002F$\u002F:some123\u002F» accesslist \u003E pwdpatch\n\nchpasswd &lt; pwdbatch\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНа новом сервере создаётся управляющий аккаунт, который может управлять любым ящиком без необходимости знать его пароль:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nФормируем хэш (далее подразумевается пароль some456):\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E#doveadm pw -s SSHA512\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПомещаем полученный хэш в \u003Ccode\u003E\u002Fetc\u002Fdovecot\u002Fdovecot-master-users\u003C\u002Fcode\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Epostmigrate@domain.ru:{SSHA512}B0VHomJaMk6aLXOPglgNgJtCU...\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nРазворачивается imapsync \u003Ca href=\"https:\u002F\u002Fimapsync.lamiral.info\u002FINSTALL.d\u002FINSTALL.Centos.txt\"\u003Eпо общедоступному мануалу.\u003C\u002Fa\u003E Формируется скрипт массового переноса почты:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#nano createmigrate\n\n#!\u002Fbin\u002Fbash\n\necho «#!\u002Fbin\u002Fbash»\n\nwhile IFS= read -r username\n\ndo\n\n  echo «\u002Froot\u002Fimapsync --nosyncacls --subscribe --syncinternaldates --nosslcheck \\\\»\n\n  echo «--host1 123.123.123.123  --authmech1 LOGIN --user1 $username --password1 some123 --nossl1 --notls1 \\\\»\n\n  echo «--host2 127.0.0.1\t--authmech2 LOGIN --user2 $username@domain.ru*postmigrate@domain.ru --password2 some456 --prefix1 INBOX.  --regextrans2 \\«s\u002F&amp;BB4EQgQ,BEAEMAQyBDsENQQ9BD0ESwQ1-\u002FSent\u002F\\» --addheader --folder \\«Sent\\» --folder \\»&amp;BB4EQgQ,BEAEMAQyBDsENQQ9BD0ESwQ1-\\«»\n\ndone &lt; accesslist\n\n#chmod +x createmigrate\n\nЗапуск:\n\n# .\u002Fcreatemigrate \u003E domigrate\n\n# chmod +x domigrate\n\n# nohup .\u002Fdomgrate \u003E process.out &amp;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНа этом этапе возникло множество проблем, и скрипт несколько раз дорабатывался и запускался снова с учётом возникающих ошибок. Оказалось, что размер ящиков на старом сервере регламентирован не был, многие ящики были куда большего размера, чем изначальные 2Gb. Пришлось избирательно увеличивать квоты. С названиями почтовых директорий было ещё хуже — старый сервер стоял на костях ещё более древних реализаций почтового сервера, у части клиентов директории были на русском.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nРаботу imapsync следует распараллеливать на несколько процессов, формировать не один большой скрипт, а несколько для разных диапазонов почтовых аккаунтов. Но с учётом постоянных столкновений с очередными проблемами синхронизации, было уже не до того. Скрипт в целом закончил работу днём понедельника. После чего были синхронизированы почтовые ящики с алиасами. Алиасов было немного, так что мне было быстрее сформировать скрипты для imapsync и импорт-файл с форвардингами вручную.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОсталось перенести адресные книги в новый веб-интерфейс — Roundcube. SquirrelMail, как оказалось, лежал на другом сервере отдельно от MTA. После получения пароля от него выгрузил адресные книги в формате *.abook на новый сервер. Тут, по счастью, нашлось готовое решение — \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWebuddhaInc\u002Fsquirrelmail-to-roundcube\"\u003Eвот это\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ скрипте указываются параметры БД Roundcube (лежат в его конфиге). Всё достаточно просто, почтовые книги появились в веб-интерфейсе.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003EПоследствия\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nПо счастью, вся вертикаль власти от меня до директора весьма прогрессивная. Поток концентрированного недовольства от консерваторов был ожидаем, и от меня требовались только корректность и терпение. Критически недовольными изменениями были всего несколько пользователей, что составило менее 2% от их общего числа. Однозначный успех мероприятия.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИз-за слишком нового SSL отвалились старые версии TheBat (да, его ещё используют и даже пришлось покупать ключи от актуальной версии для совсем непримиримых пользователей).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКак я уже говорил выше, для некоторых пользователей весь процесс прошёл мимо их внимания, так что некоторые аккаунты приходилось доставать со старого сервера спустя почти год после того, как они перестали работать после внесения в блоклист. Со слов пользователей, аккаунты исключительно важные и часто используемые. Поверил им на слово.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля нормальной работы оповещалок UPS-ов и части самописных сервисов института разрешил отправку сообщений с внутренних IP без авторизации с несуществующих аккаунтов:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E#echo \"MYNETWORKS = ['123.123.123.0\u002F23']\" \u003E\u003E \u002Fopt\u002Firedapd\u002Fsettings.py\n#service iredapd restart\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЧто-то ещё тюнилось по мелочи типа более суровой настройки fail2ban или настройки DNS, но решения быстро находились в гугле и форуме iRedMail. Не отложилось в памяти.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003EНа будущее\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nЧто хотел бы реализовать, но пока не дошли руки:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EСлужебный Telegram-бот, в том числе с сигнализацией о выходе аккаунта за лимит отправки писем в день (что в 99% случаев означает взлом аккаунта из-за слабого пароля). При сильном выходе за лимит — автоблокировка сменой пароля. Пока приходится мониторить maillog через grep.\u003C\u002Fli\u003E\r\n\u003Cli\u003EИнтеграция с Nextcloud (был параллельно развёрнут на соседней виртуалке)\u003C\u002Fli\u003E\r\n\u003Cli\u003EИнтеграция с OTRS.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nНа этом всё. Сервер работает с начала этого года. К концу года переедет с CentOs на что-то ещё по известным причинам. Но это будет уже совсем не так романтично, как переносить старый почтовик на Slackware.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Chr\u002F\u003EНЛО прилетело и оставило здесь промокоды для читателей нашего блога:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#163C51\"\u003EHABRFIRSTVDS \u003C\u002Ffont\u003E\u003C\u002Fb\u003E— скидка 15% на все тарифы VDS, кроме VDS Прогрев, на сайте \u003Ca href=\"https:\u002F\u002Ffirstvds.ru\u002F\"\u003Efirstvds.ru\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#163C51\"\u003EHABRFIRSTDEDIC \u003C\u002Ffont\u003E\u003C\u002Fb\u003E— скидка 20% на гибкие конфигурации выделенных серверов на базе процессоров AMD Ryzen и Intel Core на сайте \u003Ca href=\"https:\u002F\u002F1dedic.ru\u002F?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=product&amp;utm_content=amdryzen5\"\u003E1dedic.ru\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСкидка применяется на весь оплаченный период (1, 3, 6 или 12 месяцев) и распространяется только на ресурсы сервера. Воспользоваться промокодом можно до 31.12.21 при заказе любого количества новых серверов.\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"iRedMail"},{"titleHtml":"FirstVDS"},{"titleHtml":"FirstDEDIC"},{"titleHtml":"почтовый сервер"},{"titleHtml":"Slackware"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fsx\u002Fwj\u002Ftf\u002Fsxwjtf8ujv7sv6rraeuivdznwdm.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fsx\u002Fwj\u002Ftf\u002Fsxwjtf8ujv7sv6rraeuivdznwdm.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Ffirst\\\u002Fblog\\\u002F582416\\\u002F\"},\"headline\":\"Прикладная некромантия. Перенос почтового сервера, не обновлявшегося пятнадцать лет, на iRedMail\",\"datePublished\":\"2021-10-20T10:00:01+03:00\",\"dateModified\":\"2021-10-21T12:18:34+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"1shaman\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Ffirst\\\u002Fblog\\\u002F582416\\\u002F#post-content-body\",\"about\":[\"c_first\",\"h_sys_admin\",\"h_server_side_optimization\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582416\\\u002F96d5337d5ae9a45847bdade2f36fe4ef\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F-8\\\u002Fjo\\\u002Ftw\\\u002F-8jotwkvvmtaz87qeiaru1zp_sg.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Fd23\\\u002F873\\\u002Fb7b\\\u002Fd23873b7bbcc0858cd6a0e3391805a5d.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002F56f\\\u002Fbfa\\\u002Fd74\\\u002F56fbfad7410d6586b6fe9d49dbe3c400.png\"]}","metaDescription":"Я люблю линукс, юникс и системное администрирование по странной причине. Это не оплата труда и не возможность управления сложными комплексами через консоль, а интересные, неформатные задачи,...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"first":{"alias":"first","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F81e\u002Fa2b\u002F70e\u002F81ea2b70ebe0942cdf523ca6af7a3e2b.png","titleHtml":"FirstVDS","descriptionHtml":"Виртуальные и выделенные серверы в ДЦ в Москве","relatedData":null,"statistics":{"postsCount":72,"newsCount":0,"vacanciesCount":0,"employeesCount":14,"careerRating":null,"subscribersCount":24212,"rating":356.96,"invest":null},"foundationDate":{"year":"2002","month":"12","day":"06"},"location":{"city":null,"region":null,"country":{"id":"168","title":"Россия"}},"siteUrl":"http:\u002F\u002Ffirstvds.ru\u002F?aid=20152","staffNumber":"51–100 человек","registrationDate":"2012-09-13T06:50:30+00:00","representativeUser":{"alias":"FirstJohn","fullname":null},"contacts":[{"title":"Сайт","url":"https:\u002F\u002Ffirstvds.ru"},{"title":"Сайт","url":"https:\u002F\u002F1dedic.ru"},{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002FFirstVDS"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Ffirstvds"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-10974470-14"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"FirstVDS, Россия - Виртуальные и выделенные серверы в ДЦ в Москве с 6 декабря 2002 г.","title":"FirstVDS, Россия - Виртуальные и выделенные серверы в ДЦ в Москве с 6 декабря 2002 г.","keywords":["Программирование","Системное администрирование","Хостинг","Разработка под Arduino","Компиляторы"],"descriptionHtml":"72 статьи от авторов компании FirstVDS","description":"72 статьи от авторов компании FirstVDS"},"aDeskSettings":null,"careerAlias":"firstvds","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

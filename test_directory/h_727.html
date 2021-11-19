@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Старый фотик + bash = таймлапс / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/582660\/"},"headline":"Старый фотик + bash = таймлапс","datePublished":"2021-10-11T12:00:02+03:00","dateModified":"2021-10-11T15:48:41+03:00","author":{"@type":"Person","name":"Сергей"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и испо...","url":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/582660\/#post-content-body","about":["c_ruvds","h_linux_dev","h_photo","h_video_tech","h_DIY","f_develop","f_popsci"],"image":["https:\/\/habr.com\/share\/publication\/582660\/601a91ac367bc4bedddc733c78e5a7e4\/","https:\/\/habrastorage.org\/webt\/tu\/qj\/bn\/tuqjbnwqz0zxwyxmdw6smwnnx-i.gif","https:\/\/habrastorage.org\/webt\/xk\/aa\/2l\/xkaa2lrtg4yjqpb9xxmveiaykyc.jpeg","https:\/\/habrastorage.org\/webt\/q_\/9e\/lp\/q_9elpaodyyv2wgn_yrrea_lz1k.jpeg","https:\/\/habrastorage.org\/webt\/qc\/jo\/l9\/qcjol9aeur7cduzkrgrohjqglek.jpeg","https:\/\/habrastorage.org\/webt\/cc\/4v\/4x\/cc4v4xil4ss8-0svsj0t3ye_o_q.jpeg","https:\/\/habrastorage.org\/webt\/dc\/yz\/ge\/dcyzgejpohcmpyvi5tprc91d6gi.jpeg","https:\/\/habrastorage.org\/webt\/ou\/g5\/kh\/oug5kh6sjydt9llengsiebnp40w.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Старый фотик + bash = таймлапс" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Старый фотик + bash = таймлапс" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Старый фотик + bash = таймлапс" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/tu/qj/bn/tuqjbnwqz0zxwyxmdw6smwnnx-i.gif" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/tu/qj/bn/tuqjbnwqz0zxwyxmdw6smwnnx-i.gif" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/tu/qj/bn/tuqjbnwqz0zxwyxmdw6smwnnx-i.gif" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/tu/qj/bn/tuqjbnwqz0zxwyxmdw6smwnnx-i.gif" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/tu/qj/bn/tuqjbnwqz0zxwyxmdw6smwnnx-i.gif" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582660" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-11T09:00:02.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582660/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/ruvds/blog/582660/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/tu/qj/bn/tuqjbnwqz0zxwyxmdw6smwnnx-i.gif" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="ruvds" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://ruvds.com/ru-rub"><img src="//habrastorage.org/getpro/habr/branding/b77/8d5/a41/b778d5a41f83016379c6630262c3294c.png" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/ruvds/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">2824.34</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/ruvds/profile/" class="tm-company-card__name">
+        RUVDS.com
+      </a> <div class="tm-company-card__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/dlinyj/" title="dlinyj" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/96e/e60/204/96ee60204d466e54362ce4dd180705c2.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/dlinyj/" class="tm-user-info__username">
+      dlinyj
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-11T09:00:02.000Z" title="2021-10-11, 12:00">11  октября   в 12:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Старый фотик + bash = таймлапс</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/ruvds/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании RUVDS.com</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка под Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/photo/" class="tm-article-snippet__hubs-item-link"><span>Фототехника</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/video_tech/" class="tm-article-snippet__hubs-item-link"><span>Видеотехника</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/DIY/" class="tm-article-snippet__hubs-item-link"><span>DIY или Сделай сам</span> <!----></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><a href="https://habr.com/ru/company/ruvds/blog/582660/"><div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/tu/qj/bn/tuqjbnwqz0zxwyxmdw6smwnnx-i.gif"/></div></a><br/>
+Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его так одним вечером, и подумал: вещь хорошая и вполне годная для всяких опытов. И сразу загорелся применить его во всяких своих самоделках. А что, весьма хорошо фотографирует из коробки, достаточно широкий спектр всяких регулировок, осталось только научиться с ним работать. Всего-то подружить его с компьютером, да Linux, и дело в шляпе! В результате у нас получается просто непаханое поле для фотографических экспериментов и применения в своих придумках. Давайте же поглядим, как это можно сделать и что получилось из таких экспериментов.<a name="habracut"></a><br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Исходники</font></h2><br/>
+Как я уже сказал, у меня достаточно давно лежит в шкафу фотоаппарат Canon EOS 400D, для своего времени неплохой фотик для семейного фотоальбома, но с появлением хороших телефонов, практически не используется. Когда в очередной раз я его достал, то понял, что из него нужно сотворить что-то прикольное. Для того чтобы отвязать фотоаппарат от аккумулятора, и чтобы он работал «вечно», ему нужен источник питания от сети. Для этого пришлось приобрести адаптер <u>ACK-DC20</u>. Умышленно даю марку, потому что поиск для конкретной модели фотоаппарата оказался тем ещё квестом. Но оказалось, что можно вполне купить «здесь и сейчас», а не ждать с Китая. Всё это можно провернуть и с другими фотоаппаратами, только надо подобрать подходящий блок питания.<br/>
+Также рекомендую обзавестись штативом, стоит более-менее вменяемый штатив недорого (мой стоил всего 1500 рублей в известном интернет-магазине), зато позволяет делать хорошие фото. <br/>
+В качестве ЭВМ для работы с фотоаппаратом можно использовать подходящий одноплатник, лично я использовал какой-то древний портативный ноутбук, который зависает при открытии браузера, но вполне сносно справился с задачей снимать фотографии.<br/>
+<br/>
+<img src="https://habrastorage.org/r/w780q1/webt/xk/aa/2l/xkaa2lrtg4yjqpb9xxmveiaykyc.jpeg" data-src="https://habrastorage.org/webt/xk/aa/2l/xkaa2lrtg4yjqpb9xxmveiaykyc.jpeg" data-blurred="true"/><br/>
+<i><font color="#999999">Всё готово к экспериментам: фотоаппарат, источник питания, штатив и ЭВМ.</font></i><br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Настройка ПО</font></h2><br/>
+На ноутбуке установлен Linux Mint 19, и я буду рассказывать об особенностях настройки именно этой системы. Всё, что далее будет описано, может подойти к Ubuntu. В качестве основного источника информации, я использовал статью "<a href="https://www.crackedthecode.co/how-to-use-your-dslr-as-a-webcam-in-linux/">How to Use Your DSLR Camera as a Webcam in Linux</a>". Мой фотоаппарат не умеет снимать видео, и в качестве вебкамеры выступать отказался, но в ней изложены основные нюансы настройки, которые я и применил. <br/>
+Для начала поставим все необходимые пакеты.<br/>
+<br/>
+<pre><code class="bash">sudo apt-get install gphoto2 v4l2loopback-utils v4l2loopback-dkms ffmpeg</code></pre><br/>
+<code>ffmpeg</code> нам понадобится чуточку позже, для монтирования видео. <br/>
+<br/>
+В принципе, если вы хотите просто попробовать, работает ли у вас фотоаппарат, то можно модуль загрузить вручную.<br/>
+<br/>
+<pre><code class="bash">sudo modprobe v4l2loopback exclusive_caps=1 max_buffers=2</code></pre><br/>
+Но после каждой перезагрузки, вспоминать, что надо загрузить модуль, мне было лень. Поэтому давайте это всё пропишем в системе/<br/>
+Добавим в файл <code>/etc/modules</code> строку <code>dslr-webcam</code>:<br/>
+<br/>
+<pre><code class="bash">$ sudo vi /etc/modules
+
+  # /etc/modules: kernel modules to load at boot time.
+  #
+  # This file contains the names of kernel modules that should be loaded
+  # at boot time, one per line. Lines beginning with "#" are ignored.
+
+  dslr-webcam</code></pre><br/>
+Создадим новый файл <code>/etc/modprobe.d/dslr-webcam.conf</code> и запишем в него следующие строки:<br/>
+<br/>
+<pre><code class="bash">alias dslr-webcam v4l2loopback
+options v4l2loopback exclusive_caps=1 max_buffers=2</code></pre><br/>
+После всех проделанных манипуляций перезагружаемся. Подключаем камеру с помощью microUSB, и включаем её. В результате dmesg должно показать следующий выхлоп:<br/>
+<br/>
+<pre><code class="bash">[474969.683623] usb 2-1.7.2: new full-speed USB device number 14 using ehci-pci
+[474969.797751] usb 2-1.7.2: not running at top speed; connect to a high speed hub
+[474969.820004] usb 2-1.7.2: New USB device found, idVendor=04a9, idProduct=3110
+[474969.820008] usb 2-1.7.2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+[474969.820009] usb 2-1.7.2: Product: Canon Digital Camera
+[474969.820011] usb 2-1.7.2: Manufacturer: Canon Inc.</code></pre><br/>
+Проверяем, что камера успешно определилась:<br/>
+<br/>
+<pre><code class="bash">gphoto2 --auto-detect
+Модель                   Порт                                                  
+----------------------------------------------------------
+Canon EOS 400D (PTP mode)      usb:002,014    </code></pre><br/>
+Радостно пытаемся сделать фото:<br/>
+<br/>
+<pre><code class="bash">gphoto2 --capture-image-and-download</code></pre><br/>
+И вероятнее всего у вас на этом моменте (или ещё на этапе подключения камеры) вылезет окошко системы и спросит, что делать с фотографиями на камере. А в консоли выпадет следующая или аналогичная ошибка:<br/>
+<br/>
+<pre><code class="bash">gphoto2 --capture-image-and-download
+                                                                               
+*** Ошибка ***              
+An error occurred in the io-library ('Could not claim the USB device'): Could not claim interface 0 (Устройство или ресурс занято). Make sure no other program (gvfs-gphoto2-volume-monitor) or kernel module (such as sdc2xx, stv680, spca50x) is using the device and you have read/write access to the device.
+ОШИБКА: Невозможно сделать снимок.
+ОШИБКА: Невозможно сделать снимок.
+*** Ошибка (-53: «Could not claim the USB device») ***       
+
+Для получения отладочных сообщений воспользуйтесь параметром --debug.
+Отладочные сообщения могут помочь найти решение вашей проблемы.
+Если вы хотите какие-либо сообщения gphoto, список рассылки авторов
+программы &lt;gphoto-devel@lists.sourceforge.net>, то запускайте
+gphoto2 со следующими параметрами:
+
+    env LANG=C gphoto2 --debug --debug-logfile=my-logfile.txt --capture-image-and-download
+
+Проверьте, что аргументы надёжно экранированы.</code></pre><br/>
+Честно говоря долго не мог понять, что с этим делать. У меня она прекрасно воспроизводилась на двух разных машинах с разными версиями linux mint, и заключалась она в том, что в системе работает демон <code>gvfsd-metadata</code>, который следит за тем, что подключается медиаустройство. И он после этого уже запускает собственные клиенты работы с фотоаппаратом. Это можно увидеть следующей командой:<br/>
+<br/>
+<pre><code class="bash">ps ax | grep photo
+16478 ?        Sl     0:00 /usr/lib/gvfs/gvfs-gphoto2-volume-monitor
+21405 ?        Sl     0:00 /usr/lib/gvfs/gvfsd-gphoto2 --spawner :1.31 /org/gtk/gvfs/exec_spaw/7</code></pre><br/>
+Первое, что нужно сделать — это поубивать эти процессы. После этого, либо грубо выкорчевать из системы демона <code>gvfsd-metadata</code>:<br/>
+<br/>
+<pre><code class="bash">systemctl --user mask gvfs-metadata.service</code></pre><br/>
+На ноуте я так и сделал, чтобы после каждой перезагрузки он меня не беспокоил. Вернуть всё обратно можно так:<br/>
+<br/>
+<pre><code class="bash">systemctl --user unmask gvfs-metadata.service</code></pre><br/>
+Если вы хотите разово отключить сервис, то выполните:<br/>
+<br/>
+<pre><code class="bash">systemctl --user stop gvfs-metadata.service</code></pre><br/>
+После этого всё это должно корректно заработать.<br/>
+<br/>
+<pre><code class="bash">gphoto2 --capture-image-and-download
+Новый файл находится в фотоаппарате в /capt0000.jpg                            
+Файл сохраняется с именем capt0000.jpg
+Удаляется файл /capt0000.jpg в фотоаппарате</code></pre><br/>
+Могу сказать сразу, что в разных системах этот демон может быть разным (у меня он отличается), и именно это может мешать корректно делать снимки. <br/>
+На ноуте у меня всё корректно работало только под root, и пришлось все скрипты запускать только под sudo. Под обычным пользователем работало через раз, linux way, да-да. Так и не победил.<br/>
+<br/>
+Скажу сразу, что на этом проблемы не заканчиваются, часто бывает, что возникает внутренняя ошибка фотоаппарата, которая решается только жёсткой перезагрузкой, со съёмкой аккумулятора. Например:<br/>
+<br/>
+<pre><code class="bash">*** Ошибка ***              
+Canon EOS Capture failed (0x02ff: PTP I/O Error)
+ОШИБКА: Невозможно сделать снимок.
+ОШИБКА: Невозможно сделать снимок.</code></pre><br/>
+Притом на фотоаппарате висит Busy, и он ни на что не реагирует. Как её победить, я так и не понял.<br/>
+<br/>
+Из дополнительных опций, хорошо управлять всем этим добром удалённо. Скрипты запускать в tmux, а папку с фотографиями монтировать по ssh. И для этих целей ноутбук оказался очень идеальным решением, потому что на нём есть wifi, и всю настройку и контроль делал удалённо. Папку с фотографиями монтировал следующей командой: <br/>
+<br/>
+<pre><code class="bash">sudo sshfs -o allow_other,default_permissions user@ip:/home/user/canon ~/canon</code></pre><br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Настройки фотоаппарата</font></h2><br/>
+Для подобных съёмок фотоаппарат тоже стоит немного настроить. Первое, и очевидное — это сделать так, чтобы фотоаппарат не отключался самостоятельно. При работе от аккумулятора — это просто его разрядит, но при работе от сети — идеальный режим.<br/>
+<br/>
+<img src="https://habrastorage.org/r/w780q1/webt/q_/9e/lp/q_9elpaodyyv2wgn_yrrea_lz1k.jpeg" data-src="https://habrastorage.org/webt/q_/9e/lp/q_9elpaodyyv2wgn_yrrea_lz1k.jpeg" data-blurred="true"/><br/>
+<i><font color="#999999">Убираем опцию «Автоотключение».</font></i><br/>
+<br/>
+Следующая настройка — не такая очевидная. Для видео не требуется такого хорошего качества, даже самое низкое качество съёмки будет давать Full HD (1920x1080 точек). Поэтому снижаем качество съёмки.<br/>
+<br/>
+<img src="https://habrastorage.org/r/w780q1/webt/qc/jo/l9/qcjol9aeur7cduzkrgrohjqglek.jpeg" data-src="https://habrastorage.org/webt/qc/jo/l9/qcjol9aeur7cduzkrgrohjqglek.jpeg" data-blurred="true"/><br/>
+<i><font color="#999999">Ставим самое «плохое» качество съёмки.</font></i><br/>
+<br/>
+В результате будет кадр 1936х1288 пикселов, что тоже очень даже хорошо. Причина уменьшения качества съёмки банальна — это скорость передачи через USB. Если поставить больше, фотоаппарат просто не будет успевать передать полученную фотографию. Это тоже было выяснено эмпирическим путём.<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Немного программирования на bash</font></h2><br/>
+Изначально думал написать программу на питоне, для работы с фотоаппаратом. Даже нашёл <a href="https://maskaravivek.medium.com/how-to-control-and-capture-images-from-dslr-using-raspberry-pi-fdfa9d600ec1">неплохой мануал</a>, но при попытке установить необходимые пакеты, получил кучу проблем:<br/>
+<br/>
+<pre><code class="bash">sudo apt install libgphoto2-dev
+sudo pip3 install -v gphoto2</code></pre><br/>
+Но библиотека пайтона gphoto2 упорно не хотела вставать на мою систему, убив минут 40, в попытке разрулить ситуацию с установкой модуля, принял решение писать на баше. Мы люди не гордые, сделаем на том, что работает. Да, и код на python, даже в примере был слишком монструозен, чем моя реализация на bash. Тем более что в нашем блоге есть <a href="https://habr.com/ru/company/ruvds/blog/325522/">шикарная серия статей по программированию на bash</a>.<br/>
+В результате мозгового штурма (я тот ещё «программист» на bash), родился следующий код.<br/>
+<br/>
+<pre><code class="bash">#!/bin/bash
+END=600
+SLEEPTIME=10
+for i in `seq -w 0 $END`
+do
+  gphoto2 --capture-image-and-download --filename  "$i.jpg"
+  sleep $SLEEPTIME
+done</code></pre><br/>
+Где переменная <code>END</code> — это суммарное количество снимков, которое сделает фотоаппарат. <code>SLEEPTIME</code> — время между снимками. Опытным путём установлено, что время менее 10 секунд может приводить к ошибкам, особенно если снимать в ночное время в автоматическом режиме (когда выбирается автоматом время экспозиции). <br/>
+Количество кадров, равное 2880 взято тоже не с потолка. Прикинул, что если сводить 24 кадра в секунду, сделать минутный ролик, то это получится 1440 кадров. Это как раз съёмка в течение 4-х часов, каждые 10 секунд. Если снимать 8 часов, то как раз значение будет больше. Но, увы, 8 часов мне снять так и не удалось, фотоаппарат зависал.<br/>
+Полученные кадры необходимо свести в видео, чтобы можно было смотреть. Для этого воспользуемся <code>ffmpeg</code>.<br/>
+<br/>
+<pre><code class="bash">ffmpeg -framerate 24 -i %04d.jpg -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p output.mp4</code></pre><br/>
+Не буду детально разбирать данную команду, обращу внимания на два момента:<br/>
+<br/>
+<ul>
+<li><code>framerate 24</code> — это количество кадров в секунду, я выбрал 24, и мне кажется этого маловато. Можно выбрать 60, и будет абсолютная гладкость.</li>
+<li><code>%04d.jpg</code> тип входящего файла, число после нуля будет показывать сколько чисел в имени файла (оно будет у вас разное, подбирайте под конкретную задачу).</li>
+</ul><br/>
+Если хочется потом наложить аудиодорожку на видео, то можно воспользоваться следующей командой:<br/>
+<br/>
+<pre><code class="bash">ffmpeg -i output.mp4 -i audio.wav -map 0:v -map 1:a -c:v copy -shortest output_audio.mp4</code></pre><br/>
+Где соответственно:<br/>
+<br/>
+<ul>
+<li><code>output.mp4</code> — входной видеофайл</li>
+<li><code>audio.wav</code> — входной аудиофайл (любой формат)</li>
+<li><code>output_audio.mp4</code> — выходной видеофайл</li>
+</ul><br/>
+Выходной файл получится длинной, того файла кто короче по воспроизведению видео или аудио (опция <code>-shortest</code>). <br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Даёшь съёмку и результаты!</font></h2><br/>
+Меньше слов, больше дела. Надо наконец попробовать, результат проделанной работы. Поскольку у меня из окна видна только помойка, то было принято решение поехать к хорошему приятелю с ночёвкой на окраину города. Там и просторы большие, рядом аэропорт, летает много самолётов, и просто более приятный вид из окна. <br/>
+<br/>
+Первый опыт был просто в комнате, самое сложное было — это не включать свет, и не мелькать в окне, чтобы не было бликов на фотоаппарате. Но вроде всё получилось.<br/>
+<br/>
+<img src="https://habrastorage.org/r/w780q1/webt/cc/4v/4x/cc4v4xil4ss8-0svsj0t3ye_o_q.jpeg" data-src="https://habrastorage.org/webt/cc/4v/4x/cc4v4xil4ss8-0svsj0t3ye_o_q.jpeg" data-blurred="true"/><br/>
+<i><font color="#999999">В процессе фотосъёмки.</font></i><br/>
+<br/>
+Могу честно признаться, я тот ещё фотограф. Снимал просто в режиме «без вспышки», поэтому баланс белого, выдержка, ISO, диафрагма выбиралось автоматически каждый раз. Каждый кадр сделан с интервалом в 5 секунд. От этого получилась такая «ламповость», но, как по мне, для первого раза потрясающий результат:<br/>
+<br/>
+<div class="oembed"><div class="tm-iframe_temp" data-src="https://embedd.srv.habr.com/iframe/616357ab1370783b8bf93087" data-style="" id="616357ab1370783b8bf93087" width=""></div></div>Больше мы не выдержали, потому что сидеть впотьмах (свет включать нельзя) и «не дышать» (не ходить, чтобы не было бликов) просто невозможно, и съёмку было решено прервать, тут не спасли даже хорошие дружеские разговоры.<br/>
+<br/>
+«Дефекты плёнки» на видео — это пролетающие птицы. Есть много вопросов к видео: мерцание, неестественные цвета и т.п. Есть куда расти и работать, но даже с этого можно отталкиваться. <br/>
+Думаю, что если не полениться и настроить нормально фотоаппарат, и поставить на ночь, можно снять очень крутые перемигивания окнами. <br/>
+<br/>
+Следующую съёмку было решено проводить на балконе, чтобы заснять рассвет. <br/>
+<br/>
+<img src="https://habrastorage.org/r/w780q1/webt/dc/yz/ge/dcyzgejpohcmpyvi5tprc91d6gi.jpeg" data-src="https://habrastorage.org/webt/dc/yz/ge/dcyzgejpohcmpyvi5tprc91d6gi.jpeg" data-blurred="true"/><br/>
+<i><font color="#999999">Съёмочный стенд.</font></i><br/>
+<br/>
+Но тут я совершил несколько роковых ошибок: не настроил фотоаппарат, пока было светло, при этом съёмку вёл в полностью мануальном режиме. В результате все фото получились размытыми. Другая ошибка чуть не стоила мне фотоаппарата: я забыл про Солнце. И фотоаппарат был направлен прямо точно по траектории нашего светила. Пока мы спали, фотоаппарат чудом не расплавился — его спасла дымка и то, что утром солнечные лучи не такие горячие. Поэтому, когда снимаете такие таймлапсы, обязательно помните про главное наше светило!<br/>
+<br/>
+Поскольку восход не вышел, принято было волевое решение перед отъездом снять закат, и вот он уже получился. Дождался, когда солнечный диск уйдёт из объектива камеры (примерно 2 часа дня), и запустил съёмку. На первых кадрах ещё видны солнечные засветы линзы. Лично меня результат просто потряс, при совершенно незначительных трудозатратах.<br/>
+<br/>
+<div class="oembed"><div class="tm-iframe_temp" data-src="https://embedd.srv.habr.com/iframe/616357ac6a73daf6662a1b9d" data-style="" id="616357ac6a73daf6662a1b9d" width=""></div></div>Потрясающе: треки от самолётов, огни домов, закат, прямо-таки виден пульс засыпающего города. Мне после этого захотелось по всему городу расставить таких камер и снимать, снимать, снимать.<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Выводы</font></h2><br/>
+Не претендую, что открыл Америку, современные фотоаппараты умеют делать такое прямо из коробки, без всяких скриптов. Но, найти применение старой хорошей вещи — почему бы и нет? Например, можно поставить камеру во время какого-то действия, и сделать вот такой таймлапс. Кроме таймлапсов, можно использовать камеру, например, в фотоловушках. В общем, идей море, главное — успевать их реализовывать! Gphoto2 позволяют полностью управлять фотоаппаратом: балансом белого, выставлять диафрагму и т.д., что даёт просто неограниченные возможности. Главный плюс — это возможность вести удалённую фотосъёмку. <br/>
+<blockquote>Выражаю благодарность своему другу Алексею, который двое выходных терпел меня, мои эксперименты, помогал и советовал, как лучше всё сделать.</blockquote><br/>
+<h2><font color="#3AC1EF">▍ Полезные ссылки</font></h2><br/>
+<ul>
+<li><a href="https://www.crackedthecode.co/how-to-use-your-dslr-as-a-webcam-in-linux/">How to Use Your DSLR Camera as a Webcam in Linux</a></li>
+<li><a href="https://maskaravivek.medium.com/how-to-control-and-capture-images-from-dslr-using-raspberry-pi-fdfa9d600ec1">How to Capture Images from DSLR using Raspberry Pi and GPhoto2</a></li>
+<li><a href="https://habr.com/ru/company/ruvds/blog/325522/">Серия статей по BASH-скриптам</a></li>
+<li><a href="http://manpages.ubuntu.com/manpages/trusty/man1/gphoto2.1.html">Документация по gphoto2</a></li>
+</ul><br/>
+<br/>
+<a href="http://ruvds.com/ru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=dlinyj&amp;utm_content=staryj_fotik_+_bash_=_tajmlaps"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ou/g5/kh/oug5kh6sjydt9llengsiebnp40w.png"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bruvds_%D1%81%D1%82%D0%B0%D1%82%D1%8C%D0%B8%5D" class="tm-tags-list__link">ruvds_статьи</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcanon%5D" class="tm-tags-list__link">canon</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%82%D0%B0%D0%B9%D0%BC%D0%BB%D0%B0%D0%BF%D1%81%5D" class="tm-tags-list__link">таймлапс</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bgphoto2%5D" class="tm-tags-list__link">gphoto2</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bffmpeg%5D" class="tm-tags-list__link">ffmpeg</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/ruvds/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании RUVDS.com
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/linux_dev/" class="tm-hubs-list__link">
+    Разработка под Linux
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/photo/" class="tm-hubs-list__link">
+    Фототехника
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/video_tech/" class="tm-hubs-list__link">
+    Видеотехника
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/DIY/" class="tm-hubs-list__link">
+    DIY или Сделай сам
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 113: ↑112 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 113: ↑112 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+111</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">23K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    137
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__title">RUVDS.com</a> <div class="tm-company-snippet__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/ruvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/dlinyj/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/96e/e60/204/96ee60204d466e54362ce4dd180705c2.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 909 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    585.7
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">228.5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Сергей</span> <a href="/ru/users/dlinyj/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @dlinyj
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Руководитель спецпроектов RUVDS</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <button type="submit" class="tm-user-card__button btn btn_transparent btn_small">
+      Задонатить
+    </button> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/ruvds/blog/582660/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 92 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-07-26T21:00:00.000Z" title="2015-07-27, 00:00">27  июля  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://ruvds.com" target="_blank" class="tm-company-basic-info__link">
+      ruvds.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    11–30 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2016-03-18T05:43:01.000Z" title="2016-03-18, 08:43">18  марта  2016</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/ruvds/" class="tm-company-basic-info__link">
+      ruvds
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/ruvds/blog/582660/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/ruvds/blog/582660/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582660":{"id":"582660","timePublished":"2021-10-11T09:00:02+00:00","isCorporative":true,"lang":"ru","titleHtml":"Старый фотик + bash = таймлапс","leadData":{"textHtml":"\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F582660\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ftu\u002Fqj\u002Fbn\u002Ftuqjbnwqz0zxwyxmdw6smwnnx-i.gif\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u003E\r\nДумаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его так одним вечером, и подумал: вещь хорошая и вполне годная для всяких опытов. И сразу загорелся применить его во всяких своих самоделках. А что, весьма хорошо фотографирует из коробки, достаточно широкий спектр всяких регулировок, осталось только научиться с ним работать. Всего-то подружить его с компьютером, да Linux, и дело в шляпе! В результате у нас получается просто непаханое поле для фотографических экспериментов и применения в своих придумках. Давайте же поглядим, как это можно сделать и что получилось из таких экспериментов.","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":585.7,"votesCount":909},"rating":228.5,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":"dlinyj","paymentWebmoney":"412598966724"},"id":"59929","alias":"dlinyj","fullname":"Сергей","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F96e\u002Fe60\u002F204\u002F96ee60204d466e54362ce4dd180705c2.jpg","speciality":"Руководитель спецпроектов RUVDS"},"statistics":{"commentsCount":92,"favoritesCount":137,"readingCount":23172,"score":111,"votesCount":113},"hubs":[{"relatedData":null,"id":"19791","alias":"ruvds","type":"corporative","title":"Блог компании RUVDS.com","titleHtml":"Блог компании RUVDS.com","isProfiled":false},{"relatedData":null,"id":"19727","alias":"linux_dev","type":"collective","title":"Разработка под Linux","titleHtml":"Разработка под Linux","isProfiled":true},{"relatedData":null,"id":"21932","alias":"photo","type":"collective","title":"Фототехника","titleHtml":"Фототехника","isProfiled":false},{"relatedData":null,"id":"21946","alias":"video_tech","type":"collective","title":"Видеотехника","titleHtml":"Видеотехника","isProfiled":false},{"relatedData":null,"id":"21976","alias":"DIY","type":"collective","title":"DIY или Сделай сам","titleHtml":"DIY или Сделай сам","isProfiled":false}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F582660\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ftu\u002Fqj\u002Fbn\u002Ftuqjbnwqz0zxwyxmdw6smwnnx-i.gif\"\u002F\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nДумаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его так одним вечером, и подумал: вещь хорошая и вполне годная для всяких опытов. И сразу загорелся применить его во всяких своих самоделках. А что, весьма хорошо фотографирует из коробки, достаточно широкий спектр всяких регулировок, осталось только научиться с ним работать. Всего-то подружить его с компьютером, да Linux, и дело в шляпе! В результате у нас получается просто непаханое поле для фотографических экспериментов и применения в своих придумках. Давайте же поглядим, как это можно сделать и что получилось из таких экспериментов.\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Исходники\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nКак я уже сказал, у меня достаточно давно лежит в шкафу фотоаппарат Canon EOS 400D, для своего времени неплохой фотик для семейного фотоальбома, но с появлением хороших телефонов, практически не используется. Когда в очередной раз я его достал, то понял, что из него нужно сотворить что-то прикольное. Для того чтобы отвязать фотоаппарат от аккумулятора, и чтобы он работал «вечно», ему нужен источник питания от сети. Для этого пришлось приобрести адаптер \u003Cu\u003EACK-DC20\u003C\u002Fu\u003E. Умышленно даю марку, потому что поиск для конкретной модели фотоаппарата оказался тем ещё квестом. Но оказалось, что можно вполне купить «здесь и сейчас», а не ждать с Китая. Всё это можно провернуть и с другими фотоаппаратами, только надо подобрать подходящий блок питания.\u003Cbr\u002F\u003E\r\nТакже рекомендую обзавестись штативом, стоит более-менее вменяемый штатив недорого (мой стоил всего 1500 рублей в известном интернет-магазине), зато позволяет делать хорошие фото. \u003Cbr\u002F\u003E\r\nВ качестве ЭВМ для работы с фотоаппаратом можно использовать подходящий одноплатник, лично я использовал какой-то древний портативный ноутбук, который зависает при открытии браузера, но вполне сносно справился с задачей снимать фотографии.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fxk\u002Faa\u002F2l\u002Fxkaa2lrtg4yjqpb9xxmveiaykyc.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxk\u002Faa\u002F2l\u002Fxkaa2lrtg4yjqpb9xxmveiaykyc.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EВсё готово к экспериментам: фотоаппарат, источник питания, штатив и ЭВМ.\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Настройка ПО\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nНа ноутбуке установлен Linux Mint 19, и я буду рассказывать об особенностях настройки именно этой системы. Всё, что далее будет описано, может подойти к Ubuntu. В качестве основного источника информации, я использовал статью \"\u003Ca href=\"https:\u002F\u002Fwww.crackedthecode.co\u002Fhow-to-use-your-dslr-as-a-webcam-in-linux\u002F\"\u003EHow to Use Your DSLR Camera as a Webcam in Linux\u003C\u002Fa\u003E\". Мой фотоаппарат не умеет снимать видео, и в качестве вебкамеры выступать отказался, но в ней изложены основные нюансы настройки, которые я и применил. \u003Cbr\u002F\u003E\r\nДля начала поставим все необходимые пакеты.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo apt-get install gphoto2 v4l2loopback-utils v4l2loopback-dkms ffmpeg\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ccode\u003Effmpeg\u003C\u002Fcode\u003E нам понадобится чуточку позже, для монтирования видео. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ принципе, если вы хотите просто попробовать, работает ли у вас фотоаппарат, то можно модуль загрузить вручную.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo modprobe v4l2loopback exclusive_caps=1 max_buffers=2\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНо после каждой перезагрузки, вспоминать, что надо загрузить модуль, мне было лень. Поэтому давайте это всё пропишем в системе\u002F\u003Cbr\u002F\u003E\r\nДобавим в файл \u003Ccode\u003E\u002Fetc\u002Fmodules\u003C\u002Fcode\u003E строку \u003Ccode\u003Edslr-webcam\u003C\u002Fcode\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E$ sudo vi \u002Fetc\u002Fmodules\n\n  # \u002Fetc\u002Fmodules: kernel modules to load at boot time.\n  #\n  # This file contains the names of kernel modules that should be loaded\n  # at boot time, one per line. Lines beginning with \"#\" are ignored.\n\n  dslr-webcam\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nСоздадим новый файл \u003Ccode\u003E\u002Fetc\u002Fmodprobe.d\u002Fdslr-webcam.conf\u003C\u002Fcode\u003E и запишем в него следующие строки:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Ealias dslr-webcam v4l2loopback\noptions v4l2loopback exclusive_caps=1 max_buffers=2\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПосле всех проделанных манипуляций перезагружаемся. Подключаем камеру с помощью microUSB, и включаем её. В результате dmesg должно показать следующий выхлоп:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E[474969.683623] usb 2-1.7.2: new full-speed USB device number 14 using ehci-pci\n[474969.797751] usb 2-1.7.2: not running at top speed; connect to a high speed hub\n[474969.820004] usb 2-1.7.2: New USB device found, idVendor=04a9, idProduct=3110\n[474969.820008] usb 2-1.7.2: New USB device strings: Mfr=1, Product=2, SerialNumber=0\n[474969.820009] usb 2-1.7.2: Product: Canon Digital Camera\n[474969.820011] usb 2-1.7.2: Manufacturer: Canon Inc.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПроверяем, что камера успешно определилась:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Egphoto2 --auto-detect\nМодель                   Порт                                                  \n----------------------------------------------------------\nCanon EOS 400D (PTP mode)      usb:002,014    \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nРадостно пытаемся сделать фото:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Egphoto2 --capture-image-and-download\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИ вероятнее всего у вас на этом моменте (или ещё на этапе подключения камеры) вылезет окошко системы и спросит, что делать с фотографиями на камере. А в консоли выпадет следующая или аналогичная ошибка:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Egphoto2 --capture-image-and-download\n                                                                               \n*** Ошибка ***              \nAn error occurred in the io-library ('Could not claim the USB device'): Could not claim interface 0 (Устройство или ресурс занято). Make sure no other program (gvfs-gphoto2-volume-monitor) or kernel module (such as sdc2xx, stv680, spca50x) is using the device and you have read\u002Fwrite access to the device.\nОШИБКА: Невозможно сделать снимок.\nОШИБКА: Невозможно сделать снимок.\n*** Ошибка (-53: «Could not claim the USB device») ***       \n\nДля получения отладочных сообщений воспользуйтесь параметром --debug.\nОтладочные сообщения могут помочь найти решение вашей проблемы.\nЕсли вы хотите какие-либо сообщения gphoto, список рассылки авторов\nпрограммы &lt;gphoto-devel@lists.sourceforge.net\u003E, то запускайте\ngphoto2 со следующими параметрами:\n\n    env LANG=C gphoto2 --debug --debug-logfile=my-logfile.txt --capture-image-and-download\n\nПроверьте, что аргументы надёжно экранированы.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЧестно говоря долго не мог понять, что с этим делать. У меня она прекрасно воспроизводилась на двух разных машинах с разными версиями linux mint, и заключалась она в том, что в системе работает демон \u003Ccode\u003Egvfsd-metadata\u003C\u002Fcode\u003E, который следит за тем, что подключается медиаустройство. И он после этого уже запускает собственные клиенты работы с фотоаппаратом. Это можно увидеть следующей командой:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eps ax | grep photo\n16478 ?        Sl     0:00 \u002Fusr\u002Flib\u002Fgvfs\u002Fgvfs-gphoto2-volume-monitor\n21405 ?        Sl     0:00 \u002Fusr\u002Flib\u002Fgvfs\u002Fgvfsd-gphoto2 --spawner :1.31 \u002Forg\u002Fgtk\u002Fgvfs\u002Fexec_spaw\u002F7\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПервое, что нужно сделать — это поубивать эти процессы. После этого, либо грубо выкорчевать из системы демона \u003Ccode\u003Egvfsd-metadata\u003C\u002Fcode\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esystemctl --user mask gvfs-metadata.service\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНа ноуте я так и сделал, чтобы после каждой перезагрузки он меня не беспокоил. Вернуть всё обратно можно так:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esystemctl --user unmask gvfs-metadata.service\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЕсли вы хотите разово отключить сервис, то выполните:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esystemctl --user stop gvfs-metadata.service\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПосле этого всё это должно корректно заработать.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Egphoto2 --capture-image-and-download\nНовый файл находится в фотоаппарате в \u002Fcapt0000.jpg                            \nФайл сохраняется с именем capt0000.jpg\nУдаляется файл \u002Fcapt0000.jpg в фотоаппарате\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nМогу сказать сразу, что в разных системах этот демон может быть разным (у меня он отличается), и именно это может мешать корректно делать снимки. \u003Cbr\u002F\u003E\r\nНа ноуте у меня всё корректно работало только под root, и пришлось все скрипты запускать только под sudo. Под обычным пользователем работало через раз, linux way, да-да. Так и не победил.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСкажу сразу, что на этом проблемы не заканчиваются, часто бывает, что возникает внутренняя ошибка фотоаппарата, которая решается только жёсткой перезагрузкой, со съёмкой аккумулятора. Например:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E*** Ошибка ***              \nCanon EOS Capture failed (0x02ff: PTP I\u002FO Error)\nОШИБКА: Невозможно сделать снимок.\nОШИБКА: Невозможно сделать снимок.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПритом на фотоаппарате висит Busy, и он ни на что не реагирует. Как её победить, я так и не понял.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИз дополнительных опций, хорошо управлять всем этим добром удалённо. Скрипты запускать в tmux, а папку с фотографиями монтировать по ssh. И для этих целей ноутбук оказался очень идеальным решением, потому что на нём есть wifi, и всю настройку и контроль делал удалённо. Папку с фотографиями монтировал следующей командой: \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo sshfs -o allow_other,default_permissions user@ip:\u002Fhome\u002Fuser\u002Fcanon ~\u002Fcanon\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Настройки фотоаппарата\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nДля подобных съёмок фотоаппарат тоже стоит немного настроить. Первое, и очевидное — это сделать так, чтобы фотоаппарат не отключался самостоятельно. При работе от аккумулятора — это просто его разрядит, но при работе от сети — идеальный режим.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fq_\u002F9e\u002Flp\u002Fq_9elpaodyyv2wgn_yrrea_lz1k.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fq_\u002F9e\u002Flp\u002Fq_9elpaodyyv2wgn_yrrea_lz1k.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EУбираем опцию «Автоотключение».\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСледующая настройка — не такая очевидная. Для видео не требуется такого хорошего качества, даже самое низкое качество съёмки будет давать Full HD (1920x1080 точек). Поэтому снижаем качество съёмки.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fqc\u002Fjo\u002Fl9\u002Fqcjol9aeur7cduzkrgrohjqglek.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fqc\u002Fjo\u002Fl9\u002Fqcjol9aeur7cduzkrgrohjqglek.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EСтавим самое «плохое» качество съёмки.\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ результате будет кадр 1936х1288 пикселов, что тоже очень даже хорошо. Причина уменьшения качества съёмки банальна — это скорость передачи через USB. Если поставить больше, фотоаппарат просто не будет успевать передать полученную фотографию. Это тоже было выяснено эмпирическим путём.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Немного программирования на bash\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nИзначально думал написать программу на питоне, для работы с фотоаппаратом. Даже нашёл \u003Ca href=\"https:\u002F\u002Fmaskaravivek.medium.com\u002Fhow-to-control-and-capture-images-from-dslr-using-raspberry-pi-fdfa9d600ec1\"\u003Eнеплохой мануал\u003C\u002Fa\u003E, но при попытке установить необходимые пакеты, получил кучу проблем:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo apt install libgphoto2-dev\nsudo pip3 install -v gphoto2\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНо библиотека пайтона gphoto2 упорно не хотела вставать на мою систему, убив минут 40, в попытке разрулить ситуацию с установкой модуля, принял решение писать на баше. Мы люди не гордые, сделаем на том, что работает. Да, и код на python, даже в примере был слишком монструозен, чем моя реализация на bash. Тем более что в нашем блоге есть \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F325522\u002F\"\u003Eшикарная серия статей по программированию на bash\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\nВ результате мозгового штурма (я тот ещё «программист» на bash), родился следующий код.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#!\u002Fbin\u002Fbash\nEND=600\nSLEEPTIME=10\nfor i in `seq -w 0 $END`\ndo\n  gphoto2 --capture-image-and-download --filename  \"$i.jpg\"\n  sleep $SLEEPTIME\ndone\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nГде переменная \u003Ccode\u003EEND\u003C\u002Fcode\u003E — это суммарное количество снимков, которое сделает фотоаппарат. \u003Ccode\u003ESLEEPTIME\u003C\u002Fcode\u003E — время между снимками. Опытным путём установлено, что время менее 10 секунд может приводить к ошибкам, особенно если снимать в ночное время в автоматическом режиме (когда выбирается автоматом время экспозиции). \u003Cbr\u002F\u003E\r\nКоличество кадров, равное 2880 взято тоже не с потолка. Прикинул, что если сводить 24 кадра в секунду, сделать минутный ролик, то это получится 1440 кадров. Это как раз съёмка в течение 4-х часов, каждые 10 секунд. Если снимать 8 часов, то как раз значение будет больше. Но, увы, 8 часов мне снять так и не удалось, фотоаппарат зависал.\u003Cbr\u002F\u003E\r\nПолученные кадры необходимо свести в видео, чтобы можно было смотреть. Для этого воспользуемся \u003Ccode\u003Effmpeg\u003C\u002Fcode\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Effmpeg -framerate 24 -i %04d.jpg -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p output.mp4\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНе буду детально разбирать данную команду, обращу внимания на два момента:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eframerate 24\u003C\u002Fcode\u003E — это количество кадров в секунду, я выбрал 24, и мне кажется этого маловато. Можно выбрать 60, и будет абсолютная гладкость.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003E%04d.jpg\u003C\u002Fcode\u003E тип входящего файла, число после нуля будет показывать сколько чисел в имени файла (оно будет у вас разное, подбирайте под конкретную задачу).\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nЕсли хочется потом наложить аудиодорожку на видео, то можно воспользоваться следующей командой:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Effmpeg -i output.mp4 -i audio.wav -map 0:v -map 1:a -c:v copy -shortest output_audio.mp4\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nГде соответственно:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eoutput.mp4\u003C\u002Fcode\u003E — входной видеофайл\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eaudio.wav\u003C\u002Fcode\u003E — входной аудиофайл (любой формат)\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eoutput_audio.mp4\u003C\u002Fcode\u003E — выходной видеофайл\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nВыходной файл получится длинной, того файла кто короче по воспроизведению видео или аудио (опция \u003Ccode\u003E-shortest\u003C\u002Fcode\u003E). \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Даёшь съёмку и результаты!\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nМеньше слов, больше дела. Надо наконец попробовать, результат проделанной работы. Поскольку у меня из окна видна только помойка, то было принято решение поехать к хорошему приятелю с ночёвкой на окраину города. Там и просторы большие, рядом аэропорт, летает много самолётов, и просто более приятный вид из окна. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПервый опыт был просто в комнате, самое сложное было — это не включать свет, и не мелькать в окне, чтобы не было бликов на фотоаппарате. Но вроде всё получилось.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fcc\u002F4v\u002F4x\u002Fcc4v4xil4ss8-0svsj0t3ye_o_q.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fcc\u002F4v\u002F4x\u002Fcc4v4xil4ss8-0svsj0t3ye_o_q.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EВ процессе фотосъёмки.\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМогу честно признаться, я тот ещё фотограф. Снимал просто в режиме «без вспышки», поэтому баланс белого, выдержка, ISO, диафрагма выбиралось автоматически каждый раз. Каждый кадр сделан с интервалом в 5 секунд. От этого получилась такая «ламповость», но, как по мне, для первого раза потрясающий результат:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"oembed\"\u003E\u003Cdiv class=\"tm-iframe_temp\" data-src=\"https:\u002F\u002Fembedd.srv.habr.com\u002Fiframe\u002F616357ab1370783b8bf93087\" data-style=\"\" id=\"616357ab1370783b8bf93087\" width=\"\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003EБольше мы не выдержали, потому что сидеть впотьмах (свет включать нельзя) и «не дышать» (не ходить, чтобы не было бликов) просто невозможно, и съёмку было решено прервать, тут не спасли даже хорошие дружеские разговоры.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n«Дефекты плёнки» на видео — это пролетающие птицы. Есть много вопросов к видео: мерцание, неестественные цвета и т.п. Есть куда расти и работать, но даже с этого можно отталкиваться. \u003Cbr\u002F\u003E\r\nДумаю, что если не полениться и настроить нормально фотоаппарат, и поставить на ночь, можно снять очень крутые перемигивания окнами. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСледующую съёмку было решено проводить на балконе, чтобы заснять рассвет. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fdc\u002Fyz\u002Fge\u002Fdcyzgejpohcmpyvi5tprc91d6gi.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fdc\u002Fyz\u002Fge\u002Fdcyzgejpohcmpyvi5tprc91d6gi.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EСъёмочный стенд.\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо тут я совершил несколько роковых ошибок: не настроил фотоаппарат, пока было светло, при этом съёмку вёл в полностью мануальном режиме. В результате все фото получились размытыми. Другая ошибка чуть не стоила мне фотоаппарата: я забыл про Солнце. И фотоаппарат был направлен прямо точно по траектории нашего светила. Пока мы спали, фотоаппарат чудом не расплавился — его спасла дымка и то, что утром солнечные лучи не такие горячие. Поэтому, когда снимаете такие таймлапсы, обязательно помните про главное наше светило!\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПоскольку восход не вышел, принято было волевое решение перед отъездом снять закат, и вот он уже получился. Дождался, когда солнечный диск уйдёт из объектива камеры (примерно 2 часа дня), и запустил съёмку. На первых кадрах ещё видны солнечные засветы линзы. Лично меня результат просто потряс, при совершенно незначительных трудозатратах.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"oembed\"\u003E\u003Cdiv class=\"tm-iframe_temp\" data-src=\"https:\u002F\u002Fembedd.srv.habr.com\u002Fiframe\u002F616357ac6a73daf6662a1b9d\" data-style=\"\" id=\"616357ac6a73daf6662a1b9d\" width=\"\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003EПотрясающе: треки от самолётов, огни домов, закат, прямо-таки виден пульс засыпающего города. Мне после этого захотелось по всему городу расставить таких камер и снимать, снимать, снимать.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Выводы\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nНе претендую, что открыл Америку, современные фотоаппараты умеют делать такое прямо из коробки, без всяких скриптов. Но, найти применение старой хорошей вещи — почему бы и нет? Например, можно поставить камеру во время какого-то действия, и сделать вот такой таймлапс. Кроме таймлапсов, можно использовать камеру, например, в фотоловушках. В общем, идей море, главное — успевать их реализовывать! Gphoto2 позволяют полностью управлять фотоаппаратом: балансом белого, выставлять диафрагму и т.д., что даёт просто неограниченные возможности. Главный плюс — это возможность вести удалённую фотосъёмку. \u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EВыражаю благодарность своему другу Алексею, который двое выходных терпел меня, мои эксперименты, помогал и советовал, как лучше всё сделать.\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Полезные ссылки\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fwww.crackedthecode.co\u002Fhow-to-use-your-dslr-as-a-webcam-in-linux\u002F\"\u003EHow to Use Your DSLR Camera as a Webcam in Linux\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fmaskaravivek.medium.com\u002Fhow-to-control-and-capture-images-from-dslr-using-raspberry-pi-fdfa9d600ec1\"\u003EHow to Capture Images from DSLR using Raspberry Pi and GPhoto2\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F325522\u002F\"\u003EСерия статей по BASH-скриптам\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"http:\u002F\u002Fmanpages.ubuntu.com\u002Fmanpages\u002Ftrusty\u002Fman1\u002Fgphoto2.1.html\"\u003EДокументация по gphoto2\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"http:\u002F\u002Fruvds.com\u002Fru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=dlinyj&amp;utm_content=staryj_fotik_+_bash_=_tajmlaps\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fou\u002Fg5\u002Fkh\u002Foug5kh6sjydt9llengsiebnp40w.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"ruvds_статьи"},{"titleHtml":"canon"},{"titleHtml":"таймлапс"},{"titleHtml":"gphoto2"},{"titleHtml":"ffmpeg"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ftu\u002Fqj\u002Fbn\u002Ftuqjbnwqz0zxwyxmdw6smwnnx-i.gif","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ftu\u002Fqj\u002Fbn\u002Ftuqjbnwqz0zxwyxmdw6smwnnx-i.gif","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F582660\\\u002F\"},\"headline\":\"Старый фотик + bash = таймлапс\",\"datePublished\":\"2021-10-11T12:00:02+03:00\",\"dateModified\":\"2021-10-11T15:48:41+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Сергей\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и испо...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F582660\\\u002F#post-content-body\",\"about\":[\"c_ruvds\",\"h_linux_dev\",\"h_photo\",\"h_video_tech\",\"h_DIY\",\"f_develop\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582660\\\u002F601a91ac367bc4bedddc733c78e5a7e4\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Ftu\\\u002Fqj\\\u002Fbn\\\u002Ftuqjbnwqz0zxwyxmdw6smwnnx-i.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fxk\\\u002Faa\\\u002F2l\\\u002Fxkaa2lrtg4yjqpb9xxmveiaykyc.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fq_\\\u002F9e\\\u002Flp\\\u002Fq_9elpaodyyv2wgn_yrrea_lz1k.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fqc\\\u002Fjo\\\u002Fl9\\\u002Fqcjol9aeur7cduzkrgrohjqglek.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fcc\\\u002F4v\\\u002F4x\\\u002Fcc4v4xil4ss8-0svsj0t3ye_o_q.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fdc\\\u002Fyz\\\u002Fge\\\u002Fdcyzgejpohcmpyvi5tprc91d6gi.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fou\\\u002Fg5\\\u002Fkh\\\u002Foug5kh6sjydt9llengsiebnp40w.png\"]}","metaDescription":"Думаю у многих из нас, в шкафу пылился старый зеркальный фотоаппарат, типа Canon EOS 400D. Он как чемодан без ручки: выбросить жалко, продать смысла нет, и использовать вряд ли будешь. Достал его...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"ruvds":{"alias":"ruvds","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff27\u002Fea8\u002F5bd\u002Ff27ea85bd62fbd985c308110885af7e0.png","titleHtml":"RUVDS.com","descriptionHtml":"VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E","relatedData":null,"statistics":{"postsCount":2029,"newsCount":62,"vacanciesCount":0,"employeesCount":57,"careerRating":null,"subscribersCount":36797,"rating":2824.34,"invest":null},"foundationDate":{"year":"2015","month":"07","day":"27"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fruvds.com","staffNumber":"11–30 человек","registrationDate":"2016-03-18T05:43:01+00:00","representativeUser":{"alias":"ruvds","fullname":null},"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fruvds"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fru_vds"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fru_vds"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"33905479"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002Fb77\u002F8d5\u002Fa41\u002Fb778d5a41f83016379c6630262c3294c.png","linkUrl":"https:\u002F\u002Fruvds.com\u002Fru-rub","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E с 27 июля 2015 г.","title":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду HABR10 с 27 июля 2015 г.","keywords":["Научно-популярное","DIY или Сделай сам","Системное администрирование","Разработка веб-сайтов","Читальный зал"],"descriptionHtml":"2 029 статей от авторов компании RUVDS.com","description":"2 029 статей от авторов компании RUVDS.com"},"aDeskSettings":null,"careerAlias":"ruvds","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

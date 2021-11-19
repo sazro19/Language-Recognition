@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Как настроить автоматическую сборку образов ВМ для VMware Cloud Director — компактное руководство / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/sbercloud\/blog\/581362\/"},"headline":"Как настроить автоматическую сборку образов ВМ для VMware Cloud Director — компактное руководство","datePublished":"2021-10-06T13:05:42+03:00","dateModified":"2021-10-06T13:11:57+03:00","author":{"@type":"Person","name":"Roman Petrov"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в SberCloud. В рамках одного проекта мне потребовалось авт...","url":"https:\/\/habr.com\/ru\/company\/sbercloud\/blog\/581362\/#post-content-body","about":["c_sbercloud","h_open_source","h_virtualization","h_cloud_computing","h_devops","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/581362\/6c80ba17b12afe6a89e6e9d9503d07ad\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f95\/b0b\/2a5\/f95b0b2a56fab1d7ca8f6bee1a56c4ab.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/583\/761\/b89\/583761b89ecc7bdc6ab578bf78750ca5.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/66b\/0c8\/fe5\/66b0c8fe595c9da7d117add4ff1fb1a5.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Как настроить автоматическую сборку образов ВМ для VMware Cloud Director — компактное руководство" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Как настроить автоматическую сборку образов ВМ для VMware Cloud Director — компактное руководство" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Как настроить автоматическую сборку образов ВМ для VMware Cloud Director — компактное руководство" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в SberCloud. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в SberCloud. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в SberCloud. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в SberCloud. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в SberCloud. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/0f2/2f8/884/0f22f88841d18a0c1e8814efb7a7b95e.jpg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/0f2/2f8/884/0f22f88841d18a0c1e8814efb7a7b95e.jpg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/0f2/2f8/884/0f22f88841d18a0c1e8814efb7a7b95e.jpg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/0f2/2f8/884/0f22f88841d18a0c1e8814efb7a7b95e.jpg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/0f2/2f8/884/0f22f88841d18a0c1e8814efb7a7b95e.jpg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="581362" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-06T10:05:42.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/581362/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/sbercloud/blog/581362/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/0f2/2f8/884/0f22f88841d18a0c1e8814efb7a7b95e.jpg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/581362/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="sbercloud" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://sbercloud.ru/ru?utm_source=habr&amp;utm_medium=blog&amp;utm_campaign=habr_headbanner_all_brand"><img src="//habrastorage.org/getpro/habr/branding/a01/492/146/a01492146183b8b9c3f4a5f2c612cc62.jpg" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/sbercloud/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/291/56f/771/29156f7710a7ebf37d50714d12f668ad.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">74.14</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/sbercloud/profile/" class="tm-company-card__name">
+        SberCloud
+      </a> <div class="tm-company-card__description">Облачная IT-инфраструктура для бизнеса</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/rseleven/" title="rseleven" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/87f/4f7/64a/87f4f764a482659409b9eb52012bc951.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/rseleven/" class="tm-user-info__username">
+      rseleven
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-06T10:05:42.000Z" title="2021-10-06, 13:05">6  октября   в 13:05</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Как настроить автоматическую сборку образов ВМ для VMware Cloud Director — компактное руководство</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/sbercloud/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании SberCloud</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/open_source/" class="tm-article-snippet__hubs-item-link"><span>Open source</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/virtualization/" class="tm-article-snippet__hubs-item-link"><span>Виртуализация</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cloud_computing/" class="tm-article-snippet__hubs-item-link"><span>Облачные вычисления</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/devops/" class="tm-article-snippet__hubs-item-link"><span>DevOps</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в <a href="https://sbercloud.ru/ru?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=habr_clouddirectorguide_0610_all_enterprise">SberCloud</a>. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин под <a href="https://www.vmware.com/ru/products/cloud-director.html">VMware Cloud Director</a>.</p><p>Можно было решить эту задачу с помощью инструментов VMware: Fusion, Workstation или Player, но они требуют покупки лицензий, а последний еще и установки не обновляемого пакета VMware VIX API в случае GNU\Linux. Я выбрал альтернативный путь и построил необходимый пайплайн на базе опенсорсного VirtualBox. </p><p>Под катом — кратко о том, как я это сделал.</p><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/f95/b0b/2a5/f95b0b2a56fab1d7ca8f6bee1a56c4ab.jpg" width="2153" height="1441" data-src="https://habrastorage.org/getpro/habr/upload_files/f95/b0b/2a5/f95b0b2a56fab1d7ca8f6bee1a56c4ab.jpg" data-blurred="true"/><figcaption></figcaption></figure><h2>Прежде чем мы начнем</h2><p>Прежде чем переходить к делу, немного расскажу о том, почему вообще решил заняться этим вопросом, и познакомлю вас с программным стеком, который мы будем использовать. У меня был шаблон для <a href="https://www.packer.io/">Packer</a> с операционной системой Ubuntu Server 18.04 и перечнем дополнительного ПО для предустановки. Изначально сборка этого образа проходила в среде <a href="https://www.vmware.com/ru/products/fusion.html">Fusion</a>. Для инсталляции операционной системы использовал файл ответов <a href="https://help.ubuntu.com/18.04/installation-guide/amd64/apbs02.html">preseed.cfg</a>. Он содержит сценарии ответов на все вопросы инсталлятора (для автоматизации процесса).</p><p>Я решил оставить Packer, но заменить Fusion на VirtualBox. Выбор в пользу open source решения был сделан по причине того, что оно распространяется на бесплатной основе, поддерживает большое количество хостовых ОС и экспорт образов в форматах <a href="https://ru.wikipedia.org/wiki/Open_Virtualization_Format">OVF и OVA</a>. Кроме того, VirtualBox предоставляет <a href="https://www.virtualbox.org/wiki/Linux_Downloads">репозитории</a> для GNU/Linux, позволяющие автоматически обновлять пакеты операционных систем. К слову, аналогичный репозиторий <a href="https://learn.hashicorp.com/tutorials/packer/get-started-install-cli">предлагают</a> и разработчики Packer.</p><h2>Начало работы</h2><p>В качестве хоста для развертки окружения, в котором будет запускаться CI-пайплайн, выбрал виртуальную машину с Ubuntu Server 20.04. На неё установил утилиты Packer и VirtualBox. Не буду подробно рассказывать, как это сделать, так как все необходимые инструкции вы можете найти в официальной документации этих инструментов [<a href="https://learn.hashicorp.com/tutorials/packer/get-started-install-cli">раз</a>, <a href="https://www.virtualbox.org/wiki/Linux_Downloads">два</a>].</p><p>Следующим шагом стала подготовка шаблона для Packer. Packer включает в себя сборщики для разных окружений, в том числе для VirtualBox — <a href="https://www.packer.io/docs/builders/virtualbox/iso">virtualbox-iso</a>. Написал шаблон, запустил сборку образа ВМ. Осталось загрузить этот образ в библиотеку Cloud Director. Обнаружил, что Cloud Director отказывается его импортировать. Это основная трудность, которая заняла много времени.</p><p>В процессе поиска решения проблемы я наткнулся на <a href="https://fabianlee.org/2016/11/30/vmware-exporting-from-oracle-virtualbox-vagrant-to-vcloud-director/">статью</a> иностранного коллеги. Он заметил, что из-за несовместимости в системных типах и поддержке аппаратного обеспечения (разная трактовка открытого стандарта), экспорт такого образа в VMware Cloud Director требует дополнительной настройки — какой именно, покажу далее.</p><h2>Настраиваем шаблон Packer</h2><p>В шаблон Packer внесем следующие изменения:</p><ul><li><p><strong>Настроим экспорт образа в формате OVF</strong>. Для этого в конфигурационном файле атрибуту <em>format</em> присвоим значение <em>ovf</em>. Эта операция позволит нам получить на выходе два отдельных файла: XML-документ с описанием ВМ и образ жесткого диска. Так, нам будет проще настраивать нашу систему в дальнейшем. Отмечу, что для своего кейса я не создаю дополнительные диски и не включаю iso-образы в состав виртуальной машины. Расширить дисковое пространство или добавить дополнительные накопители можно непосредственно при развертке виртуальной машины.</p></li><li><p><strong>Укажем SCSI в качестве контроллера жестких дисков</strong>. Соответствующее значение (scsi) необходимо прописать в атрибуте <em>hard_drive_interface</em>. В VirtualBox будет эмулироваться контроллер LsiLogic, что является плюсом, поскольку контроллер этого типа поддерживается в Cloud Director.</p></li><li><p>В качестве прошивки <strong>выберем BIOS</strong>, а в качестве видеоконтроллера — <strong>vmsvga</strong> (VMware SVGA). Атрибуты, которые нам нужны, — это <em>firmware</em> и <em>gfx_controller</em>.</p></li></ul><p>Финальный вариант шаблона для Packer — <em>main.pkr.hcl</em> — выглядит так:</p><pre><code class="cpp">source "virtualbox-iso" "ubuntu-18_04-amd64" {
+  vm_name                  = "ubuntu-18.04-amd64"
+  guest_os_type            = "Ubuntu_64"
+  nested_virt              = false
+  headless                 = true
+  keep_registered          = false
+  guest_additions_mode     = "disable"
+  cpus                     = 2
+  memory                   = 4096
+  chipset                  = "piix3"
+  firmware                 = "bios"
+  rtc_time_base            = "UTC"
+  disk_size                = 32768
+  hard_drive_interface     = "scsi"
+  hard_drive_discard       = true
+  hard_drive_nonrotational = true
+  nic_type                 = "82540EM"
+  gfx_controller           = "vmsvga"
+  gfx_vram_size            = "16"
+  gfx_accelerate_3d        = false
+  sound                    = "none"
+  iso_url                  = "http://cdimage.ubuntu.com/ubuntu/releases/18.04/release/ubuntu-18.04.5-server-amd64.iso"
+  iso_checksum             = "sha256:8c5fc24894394035402f66f3824beb7234b757dd2b5531379cb310cedfdf0996"
+  boot_command             = ["&lt;esc>&lt;wait>",
+                              "&lt;esc>&lt;wait>",
+                              "&lt;enter>&lt;wait>",
+                              "/install/vmlinuz auto=true priority=critical fb=false initrd=/install/initrd.gz grub-installer/bootdev=/dev/sda preseed/file=/floppy/preseed.cfg -- &lt;enter>"]
+  floppy_files             = ["./preseed/preseed.cfg"]
+  shutdown_command         = "echo '${var.password}' | sudo -S shutdown -P now"
+  post_shutdown_delay      = "1m"
+  output_directory         = "./output"
+  format                   = "ovf"
+  bundle_iso               = false
+  communicator             = "ssh"
+  ssh_username             = var.username
+  ssh_password             = var.password
+  ssh_timeout              = "20m"
+}
+
+
+
+build {
+  sources = ["sources.virtualbox-iso.ubuntu-18_04-amd64"]
+
+  # ssh
+  provisioner "shell" {
+    inline           = ["sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication no/g' /etc/ssh/sshd_config",
+                        "sudo systemctl stop sshd",
+                        "sudo rm /etc/ssh/ssh_host_*"]
+  }
+
+  # ./packer-manifest.json
+  post-processor "manifest" {
+      output = "packer-manifest.json"
+  }
+}</code></pre><p>Более подробно о том, для чего нужны остальные атрибуты, вы можете узнать в <a href="https://www.packer.io/docs/builders/virtualbox/iso">документации</a> на сборщик <em>virtualbox-iso</em>. Здесь я дополнительно хочу выделить лишь один из них — <em>headless</em>, отвечающий за сборку в фоновом режиме. Этот флажок стоит установить в состояние <em>false</em>, чтобы включить графический интерфейс. Это упростит отладку.</p><p>Теперь, если мы запустим Packer с нашими настройками, он сгенерирует три файла:</p><ul><li><p>Образ жесткого диска: <em>ubuntu-18.04-amd64-disk001.vmdk</em>;</p></li><li><p>XML-файл с описанием виртуальной машины: <em>ubuntu-18.04-amd64.ovf</em>;</p></li><li><p>JSON-файл со списком созданных артефактов:<em> packer-manifest.json.</em></p></li></ul><figure class="full-width "><img src="/img/image-loader.svg" height="246" data-src="https://habrastorage.org/getpro/habr/upload_files/583/761/b89/583761b89ecc7bdc6ab578bf78750ca5.png" data-width="948"/><figcaption></figcaption></figure><p>Последний файл записан благодаря блоку:</p><pre><code class="cpp"># ./packer-manifest.json
+post-processor "manifest" {
+    output = "packer-manifest.json"
+}</code></pre><p>Файл <em>packer-manifest.json</em> будет иметь следующее содержимое:</p><pre><code class="json">{
+  "builds": [
+    {
+      "name": "ubuntu-18_04-amd64",
+      "builder_type": "virtualbox-iso",
+      "build_time": 1629043596,
+      "files": [
+        {
+          "name": "output/ubuntu-18.04-amd64-disk001.vmdk",
+          "size": 916132352
+        },
+        {
+          "name": "output/ubuntu-18.04-amd64.ovf",
+          "size": 6771
+        }
+      ],
+      "artifact_id": "VM",
+      "packer_run_uuid": "b5fbae2b-59e7-fd6f-4154-cae16befd459",
+      "custom_data": null
+    }
+  ],
+  "last_run_uuid": "b5fbae2b-59e7-fd6f-4154-cae16befd459"
+}</code></pre><p>Этот файл поможет нам найти результат сборки образа ВМ (<em>ubuntu-18.04-amd64-disk001.vmdk </em>и <em>ubuntu-18.04-amd64.ovf</em>).</p><h2>Редактируем .ovf</h2><p>На предыдущем этапе мы настроили экспорт образа ВМ в Open Virtualization Format. Следующим шагом будет редактировать файл <em>*.ovf</em>. </p><p>Я написал специальный скрипт на Python 3.8 (он включен в дистрибутив Ubuntu Server 20.04) и «распарсил» <em>packer-manifest.json</em>, чтобы извлечь путь до файла .ovf. Вот часть, решающая эту задачу:</p><pre><code class="python">import json
+
+with open("packer-manifest.json", "r") as json_file:
+    data = json.load(json_file)
+    for i in data["builds"]:
+        for j in i["files"]:
+            if ".ovf" in j["name"]:
+                ovf_in = j["name"]
+                ovf_out = ovf_in.replace(".ovf", "-vmware.ovf")
+</code></pre><p>Переменная <em>ovf_in</em> хранит путь до файла .ovf, а <em>ovf_out</em> — путь до нового файла .ovf, в котором мы сохраним изменения. Чтобы эти изменения внести, использую модуль <em>xml.etree.ElementTree</em>.</p><p>При редактировании XML очень помогла утилита <a href="http://xmlstar.sourceforge.net/">XMLStarlet</a>. Она покажет, какие элементы дерева входят в состав файла .ovf.</p><details class="spoiler"><summary>Вывод утилиты XMLStarlet</summary><div class="spoiler__content"><pre><code class="cpp">> xmlstarlet el ./output/ubuntu-18.04-amd64.ovf
+Envelope
+Envelope/References
+Envelope/References/File
+Envelope/DiskSection
+Envelope/DiskSection/Info
+Envelope/DiskSection/Disk
+Envelope/NetworkSection
+Envelope/NetworkSection/Info
+Envelope/NetworkSection/Network
+Envelope/NetworkSection/Network/Description
+Envelope/VirtualSystem
+Envelope/VirtualSystem/Info
+Envelope/VirtualSystem/OperatingSystemSection
+Envelope/VirtualSystem/OperatingSystemSection/Info
+Envelope/VirtualSystem/OperatingSystemSection/Description
+Envelope/VirtualSystem/OperatingSystemSection/vbox:OSType
+Envelope/VirtualSystem/VirtualHardwareSection
+Envelope/VirtualSystem/VirtualHardwareSection/Info
+Envelope/VirtualSystem/VirtualHardwareSection/System
+Envelope/VirtualSystem/VirtualHardwareSection/System/vssd:ElementName
+Envelope/VirtualSystem/VirtualHardwareSection/System/vssd:InstanceID
+Envelope/VirtualSystem/VirtualHardwareSection/System/vssd:VirtualSystemIdentifier
+Envelope/VirtualSystem/VirtualHardwareSection/System/vssd:VirtualSystemType
+Envelope/VirtualSystem/VirtualHardwareSection/Item
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Caption
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Description
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ElementName
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:InstanceID
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceType
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:VirtualQuantity
+Envelope/VirtualSystem/VirtualHardwareSection/Item
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:AllocationUnits
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Caption
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Description
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ElementName
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:InstanceID
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceType
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:VirtualQuantity
+Envelope/VirtualSystem/VirtualHardwareSection/Item
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Address
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Caption
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Description
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ElementName
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:InstanceID
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceSubType
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceType
+Envelope/VirtualSystem/VirtualHardwareSection/Item
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Address
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Caption
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Description
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ElementName
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:InstanceID
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceSubType
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceType
+Envelope/VirtualSystem/VirtualHardwareSection/Item
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Address
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Caption
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Description
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ElementName
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:InstanceID
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceSubType
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceType
+Envelope/VirtualSystem/VirtualHardwareSection/Item
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:AddressOnParent
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Caption
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Description
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ElementName
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:HostResource
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:InstanceID
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Parent
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceType
+Envelope/VirtualSystem/VirtualHardwareSection/Item
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:AutomaticAllocation
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Caption
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:Connection
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ElementName
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:InstanceID
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceSubType
+Envelope/VirtualSystem/VirtualHardwareSection/Item/rasd:ResourceType
+Envelope/VirtualSystem/vbox:Machine
+Envelope/VirtualSystem/vbox:Machine/ovf:Info
+Envelope/VirtualSystem/vbox:Machine/Hardware
+Envelope/VirtualSystem/vbox:Machine/Hardware/CPU
+Envelope/VirtualSystem/vbox:Machine/Hardware/CPU/PAE
+Envelope/VirtualSystem/vbox:Machine/Hardware/CPU/LongMode
+Envelope/VirtualSystem/vbox:Machine/Hardware/CPU/X2APIC
+Envelope/VirtualSystem/vbox:Machine/Hardware/CPU/HardwareVirtExLargePages
+Envelope/VirtualSystem/vbox:Machine/Hardware/Memory
+Envelope/VirtualSystem/vbox:Machine/Hardware/Boot
+Envelope/VirtualSystem/vbox:Machine/Hardware/Boot/Order
+Envelope/VirtualSystem/vbox:Machine/Hardware/Boot/Order
+Envelope/VirtualSystem/vbox:Machine/Hardware/Boot/Order
+Envelope/VirtualSystem/vbox:Machine/Hardware/Boot/Order
+Envelope/VirtualSystem/vbox:Machine/Hardware/Display
+Envelope/VirtualSystem/vbox:Machine/Hardware/VideoCapture
+Envelope/VirtualSystem/vbox:Machine/Hardware/RemoteDisplay
+Envelope/VirtualSystem/vbox:Machine/Hardware/RemoteDisplay/VRDEProperties
+Envelope/VirtualSystem/vbox:Machine/Hardware/RemoteDisplay/VRDEProperties/Property
+Envelope/VirtualSystem/vbox:Machine/Hardware/RemoteDisplay/VRDEProperties/Property
+Envelope/VirtualSystem/vbox:Machine/Hardware/BIOS
+Envelope/VirtualSystem/vbox:Machine/Hardware/BIOS/IOAPIC
+Envelope/VirtualSystem/vbox:Machine/Hardware/BIOS/SmbiosUuidLittleEndian
+Envelope/VirtualSystem/vbox:Machine/Hardware/Network
+Envelope/VirtualSystem/vbox:Machine/Hardware/Network/Adapter
+Envelope/VirtualSystem/vbox:Machine/Hardware/Network/Adapter/NAT
+Envelope/VirtualSystem/vbox:Machine/Hardware/AudioAdapter
+Envelope/VirtualSystem/vbox:Machine/Hardware/RTC
+Envelope/VirtualSystem/vbox:Machine/Hardware/Clipboard
+Envelope/VirtualSystem/vbox:Machine/StorageControllers
+Envelope/VirtualSystem/vbox:Machine/StorageControllers/StorageController
+Envelope/VirtualSystem/vbox:Machine/StorageControllers/StorageController
+Envelope/VirtualSystem/vbox:Machine/StorageControllers/StorageController/AttachedDevice
+Envelope/VirtualSystem/vbox:Machine/StorageControllers/StorageController/AttachedDevice/Image</code></pre></div></details><p>Вывод утилиты XMLStarlet представлен на языке <a href="https://ru.wikipedia.org/wiki/XPath">XPath</a>. Как вы можете заметить, пространство имен определено не для каждого элемента — в их названии отсутствует часть перед символом двоеточия. Важно помнить, что при работе с XML в Python это приведет к неоднозначной трактовке атрибутов.</p><p>Строки, которые мы будем править, пропишу ниже в синтаксисе XPath с указанием пространства имен.</p><p><strong>Удаляем элементы, содержащие упоминания сети и сетевых адаптеров</strong>, при разворачивании виртуальной машины из шаблона всегда можно указать новые адаптеры:</p><pre><code class="xml">ovf:Envelope/ovf:NetworkSection
+ovf:Envelope/ovf:VirtualSystem/vbox:Machine/ovf:Hardware/ovf:Network</code></pre><p>Из элементов ниже я удалил только те, в значении которых содержат слово Ethernet:</p><pre><code class="xml">ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection/ovf:Item/rasd:Caption</code></pre><p><strong>Исключаем элементы с упоминанием IDE-контроллеров</strong>. IDE нам не нужно, так как мы будем работать со SCSI. В первом случае удаляем значения, где упоминается ideController, а во втором — только строки с атрибутом <em>name="IDE Controller"</em>.</p><pre><code class="xml">ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection/ovf:Item/rasd:Caption
+ovf:Envelope/ovf:VirtualSystem/vbox:Machine/ovf:StorageControllers/ovf:StorageController</code></pre><p><strong>Удаляем аудиоконтроллер</strong>. Он нам также не понадобится, так как практически никогда не используется на серверах.</p><pre><code class="xml">ovf:Envelope/ovf:VirtualSystem/vbox:Machine/ovf:Hardware/ovf:AudioAdapter</code></pre><p><strong>Для оперативной памяти заменяем единицы измерения</strong>. Меняем их с <em>MegaBytes</em> на <em>byte*2^20</em>. Этот нюанс связан с тем, что разные производители программного обеспечения порой трактуют Open Virtualization Format по-разному:</p><pre><code class="xml">ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection/ovf:Item/rasd:AllocationUnits</code></pre><p><strong>Меняем тип системы</strong>. Вместо <em>virtualbox-2.2</em> прописываем <em>vmx-16</em>, то есть меняем систему виртуализации с VirtualBox на <a href="https://kb.vmware.com/s/article/1003746">VMware</a>.</p><pre><code class="xml">ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection/ovf:System/vssd:VirtualSystemType.</code></pre><p>Здесь дополнительно отмечу, что для работы с модулем <em>xml.etree.ElementTree</em> необходимо зарегистрировать используемые <a href="https://en.wikipedia.org/wiki/XML_namespace">пространства имен</a> функцией <em>xml.etree.ElementTree.register_namespace</em>. Их можно найти в исходном файле .ova по значению атрибутов <em>xmlns</em>.</p><pre><code class="python">import xml.etree.ElementTree as ET
+
+ET.register_namespace('', "http://schemas.dmtf.org/ovf/envelope/1")
+ET.register_namespace('ovf', "http://schemas.dmtf.org/ovf/envelope/1")
+ET.register_namespace('rasd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData")
+ET.register_namespace('vssd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData")
+ET.register_namespace('xsi', "http://www.w3.org/2001/XMLSchema-instance")
+ET.register_namespace('vbox', "http://www.virtualbox.org/ovf/machine")</code></pre><p>По итогу мы получаем финальный скрипт <em>ovf-patch.py</em>:</p><pre><code class="python">#!/usr/bin/python3
+
+import json
+import xml.etree.ElementTree as ET
+
+ET.register_namespace('', "http://schemas.dmtf.org/ovf/envelope/1")
+ET.register_namespace('ovf', "http://schemas.dmtf.org/ovf/envelope/1")
+ET.register_namespace('rasd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData")
+ET.register_namespace('vssd', "http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData")
+ET.register_namespace('xsi', "http://www.w3.org/2001/XMLSchema-instance")
+ET.register_namespace('vbox', "http://www.virtualbox.org/ovf/machine")
+
+with open("packer-manifest.json", "r") as json_file:
+    data = json.load(json_file)
+    for i in data["builds"]:
+        for j in i["files"]:
+            if ".ovf" in j["name"]:
+                ovf_in = j["name"]
+                ovf_out = ovf_in.replace(".ovf", "-vmware.ovf")
+
+    tree = ET.parse(ovf_in)
+    root = tree.getroot()
+
+    # ovf:Envelope/ovf:NetworkSection
+    for i in root.findall("./{*}NetworkSection"):
+        root.remove(i)
+
+    # ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection
+    for i in root.findall("./{*}VirtualSystem/{*}VirtualHardwareSection"):
+        # ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection/ovf:Item
+        for i_i in i.findall("./{*}Item"):
+            # ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection/ovf:Item/rasd:AllocationUnits
+            for i_i_i in i_i.findall("./{*}AllocationUnits"):
+                if i_i_i.text == "MegaBytes":
+                    i_i_i.text = "byte * 2^20"
+            # ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection/ovf:Item/rasd:Caption
+            for i_i_i in i_i.findall("./{*}Caption"):
+                if "ideController" in i_i_i.text:
+                    i.remove(i_i)
+                if "Ethernet" in i_i_i.text:
+                    i.remove(i_i)
+        # ovf:Envelope/ovf:VirtualSystem/ovf:VirtualHardwareSection/ovf:System/vssd:VirtualSystemType
+        for i_i in i.findall("{*}System/{*}VirtualSystemType"):
+            i_i.text = "vmx-16"
+
+    # ovf:Envelope/ovf:VirtualSystem/vbox:Machine/ovf:Hardware
+    for i in root.findall("./{*}VirtualSystem/{*}Machine/{*}Hardware"):
+        # ovf:Envelope/ovf:VirtualSystem/vbox:Machine/ovf:Hardware/ovf:AudioAdapter
+        for i_i in i.findall("./{*}AudioAdapter"):
+            i.remove(i_i)
+        # ovf:Envelope/ovf:VirtualSystem/vbox:Machine/ovf:Hardware/ovf:Network
+        for i_i in i.findall("./{*}Network"):
+            i.remove(i_i)
+
+    # ovf:Envelope/ovf:VirtualSystem/vbox:Machine/ovf:StorageControllers
+    for i in root.findall("./{*}VirtualSystem/{*}Machine/{*}StorageControllers"):
+        # ovf:Envelope/ovf:VirtualSystem/vbox:Machine/ovf:StorageControllers/ovf:StorageController
+        for i_i in i.findall("./{*}StorageController[@name='IDE Controller']"):
+            i.remove(i_i)
+
+    tree.write(ovf_out)
+    print(ovf_out)</code></pre><p>После запуска скрипта в выходном каталоге появятся файлы:</p><ul><li><p>Образ жесткого диска: <em>ubuntu-18.04-amd64-disk001.vmdk</em>;</p></li><li><p>XML-файл с описанием ВМ: <em>ubuntu-18.04-amd64.ovf</em>;    </p></li><li><p>XML-файл с описанием ВМ, готовый к импорту в Cloud Director: <em>ubuntu-18.04-amd64-vmware.ovf</em>.</p></li></ul><figure class="full-width "><img src="/img/image-loader.svg" height="251" data-src="https://habrastorage.org/getpro/habr/upload_files/66b/0c8/fe5/66b0c8fe595c9da7d117add4ff1fb1a5.png" data-width="948"/><figcaption></figcaption></figure><p>В качестве примера привожу исходный файл <em>ubuntu-18.04-amd64.ovf</em>:</p><details class="spoiler"><summary>ubuntu-18.04-amd64.ovf</summary><div class="spoiler__content"><pre><code class="xml">&lt;?xml version="1.0"?>
+&lt;Envelope ovf:version="1.0" xml:lang="en-US" xmlns="http://schemas.dmtf.org/ovf/envelope/1" xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1" xmlns:rasd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData" xmlns:vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:vbox="http://www.virtualbox.org/ovf/machine">
+  &lt;References>
+    &lt;File ovf:id="file1" ovf:href="ubuntu-18.04-amd64-disk001.vmdk"/>
+  &lt;/References>
+  &lt;DiskSection>
+    &lt;Info>List of the virtual disks used in the package&lt;/Info>
+    &lt;Disk ovf:capacity="34359738368" ovf:diskId="vmdisk1" ovf:fileRef="file1" ovf:format="http://www.vmware.com/interfaces/specifications/vmdk.html#streamOptimized" vbox:uuid="a5659548-990a-4853-a8ab-bb9a168df0fc"/>
+  &lt;/DiskSection>
+  &lt;NetworkSection>
+    &lt;Info>Logical networks used in the package&lt;/Info>
+    &lt;Network ovf:name="NAT">
+      &lt;Description>Logical network used by this appliance.&lt;/Description>
+    &lt;/Network>
+  &lt;/NetworkSection>
+  &lt;VirtualSystem ovf:id="ubuntu-18.04-amd64">
+    &lt;Info>A virtual machine&lt;/Info>
+    &lt;OperatingSystemSection ovf:id="94">
+      &lt;Info>The kind of installed guest operating system&lt;/Info>
+      &lt;Description>Ubuntu_64&lt;/Description>
+      &lt;vbox:OSType ovf:required="false">Ubuntu_64&lt;/vbox:OSType>
+    &lt;/OperatingSystemSection>
+    &lt;VirtualHardwareSection>
+      &lt;Info>Virtual hardware requirements for a virtual machine&lt;/Info>
+      &lt;System>
+        &lt;vssd:ElementName>Virtual Hardware Family&lt;/vssd:ElementName>
+        &lt;vssd:InstanceID>0&lt;/vssd:InstanceID>
+        &lt;vssd:VirtualSystemIdentifier>ubuntu-18.04-amd64&lt;/vssd:VirtualSystemIdentifier>
+        &lt;vssd:VirtualSystemType>virtualbox-2.2&lt;/vssd:VirtualSystemType>
+      &lt;/System>
+      &lt;Item>
+        &lt;rasd:Caption>2 virtual CPU&lt;/rasd:Caption>
+        &lt;rasd:Description>Number of virtual CPUs&lt;/rasd:Description>
+        &lt;rasd:ElementName>2 virtual CPU&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>1&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceType>3&lt;/rasd:ResourceType>
+        &lt;rasd:VirtualQuantity>2&lt;/rasd:VirtualQuantity>
+      &lt;/Item>
+      &lt;Item>
+        &lt;rasd:AllocationUnits>MegaBytes&lt;/rasd:AllocationUnits>
+        &lt;rasd:Caption>4096 MB of memory&lt;/rasd:Caption>
+        &lt;rasd:Description>Memory Size&lt;/rasd:Description>
+        &lt;rasd:ElementName>4096 MB of memory&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>2&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceType>4&lt;/rasd:ResourceType>
+        &lt;rasd:VirtualQuantity>4096&lt;/rasd:VirtualQuantity>
+      &lt;/Item>
+      &lt;Item>
+        &lt;rasd:Address>0&lt;/rasd:Address>
+        &lt;rasd:Caption>ideController0&lt;/rasd:Caption>
+        &lt;rasd:Description>IDE Controller&lt;/rasd:Description>
+        &lt;rasd:ElementName>ideController0&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>3&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceSubType>PIIX4&lt;/rasd:ResourceSubType>
+        &lt;rasd:ResourceType>5&lt;/rasd:ResourceType>
+      &lt;/Item>
+      &lt;Item>
+        &lt;rasd:Address>1&lt;/rasd:Address>
+        &lt;rasd:Caption>ideController1&lt;/rasd:Caption>
+        &lt;rasd:Description>IDE Controller&lt;/rasd:Description>
+        &lt;rasd:ElementName>ideController1&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>4&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceSubType>PIIX4&lt;/rasd:ResourceSubType>
+        &lt;rasd:ResourceType>5&lt;/rasd:ResourceType>
+      &lt;/Item>
+      &lt;Item>
+        &lt;rasd:Address>0&lt;/rasd:Address>
+        &lt;rasd:Caption>scsiController0&lt;/rasd:Caption>
+        &lt;rasd:Description>SCSI Controller&lt;/rasd:Description>
+        &lt;rasd:ElementName>scsiController0&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>5&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceSubType>lsilogic&lt;/rasd:ResourceSubType>
+        &lt;rasd:ResourceType>6&lt;/rasd:ResourceType>
+      &lt;/Item>
+      &lt;Item>
+        &lt;rasd:AddressOnParent>0&lt;/rasd:AddressOnParent>
+        &lt;rasd:Caption>disk1&lt;/rasd:Caption>
+        &lt;rasd:Description>Disk Image&lt;/rasd:Description>
+        &lt;rasd:ElementName>disk1&lt;/rasd:ElementName>
+        &lt;rasd:HostResource>/disk/vmdisk1&lt;/rasd:HostResource>
+        &lt;rasd:InstanceID>6&lt;/rasd:InstanceID>
+        &lt;rasd:Parent>5&lt;/rasd:Parent>
+        &lt;rasd:ResourceType>17&lt;/rasd:ResourceType>
+      &lt;/Item>
+      &lt;Item>
+        &lt;rasd:AutomaticAllocation>true&lt;/rasd:AutomaticAllocation>
+        &lt;rasd:Caption>Ethernet adapter on 'NAT'&lt;/rasd:Caption>
+        &lt;rasd:Connection>NAT&lt;/rasd:Connection>
+        &lt;rasd:ElementName>Ethernet adapter on 'NAT'&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>7&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceSubType>E1000&lt;/rasd:ResourceSubType>
+        &lt;rasd:ResourceType>10&lt;/rasd:ResourceType>
+      &lt;/Item>
+    &lt;/VirtualHardwareSection>
+    &lt;vbox:Machine ovf:required="false" version="1.16-linux" uuid="{37db6186-f653-47f2-ba71-1b325b4aa806}" name="ubuntu-18.04-amd64" OSType="Ubuntu_64" snapshotFolder="Snapshots" lastStateChange="2021-08-15T18:03:51Z">
+      &lt;ovf:Info>Complete VirtualBox machine configuration in VirtualBox format&lt;/ovf:Info>
+      &lt;Hardware>
+        &lt;CPU count="2">
+          &lt;PAE enabled="true"/>
+          &lt;LongMode enabled="true"/>
+          &lt;X2APIC enabled="true"/>
+          &lt;HardwareVirtExLargePages enabled="false"/>
+        &lt;/CPU>
+        &lt;Memory RAMSize="4096"/>
+        &lt;Boot>
+          &lt;Order position="1" device="HardDisk"/>
+          &lt;Order position="2" device="DVD"/>
+          &lt;Order position="3" device="None"/>
+          &lt;Order position="4" device="None"/>
+        &lt;/Boot>
+        &lt;Display controller="VMSVGA" VRAMSize="16"/>
+        &lt;VideoCapture screens="1" file="." fps="25"/>
+        &lt;RemoteDisplay enabled="true">
+          &lt;VRDEProperties>
+            &lt;Property name="TCP/Address" value="127.0.0.1"/>
+            &lt;Property name="TCP/Ports" value="5968"/>
+          &lt;/VRDEProperties>
+        &lt;/RemoteDisplay>
+        &lt;BIOS>
+          &lt;IOAPIC enabled="true"/>
+          &lt;SmbiosUuidLittleEndian enabled="true"/>
+        &lt;/BIOS>
+        &lt;Network>
+          &lt;Adapter slot="0" enabled="true" MACAddress="0800272C8B78" type="82540EM">
+            &lt;NAT/>
+          &lt;/Adapter>
+        &lt;/Network>
+        &lt;AudioAdapter driver="Pulse" enabledIn="false" enabledOut="false"/>
+        &lt;RTC localOrUTC="UTC"/>
+        &lt;Clipboard/>
+      &lt;/Hardware>
+      &lt;StorageControllers>
+        &lt;StorageController name="IDE Controller" type="PIIX4" PortCount="2" useHostIOCache="true" Bootable="true"/>
+        &lt;StorageController name="SCSI Controller" type="LsiLogic" PortCount="16" useHostIOCache="false" Bootable="true">
+          &lt;AttachedDevice nonrotational="true" discard="true" type="HardDisk" hotpluggable="false" port="0" device="0">
+            &lt;Image uuid="{a5659548-990a-4853-a8ab-bb9a168df0fc}"/>
+          &lt;/AttachedDevice>
+        &lt;/StorageController>
+      &lt;/StorageControllers>
+    &lt;/vbox:Machine>
+  &lt;/VirtualSystem>
+&lt;/Envelope></code></pre></div></details><p>И файл с внесенными изменениями <em>ubuntu-18.04-amd64-vmware.ovf</em>:</p><details class="spoiler"><summary>ubuntu-18.04-amd64-vmware.ovf</summary><div class="spoiler__content"><pre><code class="xml">&lt;ovf:Envelope xmlns:ovf="http://schemas.dmtf.org/ovf/envelope/1" xmlns:rasd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_ResourceAllocationSettingData" xmlns:vbox="http://www.virtualbox.org/ovf/machine" xmlns:vssd="http://schemas.dmtf.org/wbem/wscim/1/cim-schema/2/CIM_VirtualSystemSettingData" ovf:version="1.0" xml:lang="en-US">
+  &lt;ovf:References>
+    &lt;ovf:File ovf:id="file1" ovf:href="ubuntu-18.04-amd64-disk001.vmdk" />
+  &lt;/ovf:References>
+  &lt;ovf:DiskSection>
+    &lt;ovf:Info>List of the virtual disks used in the package&lt;/ovf:Info>
+    &lt;ovf:Disk ovf:capacity="34359738368" ovf:diskId="vmdisk1" ovf:fileRef="file1" ovf:format="http://www.vmware.com/interfaces/specifications/vmdk.html#streamOptimized" vbox:uuid="a5659548-990a-4853-a8ab-bb9a168df0fc" />
+  &lt;/ovf:DiskSection>
+  &lt;ovf:VirtualSystem ovf:id="ubuntu-18.04-amd64">
+    &lt;ovf:Info>A virtual machine&lt;/ovf:Info>
+    &lt;ovf:OperatingSystemSection ovf:id="94">
+      &lt;ovf:Info>The kind of installed guest operating system&lt;/ovf:Info>
+      &lt;ovf:Description>Ubuntu_64&lt;/ovf:Description>
+      &lt;vbox:OSType ovf:required="false">Ubuntu_64&lt;/vbox:OSType>
+    &lt;/ovf:OperatingSystemSection>
+    &lt;ovf:VirtualHardwareSection>
+      &lt;ovf:Info>Virtual hardware requirements for a virtual machine&lt;/ovf:Info>
+      &lt;ovf:System>
+        &lt;vssd:ElementName>Virtual Hardware Family&lt;/vssd:ElementName>
+        &lt;vssd:InstanceID>0&lt;/vssd:InstanceID>
+        &lt;vssd:VirtualSystemIdentifier>ubuntu-18.04-amd64&lt;/vssd:VirtualSystemIdentifier>
+        &lt;vssd:VirtualSystemType>vmx-16&lt;/vssd:VirtualSystemType>
+      &lt;/ovf:System>
+      &lt;ovf:Item>
+        &lt;rasd:Caption>2 virtual CPU&lt;/rasd:Caption>
+        &lt;rasd:Description>Number of virtual CPUs&lt;/rasd:Description>
+        &lt;rasd:ElementName>2 virtual CPU&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>1&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceType>3&lt;/rasd:ResourceType>
+        &lt;rasd:VirtualQuantity>2&lt;/rasd:VirtualQuantity>
+      &lt;/ovf:Item>
+      &lt;ovf:Item>
+        &lt;rasd:AllocationUnits>byte * 2^20&lt;/rasd:AllocationUnits>
+        &lt;rasd:Caption>4096 MB of memory&lt;/rasd:Caption>
+        &lt;rasd:Description>Memory Size&lt;/rasd:Description>
+        &lt;rasd:ElementName>4096 MB of memory&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>2&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceType>4&lt;/rasd:ResourceType>
+        &lt;rasd:VirtualQuantity>4096&lt;/rasd:VirtualQuantity>
+      &lt;/ovf:Item>
+      &lt;ovf:Item>
+        &lt;rasd:Address>0&lt;/rasd:Address>
+        &lt;rasd:Caption>scsiController0&lt;/rasd:Caption>
+        &lt;rasd:Description>SCSI Controller&lt;/rasd:Description>
+        &lt;rasd:ElementName>scsiController0&lt;/rasd:ElementName>
+        &lt;rasd:InstanceID>5&lt;/rasd:InstanceID>
+        &lt;rasd:ResourceSubType>lsilogic&lt;/rasd:ResourceSubType>
+        &lt;rasd:ResourceType>6&lt;/rasd:ResourceType>
+      &lt;/ovf:Item>
+      &lt;ovf:Item>
+        &lt;rasd:AddressOnParent>0&lt;/rasd:AddressOnParent>
+        &lt;rasd:Caption>disk1&lt;/rasd:Caption>
+        &lt;rasd:Description>Disk Image&lt;/rasd:Description>
+        &lt;rasd:ElementName>disk1&lt;/rasd:ElementName>
+        &lt;rasd:HostResource>/disk/vmdisk1&lt;/rasd:HostResource>
+        &lt;rasd:InstanceID>6&lt;/rasd:InstanceID>
+        &lt;rasd:Parent>5&lt;/rasd:Parent>
+        &lt;rasd:ResourceType>17&lt;/rasd:ResourceType>
+      &lt;/ovf:Item>
+      &lt;/ovf:VirtualHardwareSection>
+    &lt;vbox:Machine ovf:required="false" version="1.16-linux" uuid="{37db6186-f653-47f2-ba71-1b325b4aa806}" name="ubuntu-18.04-amd64" OSType="Ubuntu_64" snapshotFolder="Snapshots" lastStateChange="2021-08-15T18:03:51Z">
+      &lt;ovf:Info>Complete VirtualBox machine configuration in VirtualBox format&lt;/ovf:Info>
+      &lt;ovf:Hardware>
+        &lt;ovf:CPU count="2">
+          &lt;ovf:PAE enabled="true" />
+          &lt;ovf:LongMode enabled="true" />
+          &lt;ovf:X2APIC enabled="true" />
+          &lt;ovf:HardwareVirtExLargePages enabled="false" />
+        &lt;/ovf:CPU>
+        &lt;ovf:Memory RAMSize="4096" />
+        &lt;ovf:Boot>
+          &lt;ovf:Order position="1" device="HardDisk" />
+          &lt;ovf:Order position="2" device="DVD" />
+          &lt;ovf:Order position="3" device="None" />
+          &lt;ovf:Order position="4" device="None" />
+        &lt;/ovf:Boot>
+        &lt;ovf:Display controller="VMSVGA" VRAMSize="16" />
+        &lt;ovf:VideoCapture screens="1" file="." fps="25" />
+        &lt;ovf:RemoteDisplay enabled="true">
+          &lt;ovf:VRDEProperties>
+            &lt;ovf:Property name="TCP/Address" value="127.0.0.1" />
+            &lt;ovf:Property name="TCP/Ports" value="5968" />
+          &lt;/ovf:VRDEProperties>
+        &lt;/ovf:RemoteDisplay>
+        &lt;ovf:BIOS>
+          &lt;ovf:IOAPIC enabled="true" />
+          &lt;ovf:SmbiosUuidLittleEndian enabled="true" />
+        &lt;/ovf:BIOS>
+        &lt;ovf:RTC localOrUTC="UTC" />
+        &lt;ovf:Clipboard />
+      &lt;/ovf:Hardware>
+      &lt;ovf:StorageControllers>
+        &lt;ovf:StorageController name="SCSI Controller" type="LsiLogic" PortCount="16" useHostIOCache="false" Bootable="true">
+          &lt;ovf:AttachedDevice nonrotational="true" discard="true" type="HardDisk" hotpluggable="false" port="0" device="0">
+            &lt;ovf:Image uuid="{a5659548-990a-4853-a8ab-bb9a168df0fc}" />
+          &lt;/ovf:AttachedDevice>
+        &lt;/ovf:StorageController>
+      &lt;/ovf:StorageControllers>
+    &lt;/vbox:Machine>
+  &lt;/ovf:VirtualSystem>
+&lt;/ovf:Envelope></code></pre></div></details><h2>Импортируем образ</h2><p>Для импорта образа ВМ в библиотеку можно воспользоваться инструментами <a href="https://www.vmware.com/support/developer/ovf/">OVF Tool</a> или <a href="https://github.com/vmware/vcd-cli">vcd-cli</a>. Это — инструменты, разработанные VMware. Они хорошо документированы и работают стабильно. В дальнейшем из библиотеки Cloud Director можно разворачивать ВМ из созданного шаблона вручную или с инструментами автоматизации (например, <a href="https://registry.terraform.io/providers/sbercloud-terraform/sbercloud/latest">Terraform</a>), добавив по требованию сетевые контроллеры, дополнительные диски и так далее.</p><p>Таким образом, мне удалось подготовить образ VirtualBox к загрузке в VMware Cloud Director. Описал шаги для реализации полноценного CI-пайплайна.</p><p>Если хотите использовать <a href="https://sbercloud.ru/ru/vmware-virtual-datacenter?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=habr_clouddirectorguide_0610_vmware_enterprise">виртуальный ЦОД на базе VMware</a>, вы можете <a href="https://sbercloud.ru/ru/become-customer?product=vmware-virtual-datacenter&amp;utm_source=habr&amp;utm_medium=article&amp;utm_campaign=habr_clouddirectorguide_0610_vmware_enterprise">оставить заявку на подключение и бесплатную консультацию</a>.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BCloud%20Director%5D" class="tm-tags-list__link">Cloud Director</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BVirtualBox%5D" class="tm-tags-list__link">VirtualBox</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BOVF%5D" class="tm-tags-list__link">OVF</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BPacker%5D" class="tm-tags-list__link">Packer</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BPython%5D" class="tm-tags-list__link">Python</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BXML%5D" class="tm-tags-list__link">XML</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BXMLStarlet%5D" class="tm-tags-list__link">XMLStarlet</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/sbercloud/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании SberCloud
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/open_source/" class="tm-hubs-list__link">
+    Open source
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/virtualization/" class="tm-hubs-list__link">
+    Виртуализация
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cloud_computing/" class="tm-hubs-list__link">
+    Облачные вычисления
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/devops/" class="tm-hubs-list__link">
+    DevOps
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 12: ↑11 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 12: ↑11 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+10</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.4K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    21
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/sbercloud/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/291/56f/771/29156f7710a7ebf37d50714d12f668ad.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/sbercloud/profile/" class="tm-company-snippet__title">SberCloud</a> <div class="tm-company-snippet__description">Облачная IT-инфраструктура для бизнеса</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://sbercloud.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://facebook.com/sbercloud" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://vk.com/sbercloud" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://telegram.me/wearesbercloud" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/rseleven/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/87f/4f7/64a/87f4f764a482659409b9eb52012bc951.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 5 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">10</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Roman Petrov</span> <a href="/ru/users/rseleven/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @rseleven
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">DevOps-инженер</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/sbercloud/blog/581362/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 4 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><span>
+      2019
+    </span></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://sbercloud.ru/ru?utm_source=habr&amp;utm_medium=blog&amp;utm_camp" target="_blank" class="tm-company-basic-info__link">
+      sbercloud.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    201–500 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2021-09-16T14:45:15.000Z" title="2021-09-16, 17:45">16  сентября  </time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/SberCloud_Administrator/" class="tm-company-basic-info__link">
+      SberCloud_Administrator
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/sbercloud/blog/581362/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/sbercloud/blog/581362/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"581362":{"id":"581362","timePublished":"2021-10-06T10:05:42+00:00","isCorporative":true,"lang":"ru","titleHtml":"Как настроить автоматическую сборку образов ВМ для VMware Cloud Director — компактное руководство","leadData":{"textHtml":"\u003Cp\u003EПривет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в \u003Ca href=\"https:\u002F\u002Fsbercloud.ru\u002Fru?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=habr_clouddirectorguide_0610_all_enterprise\"\u003ESberCloud\u003C\u002Fa\u003E. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин под \u003Ca href=\"https:\u002F\u002Fwww.vmware.com\u002Fru\u002Fproducts\u002Fcloud-director.html\"\u003EVMware Cloud Director\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EМожно было решить эту задачу с помощью инструментов VMware: Fusion, Workstation или Player, но они требуют покупки лицензий, а последний еще и установки не обновляемого пакета VMware VIX API в случае GNU\\Linux. Я выбрал альтернативный путь и построил необходимый пайплайн на базе опенсорсного VirtualBox. \u003C\u002Fp\u003E\u003Cp\u003EПод катом — кратко о том, как я это сделал.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0f2\u002F2f8\u002F884\u002F0f22f88841d18a0c1e8814efb7a7b95e.jpg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0f2\u002F2f8\u002F884\u002F0f22f88841d18a0c1e8814efb7a7b95e.jpg","fit":"cover","positionY":23.863636363636,"positionX":0.12820512820513}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":5,"votesCount":5},"rating":10,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1532539","alias":"rseleven","fullname":"Roman Petrov","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F87f\u002F4f7\u002F64a\u002F87f4f764a482659409b9eb52012bc951.png","speciality":"DevOps-инженер"},"statistics":{"commentsCount":4,"favoritesCount":21,"readingCount":1406,"score":10,"votesCount":12},"hubs":[{"relatedData":null,"id":"22500","alias":"sbercloud","type":"corporative","title":"Блог компании SberCloud","titleHtml":"Блог компании SberCloud","isProfiled":false},{"relatedData":null,"id":"144","alias":"open_source","type":"collective","title":"Open source","titleHtml":"Open source","isProfiled":true},{"relatedData":null,"id":"7312","alias":"virtualization","type":"collective","title":"Виртуализация","titleHtml":"Виртуализация","isProfiled":true},{"relatedData":null,"id":"16120","alias":"cloud_computing","type":"collective","title":"Облачные вычисления","titleHtml":"Облачные вычисления","isProfiled":true},{"relatedData":null,"id":"20788","alias":"devops","type":"collective","title":"DevOps","titleHtml":"DevOps","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EПривет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в \u003Ca href=\"https:\u002F\u002Fsbercloud.ru\u002Fru?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=habr_clouddirectorguide_0610_all_enterprise\"\u003ESberCloud\u003C\u002Fa\u003E. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин под \u003Ca href=\"https:\u002F\u002Fwww.vmware.com\u002Fru\u002Fproducts\u002Fcloud-director.html\"\u003EVMware Cloud Director\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EМожно было решить эту задачу с помощью инструментов VMware: Fusion, Workstation или Player, но они требуют покупки лицензий, а последний еще и установки не обновляемого пакета VMware VIX API в случае GNU\\Linux. Я выбрал альтернативный путь и построил необходимый пайплайн на базе опенсорсного VirtualBox. \u003C\u002Fp\u003E\u003Cp\u003EПод катом — кратко о том, как я это сделал.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff95\u002Fb0b\u002F2a5\u002Ff95b0b2a56fab1d7ca8f6bee1a56c4ab.jpg\" width=\"2153\" height=\"1441\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff95\u002Fb0b\u002F2a5\u002Ff95b0b2a56fab1d7ca8f6bee1a56c4ab.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EПрежде чем мы начнем\u003C\u002Fh2\u003E\u003Cp\u003EПрежде чем переходить к делу, немного расскажу о том, почему вообще решил заняться этим вопросом, и познакомлю вас с программным стеком, который мы будем использовать. У меня был шаблон для \u003Ca href=\"https:\u002F\u002Fwww.packer.io\u002F\"\u003EPacker\u003C\u002Fa\u003E с операционной системой Ubuntu Server 18.04 и перечнем дополнительного ПО для предустановки. Изначально сборка этого образа проходила в среде \u003Ca href=\"https:\u002F\u002Fwww.vmware.com\u002Fru\u002Fproducts\u002Ffusion.html\"\u003EFusion\u003C\u002Fa\u003E. Для инсталляции операционной системы использовал файл ответов \u003Ca href=\"https:\u002F\u002Fhelp.ubuntu.com\u002F18.04\u002Finstallation-guide\u002Famd64\u002Fapbs02.html\"\u003Epreseed.cfg\u003C\u002Fa\u003E. Он содержит сценарии ответов на все вопросы инсталлятора (для автоматизации процесса).\u003C\u002Fp\u003E\u003Cp\u003EЯ решил оставить Packer, но заменить Fusion на VirtualBox. Выбор в пользу open source решения был сделан по причине того, что оно распространяется на бесплатной основе, поддерживает большое количество хостовых ОС и экспорт образов в форматах \u003Ca href=\"https:\u002F\u002Fru.wikipedia.org\u002Fwiki\u002FOpen_Virtualization_Format\"\u003EOVF и OVA\u003C\u002Fa\u003E. Кроме того, VirtualBox предоставляет \u003Ca href=\"https:\u002F\u002Fwww.virtualbox.org\u002Fwiki\u002FLinux_Downloads\"\u003Eрепозитории\u003C\u002Fa\u003E для GNU\u002FLinux, позволяющие автоматически обновлять пакеты операционных систем. К слову, аналогичный репозиторий \u003Ca href=\"https:\u002F\u002Flearn.hashicorp.com\u002Ftutorials\u002Fpacker\u002Fget-started-install-cli\"\u003Eпредлагают\u003C\u002Fa\u003E и разработчики Packer.\u003C\u002Fp\u003E\u003Ch2\u003EНачало работы\u003C\u002Fh2\u003E\u003Cp\u003EВ качестве хоста для развертки окружения, в котором будет запускаться CI-пайплайн, выбрал виртуальную машину с Ubuntu Server 20.04. На неё установил утилиты Packer и VirtualBox. Не буду подробно рассказывать, как это сделать, так как все необходимые инструкции вы можете найти в официальной документации этих инструментов [\u003Ca href=\"https:\u002F\u002Flearn.hashicorp.com\u002Ftutorials\u002Fpacker\u002Fget-started-install-cli\"\u003Eраз\u003C\u002Fa\u003E, \u003Ca href=\"https:\u002F\u002Fwww.virtualbox.org\u002Fwiki\u002FLinux_Downloads\"\u003Eдва\u003C\u002Fa\u003E].\u003C\u002Fp\u003E\u003Cp\u003EСледующим шагом стала подготовка шаблона для Packer. Packer включает в себя сборщики для разных окружений, в том числе для VirtualBox — \u003Ca href=\"https:\u002F\u002Fwww.packer.io\u002Fdocs\u002Fbuilders\u002Fvirtualbox\u002Fiso\"\u003Evirtualbox-iso\u003C\u002Fa\u003E. Написал шаблон, запустил сборку образа ВМ. Осталось загрузить этот образ в библиотеку Cloud Director. Обнаружил, что Cloud Director отказывается его импортировать. Это основная трудность, которая заняла много времени.\u003C\u002Fp\u003E\u003Cp\u003EВ процессе поиска решения проблемы я наткнулся на \u003Ca href=\"https:\u002F\u002Ffabianlee.org\u002F2016\u002F11\u002F30\u002Fvmware-exporting-from-oracle-virtualbox-vagrant-to-vcloud-director\u002F\"\u003Eстатью\u003C\u002Fa\u003E иностранного коллеги. Он заметил, что из-за несовместимости в системных типах и поддержке аппаратного обеспечения (разная трактовка открытого стандарта), экспорт такого образа в VMware Cloud Director требует дополнительной настройки — какой именно, покажу далее.\u003C\u002Fp\u003E\u003Ch2\u003EНастраиваем шаблон Packer\u003C\u002Fh2\u003E\u003Cp\u003EВ шаблон Packer внесем следующие изменения:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Cstrong\u003EНастроим экспорт образа в формате OVF\u003C\u002Fstrong\u003E. Для этого в конфигурационном файле атрибуту \u003Cem\u003Eformat\u003C\u002Fem\u003E присвоим значение \u003Cem\u003Eovf\u003C\u002Fem\u003E. Эта операция позволит нам получить на выходе два отдельных файла: XML-документ с описанием ВМ и образ жесткого диска. Так, нам будет проще настраивать нашу систему в дальнейшем. Отмечу, что для своего кейса я не создаю дополнительные диски и не включаю iso-образы в состав виртуальной машины. Расширить дисковое пространство или добавить дополнительные накопители можно непосредственно при развертке виртуальной машины.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cstrong\u003EУкажем SCSI в качестве контроллера жестких дисков\u003C\u002Fstrong\u003E. Соответствующее значение (scsi) необходимо прописать в атрибуте \u003Cem\u003Ehard_drive_interface\u003C\u002Fem\u003E. В VirtualBox будет эмулироваться контроллер LsiLogic, что является плюсом, поскольку контроллер этого типа поддерживается в Cloud Director.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ качестве прошивки \u003Cstrong\u003Eвыберем BIOS\u003C\u002Fstrong\u003E, а в качестве видеоконтроллера — \u003Cstrong\u003Evmsvga\u003C\u002Fstrong\u003E (VMware SVGA). Атрибуты, которые нам нужны, — это \u003Cem\u003Efirmware\u003C\u002Fem\u003E и \u003Cem\u003Egfx_controller\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EФинальный вариант шаблона для Packer — \u003Cem\u003Emain.pkr.hcl\u003C\u002Fem\u003E — выглядит так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Esource \"virtualbox-iso\" \"ubuntu-18_04-amd64\" {\n  vm_name                  = \"ubuntu-18.04-amd64\"\n  guest_os_type            = \"Ubuntu_64\"\n  nested_virt              = false\n  headless                 = true\n  keep_registered          = false\n  guest_additions_mode     = \"disable\"\n  cpus                     = 2\n  memory                   = 4096\n  chipset                  = \"piix3\"\n  firmware                 = \"bios\"\n  rtc_time_base            = \"UTC\"\n  disk_size                = 32768\n  hard_drive_interface     = \"scsi\"\n  hard_drive_discard       = true\n  hard_drive_nonrotational = true\n  nic_type                 = \"82540EM\"\n  gfx_controller           = \"vmsvga\"\n  gfx_vram_size            = \"16\"\n  gfx_accelerate_3d        = false\n  sound                    = \"none\"\n  iso_url                  = \"http:\u002F\u002Fcdimage.ubuntu.com\u002Fubuntu\u002Freleases\u002F18.04\u002Frelease\u002Fubuntu-18.04.5-server-amd64.iso\"\n  iso_checksum             = \"sha256:8c5fc24894394035402f66f3824beb7234b757dd2b5531379cb310cedfdf0996\"\n  boot_command             = [\"&lt;esc\u003E&lt;wait\u003E\",\n                              \"&lt;esc\u003E&lt;wait\u003E\",\n                              \"&lt;enter\u003E&lt;wait\u003E\",\n                              \"\u002Finstall\u002Fvmlinuz auto=true priority=critical fb=false initrd=\u002Finstall\u002Finitrd.gz grub-installer\u002Fbootdev=\u002Fdev\u002Fsda preseed\u002Ffile=\u002Ffloppy\u002Fpreseed.cfg -- &lt;enter\u003E\"]\n  floppy_files             = [\".\u002Fpreseed\u002Fpreseed.cfg\"]\n  shutdown_command         = \"echo '${var.password}' | sudo -S shutdown -P now\"\n  post_shutdown_delay      = \"1m\"\n  output_directory         = \".\u002Foutput\"\n  format                   = \"ovf\"\n  bundle_iso               = false\n  communicator             = \"ssh\"\n  ssh_username             = var.username\n  ssh_password             = var.password\n  ssh_timeout              = \"20m\"\n}\n\n\n\nbuild {\n  sources = [\"sources.virtualbox-iso.ubuntu-18_04-amd64\"]\n\n  # ssh\n  provisioner \"shell\" {\n    inline           = [\"sudo sed -i 's\u002F#PasswordAuthentication yes\u002FPasswordAuthentication no\u002Fg' \u002Fetc\u002Fssh\u002Fsshd_config\",\n                        \"sudo systemctl stop sshd\",\n                        \"sudo rm \u002Fetc\u002Fssh\u002Fssh_host_*\"]\n  }\n\n  # .\u002Fpacker-manifest.json\n  post-processor \"manifest\" {\n      output = \"packer-manifest.json\"\n  }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EБолее подробно о том, для чего нужны остальные атрибуты, вы можете узнать в \u003Ca href=\"https:\u002F\u002Fwww.packer.io\u002Fdocs\u002Fbuilders\u002Fvirtualbox\u002Fiso\"\u003Eдокументации\u003C\u002Fa\u003E на сборщик \u003Cem\u003Evirtualbox-iso\u003C\u002Fem\u003E. Здесь я дополнительно хочу выделить лишь один из них — \u003Cem\u003Eheadless\u003C\u002Fem\u003E, отвечающий за сборку в фоновом режиме. Этот флажок стоит установить в состояние \u003Cem\u003Efalse\u003C\u002Fem\u003E, чтобы включить графический интерфейс. Это упростит отладку.\u003C\u002Fp\u003E\u003Cp\u003EТеперь, если мы запустим Packer с нашими настройками, он сгенерирует три файла:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОбраз жесткого диска: \u003Cem\u003Eubuntu-18.04-amd64-disk001.vmdk\u003C\u002Fem\u003E;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EXML-файл с описанием виртуальной машины: \u003Cem\u003Eubuntu-18.04-amd64.ovf\u003C\u002Fem\u003E;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EJSON-файл со списком созданных артефактов:\u003Cem\u003E packer-manifest.json.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"246\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F583\u002F761\u002Fb89\u002F583761b89ecc7bdc6ab578bf78750ca5.png\" data-width=\"948\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПоследний файл записан благодаря блоку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E# .\u002Fpacker-manifest.json\npost-processor \"manifest\" {\n    output = \"packer-manifest.json\"\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФайл \u003Cem\u003Epacker-manifest.json\u003C\u002Fem\u003E будет иметь следующее содержимое:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"builds\": [\n    {\n      \"name\": \"ubuntu-18_04-amd64\",\n      \"builder_type\": \"virtualbox-iso\",\n      \"build_time\": 1629043596,\n      \"files\": [\n        {\n          \"name\": \"output\u002Fubuntu-18.04-amd64-disk001.vmdk\",\n          \"size\": 916132352\n        },\n        {\n          \"name\": \"output\u002Fubuntu-18.04-amd64.ovf\",\n          \"size\": 6771\n        }\n      ],\n      \"artifact_id\": \"VM\",\n      \"packer_run_uuid\": \"b5fbae2b-59e7-fd6f-4154-cae16befd459\",\n      \"custom_data\": null\n    }\n  ],\n  \"last_run_uuid\": \"b5fbae2b-59e7-fd6f-4154-cae16befd459\"\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭтот файл поможет нам найти результат сборки образа ВМ (\u003Cem\u003Eubuntu-18.04-amd64-disk001.vmdk \u003C\u002Fem\u003Eи \u003Cem\u003Eubuntu-18.04-amd64.ovf\u003C\u002Fem\u003E).\u003C\u002Fp\u003E\u003Ch2\u003EРедактируем .ovf\u003C\u002Fh2\u003E\u003Cp\u003EНа предыдущем этапе мы настроили экспорт образа ВМ в Open Virtualization Format. Следующим шагом будет редактировать файл \u003Cem\u003E*.ovf\u003C\u002Fem\u003E. \u003C\u002Fp\u003E\u003Cp\u003EЯ написал специальный скрипт на Python 3.8 (он включен в дистрибутив Ubuntu Server 20.04) и «распарсил» \u003Cem\u003Epacker-manifest.json\u003C\u002Fem\u003E, чтобы извлечь путь до файла .ovf. Вот часть, решающая эту задачу:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eimport json\n\nwith open(\"packer-manifest.json\", \"r\") as json_file:\n    data = json.load(json_file)\n    for i in data[\"builds\"]:\n        for j in i[\"files\"]:\n            if \".ovf\" in j[\"name\"]:\n                ovf_in = j[\"name\"]\n                ovf_out = ovf_in.replace(\".ovf\", \"-vmware.ovf\")\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПеременная \u003Cem\u003Eovf_in\u003C\u002Fem\u003E хранит путь до файла .ovf, а \u003Cem\u003Eovf_out\u003C\u002Fem\u003E — путь до нового файла .ovf, в котором мы сохраним изменения. Чтобы эти изменения внести, использую модуль \u003Cem\u003Exml.etree.ElementTree\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003Cp\u003EПри редактировании XML очень помогла утилита \u003Ca href=\"http:\u002F\u002Fxmlstar.sourceforge.net\u002F\"\u003EXMLStarlet\u003C\u002Fa\u003E. Она покажет, какие элементы дерева входят в состав файла .ovf.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EВывод утилиты XMLStarlet\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E\u003E xmlstarlet el .\u002Foutput\u002Fubuntu-18.04-amd64.ovf\nEnvelope\nEnvelope\u002FReferences\nEnvelope\u002FReferences\u002FFile\nEnvelope\u002FDiskSection\nEnvelope\u002FDiskSection\u002FInfo\nEnvelope\u002FDiskSection\u002FDisk\nEnvelope\u002FNetworkSection\nEnvelope\u002FNetworkSection\u002FInfo\nEnvelope\u002FNetworkSection\u002FNetwork\nEnvelope\u002FNetworkSection\u002FNetwork\u002FDescription\nEnvelope\u002FVirtualSystem\nEnvelope\u002FVirtualSystem\u002FInfo\nEnvelope\u002FVirtualSystem\u002FOperatingSystemSection\nEnvelope\u002FVirtualSystem\u002FOperatingSystemSection\u002FInfo\nEnvelope\u002FVirtualSystem\u002FOperatingSystemSection\u002FDescription\nEnvelope\u002FVirtualSystem\u002FOperatingSystemSection\u002Fvbox:OSType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FInfo\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FSystem\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FSystem\u002Fvssd:ElementName\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FSystem\u002Fvssd:InstanceID\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FSystem\u002Fvssd:VirtualSystemIdentifier\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FSystem\u002Fvssd:VirtualSystemType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Caption\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Description\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ElementName\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:InstanceID\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:VirtualQuantity\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:AllocationUnits\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Caption\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Description\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ElementName\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:InstanceID\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:VirtualQuantity\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Address\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Caption\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Description\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ElementName\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:InstanceID\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceSubType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Address\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Caption\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Description\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ElementName\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:InstanceID\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceSubType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Address\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Caption\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Description\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ElementName\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:InstanceID\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceSubType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:AddressOnParent\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Caption\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Description\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ElementName\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:HostResource\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:InstanceID\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Parent\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:AutomaticAllocation\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Caption\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:Connection\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ElementName\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:InstanceID\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceSubType\nEnvelope\u002FVirtualSystem\u002FVirtualHardwareSection\u002FItem\u002Frasd:ResourceType\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002Fovf:Info\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FCPU\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FCPU\u002FPAE\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FCPU\u002FLongMode\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FCPU\u002FX2APIC\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FCPU\u002FHardwareVirtExLargePages\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FMemory\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FBoot\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FBoot\u002FOrder\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FBoot\u002FOrder\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FBoot\u002FOrder\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FBoot\u002FOrder\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FDisplay\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FVideoCapture\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FRemoteDisplay\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FRemoteDisplay\u002FVRDEProperties\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FRemoteDisplay\u002FVRDEProperties\u002FProperty\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FRemoteDisplay\u002FVRDEProperties\u002FProperty\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FBIOS\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FBIOS\u002FIOAPIC\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FBIOS\u002FSmbiosUuidLittleEndian\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FNetwork\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FNetwork\u002FAdapter\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FNetwork\u002FAdapter\u002FNAT\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FAudioAdapter\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FRTC\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FHardware\u002FClipboard\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FStorageControllers\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FStorageControllers\u002FStorageController\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FStorageControllers\u002FStorageController\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FStorageControllers\u002FStorageController\u002FAttachedDevice\nEnvelope\u002FVirtualSystem\u002Fvbox:Machine\u002FStorageControllers\u002FStorageController\u002FAttachedDevice\u002FImage\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EВывод утилиты XMLStarlet представлен на языке \u003Ca href=\"https:\u002F\u002Fru.wikipedia.org\u002Fwiki\u002FXPath\"\u003EXPath\u003C\u002Fa\u003E. Как вы можете заметить, пространство имен определено не для каждого элемента — в их названии отсутствует часть перед символом двоеточия. Важно помнить, что при работе с XML в Python это приведет к неоднозначной трактовке атрибутов.\u003C\u002Fp\u003E\u003Cp\u003EСтроки, которые мы будем править, пропишу ниже в синтаксисе XPath с указанием пространства имен.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EУдаляем элементы, содержащие упоминания сети и сетевых адаптеров\u003C\u002Fstrong\u003E, при разворачивании виртуальной машины из шаблона всегда можно указать новые адаптеры:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003Eovf:Envelope\u002Fovf:NetworkSection\novf:Envelope\u002Fovf:VirtualSystem\u002Fvbox:Machine\u002Fovf:Hardware\u002Fovf:Network\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИз элементов ниже я удалил только те, в значении которых содержат слово Ethernet:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003Eovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\u002Fovf:Item\u002Frasd:Caption\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EИсключаем элементы с упоминанием IDE-контроллеров\u003C\u002Fstrong\u003E. IDE нам не нужно, так как мы будем работать со SCSI. В первом случае удаляем значения, где упоминается ideController, а во втором — только строки с атрибутом \u003Cem\u003Ename=\"IDE Controller\"\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003Eovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\u002Fovf:Item\u002Frasd:Caption\novf:Envelope\u002Fovf:VirtualSystem\u002Fvbox:Machine\u002Fovf:StorageControllers\u002Fovf:StorageController\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EУдаляем аудиоконтроллер\u003C\u002Fstrong\u003E. Он нам также не понадобится, так как практически никогда не используется на серверах.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003Eovf:Envelope\u002Fovf:VirtualSystem\u002Fvbox:Machine\u002Fovf:Hardware\u002Fovf:AudioAdapter\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EДля оперативной памяти заменяем единицы измерения\u003C\u002Fstrong\u003E. Меняем их с \u003Cem\u003EMegaBytes\u003C\u002Fem\u003E на \u003Cem\u003Ebyte*2^20\u003C\u002Fem\u003E. Этот нюанс связан с тем, что разные производители программного обеспечения порой трактуют Open Virtualization Format по-разному:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003Eovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\u002Fovf:Item\u002Frasd:AllocationUnits\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EМеняем тип системы\u003C\u002Fstrong\u003E. Вместо \u003Cem\u003Evirtualbox-2.2\u003C\u002Fem\u003E прописываем \u003Cem\u003Evmx-16\u003C\u002Fem\u003E, то есть меняем систему виртуализации с VirtualBox на \u003Ca href=\"https:\u002F\u002Fkb.vmware.com\u002Fs\u002Farticle\u002F1003746\"\u003EVMware\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003Eovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\u002Fovf:System\u002Fvssd:VirtualSystemType.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗдесь дополнительно отмечу, что для работы с модулем \u003Cem\u003Exml.etree.ElementTree\u003C\u002Fem\u003E необходимо зарегистрировать используемые \u003Ca href=\"https:\u002F\u002Fen.wikipedia.org\u002Fwiki\u002FXML_namespace\"\u003Eпространства имен\u003C\u002Fa\u003E функцией \u003Cem\u003Exml.etree.ElementTree.register_namespace\u003C\u002Fem\u003E. Их можно найти в исходном файле .ova по значению атрибутов \u003Cem\u003Exmlns\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eimport xml.etree.ElementTree as ET\n\nET.register_namespace('', \"http:\u002F\u002Fschemas.dmtf.org\u002Fovf\u002Fenvelope\u002F1\")\nET.register_namespace('ovf', \"http:\u002F\u002Fschemas.dmtf.org\u002Fovf\u002Fenvelope\u002F1\")\nET.register_namespace('rasd', \"http:\u002F\u002Fschemas.dmtf.org\u002Fwbem\u002Fwscim\u002F1\u002Fcim-schema\u002F2\u002FCIM_ResourceAllocationSettingData\")\nET.register_namespace('vssd', \"http:\u002F\u002Fschemas.dmtf.org\u002Fwbem\u002Fwscim\u002F1\u002Fcim-schema\u002F2\u002FCIM_VirtualSystemSettingData\")\nET.register_namespace('xsi', \"http:\u002F\u002Fwww.w3.org\u002F2001\u002FXMLSchema-instance\")\nET.register_namespace('vbox', \"http:\u002F\u002Fwww.virtualbox.org\u002Fovf\u002Fmachine\")\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПо итогу мы получаем финальный скрипт \u003Cem\u003Eovf-patch.py\u003C\u002Fem\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E#!\u002Fusr\u002Fbin\u002Fpython3\n\nimport json\nimport xml.etree.ElementTree as ET\n\nET.register_namespace('', \"http:\u002F\u002Fschemas.dmtf.org\u002Fovf\u002Fenvelope\u002F1\")\nET.register_namespace('ovf', \"http:\u002F\u002Fschemas.dmtf.org\u002Fovf\u002Fenvelope\u002F1\")\nET.register_namespace('rasd', \"http:\u002F\u002Fschemas.dmtf.org\u002Fwbem\u002Fwscim\u002F1\u002Fcim-schema\u002F2\u002FCIM_ResourceAllocationSettingData\")\nET.register_namespace('vssd', \"http:\u002F\u002Fschemas.dmtf.org\u002Fwbem\u002Fwscim\u002F1\u002Fcim-schema\u002F2\u002FCIM_VirtualSystemSettingData\")\nET.register_namespace('xsi', \"http:\u002F\u002Fwww.w3.org\u002F2001\u002FXMLSchema-instance\")\nET.register_namespace('vbox', \"http:\u002F\u002Fwww.virtualbox.org\u002Fovf\u002Fmachine\")\n\nwith open(\"packer-manifest.json\", \"r\") as json_file:\n    data = json.load(json_file)\n    for i in data[\"builds\"]:\n        for j in i[\"files\"]:\n            if \".ovf\" in j[\"name\"]:\n                ovf_in = j[\"name\"]\n                ovf_out = ovf_in.replace(\".ovf\", \"-vmware.ovf\")\n\n    tree = ET.parse(ovf_in)\n    root = tree.getroot()\n\n    # ovf:Envelope\u002Fovf:NetworkSection\n    for i in root.findall(\".\u002F{*}NetworkSection\"):\n        root.remove(i)\n\n    # ovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\n    for i in root.findall(\".\u002F{*}VirtualSystem\u002F{*}VirtualHardwareSection\"):\n        # ovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\u002Fovf:Item\n        for i_i in i.findall(\".\u002F{*}Item\"):\n            # ovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\u002Fovf:Item\u002Frasd:AllocationUnits\n            for i_i_i in i_i.findall(\".\u002F{*}AllocationUnits\"):\n                if i_i_i.text == \"MegaBytes\":\n                    i_i_i.text = \"byte * 2^20\"\n            # ovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\u002Fovf:Item\u002Frasd:Caption\n            for i_i_i in i_i.findall(\".\u002F{*}Caption\"):\n                if \"ideController\" in i_i_i.text:\n                    i.remove(i_i)\n                if \"Ethernet\" in i_i_i.text:\n                    i.remove(i_i)\n        # ovf:Envelope\u002Fovf:VirtualSystem\u002Fovf:VirtualHardwareSection\u002Fovf:System\u002Fvssd:VirtualSystemType\n        for i_i in i.findall(\"{*}System\u002F{*}VirtualSystemType\"):\n            i_i.text = \"vmx-16\"\n\n    # ovf:Envelope\u002Fovf:VirtualSystem\u002Fvbox:Machine\u002Fovf:Hardware\n    for i in root.findall(\".\u002F{*}VirtualSystem\u002F{*}Machine\u002F{*}Hardware\"):\n        # ovf:Envelope\u002Fovf:VirtualSystem\u002Fvbox:Machine\u002Fovf:Hardware\u002Fovf:AudioAdapter\n        for i_i in i.findall(\".\u002F{*}AudioAdapter\"):\n            i.remove(i_i)\n        # ovf:Envelope\u002Fovf:VirtualSystem\u002Fvbox:Machine\u002Fovf:Hardware\u002Fovf:Network\n        for i_i in i.findall(\".\u002F{*}Network\"):\n            i.remove(i_i)\n\n    # ovf:Envelope\u002Fovf:VirtualSystem\u002Fvbox:Machine\u002Fovf:StorageControllers\n    for i in root.findall(\".\u002F{*}VirtualSystem\u002F{*}Machine\u002F{*}StorageControllers\"):\n        # ovf:Envelope\u002Fovf:VirtualSystem\u002Fvbox:Machine\u002Fovf:StorageControllers\u002Fovf:StorageController\n        for i_i in i.findall(\".\u002F{*}StorageController[@name='IDE Controller']\"):\n            i.remove(i_i)\n\n    tree.write(ovf_out)\n    print(ovf_out)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПосле запуска скрипта в выходном каталоге появятся файлы:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОбраз жесткого диска: \u003Cem\u003Eubuntu-18.04-amd64-disk001.vmdk\u003C\u002Fem\u003E;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EXML-файл с описанием ВМ: \u003Cem\u003Eubuntu-18.04-amd64.ovf\u003C\u002Fem\u003E;    \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EXML-файл с описанием ВМ, готовый к импорту в Cloud Director: \u003Cem\u003Eubuntu-18.04-amd64-vmware.ovf\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"251\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F66b\u002F0c8\u002Ffe5\u002F66b0c8fe595c9da7d117add4ff1fb1a5.png\" data-width=\"948\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВ качестве примера привожу исходный файл \u003Cem\u003Eubuntu-18.04-amd64.ovf\u003C\u002Fem\u003E:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003Eubuntu-18.04-amd64.ovf\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E&lt;?xml version=\"1.0\"?\u003E\n&lt;Envelope ovf:version=\"1.0\" xml:lang=\"en-US\" xmlns=\"http:\u002F\u002Fschemas.dmtf.org\u002Fovf\u002Fenvelope\u002F1\" xmlns:ovf=\"http:\u002F\u002Fschemas.dmtf.org\u002Fovf\u002Fenvelope\u002F1\" xmlns:rasd=\"http:\u002F\u002Fschemas.dmtf.org\u002Fwbem\u002Fwscim\u002F1\u002Fcim-schema\u002F2\u002FCIM_ResourceAllocationSettingData\" xmlns:vssd=\"http:\u002F\u002Fschemas.dmtf.org\u002Fwbem\u002Fwscim\u002F1\u002Fcim-schema\u002F2\u002FCIM_VirtualSystemSettingData\" xmlns:xsi=\"http:\u002F\u002Fwww.w3.org\u002F2001\u002FXMLSchema-instance\" xmlns:vbox=\"http:\u002F\u002Fwww.virtualbox.org\u002Fovf\u002Fmachine\"\u003E\n  &lt;References\u003E\n    &lt;File ovf:id=\"file1\" ovf:href=\"ubuntu-18.04-amd64-disk001.vmdk\"\u002F\u003E\n  &lt;\u002FReferences\u003E\n  &lt;DiskSection\u003E\n    &lt;Info\u003EList of the virtual disks used in the package&lt;\u002FInfo\u003E\n    &lt;Disk ovf:capacity=\"34359738368\" ovf:diskId=\"vmdisk1\" ovf:fileRef=\"file1\" ovf:format=\"http:\u002F\u002Fwww.vmware.com\u002Finterfaces\u002Fspecifications\u002Fvmdk.html#streamOptimized\" vbox:uuid=\"a5659548-990a-4853-a8ab-bb9a168df0fc\"\u002F\u003E\n  &lt;\u002FDiskSection\u003E\n  &lt;NetworkSection\u003E\n    &lt;Info\u003ELogical networks used in the package&lt;\u002FInfo\u003E\n    &lt;Network ovf:name=\"NAT\"\u003E\n      &lt;Description\u003ELogical network used by this appliance.&lt;\u002FDescription\u003E\n    &lt;\u002FNetwork\u003E\n  &lt;\u002FNetworkSection\u003E\n  &lt;VirtualSystem ovf:id=\"ubuntu-18.04-amd64\"\u003E\n    &lt;Info\u003EA virtual machine&lt;\u002FInfo\u003E\n    &lt;OperatingSystemSection ovf:id=\"94\"\u003E\n      &lt;Info\u003EThe kind of installed guest operating system&lt;\u002FInfo\u003E\n      &lt;Description\u003EUbuntu_64&lt;\u002FDescription\u003E\n      &lt;vbox:OSType ovf:required=\"false\"\u003EUbuntu_64&lt;\u002Fvbox:OSType\u003E\n    &lt;\u002FOperatingSystemSection\u003E\n    &lt;VirtualHardwareSection\u003E\n      &lt;Info\u003EVirtual hardware requirements for a virtual machine&lt;\u002FInfo\u003E\n      &lt;System\u003E\n        &lt;vssd:ElementName\u003EVirtual Hardware Family&lt;\u002Fvssd:ElementName\u003E\n        &lt;vssd:InstanceID\u003E0&lt;\u002Fvssd:InstanceID\u003E\n        &lt;vssd:VirtualSystemIdentifier\u003Eubuntu-18.04-amd64&lt;\u002Fvssd:VirtualSystemIdentifier\u003E\n        &lt;vssd:VirtualSystemType\u003Evirtualbox-2.2&lt;\u002Fvssd:VirtualSystemType\u003E\n      &lt;\u002FSystem\u003E\n      &lt;Item\u003E\n        &lt;rasd:Caption\u003E2 virtual CPU&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003ENumber of virtual CPUs&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003E2 virtual CPU&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E1&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceType\u003E3&lt;\u002Frasd:ResourceType\u003E\n        &lt;rasd:VirtualQuantity\u003E2&lt;\u002Frasd:VirtualQuantity\u003E\n      &lt;\u002FItem\u003E\n      &lt;Item\u003E\n        &lt;rasd:AllocationUnits\u003EMegaBytes&lt;\u002Frasd:AllocationUnits\u003E\n        &lt;rasd:Caption\u003E4096 MB of memory&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003EMemory Size&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003E4096 MB of memory&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E2&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceType\u003E4&lt;\u002Frasd:ResourceType\u003E\n        &lt;rasd:VirtualQuantity\u003E4096&lt;\u002Frasd:VirtualQuantity\u003E\n      &lt;\u002FItem\u003E\n      &lt;Item\u003E\n        &lt;rasd:Address\u003E0&lt;\u002Frasd:Address\u003E\n        &lt;rasd:Caption\u003EideController0&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003EIDE Controller&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003EideController0&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E3&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceSubType\u003EPIIX4&lt;\u002Frasd:ResourceSubType\u003E\n        &lt;rasd:ResourceType\u003E5&lt;\u002Frasd:ResourceType\u003E\n      &lt;\u002FItem\u003E\n      &lt;Item\u003E\n        &lt;rasd:Address\u003E1&lt;\u002Frasd:Address\u003E\n        &lt;rasd:Caption\u003EideController1&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003EIDE Controller&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003EideController1&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E4&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceSubType\u003EPIIX4&lt;\u002Frasd:ResourceSubType\u003E\n        &lt;rasd:ResourceType\u003E5&lt;\u002Frasd:ResourceType\u003E\n      &lt;\u002FItem\u003E\n      &lt;Item\u003E\n        &lt;rasd:Address\u003E0&lt;\u002Frasd:Address\u003E\n        &lt;rasd:Caption\u003EscsiController0&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003ESCSI Controller&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003EscsiController0&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E5&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceSubType\u003Elsilogic&lt;\u002Frasd:ResourceSubType\u003E\n        &lt;rasd:ResourceType\u003E6&lt;\u002Frasd:ResourceType\u003E\n      &lt;\u002FItem\u003E\n      &lt;Item\u003E\n        &lt;rasd:AddressOnParent\u003E0&lt;\u002Frasd:AddressOnParent\u003E\n        &lt;rasd:Caption\u003Edisk1&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003EDisk Image&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003Edisk1&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:HostResource\u003E\u002Fdisk\u002Fvmdisk1&lt;\u002Frasd:HostResource\u003E\n        &lt;rasd:InstanceID\u003E6&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:Parent\u003E5&lt;\u002Frasd:Parent\u003E\n        &lt;rasd:ResourceType\u003E17&lt;\u002Frasd:ResourceType\u003E\n      &lt;\u002FItem\u003E\n      &lt;Item\u003E\n        &lt;rasd:AutomaticAllocation\u003Etrue&lt;\u002Frasd:AutomaticAllocation\u003E\n        &lt;rasd:Caption\u003EEthernet adapter on 'NAT'&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Connection\u003ENAT&lt;\u002Frasd:Connection\u003E\n        &lt;rasd:ElementName\u003EEthernet adapter on 'NAT'&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E7&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceSubType\u003EE1000&lt;\u002Frasd:ResourceSubType\u003E\n        &lt;rasd:ResourceType\u003E10&lt;\u002Frasd:ResourceType\u003E\n      &lt;\u002FItem\u003E\n    &lt;\u002FVirtualHardwareSection\u003E\n    &lt;vbox:Machine ovf:required=\"false\" version=\"1.16-linux\" uuid=\"{37db6186-f653-47f2-ba71-1b325b4aa806}\" name=\"ubuntu-18.04-amd64\" OSType=\"Ubuntu_64\" snapshotFolder=\"Snapshots\" lastStateChange=\"2021-08-15T18:03:51Z\"\u003E\n      &lt;ovf:Info\u003EComplete VirtualBox machine configuration in VirtualBox format&lt;\u002Fovf:Info\u003E\n      &lt;Hardware\u003E\n        &lt;CPU count=\"2\"\u003E\n          &lt;PAE enabled=\"true\"\u002F\u003E\n          &lt;LongMode enabled=\"true\"\u002F\u003E\n          &lt;X2APIC enabled=\"true\"\u002F\u003E\n          &lt;HardwareVirtExLargePages enabled=\"false\"\u002F\u003E\n        &lt;\u002FCPU\u003E\n        &lt;Memory RAMSize=\"4096\"\u002F\u003E\n        &lt;Boot\u003E\n          &lt;Order position=\"1\" device=\"HardDisk\"\u002F\u003E\n          &lt;Order position=\"2\" device=\"DVD\"\u002F\u003E\n          &lt;Order position=\"3\" device=\"None\"\u002F\u003E\n          &lt;Order position=\"4\" device=\"None\"\u002F\u003E\n        &lt;\u002FBoot\u003E\n        &lt;Display controller=\"VMSVGA\" VRAMSize=\"16\"\u002F\u003E\n        &lt;VideoCapture screens=\"1\" file=\".\" fps=\"25\"\u002F\u003E\n        &lt;RemoteDisplay enabled=\"true\"\u003E\n          &lt;VRDEProperties\u003E\n            &lt;Property name=\"TCP\u002FAddress\" value=\"127.0.0.1\"\u002F\u003E\n            &lt;Property name=\"TCP\u002FPorts\" value=\"5968\"\u002F\u003E\n          &lt;\u002FVRDEProperties\u003E\n        &lt;\u002FRemoteDisplay\u003E\n        &lt;BIOS\u003E\n          &lt;IOAPIC enabled=\"true\"\u002F\u003E\n          &lt;SmbiosUuidLittleEndian enabled=\"true\"\u002F\u003E\n        &lt;\u002FBIOS\u003E\n        &lt;Network\u003E\n          &lt;Adapter slot=\"0\" enabled=\"true\" MACAddress=\"0800272C8B78\" type=\"82540EM\"\u003E\n            &lt;NAT\u002F\u003E\n          &lt;\u002FAdapter\u003E\n        &lt;\u002FNetwork\u003E\n        &lt;AudioAdapter driver=\"Pulse\" enabledIn=\"false\" enabledOut=\"false\"\u002F\u003E\n        &lt;RTC localOrUTC=\"UTC\"\u002F\u003E\n        &lt;Clipboard\u002F\u003E\n      &lt;\u002FHardware\u003E\n      &lt;StorageControllers\u003E\n        &lt;StorageController name=\"IDE Controller\" type=\"PIIX4\" PortCount=\"2\" useHostIOCache=\"true\" Bootable=\"true\"\u002F\u003E\n        &lt;StorageController name=\"SCSI Controller\" type=\"LsiLogic\" PortCount=\"16\" useHostIOCache=\"false\" Bootable=\"true\"\u003E\n          &lt;AttachedDevice nonrotational=\"true\" discard=\"true\" type=\"HardDisk\" hotpluggable=\"false\" port=\"0\" device=\"0\"\u003E\n            &lt;Image uuid=\"{a5659548-990a-4853-a8ab-bb9a168df0fc}\"\u002F\u003E\n          &lt;\u002FAttachedDevice\u003E\n        &lt;\u002FStorageController\u003E\n      &lt;\u002FStorageControllers\u003E\n    &lt;\u002Fvbox:Machine\u003E\n  &lt;\u002FVirtualSystem\u003E\n&lt;\u002FEnvelope\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EИ файл с внесенными изменениями \u003Cem\u003Eubuntu-18.04-amd64-vmware.ovf\u003C\u002Fem\u003E:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003Eubuntu-18.04-amd64-vmware.ovf\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E&lt;ovf:Envelope xmlns:ovf=\"http:\u002F\u002Fschemas.dmtf.org\u002Fovf\u002Fenvelope\u002F1\" xmlns:rasd=\"http:\u002F\u002Fschemas.dmtf.org\u002Fwbem\u002Fwscim\u002F1\u002Fcim-schema\u002F2\u002FCIM_ResourceAllocationSettingData\" xmlns:vbox=\"http:\u002F\u002Fwww.virtualbox.org\u002Fovf\u002Fmachine\" xmlns:vssd=\"http:\u002F\u002Fschemas.dmtf.org\u002Fwbem\u002Fwscim\u002F1\u002Fcim-schema\u002F2\u002FCIM_VirtualSystemSettingData\" ovf:version=\"1.0\" xml:lang=\"en-US\"\u003E\n  &lt;ovf:References\u003E\n    &lt;ovf:File ovf:id=\"file1\" ovf:href=\"ubuntu-18.04-amd64-disk001.vmdk\" \u002F\u003E\n  &lt;\u002Fovf:References\u003E\n  &lt;ovf:DiskSection\u003E\n    &lt;ovf:Info\u003EList of the virtual disks used in the package&lt;\u002Fovf:Info\u003E\n    &lt;ovf:Disk ovf:capacity=\"34359738368\" ovf:diskId=\"vmdisk1\" ovf:fileRef=\"file1\" ovf:format=\"http:\u002F\u002Fwww.vmware.com\u002Finterfaces\u002Fspecifications\u002Fvmdk.html#streamOptimized\" vbox:uuid=\"a5659548-990a-4853-a8ab-bb9a168df0fc\" \u002F\u003E\n  &lt;\u002Fovf:DiskSection\u003E\n  &lt;ovf:VirtualSystem ovf:id=\"ubuntu-18.04-amd64\"\u003E\n    &lt;ovf:Info\u003EA virtual machine&lt;\u002Fovf:Info\u003E\n    &lt;ovf:OperatingSystemSection ovf:id=\"94\"\u003E\n      &lt;ovf:Info\u003EThe kind of installed guest operating system&lt;\u002Fovf:Info\u003E\n      &lt;ovf:Description\u003EUbuntu_64&lt;\u002Fovf:Description\u003E\n      &lt;vbox:OSType ovf:required=\"false\"\u003EUbuntu_64&lt;\u002Fvbox:OSType\u003E\n    &lt;\u002Fovf:OperatingSystemSection\u003E\n    &lt;ovf:VirtualHardwareSection\u003E\n      &lt;ovf:Info\u003EVirtual hardware requirements for a virtual machine&lt;\u002Fovf:Info\u003E\n      &lt;ovf:System\u003E\n        &lt;vssd:ElementName\u003EVirtual Hardware Family&lt;\u002Fvssd:ElementName\u003E\n        &lt;vssd:InstanceID\u003E0&lt;\u002Fvssd:InstanceID\u003E\n        &lt;vssd:VirtualSystemIdentifier\u003Eubuntu-18.04-amd64&lt;\u002Fvssd:VirtualSystemIdentifier\u003E\n        &lt;vssd:VirtualSystemType\u003Evmx-16&lt;\u002Fvssd:VirtualSystemType\u003E\n      &lt;\u002Fovf:System\u003E\n      &lt;ovf:Item\u003E\n        &lt;rasd:Caption\u003E2 virtual CPU&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003ENumber of virtual CPUs&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003E2 virtual CPU&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E1&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceType\u003E3&lt;\u002Frasd:ResourceType\u003E\n        &lt;rasd:VirtualQuantity\u003E2&lt;\u002Frasd:VirtualQuantity\u003E\n      &lt;\u002Fovf:Item\u003E\n      &lt;ovf:Item\u003E\n        &lt;rasd:AllocationUnits\u003Ebyte * 2^20&lt;\u002Frasd:AllocationUnits\u003E\n        &lt;rasd:Caption\u003E4096 MB of memory&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003EMemory Size&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003E4096 MB of memory&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E2&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceType\u003E4&lt;\u002Frasd:ResourceType\u003E\n        &lt;rasd:VirtualQuantity\u003E4096&lt;\u002Frasd:VirtualQuantity\u003E\n      &lt;\u002Fovf:Item\u003E\n      &lt;ovf:Item\u003E\n        &lt;rasd:Address\u003E0&lt;\u002Frasd:Address\u003E\n        &lt;rasd:Caption\u003EscsiController0&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003ESCSI Controller&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003EscsiController0&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:InstanceID\u003E5&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:ResourceSubType\u003Elsilogic&lt;\u002Frasd:ResourceSubType\u003E\n        &lt;rasd:ResourceType\u003E6&lt;\u002Frasd:ResourceType\u003E\n      &lt;\u002Fovf:Item\u003E\n      &lt;ovf:Item\u003E\n        &lt;rasd:AddressOnParent\u003E0&lt;\u002Frasd:AddressOnParent\u003E\n        &lt;rasd:Caption\u003Edisk1&lt;\u002Frasd:Caption\u003E\n        &lt;rasd:Description\u003EDisk Image&lt;\u002Frasd:Description\u003E\n        &lt;rasd:ElementName\u003Edisk1&lt;\u002Frasd:ElementName\u003E\n        &lt;rasd:HostResource\u003E\u002Fdisk\u002Fvmdisk1&lt;\u002Frasd:HostResource\u003E\n        &lt;rasd:InstanceID\u003E6&lt;\u002Frasd:InstanceID\u003E\n        &lt;rasd:Parent\u003E5&lt;\u002Frasd:Parent\u003E\n        &lt;rasd:ResourceType\u003E17&lt;\u002Frasd:ResourceType\u003E\n      &lt;\u002Fovf:Item\u003E\n      &lt;\u002Fovf:VirtualHardwareSection\u003E\n    &lt;vbox:Machine ovf:required=\"false\" version=\"1.16-linux\" uuid=\"{37db6186-f653-47f2-ba71-1b325b4aa806}\" name=\"ubuntu-18.04-amd64\" OSType=\"Ubuntu_64\" snapshotFolder=\"Snapshots\" lastStateChange=\"2021-08-15T18:03:51Z\"\u003E\n      &lt;ovf:Info\u003EComplete VirtualBox machine configuration in VirtualBox format&lt;\u002Fovf:Info\u003E\n      &lt;ovf:Hardware\u003E\n        &lt;ovf:CPU count=\"2\"\u003E\n          &lt;ovf:PAE enabled=\"true\" \u002F\u003E\n          &lt;ovf:LongMode enabled=\"true\" \u002F\u003E\n          &lt;ovf:X2APIC enabled=\"true\" \u002F\u003E\n          &lt;ovf:HardwareVirtExLargePages enabled=\"false\" \u002F\u003E\n        &lt;\u002Fovf:CPU\u003E\n        &lt;ovf:Memory RAMSize=\"4096\" \u002F\u003E\n        &lt;ovf:Boot\u003E\n          &lt;ovf:Order position=\"1\" device=\"HardDisk\" \u002F\u003E\n          &lt;ovf:Order position=\"2\" device=\"DVD\" \u002F\u003E\n          &lt;ovf:Order position=\"3\" device=\"None\" \u002F\u003E\n          &lt;ovf:Order position=\"4\" device=\"None\" \u002F\u003E\n        &lt;\u002Fovf:Boot\u003E\n        &lt;ovf:Display controller=\"VMSVGA\" VRAMSize=\"16\" \u002F\u003E\n        &lt;ovf:VideoCapture screens=\"1\" file=\".\" fps=\"25\" \u002F\u003E\n        &lt;ovf:RemoteDisplay enabled=\"true\"\u003E\n          &lt;ovf:VRDEProperties\u003E\n            &lt;ovf:Property name=\"TCP\u002FAddress\" value=\"127.0.0.1\" \u002F\u003E\n            &lt;ovf:Property name=\"TCP\u002FPorts\" value=\"5968\" \u002F\u003E\n          &lt;\u002Fovf:VRDEProperties\u003E\n        &lt;\u002Fovf:RemoteDisplay\u003E\n        &lt;ovf:BIOS\u003E\n          &lt;ovf:IOAPIC enabled=\"true\" \u002F\u003E\n          &lt;ovf:SmbiosUuidLittleEndian enabled=\"true\" \u002F\u003E\n        &lt;\u002Fovf:BIOS\u003E\n        &lt;ovf:RTC localOrUTC=\"UTC\" \u002F\u003E\n        &lt;ovf:Clipboard \u002F\u003E\n      &lt;\u002Fovf:Hardware\u003E\n      &lt;ovf:StorageControllers\u003E\n        &lt;ovf:StorageController name=\"SCSI Controller\" type=\"LsiLogic\" PortCount=\"16\" useHostIOCache=\"false\" Bootable=\"true\"\u003E\n          &lt;ovf:AttachedDevice nonrotational=\"true\" discard=\"true\" type=\"HardDisk\" hotpluggable=\"false\" port=\"0\" device=\"0\"\u003E\n            &lt;ovf:Image uuid=\"{a5659548-990a-4853-a8ab-bb9a168df0fc}\" \u002F\u003E\n          &lt;\u002Fovf:AttachedDevice\u003E\n        &lt;\u002Fovf:StorageController\u003E\n      &lt;\u002Fovf:StorageControllers\u003E\n    &lt;\u002Fvbox:Machine\u003E\n  &lt;\u002Fovf:VirtualSystem\u003E\n&lt;\u002Fovf:Envelope\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Ch2\u003EИмпортируем образ\u003C\u002Fh2\u003E\u003Cp\u003EДля импорта образа ВМ в библиотеку можно воспользоваться инструментами \u003Ca href=\"https:\u002F\u002Fwww.vmware.com\u002Fsupport\u002Fdeveloper\u002Fovf\u002F\"\u003EOVF Tool\u003C\u002Fa\u003E или \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fvmware\u002Fvcd-cli\"\u003Evcd-cli\u003C\u002Fa\u003E. Это — инструменты, разработанные VMware. Они хорошо документированы и работают стабильно. В дальнейшем из библиотеки Cloud Director можно разворачивать ВМ из созданного шаблона вручную или с инструментами автоматизации (например, \u003Ca href=\"https:\u002F\u002Fregistry.terraform.io\u002Fproviders\u002Fsbercloud-terraform\u002Fsbercloud\u002Flatest\"\u003ETerraform\u003C\u002Fa\u003E), добавив по требованию сетевые контроллеры, дополнительные диски и так далее.\u003C\u002Fp\u003E\u003Cp\u003EТаким образом, мне удалось подготовить образ VirtualBox к загрузке в VMware Cloud Director. Описал шаги для реализации полноценного CI-пайплайна.\u003C\u002Fp\u003E\u003Cp\u003EЕсли хотите использовать \u003Ca href=\"https:\u002F\u002Fsbercloud.ru\u002Fru\u002Fvmware-virtual-datacenter?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=habr_clouddirectorguide_0610_vmware_enterprise\"\u003Eвиртуальный ЦОД на базе VMware\u003C\u002Fa\u003E, вы можете \u003Ca href=\"https:\u002F\u002Fsbercloud.ru\u002Fru\u002Fbecome-customer?product=vmware-virtual-datacenter&amp;utm_source=habr&amp;utm_medium=article&amp;utm_campaign=habr_clouddirectorguide_0610_vmware_enterprise\"\u003Eоставить заявку на подключение и бесплатную консультацию\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"Cloud Director"},{"titleHtml":"VirtualBox"},{"titleHtml":"OVF"},{"titleHtml":"Packer"},{"titleHtml":"Python"},{"titleHtml":"XML"},{"titleHtml":"XMLStarlet"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0f2\u002F2f8\u002F884\u002F0f22f88841d18a0c1e8814efb7a7b95e.jpg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0f2\u002F2f8\u002F884\u002F0f22f88841d18a0c1e8814efb7a7b95e.jpg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fsbercloud\\\u002Fblog\\\u002F581362\\\u002F\"},\"headline\":\"Как настроить автоматическую сборку образов ВМ для VMware Cloud Director — компактное руководство\",\"datePublished\":\"2021-10-06T13:05:42+03:00\",\"dateModified\":\"2021-10-06T13:11:57+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Roman Petrov\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в SberCloud. В рамках одного проекта мне потребовалось авт...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fsbercloud\\\u002Fblog\\\u002F581362\\\u002F#post-content-body\",\"about\":[\"c_sbercloud\",\"h_open_source\",\"h_virtualization\",\"h_cloud_computing\",\"h_devops\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F581362\\\u002F6c80ba17b12afe6a89e6e9d9503d07ad\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff95\\\u002Fb0b\\\u002F2a5\\\u002Ff95b0b2a56fab1d7ca8f6bee1a56c4ab.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F583\\\u002F761\\\u002Fb89\\\u002F583761b89ecc7bdc6ab578bf78750ca5.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F66b\\\u002F0c8\\\u002Ffe5\\\u002F66b0c8fe595c9da7d117add4ff1fb1a5.png\"]}","metaDescription":"Привет, Хабр! Меня зовут Роман Петров, занимаюсь разработкой продуктов для управления учетными данными в SberCloud. В рамках одного проекта мне потребовалось автоматизировать сборку виртуальных машин...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"sbercloud":{"alias":"sbercloud","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F291\u002F56f\u002F771\u002F29156f7710a7ebf37d50714d12f668ad.png","titleHtml":"SberCloud","descriptionHtml":"Облачная IT-инфраструктура для бизнеса","relatedData":null,"statistics":{"postsCount":3,"newsCount":1,"vacanciesCount":0,"employeesCount":5,"careerRating":null,"subscribersCount":36,"rating":74.14,"invest":null},"foundationDate":{"year":"2019","month":"01","day":null},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fsbercloud.ru\u002Fru?utm_source=habr&utm_medium=blog&utm_camp","staffNumber":"201–500 человек","registrationDate":"2021-09-16T14:45:15+00:00","representativeUser":{"alias":"SberCloud_Administrator","fullname":null},"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fsbercloud.ru\u002F"},{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fsbercloud"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fsbercloud"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002Fwearesbercloud"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-159157534-7"},{"type":"ym","trackingId":"85455229"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002Fa01\u002F492\u002F146\u002Fa01492146183b8b9c3f4a5f2c612cc62.jpg","linkUrl":"https:\u002F\u002Fsbercloud.ru\u002Fru?utm_source=habr&utm_medium=blog&utm_campaign=habr_headbanner_all_brand","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"SberCloud, Москва - Облачная IT-инфраструктура для бизнеса с январь 2019 года","title":"SberCloud, Москва - Облачная IT-инфраструктура для бизнеса с январь 2019 года","keywords":["Облачные вычисления","Машинное обучение","Хостинг","Серверное администрирование","Разработка под e-commerce"],"descriptionHtml":"3 статьи от авторов компании SberCloud","description":"3 статьи от авторов компании SberCloud"},"aDeskSettings":null,"careerAlias":null,"maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Опыт миграции кластера PostgreSQL на базе Patroni / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/flant\/blog\/583170\/"},"headline":"Опыт миграции кластера PostgreSQL на базе Patroni","datePublished":"2021-10-15T09:41:52+03:00","dateModified":"2021-10-15T23:15:53+03:00","author":{"@type":"Person","name":"Павел Стратнев"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой &mdash; я и не думал, что могут в...","url":"https:\/\/habr.com\/ru\/company\/flant\/blog\/583170\/#post-content-body","about":["c_flant","h_sys_admin","h_postgresql","h_db_admins","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/583170\/47cb3e536b0df48594fea60895756c90\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/71f\/d64\/491\/71fd6449110f3199219161664c278ecb.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/edf\/6fd\/2b8\/edf6fd2b863828110f642fdcf7f8ec74.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f9e\/95b\/6e5\/f9e95b6e53438969a5c2c06c21b684a0.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/82b\/46a\/42b\/82b46a42bc898afd2212e0b18418e164.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/af5\/c7c\/6e4\/af5c7c6e482cdb930d8fd9ce043d3cff.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/277\/686\/86a\/27768686aa1880e4a853d3e8bf5f5782.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b4c\/df1\/484\/b4cdf148443dca3998fb4131a9865194.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/a25\/2b1\/f7c\/a252b1f7c08aebec60b0d1957c844552.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/0e3\/719\/27c\/0e371927c1d683b775363ae669f9cdd9.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/673\/401\/068\/6734010682f2f3d739ff7b6c2a853592.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/3ad\/8ab\/5d2\/3ad8ab5d2509f11fcdb9ed4bdd4417e7.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/fe1\/665\/53d\/fe166553dfdb3eb47ac793149d460aaf.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/9a7\/2cf\/81b\/9a72cf81b8c9066b79f5dd3d2ad2c7f2.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/d2a\/8d2\/97c\/d2a8d297c43fbbb316de9a183a0fcb0c.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Опыт миграции кластера PostgreSQL на базе Patroni" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Опыт миграции кластера PostgreSQL на базе Patroni" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Опыт миграции кластера PostgreSQL на базе Patroni" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы.Но в процессе..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы.Но в процессе..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы.Но в процессе..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы.Но в процессе..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы.Но в процессе..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/d93/ad1/a9a/d93ad1a9a5c03848d4008c3fa045ffe6.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/d93/ad1/a9a/d93ad1a9a5c03848d4008c3fa045ffe6.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/d93/ad1/a9a/d93ad1a9a5c03848d4008c3fa045ffe6.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/d93/ad1/a9a/d93ad1a9a5c03848d4008c3fa045ffe6.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/d93/ad1/a9a/d93ad1a9a5c03848d4008c3fa045ffe6.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583170" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-15T06:41:52.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583170/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/flant/blog/583170/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/d93/ad1/a9a/d93ad1a9a5c03848d4008c3fa045ffe6.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583170/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="flant" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://flant.ru"><img src="//habrastorage.org/getpro/habr/branding/3d4/c06/8ba/3d4c068ba151a5c21727ee9bb31f95de.png" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/flant/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/de7/635/363/de763536359ce6e2d2a978f8dded1964.png" width="48" class="tm-entity-image__pic"></div></a> <a href="https://career.habr.com/companies/flant" rel="noopener" target="_blank" class="tm-grade tm-company-card__rating"><div class="tm-rating"><div class="tm-rating__header"><svg height="24" width="24" class="tm-svg-img tm-svg-grade__icon"><title>Оценка компании на Хабр Карьере</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#grade"></use></svg> <div class="tm-rating__counter tm-rating__counter_variant-grade">4.51</div></div> <div class="tm-rating__text tm-rating__text_variant-grade">
+    Оценка
+  </div></div></a> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">221.8</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/flant/profile/" class="tm-company-card__name">
+        Флант
+      </a> <div class="tm-company-card__description">DevOps-as-a-Service, Kubernetes, обслуживание 24×7</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/stratnevpy/" title="stratnevpy" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/stratnevpy/" class="tm-user-info__username">
+      stratnevpy
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-15T06:41:52.000Z" title="2021-10-15, 09:41">15  октября   в 09:41</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Опыт миграции кластера PostgreSQL на базе Patroni</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/flant/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Флант</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/sys_admin/" class="tm-article-snippet__hubs-item-link"><span>Системное администрирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/postgresql/" class="tm-article-snippet__hubs-item-link"><span>PostgreSQL</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/db_admins/" class="tm-article-snippet__hubs-item-link"><span>Администрирование баз данных</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы.</p><figure class="full-width "><img src="/img/image-loader.svg" height="450" data-src="https://habrastorage.org/getpro/habr/upload_files/71f/d64/491/71fd6449110f3199219161664c278ecb.png" data-width="780"/><figcaption></figcaption></figure><p>Но в процессе реализации встретились некоторые сложности, которые натолкнули на мысль поделиться полученным опытом. В этой работе описываются практические шаги и нюансы, которые встретились во время переноса кластера на новую платформу. Использовались следующие версии ПО: PostgreSQL 11.13, Patroni 2.1.1, etcd 3.2.17 (API version 2).</p><p>Итак, поехали!</p><h2>Введение</h2><p><a href="https://github.com/zalando/patroni"><strong><u>Patroni</u></strong></a> — это известный Open Source-проект для СУБД PostgreSQL от Zalando, написанный на Python и созданный для автоматизации построения кластеров высокой доступности. По своей сути его можно назвать своеобразным фреймворком. В основе Patroni стоит механизм потоковой репликации (streaming replication), работа которого строится на WAL (Write-Ahead Log). Когда мы вносим изменения в базу данных, все изменения сперва записываются в WAL. После записи в WAL СУБД производит системный вызов <code>fsync</code>, в результате чего данные записываются на диск. Это обеспечивает возможность сохранения незавершенных операций, например, в случае аварийного завершения работы сервера. При включении сервера СУБД прочитает последние записи из WAL и применит к базе данных соответствующие изменения.</p><p><strong>Потоковая репликация</strong> — это механизм, который реализует передачу записей из WAL от мастера к репликам. При такой конфигурации репликации право на запись есть только у мастера, а читать возможно как с мастера, так и с реплик (если разрешено). Для разрешения чтения с реплики она должна работать в режиме <code>hot_standby</code>. Так как большинство запросов к СУБД — запросы на чтение, репликация позволяет масштабировать базу данных горизонтально. Потоковая репликация имеет два режима работы:</p><ul><li><p><strong>асинхронная</strong> — запросы выполняются на мастер-узле сразу же, в то время как изменения из WAL репликам передаются отдельно;</p></li><li><p><strong>синхронная</strong> — данные записываются в WAL на мастере и как минимум на одной реплике. Только в этом случае транзакция считается выполненной. Конкретные условия устанавливаются в настройках PostgreSQL.</p></li></ul><p>Для того, чтобы все члены кластера Patroni знали о состоянии друг друга, предусмотрено хранение данных в Distributed Configuration Store (DCS) — распределенном хранилище конфигурации. В качестве DCS могут использоваться различные хранилища типа key-value, например: Consul, etcd (v3), ZooKeeper. В контексте статьи мы будем рассматривать работу с etcd.</p><h2>Постановка задачи. Исходное состояние инфраструктуры</h2><p>Предоставляя клиентам обслуживание инфраструктуры под ключ, мы столкнулись с довольно типичной ситуацией: на сервере базы данных заканчивалось место, но работающий в ЦОДе сервер физически не позволял подключить дополнительный диск. Как быть в такой ситуации? Ответ довольно прост — мигрировать сервис с СУБД на новый сервер, предусмотрев возможность расширения. В результате было заказано 3 более мощных физических сервера для переезда.</p><p>Исходное состояние инфраструктуры:</p><ol><li><p>кластер PostgreSQL на базе Patroni, состоящий из трех серверов и работающих в режиме асинхронной репликации;</p></li><li><p>кластер etcd (для хранения состояния Patroni), состоящий из трех инстансов (по одному на каждом из серверов кластера Patroni);</p></li><li><p>серая сеть внутри контура с PostgreSQL с адресацией 192.168.0.0/24;</p></li><li><p>load balancer, передающий трафик на master-узел кластера PgSQL.</p></li></ol><p>Для удобства ниже я буду проводить все действия и рассматривать узкие места в конфигурации на тестовом стенде. Условная схема взаимодействия сервисов представлена ниже:</p><figure class="full-width "><img src="/img/image-loader.svg" height="601" data-src="https://habrastorage.org/getpro/habr/upload_files/edf/6fd/2b8/edf6fd2b863828110f642fdcf7f8ec74.png" data-width="766"/><figcaption></figcaption></figure><p>Между всеми узлами и load balancer’ом существует сетевая связанность, то есть каждый хост доступен для всех остальных по IP.</p><p>Для комфортного чтения конфигурации на каждом из узлов добавлены следующие записи в файл <code>/etc/hosts</code>:</p><pre><code class="bash"># etcd
+192.168.0.16    server-1 etcd1
+192.168.0.9     server-2 etcd2
+192.168.0.12    server-3 etcd3</code></pre><p>Состояние кластера Patroni:</p><figure class=""><img src="/img/image-loader.svg" height="111" data-src="https://habrastorage.org/getpro/habr/upload_files/f9e/95b/6e5/f9e95b6e53438969a5c2c06c21b684a0.png" data-width="517"/><figcaption></figcaption></figure><p>Листинг файла конфигурации <code>/etc/patroni.yaml</code> на узле <code>server-1</code>:</p><pre><code class="yaml">scope: patroni_cluster
+name: server-1
+namespace: /patroni/
+
+restapi:
+  listen: 192.168.0.16:8008 # IP-адрес узла и порт, на котором будет работать Patroni API
+  connect_address: 192.168.0.16:8008 
+  authentication:
+    username: patroni
+    password: 'mysuperpassword'
+
+etcd:
+  hosts: etcd1:2379,etcd2:2379,etcd3:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    synchronous_mode: false
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+        wal_level: hot_standby
+        synchronous_commit: off
+        hot_standby: "on"
+
+  initdb:
+  - encoding: UTF8
+  - data-checksums
+
+  pg_hba:
+  - local all postgres trust
+  - host postgres all 127.0.0.1/32 md5
+  - host replication replicator 0.0.0.0/0 md5
+  - host replication all 192.168.0.16/32 trust # server-1
+  - host replication all 192.168.0.9/32 trust  # server-2
+  - host replication all 192.168.0.12/32 trust # server-3
+  - host all all 0.0.0.0/0 md5
+
+  users:
+    admin:
+      password: 'mysuperpassword2'
+      options:
+        - createrole
+        - createdb
+
+postgresql:
+  listen: 192.168.0.16:5432 # IP-адрес интерфейса и порт, на которых будет слушать  postgresql
+  connect_address: 192.168.0.16:5432 
+  data_dir: /data/patroni
+  bin_dir: /usr/lib/postgresql/11/bin
+  config_dir: /data/patroni
+  pgpass: /tmp/pgpass0
+  authentication:
+    replication:
+      username: replicator
+      password: 'mysuperpassword3'
+    superuser:
+      username: postgres
+      password: 'mysuperpassword4'
+    rewind:
+      username: rewind_user
+      password: 'mysuperpassword5'
+  parameters:
+    unix_socket_directories: '/tmp'
+
+tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: false</code></pre><p>Состояние кластера etcd:</p><figure class="full-width "><img src="/img/image-loader.svg" height="52" data-src="https://habrastorage.org/getpro/habr/upload_files/82b/46a/42b/82b46a42bc898afd2212e0b18418e164.png" data-width="844"/><figcaption></figcaption></figure><p>Листинг файла конфигурации <code>/etc/default/etcd</code> на узле <code>server-1</code>:</p><pre><code class="bash">ETCD_LISTEN_PEER_URLS="http://127.0.0.1:2380,http://192.168.0.16:2380"
+ETCD_LISTEN_CLIENT_URLS="http://127.0.0.1:2379,http://192.168.0.16:2379"
+ETCD_INITIAL_CLUSTER="etcd1=http://etcd1:2380"
+ETCD_INITIAL_CLUSTER_STATE="new-cluster"
+ETCD_INITIAL_CLUSTER_TOKEN="myclustertoken"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_ELECTION_TIMEOUT="5000"
+ETCD_HEARTBEAT_INTERVAL="1000"
+ETCD_NAME="etcd1"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.0.16:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.0.16:2380"</code></pre><p>Примечание: файл конфигурации <code>/etc/default/etcd</code> используется для бутстрапа кластера etcd, т. е. параметры, описанные в нём, применяются в момент инициализации (первого запуска) процесса etcd. После того, как кластер инициализирован, конфигурация читается из рабочего каталога, заданного параметром <code>ETCD_DATA_DIR</code>.</p><p><strong>Наша задача — перенести данные с серверов #1, 2 и 3 на новые серверы без простоя в работе сервиса</strong>. Для достижения результата мы начнем постепенно расширять кластер PostgreSQL и кластер etcd, наделяя новые узлы небольшими отличиями от оригинальных узлов PgSQL:</p><ol><li><p>Не будем добавлять endpoint’ы новых серверов в распределение трафика load balancer’ом.</p></li><li><p>Новые узлы PostgreSQL не будут принимать участие в выборе master-узла при failover.</p></li></ol><p>В реальной задаче сетевая связность между узлами была организована через интернет, что было неприемлемо с точки зрения безопасности. Поэтому средствами ЦОДа был подготовлен VPN для достижения L2-связности между узлами. Не буду подробно описывать этот этап подготовки к переезду, и для удобства и упрощения схемы помещу новые серверы в сеть 192.168.0.0/24, чтобы обеспечить всем узлам связь в пределах broadcast-домена.</p><p>Таким образом, промежуточная схема взаимодействия узлов в кластере будет выглядеть следующим образом:</p><figure class="full-width "><img src="/img/image-loader.svg" height="844" data-src="https://habrastorage.org/getpro/habr/upload_files/af5/c7c/6e4/af5c7c6e482cdb930d8fd9ce043d3cff.png" data-width="718"/><figcaption></figcaption></figure><h2>Реализация</h2><p>План по реализации задуманного таков:</p><ul><li><p>расширение etcd-кластера;</p></li><li><p>расширение PostgreSQL-кластера средствами Patroni;</p></li><li><p>вывод из PostgreSQL-кластера «старых» узлов;</p></li><li><p>вывод из etcd-кластера «старых» инстансов.</p></li></ul><p>Итак, начнём!</p><h3>Шаг №1. Расширяем кластер etcd</h3><p><strong><em>Важно! </em></strong><em>Так как etcd (или любое другое хранилище типа key-value) является фундаментальным компонентом в функционировании Patroni, лучше всего проектировать систему так, чтобы кластер работал на отдельных инстансах, имел свою собственную подсеть и не зависел от самих узлов с Patroni. Но в рамках рассматриваемого стенда я сэкономил и разместил кластер etcd на тех же серверах, что и PostgreSQL с Patroni.</em></p><p>Первым делом нужно расширить кластер etcd так, чтобы при переключении лидера всем узлам (и новым, и старым) был доступен новый лидер. Для этого сначала внесем изменения в конфигурационный файл <code>/etc/hosts</code> на каждом из шести узлов и приведем его примерно к следующему виду (в сегменте ранее добавленных строк):</p><pre><code class="bash"># etcd
+192.168.0.16    server-1 etcd1
+192.168.0.9      server-2 etcd2
+192.168.0.12    server-3 etcd3
+192.168.0.13    new_server-1 etcd-1	# IP-адрес первого нового сервера
+192.168.0.17    new_server-2 etcd-2	# ... второго
+192.168.0.18    new_server-3 etcd-3	# ... третьего</code></pre><p>Далее начинаем по очереди добавлять инстансы в кластер etcd. На машине <code>new_server-1</code> (192.168.0.13) проверим, что сервис etcd не запущен:</p><pre><code class="bash">root@new_server-1:~# systemctl status etcd
+● etcd.service - etcd - highly-available key value store
+   Loaded: loaded (/lib/systemd/system/etcd.service; disabled; vendor preset: enabled)
+   Active: inactive (dead)
+     Docs: https://github.com/coreos/etcd
+           man:etcd</code></pre><p>На всякий случай очистим каталог <code>/var/lib/etcd</code>, чтобы быть уверенными в том, что конфигурация будет получена из файла <code>/etc/default/etcd</code>:</p><pre><code class="bash">root@new_server-1:~# rm -rf /var/lib/etcd/*</code></pre><p>Теперь приведём файл <code>/etc/default/etcd</code> к следующему виду:</p><pre><code class="bash">ETCD_LISTEN_PEER_URLS="http://192.168.0.13:2380,http://127.0.0.1:2380"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.0.13:2379,http://127.0.0.1:2379"
+ETCD_INITIAL_CLUSTER_TOKEN="myclustertoken"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_ELECTION_TIMEOUT="5000"
+ETCD_HEARTBEAT_INTERVAL="1000"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.0.13:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.0.13:2380"</code></pre><p>Переходим на один из серверов etcd-кластера (например, <code>server-1</code>) и смотрим список членов кластера:</p><pre><code class="bash">root@server-1:~# etcdctl member list
+862db4122a92dc3: name=etcd3 peerURLs=http://etcd3:2379 clientURLs=http://192.168.0.12:2379 isLeader=false
+46d7a702fdb60fff: name=etcd1 peerURLs=http://etcd1:2380 clientURLs=http://192.168.0.16:2379 isLeader=true
+d129ecfd4c627e1f: name=etcd2 peerURLs=http://etcd2:2379 clientURLs=http://192.168.0.9:2379 isLeader=false</code></pre><p>Добавляем нового члена кластера:</p><pre><code class="bash">root@server-1:~# etcdctl member add etcd-1 http://etcd-1:2380
+Added member named etcd-1 with ID 6d299012c6ad9595 to cluster
+
+ETCD_NAME="etcd-1"
+ETCD_INITIAL_CLUSTER="etcd1=http://etcd1:2380,etcd-1=http://etcd-1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380"
+ETCD_INITIAL_CLUSTER_STATE="existing"</code></pre><p>Etcd сообщил параметры, которые мы должны использовать в новом инстансе для подключения к существующему кластеру. Добавляем эти параметры в <code>/etc/default/etcd</code> на сервере <code>etcd-1</code> (<code>new_server-1</code>). В конечном итоге получаем такой файл конфигурации (к изначальному конфигу добавились три последние строки):</p><pre><code class="bash">ETCD_LISTEN_PEER_URLS="http://192.168.0.13:2380,http://127.0.0.1:2380"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.0.13:2379,http://127.0.0.1:2379"
+ETCD_INITIAL_CLUSTER_TOKEN="myclustertoken"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_ELECTION_TIMEOUT="5000"
+ETCD_HEARTBEAT_INTERVAL="1000"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.0.13:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.0.13:2380"
+ETCD_NAME="etcd-1"
+ETCD_INITIAL_CLUSTER="etcd1=http://etcd1:2380,etcd-1=http://etcd-1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380"
+ETCD_INITIAL_CLUSTER_STATE="existing"</code></pre><p>Проверяем на сервере состояние кластера etcd:</p><pre><code class="bash">root@new_server-1:~# etcdctl member list
+46d7a702fdb60fff: name=etcd1 peerURLs=http://etcd1:2380 clientURLs=http://192.168.0.16:2379 isLeader=true
+6d299012c6ad9595: name=etcd-1 peerURLs=http://etcd-1:2380 clientURLs=http://192.168.0.13:2379 isLeader=false
+c32185ccfd4b4b41: name=etcd2 peerURLs=http://etcd2:2380 clientURLs=http://192.168.0.9:2379 isLeader=false
+d56f1524a8fe199e: name=etcd3 peerURLs=http://etcd3:2380 clientURLs=http://192.168.0.12:2379 isLeader=false</code></pre><p>Как мы видим, <code>etcd-1</code> успешно добавлен в кластер. Повторяем все действия для следующего сервера, заранее подготовив для него шаблон конфигурации (<code>/etc/default/etcd</code>), где потребуется поменять адреса сетевых интерфейсов в соответствии с адресом сервера. На выходе получаем:</p><pre><code class="bash">root@new_server-2:~# etcdctl member list
+40ebdfb25cac6924: name=etcd-2 peerURLs=http://etcd-2:2380 clientURLs=http://192.168.0.17:2379 isLeader=false
+46d7a702fdb60fff: name=etcd1 peerURLs=http://etcd1:2380 clientURLs=http://192.168.0.16:2379 isLeader=true
+6d299012c6ad9595: name=etcd-1 peerURLs=http://etcd-1:2380 clientURLs=http://192.168.0.13:2379 isLeader=false
+c32185ccfd4b4b41: name=etcd2 peerURLs=http://etcd2:2380 clientURLs=http://192.168.0.9:2379 isLeader=false
+d56f1524a8fe199e: name=etcd3 peerURLs=http://etcd3:2380 clientURLs=http://192.168.0.12:2379 isLeader=false</code></pre><p>… и такой файл конфигурации <code>/etc/default/etcd</code>:</p><pre><code class="bash">ETCD_LISTEN_PEER_URLS="http://192.168.0.17:2380,http://127.0.0.1:2380"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.0.17:2379,http://127.0.0.1:2379"
+ETCD_INITIAL_CLUSTER_TOKEN="myclustertoken"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_ELECTION_TIMEOUT="5000"
+ETCD_HEARTBEAT_INTERVAL="1000"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.0.17:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.0.17:2380"
+ETCD_NAME="etcd-2"
+ETCD_INITIAL_CLUSTER="etcd-2=http://etcd-2:2380,etcd1=http://etcd1:2380,etcd-1=http://etcd-1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380"
+ETCD_INITIAL_CLUSTER_STATE="existing"</code></pre><p>Повторяем процедуру для третьего сервера и проверяем результат:</p><pre><code class="bash">root@new_server-3:~# etcdctl member list
+40ebdfb25cac6924: name=etcd-2 peerURLs=http://etcd-2:2380 clientURLs=http://192.168.0.17:2379 isLeader=false
+46d7a702fdb60fff: name=etcd1 peerURLs=http://etcd1:2380 clientURLs=http://192.168.0.16:2379 isLeader=true
+6c2e836d0c3a51c3: name=etcd-3 peerURLs=http://etcd-3:2380 clientURLs=http://192.168.0.18:2379 isLeader=false
+6d299012c6ad9595: name=etcd-1 peerURLs=http://etcd-1:2380 clientURLs=http://192.168.0.13:2379 isLeader=false
+c32185ccfd4b4b41: name=etcd2 peerURLs=http://etcd2:2380 clientURLs=http://192.168.0.9:2379 isLeader=false
+d56f1524a8fe199e: name=etcd3 peerURLs=http://etcd3:2380 clientURLs=http://192.168.0.12:2379 isLeader=false</code></pre><p>Файл конфигурации <code>/etc/default/etcd</code>:</p><pre><code class="bash">ETCD_LISTEN_PEER_URLS="http://192.168.0.18:2380,http://127.0.0.1:2380"
+ETCD_LISTEN_CLIENT_URLS="http://192.168.0.18:2379,http://127.0.0.1:2379"
+ETCD_INITIAL_CLUSTER_TOKEN="myclustertoken"
+ETCD_DATA_DIR="/var/lib/etcd"
+ETCD_ELECTION_TIMEOUT="5000"
+ETCD_HEARTBEAT_INTERVAL="1000"
+ETCD_ADVERTISE_CLIENT_URLS="http://192.168.0.18:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://192.168.0.18:2380"
+ETCD_NAME="etcd-3"
+ETCD_INITIAL_CLUSTER="etcd-2=http://etcd-2:2380,etcd1=http://etcd1:2380,etcd-3=http://etcd-3:2380,etcd-1=http://etcd-1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380"
+ETCD_INITIAL_CLUSTER_STATE="existing"</code></pre><p>Мы расширили etcd-кластер с трех инстансов до шести.</p><h3>Шаг №2. Расширяем кластер PostgreSQL</h3><p>Следующим нашим шагом будет расширение кластера PgSQL. Так как кластер управляется Patroni, нужно подготовить файл конфигурации <code>/etc/patroni.yaml</code> с примерно следующим содержанием:</p><pre><code class="yaml">scope: patroni_cluster
+name: new_server-1
+namespace: /patroni/
+
+restapi:
+  listen: 192.168.0.13:8008
+  connect_address: 192.168.0.13:8008
+  authentication:
+    username: patroni
+    password: 'mynewpassword'
+
+etcd:
+  hosts: etcd-1:2379,etcd-2:2379,etcd-3:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    synchronous_mode: false
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+        wal_level: hot_standby
+        synchronous_commit: off
+        hot_standby: "on"
+
+  initdb:
+  - encoding: UTF8
+  - data-checksums
+
+  pg_hba:
+  - local all postgres trust
+  - host postgres all 127.0.0.1/32 md5
+  - host replication replicator 0.0.0.0/0 md5
+  - host replication all 192.168.0.16/32 trust # server-1
+  - host replication all 192.168.0.9/32 trust  # server-2
+  - host replication all 192.168.0.12/32 trust # server-3
+  - host all all 0.0.0.0/0 md5
+
+  users:
+    admin:
+      password: 'mynewpassword2'
+      options:
+        - createrole
+        - createdb
+
+postgresql:
+  listen: 192.168.0.13:5432
+  connect_address: 192.168.0.13:5432
+  data_dir: /data/patroni
+  bin_dir: /usr/lib/postgresql/11/bin
+  config_dir: /data/patroni
+  pgpass: /tmp/pgpass0
+  authentication:
+    replication:
+      username: replicator
+      password: 'mynewpassord3'
+    superuser:
+      username: postgres
+      password: 'mynewpassord4'
+    rewind:
+      username: rewind_user
+      password: 'mynewpassword5'
+  parameters:
+    unix_socket_directories: '/tmp'
+
+tags:
+    nofailover: true
+    noloadbalance: true
+    clonefrom: false
+    nosync: false</code></pre><p>Примечания:</p><ol><li><p>Мы изменяем настройки etcd для Patroni на новых серверах (см. значение <code>hosts</code>  в секции <code>etcd</code>), ограничивая endoint’ы только новыми серверами, так как в дальнейшем мы планируем выводит старые инстансы etcd из кластера. Если сейчас сервер обратится к инстансу etcd-1 для записи значения, а лидером будет, скажем, etcd2 (его endpoint мы явно не указываем в конфигурации Patroni), то etcd сам отдаст нужный endpoint лидера и, поскольку сетевая видимость между всеми членами кластера существует, работа системы не нарушится.</p></li><li><p>Мы устанавливаем 2 тега в конфигурации: <code>nofailover: true</code> и <code>noloadbalance: true</code>. Пока не планируется добавлять новые серверы в качестве target для load balancer, поэтому явно запрещаем им участвовать в гонке за лидерство.</p></li><li><p>На новых серверах должны быть правильно определены параметры <code>data_dir</code> и <code>config_dir</code>. Желательно, чтобы эти параметры не отличались от оригинальных значений. Возможна ситуация, когда в файле <code>postgresql.base.conf</code> кто-то явно указал пути к этим директориям, и в момент бутстрапа новой реплики эти параметры приедут на новый сервер.</p></li><li><p>Важно убедиться, что файл конфигурации <code>pg_hba.conf</code> — одинаковый на всех узлах и содержит разрешающие правила для подключения как новых, так и старых серверов. Да, мы описываем эти правила в <code>patroni.yaml</code>, но они используются только на этапе бутстрапа кластера. После этого добрый кто-то может изменить его, а Patroni не будет приводить его в соответствие своему конфигу… Это очень важный момент, с которым я столкнулся при реализации переноса.</p></li></ol><p>Проверяем, что каталог <code>/data/patroni</code> — пустой и принадлежит пользователю <code>postgres</code>. Если это не так, то очищаем и устанавливаем нужные права:</p><pre><code class="bash">root@new_server-1:~# rm -rf /data/patroni/*
+root@new_server-1:~# chown -R postgres:postgres /data/patroni</code></pre><p>Стартуем Patroni и проверяем состояние кластера:</p><pre><code class="bash">root@new_server-1:~# systemctl start patroni
+root@new_server-1:~# patronictl -c /etc/patroni.yml list</code></pre><figure class="full-width "><img src="/img/image-loader.svg" height="193" data-src="https://habrastorage.org/getpro/habr/upload_files/277/686/86a/27768686aa1880e4a853d3e8bf5f5782.png" data-width="730"/><figcaption></figcaption></figure><p>Новая реплика — в состоянии <code>running</code>. Отлично!</p><p><strong>Обратите внимание! </strong>При запуске Patroni он читает информацию из etcd и, если обнаруживает, что уже есть работающий кластер (а это наш случай!), пытается провести бутстрап от лидера. При этом используется <a href="https://www.postgresql.org/docs/current/app-pgbasebackup.html"><u>pg_basebackup</u></a>. Если существующая база — большая, <strong>может потребоваться много времени</strong> для завершения этой операции. Например, в реальном кейсе, который дал начало этой статье, была база объёмом в 2,8 ТБ, и её бутстрап занимал около 10 часов на гигабитном канале.</p><p>Также важно понимать, что в период бутстрапа мы создадим <strong>дополнительную нагрузку на сетевой интерфейс</strong>, поэтому для добавления новой реплики в кластер рекомендуется выбирать время минимальной нагрузки на БД.</p><p>Дождавшись, когда новая реплика завершила бутстрап, мы можем поочередно повторить процедуру для оставшихся серверов. После завершающей итерации должен получиться следующий результат:</p><figure class="full-width "><img src="/img/image-loader.svg" height="285" data-src="https://habrastorage.org/getpro/habr/upload_files/b4c/df1/484/b4cdf148443dca3998fb4131a9865194.png" data-width="727"/><figcaption></figcaption></figure><p><strong>Важно!</strong> Каждый узел в кластере создает пассивную нагрузку на лидера, потому что по умолчанию подтягивает все изменения от него. Это значит, что если база испытывает большую сетевую нагрузку со стороны сервисов, то добавление сразу 3 реплик в кластер может сыграть злую шутку. Я наблюдал среднюю загрузку сетевого интерфейса лидера кластера ~500 Мбит/сек на исходящий трафик, когда в кластере было три члена. Добавление четвертого узла увеличило нагрузку, но явных пиков не было. Однако после добавления пятого узла ситуация изменилась: некоторые узлы начали отставать от лидера (параметр <em>Lag in MB</em> постоянно увеличивался). Причина проста: в этот момент нагрузка на сетевой интерфейс достигла максимума (1 Гбит/сек). </p><figure class="full-width "><img src="/img/image-loader.svg" height="308" data-src="https://habrastorage.org/getpro/habr/upload_files/a25/2b1/f7c/a252b1f7c08aebec60b0d1957c844552.png" data-width="583"/><figcaption></figcaption></figure><p>Решить эту проблему удалось, настроив каскадную репликацию, которая позволила бутстрапить новую реплику от уже существующей. Для реализации этого метода в конфигурации Patroni нужно установить на одну из существующих реплик специальный тег — <code>clonefrom: true</code>, а перед запуском бутстрапа новой реплики в её конфигурационном файле установить тег: <code>replicatefrom: &lt;название_узла></code>.</p><p>Если ваша production-база достаточно нагружена, после добавления новой реплики может быть полезным выключение одной из старых (эта операция рассматривается дальше — см. шаг №4) либо конфигурация каскадной репликации. Так будет поддерживаться общее количество реплик в стандартном количестве.</p><h3>Отступление про балансировку</h3><p>Так как у нас в схеме используется load balancer, то перед тем, как переходить к следующим шагам, стоит рассказать, каким образом он принимает решение, куда нужно отправить трафик.</p><p>Когда мы готовили конфигурацию Patroni, описывали следующий сегмент:</p><pre><code class="yaml">restapi:
+  listen: 192.168.0.13:8008
+  connect_address: 192.168.0.13:8008
+  authentication:
+    username: patroni
+    password: 'mynewpassword'</code></pre><p>Здесь указано, на каком интерфейсе и на каком порту будет работать Patroni API. Через API можно определить, является ли на данный момент узел leader’ом или replica’ой. Зная это, мы можем настроить health check для балансера так, чтобы в момент переключения лидера балансер знал, на какой target нужно переключить трафик.</p><p>Например: на картинке выше видно, что узел с адресом 192.168.0.16 (<code>server-1</code>) является лидером на данный момент. Отправим пару GET-запросов по следующим URL:</p><pre><code class="bash">root@new_server-2:~# curl -I -X GET server-1:8008/leader
+HTTP/1.0 200 OK
+Server: BaseHTTP/0.6 Python/3.6.9
+Date: Sun, 10 Oct 2021 11:40:38 GMT
+Content-Type: application/json
+
+root@new_server-2:~# curl -I -X GET server-1:8008/replica
+HTTP/1.0 503 Service Unavailable
+Server: BaseHTTP/0.6 Python/3.6.9
+Date: Sun, 10 Oct 2021 11:37:57 GMT
+Content-Type: application/json</code></pre><p>Получили коды ответов 200 и 503 соответственно. Отправим ещё пару запросов в API сервера с Patroni, который не является лидером на данный момент:</p><pre><code class="bash">root@new_server-2:~# curl -I -X GET new_server-1:8008/leader
+HTTP/1.0 503 Service Unavailable
+Server: BaseHTTP/0.6 Python/3.6.9
+Date: Sun, 10 Oct 2021 11:41:14 GMT
+Content-Type: application/json
+
+root@new_server-2:~# curl -I -X GET new_server-1:8008/replica
+HTTP/1.0 503 Service Unavailable
+Server: BaseHTTP/0.6 Python/3.6.9
+Date: Sun, 10 Oct 2021 11:41:17 GMT
+Content-Type: application/json</code></pre><p>В обоих случаях мы получили 503. Почему так? Потому мы использовали тег <code>noloadbalance: true</code>. Изменим значение этого тега на <code>false</code> на новых узлах и перезапустим Patroni:</p><figure class="full-width "><img src="/img/image-loader.svg" height="161" data-src="https://habrastorage.org/getpro/habr/upload_files/0e3/719/27c/0e371927c1d683b775363ae669f9cdd9.png" data-width="705"/><figcaption></figcaption></figure><p>А теперь попробуем ещё раз:</p><pre><code class="bash">root@new_server-2:~# curl -I -X GET new_server-1:8008/leader
+HTTP/1.0 503 Service Unavailable
+Server: BaseHTTP/0.6 Python/3.6.9
+Date: Sun, 10 Oct 2021 11:45:40 GMT
+Content-Type: application/json
+
+root@new_server-2:~# curl -I -X GET new_server-1:8008/replica
+HTTP/1.0 200 OK
+Server: BaseHTTP/0.6 Python/3.6.9
+Date: Sun, 10 Oct 2021 11:45:44 GMT
+Content-Type: application/json</code></pre><p>Всё корректно. Настроив health check для load balancer’а через Patroni API, мы можем распределять трафик на мастер-узел (для запросов на запись) и на реплики (для запросов на чтение). Это очень удобно.</p><p>В нашем случае использовался load balancer от облачного провайдера, и заниматься какими-то особыми настройками (помимо health check) не пришлось. Но в общем случае для балансировки можно использовать HAproxy в режиме TCP. Тогда его примерный конфиг будет выглядеть так:</p><pre><code class="yaml">global
+    maxconn 100
+
+defaults
+    log global
+    mode tcp
+    retries 2
+    timeout client 30m
+    timeout connect 4s
+    timeout server 30m
+    timeout check 5s
+
+listen stats
+    mode http
+    bind *:7000
+    stats enable
+    stats uri /
+
+listen leader
+    bind *:5000
+    option httpchk
+    http-check expect status 200
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
+    server server_1 192.168.0.16:5432 maxconn 100 check port 8008
+    server server_2 192.168.0.9:5432 maxconn 100 check port 8008
+    server server_3 192.168.0.12:5432 maxconn 100 check port 8008</code></pre><h3>Шаг №3. Донастраиваем кластер PostgreSQL</h3><p>Вернемся к нашей реализации. Мы добавили новые реплики в кластер PostgreSQL. Теперь нужно разрешить всем членам кластера принимать участие в гонке за лидерство и добавить новые endoint’ы кластера в tagets у load balancer’а. Меняем значение тега <code>nofailover</code> на <code>false</code> и перезапускаем Patroni:</p><figure class="full-width "><img src="/img/image-loader.svg" height="161" data-src="https://habrastorage.org/getpro/habr/upload_files/673/401/068/6734010682f2f3d739ff7b6c2a853592.png" data-width="549"/><figcaption></figcaption></figure><p>Добавляем в список targets для load balancer’а новые серверы и назначаем лидером сервер <code>new_server-1</code>:</p><pre><code class="bash">root@new_server-1:~# patronictl -c /etc/patroni.yml switchover
+Master [server-1]:
+Candidate ['new_server-1', 'new_server-2', 'new_server-3', 'server-2', 'server-3'] []: new_server-1
+When should the switchover take place [now]: now
+Current cluster topology</code></pre><figure class="full-width "><img src="/img/image-loader.svg" height="163" data-src="https://habrastorage.org/getpro/habr/upload_files/3ad/8ab/5d2/3ad8ab5d2509f11fcdb9ed4bdd4417e7.png" data-width="557"/><figcaption></figcaption></figure><pre><code class="bash">Are you sure you want to switchover cluster patroni_cluster, demoting current master server-1? [y/N]: y
+Successfully switched over to "new_server-1"</code></pre><figure class="full-width "><img src="/img/image-loader.svg" height="163" data-src="https://habrastorage.org/getpro/habr/upload_files/fe1/665/53d/fe166553dfdb3eb47ac793149d460aaf.png" data-width="552"/><figcaption></figcaption></figure><h3>Шаг №4. Выводим серверы из кластера Patroni</h3><p>Выведем <code>server-1</code>, <code>server-2</code> и <code>server-3</code> из кластера и уберем их из targets для load balancer’а — они своё отработали:</p><pre><code class="bash">root@server-3:~# systemctl stop patroni
+root@server-3:~# systemctl disable patroni
+Removed /etc/systemd/system/multi-user.target.wants/patroni.service.
+
+root@server-2:~# systemctl stop patroni
+root@server-2:~# systemctl disable patroni
+Removed /etc/systemd/system/multi-user.target.wants/patroni.service.
+
+root@server-1:~# systemctl stop patroni
+root@server-1:~# systemctl disable patroni
+Removed /etc/systemd/system/multi-user.target.wants/patroni.service.</code></pre><p>Проверим состояние кластера:</p><pre><code class="bash">root@new_server-1:# patronictl -c /etc/patroni.yml list</code></pre><figure class="full-width "><img src="/img/image-loader.svg" height="111" data-src="https://habrastorage.org/getpro/habr/upload_files/9a7/2cf/81b/9a72cf81b8c9066b79f5dd3d2ad2c7f2.png" data-width="549"/><figcaption></figcaption></figure><p>Остались только новые серверы. Мы почти закончили!</p><h3>Шаг №5. Приводим в порядок кластер etcd</h3><p>Последний шаг — разбираем кластер etcd:</p><pre><code class="bash">root@new_server-1:~# etcdctl member list
+40ebdfb25cac6924: name=etcd-2 peerURLs=http://etcd-2:2380 clientURLs=http://192.168.0.17:2379 isLeader=false
+46d7a702fdb60fff: name=etcd1 peerURLs=http://etcd1:2380 clientURLs=http://192.168.0.16:2379 isLeader=true
+6c2e836d0c3a51c3: name=etcd-3 peerURLs=http://etcd-3:2380 clientURLs=http://192.168.0.18:2379 isLeader=false
+6d299012c6ad9595: name=etcd-1 peerURLs=http://etcd-1:2380 clientURLs=http://192.168.0.13:2379 isLeader=false
+c32185ccfd4b4b41: name=etcd2 peerURLs=http://etcd2:2380 clientURLs=http://192.168.0.9:2379 isLeader=false
+d56f1524a8fe199e: name=etcd3 peerURLs=http://etcd3:2380 clientURLs=http://192.168.0.12:2379 isLeader=false
+
+root@new_server-1:~# etcdctl member remove d56f1524a8fe199e
+Removed member d56f1524a8fe199e from cluster
+root@new_server-1:~# etcdctl member remove c32185ccfd4b4b41
+Removed member c32185ccfd4b4b41 from cluster
+root@new_server-1:~# etcdctl member remove 46d7a702fdb60fff
+Removed member 46d7a702fdb60fff from cluster
+root@new_server-1:~# etcdctl member list
+
+root@new_server-1:~# etcdctl member list
+40ebdfb25cac6924: name=etcd-2 peerURLs=http://etcd-2:2380 clientURLs=http://192.168.0.17:2379 isLeader=true
+6c2e836d0c3a51c3: name=etcd-3 peerURLs=http://etcd-3:2380 clientURLs=http://192.168.0.18:2379 isLeader=false
+6d299012c6ad9595: name=etcd-1 peerURLs=http://etcd-1:2380 clientURLs=http://192.168.0.13:2379 isLeader=false</code></pre><p>Всё! Переезд окончен! Итоговая схема взаимодействия выглядит следующим образом:</p><figure class="full-width "><img src="/img/image-loader.svg" height="608" data-src="https://habrastorage.org/getpro/habr/upload_files/d2a/8d2/97c/d2a8d297c43fbbb316de9a183a0fcb0c.png" data-width="719"/><figcaption></figcaption></figure><h2>Заключение</h2><p>В результате проведенных манипуляций удалось перевезти кластер PostgreSQL на базе Patroni на новое железо. И в целом весь процесс получился довольно предсказуемым, контролируемым — пожалуй, во многом это заслуга Patroni. Я постарался описать в статье все сложности и узкие моменты в конфигурации, с которыми столкнулся по ходу миграции. Надеюсь, что этот опыт будет кому-нибудь полезным.</p><p>Простой при переключении был минимальным: составил около 8 секунд и был обусловлен тем, что в момент переключения лидера health check нашего load balancer’а сделал три попытки (с интервалом  в три секунды и таймаутом в две секунды) с целью убедиться, что leader действительно изменился. Сервис, обращающийся к базе данных, поддерживал переподключение, поэтому соединение было восстановлено автоматически. (А вообще, хорошим тоном при переездах является остановка всех подключений к отключаемому узлу.)</p><h2>P.S.</h2><p>Читайте также в нашем блоге:</p><ul><li><p>«Обзор операторов PostgreSQL для Kubernetes»: <a href="https://habr.com/ru/company/flant/blog/520616/">часть 1 (наш опыт и выбор)</a> и <a href="https://habr.com/ru/company/flant/blog/527524/">часть 2 (дополнения и итоговое сравнение)</a>;</p></li><li><p>«<a href="https://habr.com/ru/company/flant/blog/568924/">Мониторинг PostgreSQL. Расшифровка аудиочата Data Egret и Okmeter</a>»;</p></li><li><p>«<a href="https://habr.com/ru/company/flant/blog/479438/">Postgres-вторник №5: PostgreSQL и Kubernetes. CI/CD. Автоматизация тестирования</a>».</p></li></ul></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpatroni%5D" class="tm-tags-list__link">patroni</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpostgresql%5D" class="tm-tags-list__link">postgresql</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%B8%D0%B3%D1%80%D0%B0%D1%86%D0%B8%D0%B8%5D" class="tm-tags-list__link">миграции</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Betcd%5D" class="tm-tags-list__link">etcd</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/flant/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Флант
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/sys_admin/" class="tm-hubs-list__link">
+    Системное администрирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/postgresql/" class="tm-hubs-list__link">
+    PostgreSQL
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/db_admins/" class="tm-hubs-list__link">
+    Администрирование баз данных
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 47: ↑47 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 47: ↑47 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+47</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">4.5K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    56
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/flant/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/de7/635/363/de763536359ce6e2d2a978f8dded1964.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/flant/profile/" class="tm-company-snippet__title">Флант</a> <div class="tm-company-snippet__description">DevOps-as-a-Service, Kubernetes, обслуживание 24×7</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://flant.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://twitter.com/flant_ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/flant_ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://github.com/flant" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Github
+    </a><a href="https://telegram.me/flant_ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/stratnevpy/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 22 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    22
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">47</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Павел Стратнев</span> <a href="/ru/users/stratnevpy/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @stratnevpy
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">devops</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/flant/blog/583170/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 13 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2008-05-12T20:00:00.000Z" title="2008-05-13, 00:00">13  мая  2008</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://flant.ru/" target="_blank" class="tm-company-basic-info__link">
+      flant.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    101–200 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2017-01-25T07:25:09.000Z" title="2017-01-25, 10:25">25  января  2017</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/shurup/" class="tm-company-basic-info__link">
+      Дмитрий Шурупов
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/flant/blog/583170/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/flant/blog/583170/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583170":{"id":"583170","timePublished":"2021-10-15T06:41:52+00:00","isCorporative":true,"lang":"ru","titleHtml":"Опыт миграции кластера PostgreSQL на базе Patroni","leadData":{"textHtml":"\u003Cp\u003EНедавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы. Но в процессе реализации встретились некоторые сложности, которые натолкнули на мысль поделиться полученным опытом. В этой работе описываются практические шаги и нюансы, которые встретились во время переноса кластера на новую платформу. Использовались следующие версии ПО: PostgreSQL 11.13, Patroni 2.1.1, etcd 3.2.17 (API version 2). Итак, поехали!\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd93\u002Fad1\u002Fa9a\u002Fd93ad1a9a5c03848d4008c3fa045ffe6.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd93\u002Fad1\u002Fa9a\u002Fd93ad1a9a5c03848d4008c3fa045ffe6.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":22,"votesCount":22},"rating":47,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2805341","alias":"stratnevpy","fullname":"Павел Стратнев","avatarUrl":null,"speciality":"devops"},"statistics":{"commentsCount":13,"favoritesCount":56,"readingCount":4476,"score":47,"votesCount":47},"hubs":[{"relatedData":null,"id":"20940","alias":"flant","type":"corporative","title":"Блог компании Флант","titleHtml":"Блог компании Флант","isProfiled":false},{"relatedData":null,"id":"221","alias":"sys_admin","type":"collective","title":"Системное администрирование","titleHtml":"Системное администрирование","isProfiled":true},{"relatedData":null,"id":"358","alias":"postgresql","type":"collective","title":"PostgreSQL","titleHtml":"PostgreSQL","isProfiled":true},{"relatedData":null,"id":"17681","alias":"db_admins","type":"collective","title":"Администрирование баз данных","titleHtml":"Администрирование баз данных","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EНедавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"450\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F71f\u002Fd64\u002F491\u002F71fd6449110f3199219161664c278ecb.png\" data-width=\"780\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EНо в процессе реализации встретились некоторые сложности, которые натолкнули на мысль поделиться полученным опытом. В этой работе описываются практические шаги и нюансы, которые встретились во время переноса кластера на новую платформу. Использовались следующие версии ПО: PostgreSQL 11.13, Patroni 2.1.1, etcd 3.2.17 (API version 2).\u003C\u002Fp\u003E\u003Cp\u003EИтак, поехали!\u003C\u002Fp\u003E\u003Ch2\u003EВведение\u003C\u002Fh2\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fzalando\u002Fpatroni\"\u003E\u003Cstrong\u003E\u003Cu\u003EPatroni\u003C\u002Fu\u003E\u003C\u002Fstrong\u003E\u003C\u002Fa\u003E — это известный Open Source-проект для СУБД PostgreSQL от Zalando, написанный на Python и созданный для автоматизации построения кластеров высокой доступности. По своей сути его можно назвать своеобразным фреймворком. В основе Patroni стоит механизм потоковой репликации (streaming replication), работа которого строится на WAL (Write-Ahead Log). Когда мы вносим изменения в базу данных, все изменения сперва записываются в WAL. После записи в WAL СУБД производит системный вызов \u003Ccode\u003Efsync\u003C\u002Fcode\u003E, в результате чего данные записываются на диск. Это обеспечивает возможность сохранения незавершенных операций, например, в случае аварийного завершения работы сервера. При включении сервера СУБД прочитает последние записи из WAL и применит к базе данных соответствующие изменения.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EПотоковая репликация\u003C\u002Fstrong\u003E — это механизм, который реализует передачу записей из WAL от мастера к репликам. При такой конфигурации репликации право на запись есть только у мастера, а читать возможно как с мастера, так и с реплик (если разрешено). Для разрешения чтения с реплики она должна работать в режиме \u003Ccode\u003Ehot_standby\u003C\u002Fcode\u003E. Так как большинство запросов к СУБД — запросы на чтение, репликация позволяет масштабировать базу данных горизонтально. Потоковая репликация имеет два режима работы:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Cstrong\u003Eасинхронная\u003C\u002Fstrong\u003E — запросы выполняются на мастер-узле сразу же, в то время как изменения из WAL репликам передаются отдельно;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cstrong\u003Eсинхронная\u003C\u002Fstrong\u003E — данные записываются в WAL на мастере и как минимум на одной реплике. Только в этом случае транзакция считается выполненной. Конкретные условия устанавливаются в настройках PostgreSQL.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EДля того, чтобы все члены кластера Patroni знали о состоянии друг друга, предусмотрено хранение данных в Distributed Configuration Store (DCS) — распределенном хранилище конфигурации. В качестве DCS могут использоваться различные хранилища типа key-value, например: Consul, etcd (v3), ZooKeeper. В контексте статьи мы будем рассматривать работу с etcd.\u003C\u002Fp\u003E\u003Ch2\u003EПостановка задачи. Исходное состояние инфраструктуры\u003C\u002Fh2\u003E\u003Cp\u003EПредоставляя клиентам обслуживание инфраструктуры под ключ, мы столкнулись с довольно типичной ситуацией: на сервере базы данных заканчивалось место, но работающий в ЦОДе сервер физически не позволял подключить дополнительный диск. Как быть в такой ситуации? Ответ довольно прост — мигрировать сервис с СУБД на новый сервер, предусмотрев возможность расширения. В результате было заказано 3 более мощных физических сервера для переезда.\u003C\u002Fp\u003E\u003Cp\u003EИсходное состояние инфраструктуры:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003Eкластер PostgreSQL на базе Patroni, состоящий из трех серверов и работающих в режиме асинхронной репликации;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eкластер etcd (для хранения состояния Patroni), состоящий из трех инстансов (по одному на каждом из серверов кластера Patroni);\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eсерая сеть внутри контура с PostgreSQL с адресацией 192.168.0.0\u002F24;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eload balancer, передающий трафик на master-узел кластера PgSQL.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EДля удобства ниже я буду проводить все действия и рассматривать узкие места в конфигурации на тестовом стенде. Условная схема взаимодействия сервисов представлена ниже:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"601\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fedf\u002F6fd\u002F2b8\u002Fedf6fd2b863828110f642fdcf7f8ec74.png\" data-width=\"766\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EМежду всеми узлами и load balancer’ом существует сетевая связанность, то есть каждый хост доступен для всех остальных по IP.\u003C\u002Fp\u003E\u003Cp\u003EДля комфортного чтения конфигурации на каждом из узлов добавлены следующие записи в файл \u003Ccode\u003E\u002Fetc\u002Fhosts\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E# etcd\n192.168.0.16    server-1 etcd1\n192.168.0.9     server-2 etcd2\n192.168.0.12    server-3 etcd3\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСостояние кластера Patroni:\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"111\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff9e\u002F95b\u002F6e5\u002Ff9e95b6e53438969a5c2c06c21b684a0.png\" data-width=\"517\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЛистинг файла конфигурации \u003Ccode\u003E\u002Fetc\u002Fpatroni.yaml\u003C\u002Fcode\u003E на узле \u003Ccode\u003Eserver-1\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"yaml\"\u003Escope: patroni_cluster\nname: server-1\nnamespace: \u002Fpatroni\u002F\n\nrestapi:\n  listen: 192.168.0.16:8008 # IP-адрес узла и порт, на котором будет работать Patroni API\n  connect_address: 192.168.0.16:8008 \n  authentication:\n    username: patroni\n    password: 'mysuperpassword'\n\netcd:\n  hosts: etcd1:2379,etcd2:2379,etcd3:2379\n\nbootstrap:\n  dcs:\n    ttl: 30\n    loop_wait: 10\n    retry_timeout: 10\n    maximum_lag_on_failover: 1048576\n    synchronous_mode: false\n    postgresql:\n      use_pg_rewind: true\n      use_slots: true\n      parameters:\n        wal_level: hot_standby\n        synchronous_commit: off\n        hot_standby: \"on\"\n\n  initdb:\n  - encoding: UTF8\n  - data-checksums\n\n  pg_hba:\n  - local all postgres trust\n  - host postgres all 127.0.0.1\u002F32 md5\n  - host replication replicator 0.0.0.0\u002F0 md5\n  - host replication all 192.168.0.16\u002F32 trust # server-1\n  - host replication all 192.168.0.9\u002F32 trust  # server-2\n  - host replication all 192.168.0.12\u002F32 trust # server-3\n  - host all all 0.0.0.0\u002F0 md5\n\n  users:\n    admin:\n      password: 'mysuperpassword2'\n      options:\n        - createrole\n        - createdb\n\npostgresql:\n  listen: 192.168.0.16:5432 # IP-адрес интерфейса и порт, на которых будет слушать  postgresql\n  connect_address: 192.168.0.16:5432 \n  data_dir: \u002Fdata\u002Fpatroni\n  bin_dir: \u002Fusr\u002Flib\u002Fpostgresql\u002F11\u002Fbin\n  config_dir: \u002Fdata\u002Fpatroni\n  pgpass: \u002Ftmp\u002Fpgpass0\n  authentication:\n    replication:\n      username: replicator\n      password: 'mysuperpassword3'\n    superuser:\n      username: postgres\n      password: 'mysuperpassword4'\n    rewind:\n      username: rewind_user\n      password: 'mysuperpassword5'\n  parameters:\n    unix_socket_directories: '\u002Ftmp'\n\ntags:\n    nofailover: false\n    noloadbalance: false\n    clonefrom: false\n    nosync: false\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСостояние кластера etcd:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"52\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F82b\u002F46a\u002F42b\u002F82b46a42bc898afd2212e0b18418e164.png\" data-width=\"844\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЛистинг файла конфигурации \u003Ccode\u003E\u002Fetc\u002Fdefault\u002Fetcd\u003C\u002Fcode\u003E на узле \u003Ccode\u003Eserver-1\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EETCD_LISTEN_PEER_URLS=\"http:\u002F\u002F127.0.0.1:2380,http:\u002F\u002F192.168.0.16:2380\"\nETCD_LISTEN_CLIENT_URLS=\"http:\u002F\u002F127.0.0.1:2379,http:\u002F\u002F192.168.0.16:2379\"\nETCD_INITIAL_CLUSTER=\"etcd1=http:\u002F\u002Fetcd1:2380\"\nETCD_INITIAL_CLUSTER_STATE=\"new-cluster\"\nETCD_INITIAL_CLUSTER_TOKEN=\"myclustertoken\"\nETCD_DATA_DIR=\"\u002Fvar\u002Flib\u002Fetcd\"\nETCD_ELECTION_TIMEOUT=\"5000\"\nETCD_HEARTBEAT_INTERVAL=\"1000\"\nETCD_NAME=\"etcd1\"\nETCD_ADVERTISE_CLIENT_URLS=\"http:\u002F\u002F192.168.0.16:2379\"\nETCD_INITIAL_ADVERTISE_PEER_URLS=\"http:\u002F\u002F192.168.0.16:2380\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПримечание: файл конфигурации \u003Ccode\u003E\u002Fetc\u002Fdefault\u002Fetcd\u003C\u002Fcode\u003E используется для бутстрапа кластера etcd, т. е. параметры, описанные в нём, применяются в момент инициализации (первого запуска) процесса etcd. После того, как кластер инициализирован, конфигурация читается из рабочего каталога, заданного параметром \u003Ccode\u003EETCD_DATA_DIR\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EНаша задача — перенести данные с серверов #1, 2 и 3 на новые серверы без простоя в работе сервиса\u003C\u002Fstrong\u003E. Для достижения результата мы начнем постепенно расширять кластер PostgreSQL и кластер etcd, наделяя новые узлы небольшими отличиями от оригинальных узлов PgSQL:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EНе будем добавлять endpoint’ы новых серверов в распределение трафика load balancer’ом.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EНовые узлы PostgreSQL не будут принимать участие в выборе master-узла при failover.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EВ реальной задаче сетевая связность между узлами была организована через интернет, что было неприемлемо с точки зрения безопасности. Поэтому средствами ЦОДа был подготовлен VPN для достижения L2-связности между узлами. Не буду подробно описывать этот этап подготовки к переезду, и для удобства и упрощения схемы помещу новые серверы в сеть 192.168.0.0\u002F24, чтобы обеспечить всем узлам связь в пределах broadcast-домена.\u003C\u002Fp\u003E\u003Cp\u003EТаким образом, промежуточная схема взаимодействия узлов в кластере будет выглядеть следующим образом:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"844\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Faf5\u002Fc7c\u002F6e4\u002Faf5c7c6e482cdb930d8fd9ce043d3cff.png\" data-width=\"718\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EРеализация\u003C\u002Fh2\u003E\u003Cp\u003EПлан по реализации задуманного таков:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eрасширение etcd-кластера;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eрасширение PostgreSQL-кластера средствами Patroni;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eвывод из PostgreSQL-кластера «старых» узлов;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eвывод из etcd-кластера «старых» инстансов.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EИтак, начнём!\u003C\u002Fp\u003E\u003Ch3\u003EШаг №1. Расширяем кластер etcd\u003C\u002Fh3\u003E\u003Cp\u003E\u003Cstrong\u003E\u003Cem\u003EВажно! \u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003Cem\u003EТак как etcd (или любое другое хранилище типа key-value) является фундаментальным компонентом в функционировании Patroni, лучше всего проектировать систему так, чтобы кластер работал на отдельных инстансах, имел свою собственную подсеть и не зависел от самих узлов с Patroni. Но в рамках рассматриваемого стенда я сэкономил и разместил кластер etcd на тех же серверах, что и PostgreSQL с Patroni.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cp\u003EПервым делом нужно расширить кластер etcd так, чтобы при переключении лидера всем узлам (и новым, и старым) был доступен новый лидер. Для этого сначала внесем изменения в конфигурационный файл \u003Ccode\u003E\u002Fetc\u002Fhosts\u003C\u002Fcode\u003E на каждом из шести узлов и приведем его примерно к следующему виду (в сегменте ранее добавленных строк):\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E# etcd\n192.168.0.16    server-1 etcd1\n192.168.0.9      server-2 etcd2\n192.168.0.12    server-3 etcd3\n192.168.0.13    new_server-1 etcd-1\t# IP-адрес первого нового сервера\n192.168.0.17    new_server-2 etcd-2\t# ... второго\n192.168.0.18    new_server-3 etcd-3\t# ... третьего\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее начинаем по очереди добавлять инстансы в кластер etcd. На машине \u003Ccode\u003Enew_server-1\u003C\u002Fcode\u003E (192.168.0.13) проверим, что сервис etcd не запущен:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-1:~# systemctl status etcd\n● etcd.service - etcd - highly-available key value store\n   Loaded: loaded (\u002Flib\u002Fsystemd\u002Fsystem\u002Fetcd.service; disabled; vendor preset: enabled)\n   Active: inactive (dead)\n     Docs: https:\u002F\u002Fgithub.com\u002Fcoreos\u002Fetcd\n           man:etcd\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа всякий случай очистим каталог \u003Ccode\u003E\u002Fvar\u002Flib\u002Fetcd\u003C\u002Fcode\u003E, чтобы быть уверенными в том, что конфигурация будет получена из файла \u003Ccode\u003E\u002Fetc\u002Fdefault\u002Fetcd\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-1:~# rm -rf \u002Fvar\u002Flib\u002Fetcd\u002F*\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь приведём файл \u003Ccode\u003E\u002Fetc\u002Fdefault\u002Fetcd\u003C\u002Fcode\u003E к следующему виду:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EETCD_LISTEN_PEER_URLS=\"http:\u002F\u002F192.168.0.13:2380,http:\u002F\u002F127.0.0.1:2380\"\nETCD_LISTEN_CLIENT_URLS=\"http:\u002F\u002F192.168.0.13:2379,http:\u002F\u002F127.0.0.1:2379\"\nETCD_INITIAL_CLUSTER_TOKEN=\"myclustertoken\"\nETCD_DATA_DIR=\"\u002Fvar\u002Flib\u002Fetcd\"\nETCD_ELECTION_TIMEOUT=\"5000\"\nETCD_HEARTBEAT_INTERVAL=\"1000\"\nETCD_ADVERTISE_CLIENT_URLS=\"http:\u002F\u002F192.168.0.13:2379\"\nETCD_INITIAL_ADVERTISE_PEER_URLS=\"http:\u002F\u002F192.168.0.13:2380\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПереходим на один из серверов etcd-кластера (например, \u003Ccode\u003Eserver-1\u003C\u002Fcode\u003E) и смотрим список членов кластера:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@server-1:~# etcdctl member list\n862db4122a92dc3: name=etcd3 peerURLs=http:\u002F\u002Fetcd3:2379 clientURLs=http:\u002F\u002F192.168.0.12:2379 isLeader=false\n46d7a702fdb60fff: name=etcd1 peerURLs=http:\u002F\u002Fetcd1:2380 clientURLs=http:\u002F\u002F192.168.0.16:2379 isLeader=true\nd129ecfd4c627e1f: name=etcd2 peerURLs=http:\u002F\u002Fetcd2:2379 clientURLs=http:\u002F\u002F192.168.0.9:2379 isLeader=false\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДобавляем нового члена кластера:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@server-1:~# etcdctl member add etcd-1 http:\u002F\u002Fetcd-1:2380\nAdded member named etcd-1 with ID 6d299012c6ad9595 to cluster\n\nETCD_NAME=\"etcd-1\"\nETCD_INITIAL_CLUSTER=\"etcd1=http:\u002F\u002Fetcd1:2380,etcd-1=http:\u002F\u002Fetcd-1:2380,etcd2=http:\u002F\u002Fetcd2:2380,etcd3=http:\u002F\u002Fetcd3:2380\"\nETCD_INITIAL_CLUSTER_STATE=\"existing\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EEtcd сообщил параметры, которые мы должны использовать в новом инстансе для подключения к существующему кластеру. Добавляем эти параметры в \u003Ccode\u003E\u002Fetc\u002Fdefault\u002Fetcd\u003C\u002Fcode\u003E на сервере \u003Ccode\u003Eetcd-1\u003C\u002Fcode\u003E (\u003Ccode\u003Enew_server-1\u003C\u002Fcode\u003E). В конечном итоге получаем такой файл конфигурации (к изначальному конфигу добавились три последние строки):\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EETCD_LISTEN_PEER_URLS=\"http:\u002F\u002F192.168.0.13:2380,http:\u002F\u002F127.0.0.1:2380\"\nETCD_LISTEN_CLIENT_URLS=\"http:\u002F\u002F192.168.0.13:2379,http:\u002F\u002F127.0.0.1:2379\"\nETCD_INITIAL_CLUSTER_TOKEN=\"myclustertoken\"\nETCD_DATA_DIR=\"\u002Fvar\u002Flib\u002Fetcd\"\nETCD_ELECTION_TIMEOUT=\"5000\"\nETCD_HEARTBEAT_INTERVAL=\"1000\"\nETCD_ADVERTISE_CLIENT_URLS=\"http:\u002F\u002F192.168.0.13:2379\"\nETCD_INITIAL_ADVERTISE_PEER_URLS=\"http:\u002F\u002F192.168.0.13:2380\"\nETCD_NAME=\"etcd-1\"\nETCD_INITIAL_CLUSTER=\"etcd1=http:\u002F\u002Fetcd1:2380,etcd-1=http:\u002F\u002Fetcd-1:2380,etcd2=http:\u002F\u002Fetcd2:2380,etcd3=http:\u002F\u002Fetcd3:2380\"\nETCD_INITIAL_CLUSTER_STATE=\"existing\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПроверяем на сервере состояние кластера etcd:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-1:~# etcdctl member list\n46d7a702fdb60fff: name=etcd1 peerURLs=http:\u002F\u002Fetcd1:2380 clientURLs=http:\u002F\u002F192.168.0.16:2379 isLeader=true\n6d299012c6ad9595: name=etcd-1 peerURLs=http:\u002F\u002Fetcd-1:2380 clientURLs=http:\u002F\u002F192.168.0.13:2379 isLeader=false\nc32185ccfd4b4b41: name=etcd2 peerURLs=http:\u002F\u002Fetcd2:2380 clientURLs=http:\u002F\u002F192.168.0.9:2379 isLeader=false\nd56f1524a8fe199e: name=etcd3 peerURLs=http:\u002F\u002Fetcd3:2380 clientURLs=http:\u002F\u002F192.168.0.12:2379 isLeader=false\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКак мы видим, \u003Ccode\u003Eetcd-1\u003C\u002Fcode\u003E успешно добавлен в кластер. Повторяем все действия для следующего сервера, заранее подготовив для него шаблон конфигурации (\u003Ccode\u003E\u002Fetc\u002Fdefault\u002Fetcd\u003C\u002Fcode\u003E), где потребуется поменять адреса сетевых интерфейсов в соответствии с адресом сервера. На выходе получаем:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-2:~# etcdctl member list\n40ebdfb25cac6924: name=etcd-2 peerURLs=http:\u002F\u002Fetcd-2:2380 clientURLs=http:\u002F\u002F192.168.0.17:2379 isLeader=false\n46d7a702fdb60fff: name=etcd1 peerURLs=http:\u002F\u002Fetcd1:2380 clientURLs=http:\u002F\u002F192.168.0.16:2379 isLeader=true\n6d299012c6ad9595: name=etcd-1 peerURLs=http:\u002F\u002Fetcd-1:2380 clientURLs=http:\u002F\u002F192.168.0.13:2379 isLeader=false\nc32185ccfd4b4b41: name=etcd2 peerURLs=http:\u002F\u002Fetcd2:2380 clientURLs=http:\u002F\u002F192.168.0.9:2379 isLeader=false\nd56f1524a8fe199e: name=etcd3 peerURLs=http:\u002F\u002Fetcd3:2380 clientURLs=http:\u002F\u002F192.168.0.12:2379 isLeader=false\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E… и такой файл конфигурации \u003Ccode\u003E\u002Fetc\u002Fdefault\u002Fetcd\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EETCD_LISTEN_PEER_URLS=\"http:\u002F\u002F192.168.0.17:2380,http:\u002F\u002F127.0.0.1:2380\"\nETCD_LISTEN_CLIENT_URLS=\"http:\u002F\u002F192.168.0.17:2379,http:\u002F\u002F127.0.0.1:2379\"\nETCD_INITIAL_CLUSTER_TOKEN=\"myclustertoken\"\nETCD_DATA_DIR=\"\u002Fvar\u002Flib\u002Fetcd\"\nETCD_ELECTION_TIMEOUT=\"5000\"\nETCD_HEARTBEAT_INTERVAL=\"1000\"\nETCD_ADVERTISE_CLIENT_URLS=\"http:\u002F\u002F192.168.0.17:2379\"\nETCD_INITIAL_ADVERTISE_PEER_URLS=\"http:\u002F\u002F192.168.0.17:2380\"\nETCD_NAME=\"etcd-2\"\nETCD_INITIAL_CLUSTER=\"etcd-2=http:\u002F\u002Fetcd-2:2380,etcd1=http:\u002F\u002Fetcd1:2380,etcd-1=http:\u002F\u002Fetcd-1:2380,etcd2=http:\u002F\u002Fetcd2:2380,etcd3=http:\u002F\u002Fetcd3:2380\"\nETCD_INITIAL_CLUSTER_STATE=\"existing\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПовторяем процедуру для третьего сервера и проверяем результат:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-3:~# etcdctl member list\n40ebdfb25cac6924: name=etcd-2 peerURLs=http:\u002F\u002Fetcd-2:2380 clientURLs=http:\u002F\u002F192.168.0.17:2379 isLeader=false\n46d7a702fdb60fff: name=etcd1 peerURLs=http:\u002F\u002Fetcd1:2380 clientURLs=http:\u002F\u002F192.168.0.16:2379 isLeader=true\n6c2e836d0c3a51c3: name=etcd-3 peerURLs=http:\u002F\u002Fetcd-3:2380 clientURLs=http:\u002F\u002F192.168.0.18:2379 isLeader=false\n6d299012c6ad9595: name=etcd-1 peerURLs=http:\u002F\u002Fetcd-1:2380 clientURLs=http:\u002F\u002F192.168.0.13:2379 isLeader=false\nc32185ccfd4b4b41: name=etcd2 peerURLs=http:\u002F\u002Fetcd2:2380 clientURLs=http:\u002F\u002F192.168.0.9:2379 isLeader=false\nd56f1524a8fe199e: name=etcd3 peerURLs=http:\u002F\u002Fetcd3:2380 clientURLs=http:\u002F\u002F192.168.0.12:2379 isLeader=false\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФайл конфигурации \u003Ccode\u003E\u002Fetc\u002Fdefault\u002Fetcd\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EETCD_LISTEN_PEER_URLS=\"http:\u002F\u002F192.168.0.18:2380,http:\u002F\u002F127.0.0.1:2380\"\nETCD_LISTEN_CLIENT_URLS=\"http:\u002F\u002F192.168.0.18:2379,http:\u002F\u002F127.0.0.1:2379\"\nETCD_INITIAL_CLUSTER_TOKEN=\"myclustertoken\"\nETCD_DATA_DIR=\"\u002Fvar\u002Flib\u002Fetcd\"\nETCD_ELECTION_TIMEOUT=\"5000\"\nETCD_HEARTBEAT_INTERVAL=\"1000\"\nETCD_ADVERTISE_CLIENT_URLS=\"http:\u002F\u002F192.168.0.18:2379\"\nETCD_INITIAL_ADVERTISE_PEER_URLS=\"http:\u002F\u002F192.168.0.18:2380\"\nETCD_NAME=\"etcd-3\"\nETCD_INITIAL_CLUSTER=\"etcd-2=http:\u002F\u002Fetcd-2:2380,etcd1=http:\u002F\u002Fetcd1:2380,etcd-3=http:\u002F\u002Fetcd-3:2380,etcd-1=http:\u002F\u002Fetcd-1:2380,etcd2=http:\u002F\u002Fetcd2:2380,etcd3=http:\u002F\u002Fetcd3:2380\"\nETCD_INITIAL_CLUSTER_STATE=\"existing\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EМы расширили etcd-кластер с трех инстансов до шести.\u003C\u002Fp\u003E\u003Ch3\u003EШаг №2. Расширяем кластер PostgreSQL\u003C\u002Fh3\u003E\u003Cp\u003EСледующим нашим шагом будет расширение кластера PgSQL. Так как кластер управляется Patroni, нужно подготовить файл конфигурации \u003Ccode\u003E\u002Fetc\u002Fpatroni.yaml\u003C\u002Fcode\u003E с примерно следующим содержанием:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"yaml\"\u003Escope: patroni_cluster\nname: new_server-1\nnamespace: \u002Fpatroni\u002F\n\nrestapi:\n  listen: 192.168.0.13:8008\n  connect_address: 192.168.0.13:8008\n  authentication:\n    username: patroni\n    password: 'mynewpassword'\n\netcd:\n  hosts: etcd-1:2379,etcd-2:2379,etcd-3:2379\n\nbootstrap:\n  dcs:\n    ttl: 30\n    loop_wait: 10\n    retry_timeout: 10\n    maximum_lag_on_failover: 1048576\n    synchronous_mode: false\n    postgresql:\n      use_pg_rewind: true\n      use_slots: true\n      parameters:\n        wal_level: hot_standby\n        synchronous_commit: off\n        hot_standby: \"on\"\n\n  initdb:\n  - encoding: UTF8\n  - data-checksums\n\n  pg_hba:\n  - local all postgres trust\n  - host postgres all 127.0.0.1\u002F32 md5\n  - host replication replicator 0.0.0.0\u002F0 md5\n  - host replication all 192.168.0.16\u002F32 trust # server-1\n  - host replication all 192.168.0.9\u002F32 trust  # server-2\n  - host replication all 192.168.0.12\u002F32 trust # server-3\n  - host all all 0.0.0.0\u002F0 md5\n\n  users:\n    admin:\n      password: 'mynewpassword2'\n      options:\n        - createrole\n        - createdb\n\npostgresql:\n  listen: 192.168.0.13:5432\n  connect_address: 192.168.0.13:5432\n  data_dir: \u002Fdata\u002Fpatroni\n  bin_dir: \u002Fusr\u002Flib\u002Fpostgresql\u002F11\u002Fbin\n  config_dir: \u002Fdata\u002Fpatroni\n  pgpass: \u002Ftmp\u002Fpgpass0\n  authentication:\n    replication:\n      username: replicator\n      password: 'mynewpassord3'\n    superuser:\n      username: postgres\n      password: 'mynewpassord4'\n    rewind:\n      username: rewind_user\n      password: 'mynewpassword5'\n  parameters:\n    unix_socket_directories: '\u002Ftmp'\n\ntags:\n    nofailover: true\n    noloadbalance: true\n    clonefrom: false\n    nosync: false\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПримечания:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EМы изменяем настройки etcd для Patroni на новых серверах (см. значение \u003Ccode\u003Ehosts\u003C\u002Fcode\u003E  в секции \u003Ccode\u003Eetcd\u003C\u002Fcode\u003E), ограничивая endoint’ы только новыми серверами, так как в дальнейшем мы планируем выводит старые инстансы etcd из кластера. Если сейчас сервер обратится к инстансу etcd-1 для записи значения, а лидером будет, скажем, etcd2 (его endpoint мы явно не указываем в конфигурации Patroni), то etcd сам отдаст нужный endpoint лидера и, поскольку сетевая видимость между всеми членами кластера существует, работа системы не нарушится.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EМы устанавливаем 2 тега в конфигурации: \u003Ccode\u003Enofailover: true\u003C\u002Fcode\u003E и \u003Ccode\u003Enoloadbalance: true\u003C\u002Fcode\u003E. Пока не планируется добавлять новые серверы в качестве target для load balancer, поэтому явно запрещаем им участвовать в гонке за лидерство.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EНа новых серверах должны быть правильно определены параметры \u003Ccode\u003Edata_dir\u003C\u002Fcode\u003E и \u003Ccode\u003Econfig_dir\u003C\u002Fcode\u003E. Желательно, чтобы эти параметры не отличались от оригинальных значений. Возможна ситуация, когда в файле \u003Ccode\u003Epostgresql.base.conf\u003C\u002Fcode\u003E кто-то явно указал пути к этим директориям, и в момент бутстрапа новой реплики эти параметры приедут на новый сервер.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВажно убедиться, что файл конфигурации \u003Ccode\u003Epg_hba.conf\u003C\u002Fcode\u003E — одинаковый на всех узлах и содержит разрешающие правила для подключения как новых, так и старых серверов. Да, мы описываем эти правила в \u003Ccode\u003Epatroni.yaml\u003C\u002Fcode\u003E, но они используются только на этапе бутстрапа кластера. После этого добрый кто-то может изменить его, а Patroni не будет приводить его в соответствие своему конфигу… Это очень важный момент, с которым я столкнулся при реализации переноса.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EПроверяем, что каталог \u003Ccode\u003E\u002Fdata\u002Fpatroni\u003C\u002Fcode\u003E — пустой и принадлежит пользователю \u003Ccode\u003Epostgres\u003C\u002Fcode\u003E. Если это не так, то очищаем и устанавливаем нужные права:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-1:~# rm -rf \u002Fdata\u002Fpatroni\u002F*\nroot@new_server-1:~# chown -R postgres:postgres \u002Fdata\u002Fpatroni\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСтартуем Patroni и проверяем состояние кластера:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-1:~# systemctl start patroni\nroot@new_server-1:~# patronictl -c \u002Fetc\u002Fpatroni.yml list\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"193\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F277\u002F686\u002F86a\u002F27768686aa1880e4a853d3e8bf5f5782.png\" data-width=\"730\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EНовая реплика — в состоянии \u003Ccode\u003Erunning\u003C\u002Fcode\u003E. Отлично!\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EОбратите внимание! \u003C\u002Fstrong\u003EПри запуске Patroni он читает информацию из etcd и, если обнаруживает, что уже есть работающий кластер (а это наш случай!), пытается провести бутстрап от лидера. При этом используется \u003Ca href=\"https:\u002F\u002Fwww.postgresql.org\u002Fdocs\u002Fcurrent\u002Fapp-pgbasebackup.html\"\u003E\u003Cu\u003Epg_basebackup\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Если существующая база — большая, \u003Cstrong\u003Eможет потребоваться много времени\u003C\u002Fstrong\u003E для завершения этой операции. Например, в реальном кейсе, который дал начало этой статье, была база объёмом в 2,8 ТБ, и её бутстрап занимал около 10 часов на гигабитном канале.\u003C\u002Fp\u003E\u003Cp\u003EТакже важно понимать, что в период бутстрапа мы создадим \u003Cstrong\u003Eдополнительную нагрузку на сетевой интерфейс\u003C\u002Fstrong\u003E, поэтому для добавления новой реплики в кластер рекомендуется выбирать время минимальной нагрузки на БД.\u003C\u002Fp\u003E\u003Cp\u003EДождавшись, когда новая реплика завершила бутстрап, мы можем поочередно повторить процедуру для оставшихся серверов. После завершающей итерации должен получиться следующий результат:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"285\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb4c\u002Fdf1\u002F484\u002Fb4cdf148443dca3998fb4131a9865194.png\" data-width=\"727\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003E\u003Cstrong\u003EВажно!\u003C\u002Fstrong\u003E Каждый узел в кластере создает пассивную нагрузку на лидера, потому что по умолчанию подтягивает все изменения от него. Это значит, что если база испытывает большую сетевую нагрузку со стороны сервисов, то добавление сразу 3 реплик в кластер может сыграть злую шутку. Я наблюдал среднюю загрузку сетевого интерфейса лидера кластера ~500 Мбит\u002Fсек на исходящий трафик, когда в кластере было три члена. Добавление четвертого узла увеличило нагрузку, но явных пиков не было. Однако после добавления пятого узла ситуация изменилась: некоторые узлы начали отставать от лидера (параметр \u003Cem\u003ELag in MB\u003C\u002Fem\u003E постоянно увеличивался). Причина проста: в этот момент нагрузка на сетевой интерфейс достигла максимума (1 Гбит\u002Fсек). \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"308\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fa25\u002F2b1\u002Ff7c\u002Fa252b1f7c08aebec60b0d1957c844552.png\" data-width=\"583\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EРешить эту проблему удалось, настроив каскадную репликацию, которая позволила бутстрапить новую реплику от уже существующей. Для реализации этого метода в конфигурации Patroni нужно установить на одну из существующих реплик специальный тег — \u003Ccode\u003Eclonefrom: true\u003C\u002Fcode\u003E, а перед запуском бутстрапа новой реплики в её конфигурационном файле установить тег: \u003Ccode\u003Ereplicatefrom: &lt;название_узла\u003E\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EЕсли ваша production-база достаточно нагружена, после добавления новой реплики может быть полезным выключение одной из старых (эта операция рассматривается дальше — см. шаг №4) либо конфигурация каскадной репликации. Так будет поддерживаться общее количество реплик в стандартном количестве.\u003C\u002Fp\u003E\u003Ch3\u003EОтступление про балансировку\u003C\u002Fh3\u003E\u003Cp\u003EТак как у нас в схеме используется load balancer, то перед тем, как переходить к следующим шагам, стоит рассказать, каким образом он принимает решение, куда нужно отправить трафик.\u003C\u002Fp\u003E\u003Cp\u003EКогда мы готовили конфигурацию Patroni, описывали следующий сегмент:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"yaml\"\u003Erestapi:\n  listen: 192.168.0.13:8008\n  connect_address: 192.168.0.13:8008\n  authentication:\n    username: patroni\n    password: 'mynewpassword'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗдесь указано, на каком интерфейсе и на каком порту будет работать Patroni API. Через API можно определить, является ли на данный момент узел leader’ом или replica’ой. Зная это, мы можем настроить health check для балансера так, чтобы в момент переключения лидера балансер знал, на какой target нужно переключить трафик.\u003C\u002Fp\u003E\u003Cp\u003EНапример: на картинке выше видно, что узел с адресом 192.168.0.16 (\u003Ccode\u003Eserver-1\u003C\u002Fcode\u003E) является лидером на данный момент. Отправим пару GET-запросов по следующим URL:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-2:~# curl -I -X GET server-1:8008\u002Fleader\nHTTP\u002F1.0 200 OK\nServer: BaseHTTP\u002F0.6 Python\u002F3.6.9\nDate: Sun, 10 Oct 2021 11:40:38 GMT\nContent-Type: application\u002Fjson\n\nroot@new_server-2:~# curl -I -X GET server-1:8008\u002Freplica\nHTTP\u002F1.0 503 Service Unavailable\nServer: BaseHTTP\u002F0.6 Python\u002F3.6.9\nDate: Sun, 10 Oct 2021 11:37:57 GMT\nContent-Type: application\u002Fjson\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПолучили коды ответов 200 и 503 соответственно. Отправим ещё пару запросов в API сервера с Patroni, который не является лидером на данный момент:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-2:~# curl -I -X GET new_server-1:8008\u002Fleader\nHTTP\u002F1.0 503 Service Unavailable\nServer: BaseHTTP\u002F0.6 Python\u002F3.6.9\nDate: Sun, 10 Oct 2021 11:41:14 GMT\nContent-Type: application\u002Fjson\n\nroot@new_server-2:~# curl -I -X GET new_server-1:8008\u002Freplica\nHTTP\u002F1.0 503 Service Unavailable\nServer: BaseHTTP\u002F0.6 Python\u002F3.6.9\nDate: Sun, 10 Oct 2021 11:41:17 GMT\nContent-Type: application\u002Fjson\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ обоих случаях мы получили 503. Почему так? Потому мы использовали тег \u003Ccode\u003Enoloadbalance: true\u003C\u002Fcode\u003E. Изменим значение этого тега на \u003Ccode\u003Efalse\u003C\u002Fcode\u003E на новых узлах и перезапустим Patroni:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"161\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0e3\u002F719\u002F27c\u002F0e371927c1d683b775363ae669f9cdd9.png\" data-width=\"705\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EА теперь попробуем ещё раз:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-2:~# curl -I -X GET new_server-1:8008\u002Fleader\nHTTP\u002F1.0 503 Service Unavailable\nServer: BaseHTTP\u002F0.6 Python\u002F3.6.9\nDate: Sun, 10 Oct 2021 11:45:40 GMT\nContent-Type: application\u002Fjson\n\nroot@new_server-2:~# curl -I -X GET new_server-1:8008\u002Freplica\nHTTP\u002F1.0 200 OK\nServer: BaseHTTP\u002F0.6 Python\u002F3.6.9\nDate: Sun, 10 Oct 2021 11:45:44 GMT\nContent-Type: application\u002Fjson\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВсё корректно. Настроив health check для load balancer’а через Patroni API, мы можем распределять трафик на мастер-узел (для запросов на запись) и на реплики (для запросов на чтение). Это очень удобно.\u003C\u002Fp\u003E\u003Cp\u003EВ нашем случае использовался load balancer от облачного провайдера, и заниматься какими-то особыми настройками (помимо health check) не пришлось. Но в общем случае для балансировки можно использовать HAproxy в режиме TCP. Тогда его примерный конфиг будет выглядеть так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"yaml\"\u003Eglobal\n    maxconn 100\n\ndefaults\n    log global\n    mode tcp\n    retries 2\n    timeout client 30m\n    timeout connect 4s\n    timeout server 30m\n    timeout check 5s\n\nlisten stats\n    mode http\n    bind *:7000\n    stats enable\n    stats uri \u002F\n\nlisten leader\n    bind *:5000\n    option httpchk\n    http-check expect status 200\n    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions\n    server server_1 192.168.0.16:5432 maxconn 100 check port 8008\n    server server_2 192.168.0.9:5432 maxconn 100 check port 8008\n    server server_3 192.168.0.12:5432 maxconn 100 check port 8008\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EШаг №3. Донастраиваем кластер PostgreSQL\u003C\u002Fh3\u003E\u003Cp\u003EВернемся к нашей реализации. Мы добавили новые реплики в кластер PostgreSQL. Теперь нужно разрешить всем членам кластера принимать участие в гонке за лидерство и добавить новые endoint’ы кластера в tagets у load balancer’а. Меняем значение тега \u003Ccode\u003Enofailover\u003C\u002Fcode\u003E на \u003Ccode\u003Efalse\u003C\u002Fcode\u003E и перезапускаем Patroni:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"161\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F673\u002F401\u002F068\u002F6734010682f2f3d739ff7b6c2a853592.png\" data-width=\"549\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EДобавляем в список targets для load balancer’а новые серверы и назначаем лидером сервер \u003Ccode\u003Enew_server-1\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-1:~# patronictl -c \u002Fetc\u002Fpatroni.yml switchover\nMaster [server-1]:\nCandidate ['new_server-1', 'new_server-2', 'new_server-3', 'server-2', 'server-3'] []: new_server-1\nWhen should the switchover take place [now]: now\nCurrent cluster topology\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"163\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3ad\u002F8ab\u002F5d2\u002F3ad8ab5d2509f11fcdb9ed4bdd4417e7.png\" data-width=\"557\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EAre you sure you want to switchover cluster patroni_cluster, demoting current master server-1? [y\u002FN]: y\nSuccessfully switched over to \"new_server-1\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"163\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffe1\u002F665\u002F53d\u002Ffe166553dfdb3eb47ac793149d460aaf.png\" data-width=\"552\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch3\u003EШаг №4. Выводим серверы из кластера Patroni\u003C\u002Fh3\u003E\u003Cp\u003EВыведем \u003Ccode\u003Eserver-1\u003C\u002Fcode\u003E, \u003Ccode\u003Eserver-2\u003C\u002Fcode\u003E и \u003Ccode\u003Eserver-3\u003C\u002Fcode\u003E из кластера и уберем их из targets для load balancer’а — они своё отработали:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@server-3:~# systemctl stop patroni\nroot@server-3:~# systemctl disable patroni\nRemoved \u002Fetc\u002Fsystemd\u002Fsystem\u002Fmulti-user.target.wants\u002Fpatroni.service.\n\nroot@server-2:~# systemctl stop patroni\nroot@server-2:~# systemctl disable patroni\nRemoved \u002Fetc\u002Fsystemd\u002Fsystem\u002Fmulti-user.target.wants\u002Fpatroni.service.\n\nroot@server-1:~# systemctl stop patroni\nroot@server-1:~# systemctl disable patroni\nRemoved \u002Fetc\u002Fsystemd\u002Fsystem\u002Fmulti-user.target.wants\u002Fpatroni.service.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПроверим состояние кластера:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-1:# patronictl -c \u002Fetc\u002Fpatroni.yml list\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"111\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F9a7\u002F2cf\u002F81b\u002F9a72cf81b8c9066b79f5dd3d2ad2c7f2.png\" data-width=\"549\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EОстались только новые серверы. Мы почти закончили!\u003C\u002Fp\u003E\u003Ch3\u003EШаг №5. Приводим в порядок кластер etcd\u003C\u002Fh3\u003E\u003Cp\u003EПоследний шаг — разбираем кластер etcd:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eroot@new_server-1:~# etcdctl member list\n40ebdfb25cac6924: name=etcd-2 peerURLs=http:\u002F\u002Fetcd-2:2380 clientURLs=http:\u002F\u002F192.168.0.17:2379 isLeader=false\n46d7a702fdb60fff: name=etcd1 peerURLs=http:\u002F\u002Fetcd1:2380 clientURLs=http:\u002F\u002F192.168.0.16:2379 isLeader=true\n6c2e836d0c3a51c3: name=etcd-3 peerURLs=http:\u002F\u002Fetcd-3:2380 clientURLs=http:\u002F\u002F192.168.0.18:2379 isLeader=false\n6d299012c6ad9595: name=etcd-1 peerURLs=http:\u002F\u002Fetcd-1:2380 clientURLs=http:\u002F\u002F192.168.0.13:2379 isLeader=false\nc32185ccfd4b4b41: name=etcd2 peerURLs=http:\u002F\u002Fetcd2:2380 clientURLs=http:\u002F\u002F192.168.0.9:2379 isLeader=false\nd56f1524a8fe199e: name=etcd3 peerURLs=http:\u002F\u002Fetcd3:2380 clientURLs=http:\u002F\u002F192.168.0.12:2379 isLeader=false\n\nroot@new_server-1:~# etcdctl member remove d56f1524a8fe199e\nRemoved member d56f1524a8fe199e from cluster\nroot@new_server-1:~# etcdctl member remove c32185ccfd4b4b41\nRemoved member c32185ccfd4b4b41 from cluster\nroot@new_server-1:~# etcdctl member remove 46d7a702fdb60fff\nRemoved member 46d7a702fdb60fff from cluster\nroot@new_server-1:~# etcdctl member list\n\nroot@new_server-1:~# etcdctl member list\n40ebdfb25cac6924: name=etcd-2 peerURLs=http:\u002F\u002Fetcd-2:2380 clientURLs=http:\u002F\u002F192.168.0.17:2379 isLeader=true\n6c2e836d0c3a51c3: name=etcd-3 peerURLs=http:\u002F\u002Fetcd-3:2380 clientURLs=http:\u002F\u002F192.168.0.18:2379 isLeader=false\n6d299012c6ad9595: name=etcd-1 peerURLs=http:\u002F\u002Fetcd-1:2380 clientURLs=http:\u002F\u002F192.168.0.13:2379 isLeader=false\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВсё! Переезд окончен! Итоговая схема взаимодействия выглядит следующим образом:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"608\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd2a\u002F8d2\u002F97c\u002Fd2a8d297c43fbbb316de9a183a0fcb0c.png\" data-width=\"719\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EЗаключение\u003C\u002Fh2\u003E\u003Cp\u003EВ результате проведенных манипуляций удалось перевезти кластер PostgreSQL на базе Patroni на новое железо. И в целом весь процесс получился довольно предсказуемым, контролируемым — пожалуй, во многом это заслуга Patroni. Я постарался описать в статье все сложности и узкие моменты в конфигурации, с которыми столкнулся по ходу миграции. Надеюсь, что этот опыт будет кому-нибудь полезным.\u003C\u002Fp\u003E\u003Cp\u003EПростой при переключении был минимальным: составил около 8 секунд и был обусловлен тем, что в момент переключения лидера health check нашего load balancer’а сделал три попытки (с интервалом  в три секунды и таймаутом в две секунды) с целью убедиться, что leader действительно изменился. Сервис, обращающийся к базе данных, поддерживал переподключение, поэтому соединение было восстановлено автоматически. (А вообще, хорошим тоном при переездах является остановка всех подключений к отключаемому узлу.)\u003C\u002Fp\u003E\u003Ch2\u003EP.S.\u003C\u002Fh2\u003E\u003Cp\u003EЧитайте также в нашем блоге:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E«Обзор операторов PostgreSQL для Kubernetes»: \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fflant\u002Fblog\u002F520616\u002F\"\u003Eчасть 1 (наш опыт и выбор)\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fflant\u002Fblog\u002F527524\u002F\"\u003Eчасть 2 (дополнения и итоговое сравнение)\u003C\u002Fa\u003E;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E«\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fflant\u002Fblog\u002F568924\u002F\"\u003EМониторинг PostgreSQL. Расшифровка аудиочата Data Egret и Okmeter\u003C\u002Fa\u003E»;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E«\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fflant\u002Fblog\u002F479438\u002F\"\u003EPostgres-вторник №5: PostgreSQL и Kubernetes. CI\u002FCD. Автоматизация тестирования\u003C\u002Fa\u003E».\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"patroni"},{"titleHtml":"postgresql"},{"titleHtml":"миграции"},{"titleHtml":"etcd"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd93\u002Fad1\u002Fa9a\u002Fd93ad1a9a5c03848d4008c3fa045ffe6.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd93\u002Fad1\u002Fa9a\u002Fd93ad1a9a5c03848d4008c3fa045ffe6.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fflant\\\u002Fblog\\\u002F583170\\\u002F\"},\"headline\":\"Опыт миграции кластера PostgreSQL на базе Patroni\",\"datePublished\":\"2021-10-15T09:41:52+03:00\",\"dateModified\":\"2021-10-15T23:15:53+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Павел Стратнев\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой &mdash; я и не думал, что могут в...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fflant\\\u002Fblog\\\u002F583170\\\u002F#post-content-body\",\"about\":[\"c_flant\",\"h_sys_admin\",\"h_postgresql\",\"h_db_admins\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583170\\\u002F47cb3e536b0df48594fea60895756c90\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F71f\\\u002Fd64\\\u002F491\\\u002F71fd6449110f3199219161664c278ecb.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fedf\\\u002F6fd\\\u002F2b8\\\u002Fedf6fd2b863828110f642fdcf7f8ec74.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff9e\\\u002F95b\\\u002F6e5\\\u002Ff9e95b6e53438969a5c2c06c21b684a0.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F82b\\\u002F46a\\\u002F42b\\\u002F82b46a42bc898afd2212e0b18418e164.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Faf5\\\u002Fc7c\\\u002F6e4\\\u002Faf5c7c6e482cdb930d8fd9ce043d3cff.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F277\\\u002F686\\\u002F86a\\\u002F27768686aa1880e4a853d3e8bf5f5782.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb4c\\\u002Fdf1\\\u002F484\\\u002Fb4cdf148443dca3998fb4131a9865194.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fa25\\\u002F2b1\\\u002Ff7c\\\u002Fa252b1f7c08aebec60b0d1957c844552.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F0e3\\\u002F719\\\u002F27c\\\u002F0e371927c1d683b775363ae669f9cdd9.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F673\\\u002F401\\\u002F068\\\u002F6734010682f2f3d739ff7b6c2a853592.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F3ad\\\u002F8ab\\\u002F5d2\\\u002F3ad8ab5d2509f11fcdb9ed4bdd4417e7.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ffe1\\\u002F665\\\u002F53d\\\u002Ffe166553dfdb3eb47ac793149d460aaf.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F9a7\\\u002F2cf\\\u002F81b\\\u002F9a72cf81b8c9066b79f5dd3d2ad2c7f2.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fd2a\\\u002F8d2\\\u002F97c\\\u002Fd2a8d297c43fbbb316de9a183a0fcb0c.png\"]}","metaDescription":"Недавно мне посчастливилось заниматься переносом кластера PostgreSQL под управлением Patroni на новое железо. Задача казалась простой — я и не думал, что могут возникнуть проблемы.Но в процессе...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"flant":{"alias":"flant","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Fde7\u002F635\u002F363\u002Fde763536359ce6e2d2a978f8dded1964.png","titleHtml":"Флант","descriptionHtml":"DevOps-as-a-Service, Kubernetes, обслуживание 24×7","relatedData":null,"statistics":{"postsCount":407,"newsCount":29,"vacanciesCount":0,"employeesCount":59,"careerRating":4.51,"subscribersCount":27199,"rating":221.8,"invest":null},"foundationDate":{"year":"2008","month":"05","day":"13"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fflant.ru\u002F","staffNumber":"101–200 человек","registrationDate":"2017-01-25T07:25:09+00:00","representativeUser":{"alias":"shurup","fullname":"Дмитрий Шурупов"},"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fflant.ru\u002F"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fflant_ru"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fflant_ru"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Fflant"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002Fflant_ru"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-87911172-2"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002F3d4\u002Fc06\u002F8ba\u002F3d4c068ba151a5c21727ee9bb31f95de.png","linkUrl":"https:\u002F\u002Fflant.ru","pixelUrl":null},"status":"active"},"metadata":{"titleHtml":"Флант, Москва - DevOps-as-a-Service, Kubernetes, обслуживание 24×7 с 13 мая 2008 г.","title":"Флант, Москва - DevOps-as-a-Service, Kubernetes, обслуживание 24×7 с 13 мая 2008 г.","keywords":["DevOps","Системное администрирование","Kubernetes","Open source","Администрирование баз данных"],"descriptionHtml":"407 статей от авторов компании Флант","description":"407 статей от авторов компании Флант"},"aDeskSettings":null,"careerAlias":"flant","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

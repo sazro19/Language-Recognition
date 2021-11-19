@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Создаем облако на Elixir / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/584986\/"},"headline":"Создаем облако на Elixir","datePublished":"2021-10-23T09:23:01+03:00","dateModified":"2021-10-23T11:30:19+03:00","author":{"@type":"Person","name":"Юрьев Александр"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"ВступлениеРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую слож...","url":"https:\/\/habr.com\/ru\/post\/584986\/#post-content-body","about":["h_webdev","h_funcprog","h_elixirphoenix","h_cloud_services","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/584986\/88709768671c179024e1fdc1ccef84be\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/ab0\/f6a\/d1c\/ab0f6ad1c08f1d276517c0d7b1a15b0b.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/6a6\/163\/b57\/6a6163b578b8039689850d0d11c887b7.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f73\/2f8\/346\/f732f8346652579703bb9cb5a5ada915.gif","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/ec0\/701\/1de\/ec07011de7e2d6829d6d6186b820eea5.gif","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/708\/a80\/55e\/708a8055e05857a8a2f951102741af4f.gif","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/881\/466\/5dc\/8814665dc0fefbd579bfebec32bfcf37.gif"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Создаем облако на Elixir" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Создаем облако на Elixir" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Создаем облако на Elixir" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="ВступлениеРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую сложную на первый взгляд инфраструктурную..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="ВступлениеРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую сложную на первый взгляд инфраструктурную..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="ВступлениеРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую сложную на первый взгляд инфраструктурную..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="ВступлениеРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую сложную на первый взгляд инфраструктурную..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="ВступлениеРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую сложную на первый взгляд инфраструктурную..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/3b0/dde/f11/3b0ddef1132927321e02ef4ef0457cad.jpg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/3b0/dde/f11/3b0ddef1132927321e02ef4ef0457cad.jpg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/3b0/dde/f11/3b0ddef1132927321e02ef4ef0457cad.jpg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/3b0/dde/f11/3b0ddef1132927321e02ef4ef0457cad.jpg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/3b0/dde/f11/3b0ddef1132927321e02ef4ef0457cad.jpg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="584986" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-23T06:23:01.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/584986/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/584986/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/3b0/dde/f11/3b0ddef1132927321e02ef4ef0457cad.jpg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/584986/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/AlexanderYurev/" title="AlexanderYurev" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/6f0/a92/c45/6f0a92c450966acba4127520579e0b50.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/AlexanderYurev/" class="tm-user-info__username">
+      AlexanderYurev
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-23T06:23:01.000Z" title="2021-10-23, 09:23">23  октября   в 09:23</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Создаем облако на Elixir</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/webdev/" class="tm-article-snippet__hubs-item-link"><span>Разработка веб-сайтов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/funcprog/" class="tm-article-snippet__hubs-item-link"><span>Функциональное программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/elixirphoenix/" class="tm-article-snippet__hubs-item-link"><span>Elixir/Phoenix</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cloud_services/" class="tm-article-snippet__hubs-item-link"><span>Облачные сервисы</span> <!----></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><h2>Вступление</h2><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/ab0/f6a/d1c/ab0f6ad1c08f1d276517c0d7b1a15b0b.jpg" width="780" height="440" data-src="https://habrastorage.org/getpro/habr/upload_files/ab0/f6a/d1c/ab0f6ad1c08f1d276517c0d7b1a15b0b.jpg" data-blurred="true"/><figcaption></figcaption></figure><p><em>Разрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую сложную на первый взгляд инфраструктурную систему. Если требуется мощное решение, можно воспользоваться </em><a href="https://habr.com/ru/post/410011/" rel="noopener noreferrer nofollow"><em><u>NextCloud</u></em></a><em> или поднять </em><a href="https://habr.com/ru/post/353012/" rel="noopener noreferrer nofollow"><em><u>FreeNAS</u></em></a><em>.</em> </p><p>Облачные сервисы уже давно стали неотъемлемой частью нашей жизни. На данный момент существует большое количество сервисов от разных компаний. Так давайте разберемся в принципах работы простейшего облачного сервиса, подтянем навыки проектирования систем. Данный проект можно постоянно развивать на протяжении длительного времени, и может стать отличным pet project. Созданное облако может пригодится для управления домашними файлами, достаточно его развернуть в локальной сети и с легкостью получать доступ к файлам с разных устройств.  </p><p>Самое время определить задачи, которые нам необходимо решить, чтобы реализовать систему.</p><h2>Определение задач</h2><p>Система должна соответствовать минимальному CRUD приложению:</p><ul><li><p>Просматривать содержимое файловой системы облачной папки;</p></li><li><p>Реагировать на изменения в файловой системе;</p></li><li><p>Загружать файлы в облако;</p></li><li><p>Редактировать файлы (переименовывать или перемещать);</p></li><li><p>Искать по названию;</p></li><li><p>Постараться сделать это все максимально оптимально.</p></li></ul><p>Для решения этих задач логично выбрать клиент-серверную архитектуру. Реализация наших задач будет состоять из фронт и бек части. </p><p>Начнем с бекенда.</p><p>Язык: Elixir</p><p>Технология: Phoenix</p><p>Почему Elixir, а не %любой_другой_язык_для_описания_API%?</p><p>Я решил выбрать Elixir из-за лёгкого вхождения в мир функционального программирования, схожести языковых конструкций с Python, неплохой скорости работы и быстроты прототипирования.</p><p><a href="https://www.techempower.com/benchmarks/" rel="noopener noreferrer nofollow"><u>Сравнение</u></a> API фреймворков по производительности.</p><h3>Сравнение фреймворков для написания системы</h3><p>ASP.NET (C#)</p><ul><li><p>Быстрый</p></li><li><p>Обладает сильной строгой типизацией;</p></li><li><p>Для учебного проекта разработка на нем пойдет слишком долго.</p></li></ul><p>Flask (Python)</p><ul><li><p>Из-за особенностей Python, работает не слишком шустро;</p></li><li><p>Скорость  написания кода высокая.</p></li></ul><p><a href="https://phoenixframework.org/" rel="noopener noreferrer nofollow"><u>Phoenix</u></a> (Elixir)</p><ul><li><p>Относительно Flask быстро работает;</p></li><li><p>Похож на Python, писать просто;</p></li><li><p>Для первого функционального языка достаточно прост в изучении.</p></li></ul><p> <a href="https://github.com/ninenines/cowboy" rel="noopener noreferrer nofollow"><u>Cowboy</u></a> или Plug (Elixir)</p><ul><li><p>Предоставляет слишком много свободы и не диктует разработчику архитектуру, но эта система была моим первым опытом работы на Elixir, поэтому было принято решение взять уже готовый инструмент.</p></li></ul><p>Yesod (Haskell)</p><ul><li><p>Обладает сильной строгой типизацией;</p></li><li><p>Для данного проекта разработка пойдет слишком долго, т.к. я знаю только базовые элементы синтаксиса.</p></li></ul><p>В статье далее я не буду подробно рассказывать, что такое монады или объяснять другие сложные и не очень особенности функционального программирования, но мы вместе с вами попробуем разобраться в интересных функциональных подходах, вроде пайплайна, композиции или каррирования, которые нам полезно знать для реализации приложения на функциональном языке.</p><p>В приведенном ниже коде я буду описывать в основном ядро системы, и, возможно, некоторые детали коммуникации с клиентом, если это представляет интерес. Важно понимать, что большинство рутинного кода будет опущено, чтобы не перепечатывать репозиторий. </p><figure class="full-width "><img src="/img/image-loader.svg" alt="Жизненный путь запроса в Phoenix" title="Жизненный путь запроса в Phoenix" height="309" data-src="https://habrastorage.org/getpro/habr/upload_files/6a6/163/b57/6a6163b578b8039689850d0d11c887b7.png" data-width="817"/><figcaption>Жизненный путь запроса в Phoenix</figcaption></figure><h2>Просмотр файлов</h2><p>Backend</p><p>На клиенте необходимо получить информацию о файлах в текущей директории, поэтому реализуем серверные эндпойнты для решения этой задачи.</p><p>Создадим новый <a href="https://elixirschool.com/ru/lessons/basics/modules/" rel="noopener noreferrer nofollow"><u>модуль</u></a>. Для легкости восприятия, его можно считать пространством имен.</p><pre><code class="erlang">defmodule DirectoryTreeHelper do</code></pre><p>Создадим тип для нашего представления файла. Для работы с ним на фронтенде нам бы хотелось знать, является ли этот файл папкой <s>хотя </s><a href="http://linux.yaroslavl.ru/docs/setup/mandrake/cl/ch09s02.html" rel="noopener noreferrer nofollow"><s><u>все - это файл</u></s></a>. Без поля filename мы бы могли обойтись, но тогда нам бы пришлось вызывать path.basename (или аналог) на фронтенде для определения имени каждого файла. children нам будет необходим, если мы будем рекурсивно обходить директорию, но на начальном этапе это нам не нужно, пусть в нем всегда лежит nil.</p><pre><code class="erlang">  @type file :: %{
+          :isFolder => boolean(),
+          :filename => String.t(),
+          :path => String.t(),
+          :children => nil | [file()],
+          :info => %{:size => non_neg_integer()}
+        }</code></pre><p>Приступим к написанию алгоритма. Будем отдавать файлы страницами, используя таким образом механизм <a href="https://viktorlove.medium.com/ui-virtualization-9eeaab896913" rel="noopener noreferrer nofollow"><u>виртуализации</u></a>, потому что это даем нам такое преимущество как то, что пользователю не нужно ожидать загрузки информации о всех файлах, достаточно 2 * количество файлов на экране в данный момент.</p><details class="spoiler"><summary>Виртуализация</summary><div class="spoiler__content"><p>Виртуализация <a href="https://www.youtube.com/watch?v=hmZN6vi9yb4&amp;list=LL&amp;index=1" rel="noopener noreferrer nofollow">выгодна</a>, когда у нас простые легкие ноды, как сейчас. </p></div></details><pre><code class="erlang">@spec list_all(String.t(), String.t(), integer(), integer(), boolean()) :: file()  
+  def list_all(filepath, page, page_size, is_recursive) do
+      File.ls!(filepath)
+        |> Enum.chunk_every(page_size)
+        |> Enum.at(page, [])
+        |> Enum.map(fn file -> iterator(filepath, file, page, page_size, is_recursive) end)
+  end</code></pre><details class="spoiler"><summary>А что делает оператор |> ?</summary><div class="spoiler__content"><p>Это оператор пайплайна, он делает композицию функций, т.е. передает результат выполнения выражения <strong>первым</strong> параметром в следующее выражение.</p><pre><code class="erlang">defmodule Test do
+  def func(arg1, arg2) do
+    arg1 + arg2
+  end
+
+  def func2(sum, arg3) do
+    sum * arg3
+  end
+end
+
+Test.func2(Test.func(1,2), 3) |> IO.puts # 9
+# аналогично строке ниже
+Test.func(1, 2) |> Test.func2(3)  |> IO.puts # 9
+
+Test.func(1, 5) |> Test.func2(12) |> to_string |> String.reverse  |> IO.puts # 27
+</code></pre><p>Если явных аргументов у функции не осталось, то скобки для вызова функции можно опустить.</p></div></details><details class="spoiler"><summary>Вариант в более структурном стиле, без применения пайплайна</summary><div class="spoiler__content"><pre><code class="erlang">  def list_all(filepath, page, page_size, is_recursive) do
+    files = File.ls!(filepath)
+    pages = Enum.chunk_every(files, page_size)
+    all_pages = Enum.at(page, [])
+
+      Enum.map(current_page, fn filename ->
+       get_file(filepath, filename, page, page_size, is_recursive)
+      end)</code></pre></div></details><p><a href="https://hexdocs.pm/elixir/typespecs.html" rel="noopener noreferrer nofollow"><u>@spec</u></a> - это определения типа функции, в Haskell оно оформляется <a href="http://learnyouahaskell.com/types-and-typeclasses" rel="noopener noreferrer nofollow"><u>похожим</u></a> образом.</p><p>В этой функции мы вызвали iterator get, предлагаю его определить сейчас.</p><pre><code class="erlang">  @spec get_file(String.t(), String.t(), integer(), integer(), boolean()) :: file()
+  def get_file(filepath, filename, page, page_size, is_recursive) do
+    full_path = "#{filepath}/#{filename}"
+    is_folder = File.dir?(full_path)
+    file_stat = File.lstat!(full_path)
+
+    children = if is_recursive and is_folder, do: list_all(full_path, page, page_size, is_recursive), else: nil
+
+    %{
+      :isFolder => is_folder,
+      :filename => filename,
+      :path => fullPath,
+      :info => %{
+        :size => fileStat.size
+      },
+      :children => children
+    }
+  end</code></pre><h2>Просмотр файлов</h2><h4>Frontend</h4><p>Фронтенд было решено разрабатывать на React + TypeScript. Для менеджера состояния использую MobX.</p><p>Структура <a href="https://ru.wikipedia.org/wiki/DTO" rel="noopener noreferrer nofollow"><u>DTO</u></a> для контроллера.</p><div><div class="table"><table><tbody><tr><td data-colwidth="133" width="133"><p>Название поля</p></td><td data-colwidth="115" width="115"><p>Тип данных</p></td><td data-colwidth="132" width="132"><p>Значение по умолчанию</p></td><td><p>Пояснение</p></td></tr><tr><td data-colwidth="133" width="133"><p>directory</p></td><td data-colwidth="115" width="115"><p>string?</p></td><td data-colwidth="132" width="132"><p>.</p></td><td><p>Относительный путь до папки, где корень - наша dataDir с файлами</p></td></tr><tr><td data-colwidth="133" width="133"><p>page</p></td><td data-colwidth="115" width="115"><p>number?</p></td><td data-colwidth="132" width="132"><p>0</p></td><td><p>Если требуется пагинация, и мы дробим список файлов на страницы, то мы передаем сюда страницу.</p></td></tr><tr><td data-colwidth="133" width="133"><p>page_size</p></td><td data-colwidth="115" width="115"><p>number?</p></td><td data-colwidth="132" width="132"><p>Количество файлов в директории</p></td><td><p>Размер страницы, по умолчанию равен длине списка.</p></td></tr><tr><td data-colwidth="133" width="133"><p>is_recursive</p></td><td data-colwidth="115" width="115"><p>boolean?</p></td><td data-colwidth="132" width="132"><p>false</p></td><td><p>Если требуется получить не только текущую директорию в результате запроса, а еще и все вложенные, то можно подать сюда true. Может пригодиться, если захотим интегрировать <a href="https://github.com/frontend-collective/react-sortable-tree" rel="noopener noreferrer nofollow"><u>SotrableTree</u></a>.</p></td></tr></tbody></table></div></div><p>При каждом переходе во внутреннюю директорию нужно менять url, в зависимости от которого нужно делать запросы за информацией о файлах в этой директории. Для этого необходимо заполнить поле directory.</p><p>Напишем основной store с содержимым директорий.</p><pre><code class="javascript">export class FilesListFactoryStore {
+    public currentDirectory = '';
+ 
+    constructor() {
+        fileChecker.createChannel(() => this.getFiles()); # тут мы  отреагируем на изменение в файловой системе хоста
+    }
+ 
+    public setCurrentDirectory = (currentRoute: ClientRouteType) => (locationPathname: string) => {
+        this.currentDirectory = locationPathname.replace(currentRoute, '');
+        this.getFiles();
+    };
+ 
+    public getFiles = async (): Promise&lt;void> => {
+       # логика по запросу файлов с бекенда	
+    };
+</code></pre><p> </p><h2>Запуск приложения.</h2><p>Phoenix предлагает свой способ поднятия фронтенд сервиса. Это дает возможность поднять за одну команду два сервиса. </p><p><em>config.dev.exs</em></p><pre><code class="erlang">config :elCloud, ElCloudWeb.Endpoint,
+  http: [port: 4000],
+  debug_errors: true,
+  code_reloader: true,
+  check_origin: false,
+  watchers: [
+    node: [
+      "node_modules/webpack/bin/webpack.js",
+      "--mode",
+      "development",
+      "--watch-stdin",
+      "--env.NODE_ENV=dev",
+      cd: Path.expand("../assets", __DIR__)
+    ]
+  ]
+</code></pre><p>Если запускать облако только на Linux, то можно указать скрипты из package.json, но на Windows будет <a href="https://github.com/chernyshof/react-phoenix-users-boilerplate/issues/6" rel="noopener noreferrer nofollow"><u>ошибка</u></a> с разрешениями.</p><figure class="full-width "><img src="/img/image-loader.svg" height="1056" data-src="https://habrastorage.org/getpro/habr/upload_files/f73/2f8/346/f732f8346652579703bb9cb5a5ada915.gif" data-width="1480"/><figcaption></figcaption></figure><h2>Реакция на изменение в файловой системе</h2><p>Теперь нам нужно сделать реакцию на изменение в файловой системе. Для этого необходимо определить <code>FileWatcher</code>, который будет смотреть за файлами, если изменение произойдет, он отправит сообщение всем подписанным клиентам. В нашем случае подписчиком будет выступать <a href="https://hexdocs.pm/phoenix/Phoenix.Channel.html" rel="noopener noreferrer nofollow"><u>канал</u></a> (аналог <a href="https://dart.dev/tutorials/language/streams" rel="noopener noreferrer nofollow"><u>Stream</u></a> из Dart), открытый по протоколу WebSocket. В данной реализации мы можем и использовать <a href="https://learn.javascript.ru/server-sent-events" rel="noopener noreferrer nofollow"><u>Server Sent Events</u></a>, но предпочтем двухсторонний канал с заделом на будущее. <code>ElCloudWeb.FileChannel</code> - это модуль, в котором мы override’им некоторые методы, вроде <code>join</code> - подсоединение нового пользователя к каналу, <code>send_message</code> - отправка сообщения в канал, <code>handle_info</code> - поймает события с типом action.</p><p>Этот модуль будет обрабатывать подключения к нашему бекенду и отвечать за отправку сообщений всем подписанным клиентам.</p><pre><code class="erlang">defmodule ElCloudWeb.FileChannel do
+  use Phoenix.Channel
+
+  def join("example", payload, socket) do
+    {:ok, socket}
+  end
+
+  def send_message(payload) do
+    Phoenix.PubSub.broadcast(ElCloud.PubSub, "example", %{
+      type: "action",
+      payload: %{data: payload}
+    })
+  end
+
+  def handle_info(%{type: "action"} = info, socket) do
+    push(socket, "action", info)
+    {:noreply, socket}
+  end
+end
+
+</code></pre><p>На клиенте нужно создать инстанс сокета, подключиться к нужному каналу, и подписаться на получение сообщений об изменении.</p><pre><code class="erlang">import {Socket} from "phoenix"
+
+export class FileSystemChecker {
+  private _socket: Socket
+  constructor() {
+    this._socket = new Socket('/socket')
+    this._socket.connect()
+  }
+
+  public createChannel = (onMessage: () => void) => {
+    const channel = this._socket.channel("example", {})
+    channel.join()
+      .receive("ok", resp => {})
+      .receive("error", resp => {})
+
+    channel.onMessage = (ev, payload) => {
+      onMessage()
+    }
+
+  }
+
+</code></pre><figure class="full-width "><img src="/img/image-loader.svg" alt="Демонстрация работы функциональности" title="Демонстрация работы функциональности" height="440" data-src="https://habrastorage.org/getpro/habr/upload_files/ec0/701/1de/ec07011de7e2d6829d6d6186b820eea5.gif" data-width="1025"/><figcaption>Демонстрация работы функциональности</figcaption></figure><h2>Поиск</h2><p>Для поиска нам нужно всего лишь рекурсивно пройтись по поданной директории, и постараться найти файл. </p><pre><code class="erlang"> def searchQuery(queryFilename, directory) do
+     File.ls!(directory)
+      |> Enum.map(fn file -> iterator(directory, file, queryFilename) end)
+      |> List.flatten()
+      |> Enum.filter(fn file -> String.match?(file.filename, ~r/#{queryFilename}/) end)
+  end
+ 
+ 
+  def recursiveSerchInFolder(directory, filename, queryFilename) do
+    fullPath = Path.join(directory, filename)
+    isFolder = File.dir?(fullPath)
+ 
+    if isFolder, do: searchQuery(queryFilename, fullPath), else: %{
+      :isFolder => isFolder,
+      :filename => filename,
+      :path => fullPath
+    }  
+ 
+  end</code></pre><p>К сожалению, это будет работать достаточно долго. Как вариант, чтобы избежать этой проблемы, можно сделать индексацию всей файловой системы. </p><p>Например, это можно реализовать, если завести базу данных, записать данные о файловой структуре в плоском виде. На каждое изменение структуры файловой системы обновлять соответствующие записи в БД. И тогда при поиске не придется каждый раз обращаться к медленной файловой системе, и поиск будет работать значительно быстрее.</p><p>Это далеко не самый хороший вариант, но этого уже достаточно для получения ускорения не индексированного поиска.</p><figure class="full-width "><img src="/img/image-loader.svg" height="931" data-src="https://habrastorage.org/getpro/habr/upload_files/708/a80/55e/708a8055e05857a8a2f951102741af4f.gif" data-width="1155"/><figcaption></figcaption></figure><h2>Скачивание (Download)</h2><p>Для реализации скачивания файла на фронтенде достаточно внести изменения, создав корректную ссылку на файл и добавив атрибут <code>download</code> на тег ссылки.</p><pre><code class="xml"> &lt;a href={file.link} download={true} >  </code></pre><p> На бекенде нужно отправлять файл на клиент, исходя из переданного пути до файла.</p><pre><code class="erlang">Plug.Conn.send_file(conn, 200, directory)</code></pre><h2>Загрузка (Upload)</h2><p>Для отправки файла на сервер необходимо создать объект <code>FormData</code>, в данном  случае еще важно учесть директорию, куда будем загружать файл.</p><pre><code class="javascript">const formData = new FormData();
+formData.append('file', file);
+formData.append('directory', directory);</code></pre><p>Также нужно выставить заголовок, что мы отправляем <code>multipart</code> содержимое запроса.</p><pre><code>headers: {
+	'Content-Type': 'multipart/form-data',
+	...config?.headers,
+},</code></pre><p>На сервере же просто ловим путь из <code>temp</code> директории, и копируем файл в директорию с файлами.</p><pre><code class="erlang">fullpath = Path.join([@data_dir, directory, file.filename])
+File.cp(file.path, Path.absname(fullpath))  </code></pre><p> </p><figure class="full-width "><img src="/img/image-loader.svg" height="931" data-src="https://habrastorage.org/getpro/habr/upload_files/881/466/5dc/8814665dc0fefbd579bfebec32bfcf37.gif" data-width="1155"/><figcaption></figcaption></figure><h2>Редактирование</h2><p>Теперь освоим такой подход как pattern matching, который может под капотом понять, какой тип мы подаем в функцию и вызвать подходящее предопределенное определение.</p><p>Таким подходом удобно можно заменить ветвление на один вызов функции и N определений функций, в которых мы положим действие из ветвления.</p><pre><code class="javascript">  if (isOperationSuccess) {
+    return successMessage
+  } else {
+    return errorMessage
+  }</code></pre><pre><code class="javascript">operationHandler(isOperationSuccess)
+
+const operationHandler = (success) => successMessage
+const operationHandler = (error) => errorMessage
+</code></pre><p>Например, так мы можем переименовать файл.</p><pre><code class="erlang">  def move_file(conn, %{"oldPath" => oldPath, "newPath" => newPath}) do
+        File.rename(Path.join(@data_dir, oldPath), Path.join(@data_dir, newPath)) 
+      |> send_response(conn)
+  end
+
+  def send_response( {:error, :enoent}, conn), do: {:error, :folderNotFound}
+  def send_response(:ok, conn), do: render(conn, "show.json", file_storage: :ok)</code></pre><p>Несмотря на то, что часто строят пайплайн в другом порядке, передавая вниз по пайпу conn, в этом случае я бы сделал по-другому, и отправлял реальные часто изменяемые данные внутри пайпа.</p><h2>Удаление</h2><p>На данной итерации разработки приложения мы не будем прикручивать функциональность корзины,  поэтому удаление будет самой примитивной логикой, мы просто вызовем стандартный метод удаления файла.</p><pre><code class="erlang">File.remove(filepath)</code></pre><p>На уровне контроллера можно реализовать это таким образом, используя конвейер.</p><pre><code class="erlang">  def delete(conn, %{"path" => path}) do
+    Path.join(@data_dir, path) 
+      |> DirectoryTreeHelper.remove_file() 
+      |> send_response(conn)
+  end</code></pre><h2>Итог </h2><p>Мы:</p><ul><li><p>Разработали клиент-серверное приложение на Elixir и React;</p></li><li><p>Поняли, что разрабатывать на функциональном языке не так сложно, как кажется на первый взгляд;</p></li><li><p>Разобрались в простых функциональных конструкциях.</p></li></ul><p>Полный исходный код можно найти в <a href="https://github.com/Sapfir0/LiquidCloud" rel="noopener noreferrer nofollow"><u>репозитории</u></a> проекта.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Belixir%5D" class="tm-tags-list__link">elixir</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bphoenix%5D" class="tm-tags-list__link">phoenix</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bfunctional%20programming%5D" class="tm-tags-list__link">functional programming</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/webdev/" class="tm-hubs-list__link">
+    Разработка веб-сайтов
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/funcprog/" class="tm-hubs-list__link">
+    Функциональное программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/elixirphoenix/" class="tm-hubs-list__link">
+    Elixir/Phoenix
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cloud_services/" class="tm-hubs-list__link">
+    Облачные сервисы
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 6: ↑6 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 6: ↑6 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+6</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">2.3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    23
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/AlexanderYurev/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/6f0/a92/c45/6f0a92c450966acba4127520579e0b50.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 16 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    12.2
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">6</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Юрьев Александр</span> <a href="/ru/users/AlexanderYurev/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @AlexanderYurev
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Студент Computer Science</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://career.habr.com/alexanderyurev" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Хабр Карьера
+    </a><a href="https://vk.com/alexander.yurev" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://github.com/Sapfir0/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Github
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/584986/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментировать 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/584986/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/584986/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"584986":{"id":"584986","timePublished":"2021-10-23T06:23:01+00:00","isCorporative":false,"lang":"ru","titleHtml":"Создаем облако на Elixir","leadData":{"textHtml":"\u003Cp\u003EОблачные сервисы уже давно стали неотъемлемой частью нашей жизни. На данный момент существует большое количество сервисов от разных компаний. Так давайте разберемся в принципах работы простейшего облачного сервиса, подтянем навыки проектирования систем. Данный проект можно постоянно развивать на протяжении длительного времени, и может стать отличным pet project. Созданное облако может пригодится для управления домашними файлами, достаточно его развернуть в локальной сети и с легкостью получать доступ к файлам с разных устройств. \u003C\u002Fp\u003E\u003Cp\u003EПрыгайте под кат за подробностями.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3b0\u002Fdde\u002Ff11\u002F3b0ddef1132927321e02ef4ef0457cad.jpg","buttonTextHtml":"*Прыг*","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3b0\u002Fdde\u002Ff11\u002F3b0ddef1132927321e02ef4ef0457cad.jpg","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":12.2,"votesCount":16},"rating":6,"relatedData":null,"contacts":[{"title":"Хабр Карьера","url":"https:\u002F\u002Fcareer.habr.com\u002Falexanderyurev","value":"alexanderyurev"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Falexander.yurev","value":"alexander.yurev"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002FSapfir0\u002F","value":"Sapfir0"}],"authorContacts":[{"title":"Хабр Карьера","url":"https:\u002F\u002Fcareer.habr.com\u002Falexanderyurev","value":"alexanderyurev"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Falexander.yurev","value":"alexander.yurev"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002FSapfir0\u002F","value":"Sapfir0"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1896585","alias":"AlexanderYurev","fullname":"Юрьев Александр","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F6f0\u002Fa92\u002Fc45\u002F6f0a92c450966acba4127520579e0b50.jpg","speciality":"Студент Computer Science"},"statistics":{"commentsCount":0,"favoritesCount":23,"readingCount":2308,"score":6,"votesCount":6},"hubs":[{"relatedData":null,"id":"91","alias":"webdev","type":"collective","title":"Разработка веб-сайтов","titleHtml":"Разработка веб-сайтов","isProfiled":true},{"relatedData":null,"id":"17853","alias":"funcprog","type":"collective","title":"Функциональное программирование","titleHtml":"Функциональное программирование","isProfiled":true},{"relatedData":null,"id":"20906","alias":"elixirphoenix","type":"collective","title":"Elixir\u002FPhoenix","titleHtml":"Elixir\u002FPhoenix","isProfiled":true},{"relatedData":null,"id":"21470","alias":"cloud_services","type":"collective","title":"Облачные сервисы","titleHtml":"Облачные сервисы","isProfiled":false}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Ch2\u003EВступление\u003C\u002Fh2\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fab0\u002Ff6a\u002Fd1c\u002Fab0f6ad1c08f1d276517c0d7b1a15b0b.jpg\" width=\"780\" height=\"440\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fab0\u002Ff6a\u002Fd1c\u002Fab0f6ad1c08f1d276517c0d7b1a15b0b.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003E\u003Cem\u003EРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую сложную на первый взгляд инфраструктурную систему. Если требуется мощное решение, можно воспользоваться \u003C\u002Fem\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F410011\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003E\u003Cu\u003ENextCloud\u003C\u002Fu\u003E\u003C\u002Fem\u003E\u003C\u002Fa\u003E\u003Cem\u003E или поднять \u003C\u002Fem\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F353012\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003E\u003Cu\u003EFreeNAS\u003C\u002Fu\u003E\u003C\u002Fem\u003E\u003C\u002Fa\u003E\u003Cem\u003E.\u003C\u002Fem\u003E \u003C\u002Fp\u003E\u003Cp\u003EОблачные сервисы уже давно стали неотъемлемой частью нашей жизни. На данный момент существует большое количество сервисов от разных компаний. Так давайте разберемся в принципах работы простейшего облачного сервиса, подтянем навыки проектирования систем. Данный проект можно постоянно развивать на протяжении длительного времени, и может стать отличным pet project. Созданное облако может пригодится для управления домашними файлами, достаточно его развернуть в локальной сети и с легкостью получать доступ к файлам с разных устройств.  \u003C\u002Fp\u003E\u003Cp\u003EСамое время определить задачи, которые нам необходимо решить, чтобы реализовать систему.\u003C\u002Fp\u003E\u003Ch2\u003EОпределение задач\u003C\u002Fh2\u003E\u003Cp\u003EСистема должна соответствовать минимальному CRUD приложению:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EПросматривать содержимое файловой системы облачной папки;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EРеагировать на изменения в файловой системе;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЗагружать файлы в облако;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EРедактировать файлы (переименовывать или перемещать);\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EИскать по названию;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПостараться сделать это все максимально оптимально.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EДля решения этих задач логично выбрать клиент-серверную архитектуру. Реализация наших задач будет состоять из фронт и бек части. \u003C\u002Fp\u003E\u003Cp\u003EНачнем с бекенда.\u003C\u002Fp\u003E\u003Cp\u003EЯзык: Elixir\u003C\u002Fp\u003E\u003Cp\u003EТехнология: Phoenix\u003C\u002Fp\u003E\u003Cp\u003EПочему Elixir, а не %любой_другой_язык_для_описания_API%?\u003C\u002Fp\u003E\u003Cp\u003EЯ решил выбрать Elixir из-за лёгкого вхождения в мир функционального программирования, схожести языковых конструкций с Python, неплохой скорости работы и быстроты прототипирования.\u003C\u002Fp\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fwww.techempower.com\u002Fbenchmarks\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EСравнение\u003C\u002Fu\u003E\u003C\u002Fa\u003E API фреймворков по производительности.\u003C\u002Fp\u003E\u003Ch3\u003EСравнение фреймворков для написания системы\u003C\u002Fh3\u003E\u003Cp\u003EASP.NET (C#)\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EБыстрый\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EОбладает сильной строгой типизацией;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДля учебного проекта разработка на нем пойдет слишком долго.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EFlask (Python)\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EИз-за особенностей Python, работает не слишком шустро;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСкорость  написания кода высокая.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fphoenixframework.org\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EPhoenix\u003C\u002Fu\u003E\u003C\u002Fa\u003E (Elixir)\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОтносительно Flask быстро работает;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПохож на Python, писать просто;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДля первого функционального языка достаточно прост в изучении.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fninenines\u002Fcowboy\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003ECowboy\u003C\u002Fu\u003E\u003C\u002Fa\u003E или Plug (Elixir)\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EПредоставляет слишком много свободы и не диктует разработчику архитектуру, но эта система была моим первым опытом работы на Elixir, поэтому было принято решение взять уже готовый инструмент.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EYesod (Haskell)\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОбладает сильной строгой типизацией;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДля данного проекта разработка пойдет слишком долго, т.к. я знаю только базовые элементы синтаксиса.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EВ статье далее я не буду подробно рассказывать, что такое монады или объяснять другие сложные и не очень особенности функционального программирования, но мы вместе с вами попробуем разобраться в интересных функциональных подходах, вроде пайплайна, композиции или каррирования, которые нам полезно знать для реализации приложения на функциональном языке.\u003C\u002Fp\u003E\u003Cp\u003EВ приведенном ниже коде я буду описывать в основном ядро системы, и, возможно, некоторые детали коммуникации с клиентом, если это представляет интерес. Важно понимать, что большинство рутинного кода будет опущено, чтобы не перепечатывать репозиторий. \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Жизненный путь запроса в Phoenix\" title=\"Жизненный путь запроса в Phoenix\" height=\"309\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F6a6\u002F163\u002Fb57\u002F6a6163b578b8039689850d0d11c887b7.png\" data-width=\"817\"\u002F\u003E\u003Cfigcaption\u003EЖизненный путь запроса в Phoenix\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EПросмотр файлов\u003C\u002Fh2\u003E\u003Cp\u003EBackend\u003C\u002Fp\u003E\u003Cp\u003EНа клиенте необходимо получить информацию о файлах в текущей директории, поэтому реализуем серверные эндпойнты для решения этой задачи.\u003C\u002Fp\u003E\u003Cp\u003EСоздадим новый \u003Ca href=\"https:\u002F\u002Felixirschool.com\u002Fru\u002Flessons\u002Fbasics\u002Fmodules\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eмодуль\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Для легкости восприятия, его можно считать пространством имен.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003Edefmodule DirectoryTreeHelper do\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСоздадим тип для нашего представления файла. Для работы с ним на фронтенде нам бы хотелось знать, является ли этот файл папкой \u003Cs\u003Eхотя \u003C\u002Fs\u003E\u003Ca href=\"http:\u002F\u002Flinux.yaroslavl.ru\u002Fdocs\u002Fsetup\u002Fmandrake\u002Fcl\u002Fch09s02.html\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cs\u003E\u003Cu\u003Eвсе - это файл\u003C\u002Fu\u003E\u003C\u002Fs\u003E\u003C\u002Fa\u003E. Без поля filename мы бы могли обойтись, но тогда нам бы пришлось вызывать path.basename (или аналог) на фронтенде для определения имени каждого файла. children нам будет необходим, если мы будем рекурсивно обходить директорию, но на начальном этапе это нам не нужно, пусть в нем всегда лежит nil.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003E  @type file :: %{\n          :isFolder =\u003E boolean(),\n          :filename =\u003E String.t(),\n          :path =\u003E String.t(),\n          :children =\u003E nil | [file()],\n          :info =\u003E %{:size =\u003E non_neg_integer()}\n        }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПриступим к написанию алгоритма. Будем отдавать файлы страницами, используя таким образом механизм \u003Ca href=\"https:\u002F\u002Fviktorlove.medium.com\u002Fui-virtualization-9eeaab896913\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eвиртуализации\u003C\u002Fu\u003E\u003C\u002Fa\u003E, потому что это даем нам такое преимущество как то, что пользователю не нужно ожидать загрузки информации о всех файлах, достаточно 2 * количество файлов на экране в данный момент.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EВиртуализация\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003EВиртуализация \u003Ca href=\"https:\u002F\u002Fwww.youtube.com\u002Fwatch?v=hmZN6vi9yb4&amp;list=LL&amp;index=1\" rel=\"noopener noreferrer nofollow\"\u003Eвыгодна\u003C\u002Fa\u003E, когда у нас простые легкие ноды, как сейчас. \u003C\u002Fp\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003E@spec list_all(String.t(), String.t(), integer(), integer(), boolean()) :: file()  \n  def list_all(filepath, page, page_size, is_recursive) do\n      File.ls!(filepath)\n        |\u003E Enum.chunk_every(page_size)\n        |\u003E Enum.at(page, [])\n        |\u003E Enum.map(fn file -\u003E iterator(filepath, file, page, page_size, is_recursive) end)\n  end\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EА что делает оператор |\u003E ?\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003EЭто оператор пайплайна, он делает композицию функций, т.е. передает результат выполнения выражения \u003Cstrong\u003Eпервым\u003C\u002Fstrong\u003E параметром в следующее выражение.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003Edefmodule Test do\n  def func(arg1, arg2) do\n    arg1 + arg2\n  end\n\n  def func2(sum, arg3) do\n    sum * arg3\n  end\nend\n\nTest.func2(Test.func(1,2), 3) |\u003E IO.puts # 9\n# аналогично строке ниже\nTest.func(1, 2) |\u003E Test.func2(3)  |\u003E IO.puts # 9\n\nTest.func(1, 5) |\u003E Test.func2(12) |\u003E to_string |\u003E String.reverse  |\u003E IO.puts # 27\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЕсли явных аргументов у функции не осталось, то скобки для вызова функции можно опустить.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EВариант в более структурном стиле, без применения пайплайна\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003E  def list_all(filepath, page, page_size, is_recursive) do\n    files = File.ls!(filepath)\n    pages = Enum.chunk_every(files, page_size)\n    all_pages = Enum.at(page, [])\n\n      Enum.map(current_page, fn filename -\u003E\n       get_file(filepath, filename, page, page_size, is_recursive)\n      end)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fhexdocs.pm\u002Felixir\u002Ftypespecs.html\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003E@spec\u003C\u002Fu\u003E\u003C\u002Fa\u003E - это определения типа функции, в Haskell оно оформляется \u003Ca href=\"http:\u002F\u002Flearnyouahaskell.com\u002Ftypes-and-typeclasses\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eпохожим\u003C\u002Fu\u003E\u003C\u002Fa\u003E образом.\u003C\u002Fp\u003E\u003Cp\u003EВ этой функции мы вызвали iterator get, предлагаю его определить сейчас.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003E  @spec get_file(String.t(), String.t(), integer(), integer(), boolean()) :: file()\n  def get_file(filepath, filename, page, page_size, is_recursive) do\n    full_path = \"#{filepath}\u002F#{filename}\"\n    is_folder = File.dir?(full_path)\n    file_stat = File.lstat!(full_path)\n\n    children = if is_recursive and is_folder, do: list_all(full_path, page, page_size, is_recursive), else: nil\n\n    %{\n      :isFolder =\u003E is_folder,\n      :filename =\u003E filename,\n      :path =\u003E fullPath,\n      :info =\u003E %{\n        :size =\u003E fileStat.size\n      },\n      :children =\u003E children\n    }\n  end\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EПросмотр файлов\u003C\u002Fh2\u003E\u003Ch4\u003EFrontend\u003C\u002Fh4\u003E\u003Cp\u003EФронтенд было решено разрабатывать на React + TypeScript. Для менеджера состояния использую MobX.\u003C\u002Fp\u003E\u003Cp\u003EСтруктура \u003Ca href=\"https:\u002F\u002Fru.wikipedia.org\u002Fwiki\u002FDTO\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EDTO\u003C\u002Fu\u003E\u003C\u002Fa\u003E для контроллера.\u003C\u002Fp\u003E\u003Cdiv\u003E\u003Cdiv class=\"table\"\u003E\u003Ctable\u003E\u003Ctbody\u003E\u003Ctr\u003E\u003Ctd data-colwidth=\"133\" width=\"133\"\u003E\u003Cp\u003EНазвание поля\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"115\" width=\"115\"\u003E\u003Cp\u003EТип данных\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"132\" width=\"132\"\u003E\u003Cp\u003EЗначение по умолчанию\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd\u003E\u003Cp\u003EПояснение\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003C\u002Ftr\u003E\u003Ctr\u003E\u003Ctd data-colwidth=\"133\" width=\"133\"\u003E\u003Cp\u003Edirectory\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"115\" width=\"115\"\u003E\u003Cp\u003Estring?\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"132\" width=\"132\"\u003E\u003Cp\u003E.\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd\u003E\u003Cp\u003EОтносительный путь до папки, где корень - наша dataDir с файлами\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003C\u002Ftr\u003E\u003Ctr\u003E\u003Ctd data-colwidth=\"133\" width=\"133\"\u003E\u003Cp\u003Epage\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"115\" width=\"115\"\u003E\u003Cp\u003Enumber?\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"132\" width=\"132\"\u003E\u003Cp\u003E0\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd\u003E\u003Cp\u003EЕсли требуется пагинация, и мы дробим список файлов на страницы, то мы передаем сюда страницу.\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003C\u002Ftr\u003E\u003Ctr\u003E\u003Ctd data-colwidth=\"133\" width=\"133\"\u003E\u003Cp\u003Epage_size\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"115\" width=\"115\"\u003E\u003Cp\u003Enumber?\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"132\" width=\"132\"\u003E\u003Cp\u003EКоличество файлов в директории\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd\u003E\u003Cp\u003EРазмер страницы, по умолчанию равен длине списка.\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003C\u002Ftr\u003E\u003Ctr\u003E\u003Ctd data-colwidth=\"133\" width=\"133\"\u003E\u003Cp\u003Eis_recursive\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"115\" width=\"115\"\u003E\u003Cp\u003Eboolean?\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"132\" width=\"132\"\u003E\u003Cp\u003Efalse\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd\u003E\u003Cp\u003EЕсли требуется получить не только текущую директорию в результате запроса, а еще и все вложенные, то можно подать сюда true. Может пригодиться, если захотим интегрировать \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ffrontend-collective\u002Freact-sortable-tree\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003ESotrableTree\u003C\u002Fu\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003C\u002Ftr\u003E\u003C\u002Ftbody\u003E\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003Cp\u003EПри каждом переходе во внутреннюю директорию нужно менять url, в зависимости от которого нужно делать запросы за информацией о файлах в этой директории. Для этого необходимо заполнить поле directory.\u003C\u002Fp\u003E\u003Cp\u003EНапишем основной store с содержимым директорий.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eexport class FilesListFactoryStore {\n    public currentDirectory = '';\n \n    constructor() {\n        fileChecker.createChannel(() =\u003E this.getFiles()); # тут мы  отреагируем на изменение в файловой системе хоста\n    }\n \n    public setCurrentDirectory = (currentRoute: ClientRouteType) =\u003E (locationPathname: string) =\u003E {\n        this.currentDirectory = locationPathname.replace(currentRoute, '');\n        this.getFiles();\n    };\n \n    public getFiles = async (): Promise&lt;void\u003E =\u003E {\n       # логика по запросу файлов с бекенда\t\n    };\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E \u003C\u002Fp\u003E\u003Ch2\u003EЗапуск приложения.\u003C\u002Fh2\u003E\u003Cp\u003EPhoenix предлагает свой способ поднятия фронтенд сервиса. Это дает возможность поднять за одну команду два сервиса. \u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003Econfig.dev.exs\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003Econfig :elCloud, ElCloudWeb.Endpoint,\n  http: [port: 4000],\n  debug_errors: true,\n  code_reloader: true,\n  check_origin: false,\n  watchers: [\n    node: [\n      \"node_modules\u002Fwebpack\u002Fbin\u002Fwebpack.js\",\n      \"--mode\",\n      \"development\",\n      \"--watch-stdin\",\n      \"--env.NODE_ENV=dev\",\n      cd: Path.expand(\"..\u002Fassets\", __DIR__)\n    ]\n  ]\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЕсли запускать облако только на Linux, то можно указать скрипты из package.json, но на Windows будет \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fchernyshof\u002Freact-phoenix-users-boilerplate\u002Fissues\u002F6\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eошибка\u003C\u002Fu\u003E\u003C\u002Fa\u003E с разрешениями.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"1056\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff73\u002F2f8\u002F346\u002Ff732f8346652579703bb9cb5a5ada915.gif\" data-width=\"1480\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EРеакция на изменение в файловой системе\u003C\u002Fh2\u003E\u003Cp\u003EТеперь нам нужно сделать реакцию на изменение в файловой системе. Для этого необходимо определить \u003Ccode\u003EFileWatcher\u003C\u002Fcode\u003E, который будет смотреть за файлами, если изменение произойдет, он отправит сообщение всем подписанным клиентам. В нашем случае подписчиком будет выступать \u003Ca href=\"https:\u002F\u002Fhexdocs.pm\u002Fphoenix\u002FPhoenix.Channel.html\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eканал\u003C\u002Fu\u003E\u003C\u002Fa\u003E (аналог \u003Ca href=\"https:\u002F\u002Fdart.dev\u002Ftutorials\u002Flanguage\u002Fstreams\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EStream\u003C\u002Fu\u003E\u003C\u002Fa\u003E из Dart), открытый по протоколу WebSocket. В данной реализации мы можем и использовать \u003Ca href=\"https:\u002F\u002Flearn.javascript.ru\u002Fserver-sent-events\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003EServer Sent Events\u003C\u002Fu\u003E\u003C\u002Fa\u003E, но предпочтем двухсторонний канал с заделом на будущее. \u003Ccode\u003EElCloudWeb.FileChannel\u003C\u002Fcode\u003E - это модуль, в котором мы override’им некоторые методы, вроде \u003Ccode\u003Ejoin\u003C\u002Fcode\u003E - подсоединение нового пользователя к каналу, \u003Ccode\u003Esend_message\u003C\u002Fcode\u003E - отправка сообщения в канал, \u003Ccode\u003Ehandle_info\u003C\u002Fcode\u003E - поймает события с типом action.\u003C\u002Fp\u003E\u003Cp\u003EЭтот модуль будет обрабатывать подключения к нашему бекенду и отвечать за отправку сообщений всем подписанным клиентам.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003Edefmodule ElCloudWeb.FileChannel do\n  use Phoenix.Channel\n\n  def join(\"example\", payload, socket) do\n    {:ok, socket}\n  end\n\n  def send_message(payload) do\n    Phoenix.PubSub.broadcast(ElCloud.PubSub, \"example\", %{\n      type: \"action\",\n      payload: %{data: payload}\n    })\n  end\n\n  def handle_info(%{type: \"action\"} = info, socket) do\n    push(socket, \"action\", info)\n    {:noreply, socket}\n  end\nend\n\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа клиенте нужно создать инстанс сокета, подключиться к нужному каналу, и подписаться на получение сообщений об изменении.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003Eimport {Socket} from \"phoenix\"\n\nexport class FileSystemChecker {\n  private _socket: Socket\n  constructor() {\n    this._socket = new Socket('\u002Fsocket')\n    this._socket.connect()\n  }\n\n  public createChannel = (onMessage: () =\u003E void) =\u003E {\n    const channel = this._socket.channel(\"example\", {})\n    channel.join()\n      .receive(\"ok\", resp =\u003E {})\n      .receive(\"error\", resp =\u003E {})\n\n    channel.onMessage = (ev, payload) =\u003E {\n      onMessage()\n    }\n\n  }\n\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Демонстрация работы функциональности\" title=\"Демонстрация работы функциональности\" height=\"440\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fec0\u002F701\u002F1de\u002Fec07011de7e2d6829d6d6186b820eea5.gif\" data-width=\"1025\"\u002F\u003E\u003Cfigcaption\u003EДемонстрация работы функциональности\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EПоиск\u003C\u002Fh2\u003E\u003Cp\u003EДля поиска нам нужно всего лишь рекурсивно пройтись по поданной директории, и постараться найти файл. \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003E def searchQuery(queryFilename, directory) do\n     File.ls!(directory)\n      |\u003E Enum.map(fn file -\u003E iterator(directory, file, queryFilename) end)\n      |\u003E List.flatten()\n      |\u003E Enum.filter(fn file -\u003E String.match?(file.filename, ~r\u002F#{queryFilename}\u002F) end)\n  end\n \n \n  def recursiveSerchInFolder(directory, filename, queryFilename) do\n    fullPath = Path.join(directory, filename)\n    isFolder = File.dir?(fullPath)\n \n    if isFolder, do: searchQuery(queryFilename, fullPath), else: %{\n      :isFolder =\u003E isFolder,\n      :filename =\u003E filename,\n      :path =\u003E fullPath\n    }  \n \n  end\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EК сожалению, это будет работать достаточно долго. Как вариант, чтобы избежать этой проблемы, можно сделать индексацию всей файловой системы. \u003C\u002Fp\u003E\u003Cp\u003EНапример, это можно реализовать, если завести базу данных, записать данные о файловой структуре в плоском виде. На каждое изменение структуры файловой системы обновлять соответствующие записи в БД. И тогда при поиске не придется каждый раз обращаться к медленной файловой системе, и поиск будет работать значительно быстрее.\u003C\u002Fp\u003E\u003Cp\u003EЭто далеко не самый хороший вариант, но этого уже достаточно для получения ускорения не индексированного поиска.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"931\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F708\u002Fa80\u002F55e\u002F708a8055e05857a8a2f951102741af4f.gif\" data-width=\"1155\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EСкачивание (Download)\u003C\u002Fh2\u003E\u003Cp\u003EДля реализации скачивания файла на фронтенде достаточно внести изменения, создав корректную ссылку на файл и добавив атрибут \u003Ccode\u003Edownload\u003C\u002Fcode\u003E на тег ссылки.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E &lt;a href={file.link} download={true} \u003E  \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E На бекенде нужно отправлять файл на клиент, исходя из переданного пути до файла.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003EPlug.Conn.send_file(conn, 200, directory)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EЗагрузка (Upload)\u003C\u002Fh2\u003E\u003Cp\u003EДля отправки файла на сервер необходимо создать объект \u003Ccode\u003EFormData\u003C\u002Fcode\u003E, в данном  случае еще важно учесть директорию, куда будем загружать файл.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econst formData = new FormData();\nformData.append('file', file);\nformData.append('directory', directory);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТакже нужно выставить заголовок, что мы отправляем \u003Ccode\u003Emultipart\u003C\u002Fcode\u003E содержимое запроса.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Eheaders: {\n\t'Content-Type': 'multipart\u002Fform-data',\n\t...config?.headers,\n},\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа сервере же просто ловим путь из \u003Ccode\u003Etemp\u003C\u002Fcode\u003E директории, и копируем файл в директорию с файлами.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003Efullpath = Path.join([@data_dir, directory, file.filename])\nFile.cp(file.path, Path.absname(fullpath))  \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"931\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F881\u002F466\u002F5dc\u002F8814665dc0fefbd579bfebec32bfcf37.gif\" data-width=\"1155\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EРедактирование\u003C\u002Fh2\u003E\u003Cp\u003EТеперь освоим такой подход как pattern matching, который может под капотом понять, какой тип мы подаем в функцию и вызвать подходящее предопределенное определение.\u003C\u002Fp\u003E\u003Cp\u003EТаким подходом удобно можно заменить ветвление на один вызов функции и N определений функций, в которых мы положим действие из ветвления.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E  if (isOperationSuccess) {\n    return successMessage\n  } else {\n    return errorMessage\n  }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003EoperationHandler(isOperationSuccess)\n\nconst operationHandler = (success) =\u003E successMessage\nconst operationHandler = (error) =\u003E errorMessage\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНапример, так мы можем переименовать файл.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003E  def move_file(conn, %{\"oldPath\" =\u003E oldPath, \"newPath\" =\u003E newPath}) do\n        File.rename(Path.join(@data_dir, oldPath), Path.join(@data_dir, newPath)) \n      |\u003E send_response(conn)\n  end\n\n  def send_response( {:error, :enoent}, conn), do: {:error, :folderNotFound}\n  def send_response(:ok, conn), do: render(conn, \"show.json\", file_storage: :ok)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНесмотря на то, что часто строят пайплайн в другом порядке, передавая вниз по пайпу conn, в этом случае я бы сделал по-другому, и отправлял реальные часто изменяемые данные внутри пайпа.\u003C\u002Fp\u003E\u003Ch2\u003EУдаление\u003C\u002Fh2\u003E\u003Cp\u003EНа данной итерации разработки приложения мы не будем прикручивать функциональность корзины,  поэтому удаление будет самой примитивной логикой, мы просто вызовем стандартный метод удаления файла.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003EFile.remove(filepath)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа уровне контроллера можно реализовать это таким образом, используя конвейер.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"erlang\"\u003E  def delete(conn, %{\"path\" =\u003E path}) do\n    Path.join(@data_dir, path) \n      |\u003E DirectoryTreeHelper.remove_file() \n      |\u003E send_response(conn)\n  end\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EИтог \u003C\u002Fh2\u003E\u003Cp\u003EМы:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EРазработали клиент-серверное приложение на Elixir и React;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПоняли, что разрабатывать на функциональном языке не так сложно, как кажется на первый взгляд;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EРазобрались в простых функциональных конструкциях.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EПолный исходный код можно найти в \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FSapfir0\u002FLiquidCloud\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eрепозитории\u003C\u002Fu\u003E\u003C\u002Fa\u003E проекта.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"elixir"},{"titleHtml":"phoenix"},{"titleHtml":"functional programming"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3b0\u002Fdde\u002Ff11\u002F3b0ddef1132927321e02ef4ef0457cad.jpg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3b0\u002Fdde\u002Ff11\u002F3b0ddef1132927321e02ef4ef0457cad.jpg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584986\\\u002F\"},\"headline\":\"Создаем облако на Elixir\",\"datePublished\":\"2021-10-23T09:23:01+03:00\",\"dateModified\":\"2021-10-23T11:30:19+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Юрьев Александр\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"ВступлениеРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую слож...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584986\\\u002F#post-content-body\",\"about\":[\"h_webdev\",\"h_funcprog\",\"h_elixirphoenix\",\"h_cloud_services\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F584986\\\u002F88709768671c179024e1fdc1ccef84be\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fab0\\\u002Ff6a\\\u002Fd1c\\\u002Fab0f6ad1c08f1d276517c0d7b1a15b0b.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F6a6\\\u002F163\\\u002Fb57\\\u002F6a6163b578b8039689850d0d11c887b7.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff73\\\u002F2f8\\\u002F346\\\u002Ff732f8346652579703bb9cb5a5ada915.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fec0\\\u002F701\\\u002F1de\\\u002Fec07011de7e2d6829d6d6186b820eea5.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F708\\\u002Fa80\\\u002F55e\\\u002F708a8055e05857a8a2f951102741af4f.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F881\\\u002F466\\\u002F5dc\\\u002F8814665dc0fefbd579bfebec32bfcf37.gif\"]}","metaDescription":"ВступлениеРазрабатываемое с вами облако нельзя назвать production ready. Мы его напишем строго в учебных целях, чтобы понять, что любой может написать такую сложную на первый взгляд инфраструктурную...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"webdev,funcprog,elixirphoenix,cloud_services"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

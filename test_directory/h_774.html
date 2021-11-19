@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Apollo 3.0 для работы с GraphQL в многомодульном Android приложении / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582552\/"},"headline":"Apollo 3.0 для работы с GraphQL в многомодульном Android приложении","datePublished":"2021-10-09T19:01:12+03:00","dateModified":"2021-10-09T23:12:07+03:00","author":{"@type":"Person","name":"Winged90"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.Что такое Apo...","url":"https:\/\/habr.com\/ru\/post\/582552\/#post-content-body","about":["h_android_dev","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582552\/d57ec6ff5c5b61265e20b16f0fde9c5d\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/eb8\/e06\/caa\/eb8e06caaadc0f38e1a2934c6083b2ca.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/df7\/c57\/507\/df7c575076dc482bd1d5c38e0c457398.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/da4\/e97\/4f0\/da4e974f00dc56216a87f99a49cadde6.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/a98\/9e9\/212\/a989e9212c9f38d7acea0d2aa4577c25.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/c3a\/eed\/2b7\/c3aeed2b702c1149ffaf8d7283646261.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/40d\/46f\/0b1\/40d46f0b1e4c5010d09580c0ae1ed65c.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/672\/0e3\/ad5\/6720e3ad59bf4bd1a9946609c426ec8a.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/7cd\/af6\/1a7\/7cdaf61a7d44abb8cb76099ec2eec056.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/0e2\/899\/858\/0e289985854d849ee345f2c8b6c80ff0.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/ac4\/79f\/dfe\/ac479fdfecc97c4fab4a4b9b23c4226c.jpg"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Apollo 3.0 для работы с GraphQL в многомодульном Android приложении" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Apollo 3.0 для работы с GraphQL в многомодульном Android приложении" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Apollo 3.0 для работы с GraphQL в многомодульном Android приложении" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.Что такое Apollo и когда он используется?Apollo..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.Что такое Apollo и когда он используется?Apollo..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.Что такое Apollo и когда он используется?Apollo..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.Что такое Apollo и когда он используется?Apollo..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.Что такое Apollo и когда он используется?Apollo..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/c19/922/4d9/c199224d910ec542772f2b46f9b4cb5b.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/c19/922/4d9/c199224d910ec542772f2b46f9b4cb5b.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/c19/922/4d9/c199224d910ec542772f2b46f9b4cb5b.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/c19/922/4d9/c199224d910ec542772f2b46f9b4cb5b.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/c19/922/4d9/c199224d910ec542772f2b46f9b4cb5b.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582552" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-09T16:01:12.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582552/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582552/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/c19/922/4d9/c199224d910ec542772f2b46f9b4cb5b.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582552/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Winged90/" title="Winged90" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/Winged90/" class="tm-user-info__username">
+      Winged90
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-09T16:01:12.000Z" title="2021-10-09, 19:01">9  октября   в 19:01</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Apollo 3.0 для работы с GraphQL в многомодульном Android приложении</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/android_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка под Android</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.</p><h3>Что такое Apollo и когда он используется?</h3><p>Apollo Android - это клиент GraphQL, который генерирует Kotlin модели на основе запросов GraphQL. Эти модели предоставляют вам типобезопасный API для работы с серверами GraphQL. Apollo помогает вам объединять, организовывать и легко получать доступ к вашим операторам запросов GraphQL.<br/><br/><a href="https://github.com/apollographql/apollo-android" rel="noopener noreferrer nofollow">Ссылка на официальный Github</a></p><h3>Создаем проект подключаем плагин и зависимости</h3><p>Создаем новый проект на основе Empty Activity, я назову его ApolloConfig_Example </p><details class="spoiler"><summary>Создание нового проекта</summary><div class="spoiler__content"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/eb8/e06/caa/eb8e06caaadc0f38e1a2934c6083b2ca.jpg" width="902" height="652" data-src="https://habrastorage.org/getpro/habr/upload_files/eb8/e06/caa/eb8e06caaadc0f38e1a2934c6083b2ca.jpg" data-blurred="true"/><figcaption></figcaption></figure><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/df7/c57/507/df7c575076dc482bd1d5c38e0c457398.jpg" width="902" height="652" data-src="https://habrastorage.org/getpro/habr/upload_files/df7/c57/507/df7c575076dc482bd1d5c38e0c457398.jpg" data-blurred="true"/><figcaption></figcaption></figure></div></details><p>Создадим несколько модулей, я назову их 'common', и 'modules',последний в свою очередь будет содержать 'module_1' и 'module_2'</p><details class="spoiler"><summary>Модули проекта</summary><div class="spoiler__content"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/da4/e97/4f0/da4e974f00dc56216a87f99a49cadde6.jpg" width="679" height="558" data-src="https://habrastorage.org/getpro/habr/upload_files/da4/e97/4f0/da4e974f00dc56216a87f99a49cadde6.jpg" data-blurred="true"/><figcaption></figcaption></figure></div></details><p>Подключаем JS GraphQL плагин - он добавляет поддержку языка, подсветку синтаксиса GraphQL</p><details class="spoiler"><summary>Плагин JS GraphQL</summary><div class="spoiler__content"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/a98/9e9/212/a989e9212c9f38d7acea0d2aa4577c25.jpg" width="1024" height="703" data-src="https://habrastorage.org/getpro/habr/upload_files/a98/9e9/212/a989e9212c9f38d7acea0d2aa4577c25.jpg" data-blurred="true"/><figcaption></figcaption></figure></div></details><p>Подключаем плагин Apollo 3.0 во всех gradle файлах наших модулях</p><pre><code class="kotlin">id 'com.apollographql.apollo3' version("3.0.0-alpha07")</code></pre><details class="spoiler"><summary>Плагин Apollo 3.0</summary><div class="spoiler__content"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/c3a/eed/2b7/c3aeed2b702c1149ffaf8d7283646261.jpg" width="526" height="228" data-src="https://habrastorage.org/getpro/habr/upload_files/c3a/eed/2b7/c3aeed2b702c1149ffaf8d7283646261.jpg" data-blurred="true"/><figcaption></figcaption></figure><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/40d/46f/0b1/40d46f0b1e4c5010d09580c0ae1ed65c.jpg" width="567" height="214" data-src="https://habrastorage.org/getpro/habr/upload_files/40d/46f/0b1/40d46f0b1e4c5010d09580c0ae1ed65c.jpg" data-blurred="true"/><figcaption></figcaption></figure></div></details><p>После добавления apollo плагина появится сообщение о необходимости синхронизации проекта, но перед этим необходимо добавить настройки для плагина</p><p>Для gradle файла модуля 'app'</p><pre><code class="kotlin">apollo {
+        //Устанавливает имя пакета куда будут помещены автоматически генерируемые классы.
+        packageName.set("com.alab.app")
+        //Устанавливает путь к вашей схеме (В данном случае указывает на файл в корне проекта).
+        schemaFile.set(file("../schema.graphqls"))
+    }</code></pre><p>Для gradle файла модуля 'common'</p><pre><code class="kotlin">apollo {
+        //Устанавливает имя пакета куда будут помещены автоматически генерируемые классы.
+        packageName.set("com.alab.common")
+        //Устанавливает путь к вашей схеме (В данном случае указывает на файл в корне проекта).
+        schemaFile.set(file("../schema.graphqls"))
+        //Устанавливает сопоставление скаляра из graphql схемы к вашему классу.
+        customScalarsMapping = [
+                "DateTime" : "java.util.Date"
+        ]
+    }</code></pre><p>Для gradle файла модуля 'module_1' и 'module_2'</p><pre><code class="kotlin">apollo {
+        //Устанавливает имя пакета куда будут помещены автоматически генерируемые классы.
+        packageName.set("com.alab.module_1")
+        //Устанавливает путь к вашей схеме (В данном случае указывает на файл в корне проекта).
+        schemaFile.set(file("../../schema.graphqls"))
+        //Устанавливает путь к пакету с файлами .qraphql, которые описывают ваши запросы.
+        srcDir(file("src/main/java/com/alab/module_1/services/"))
+        //Устанавливает сопоставление скаляра из graphql схемы к вашему классу.
+        customScalarsMapping = [
+                "DateTime" : "java.util.Date"
+        ]
+    }</code></pre><pre><code class="kotlin">apollo {
+        //Устанавливает имя пакета куда будут помещены автоматически генерируемые классы.
+        packageName.set("com.alab.module_2")
+        //Устанавливает путь к вашей схеме (В данном случае указывает на файл в корне проекта).
+        schemaFile.set(file("../../schema.graphqls"))
+        //Устанавливает путь к пакету с файлами .qraphql, которые описывают ваши запросы.
+        srcDir(file("src/main/java/com/alab/module_2/services/"))
+        //Устанавливает сопоставление скаляра из graphql схемы к вашему классу.
+        customScalarsMapping = [
+                "DateTime" : "java.util.Date"
+        ]
+    }</code></pre><p>Нажимаем кнопку 'Sync Now'</p><details class="spoiler"><summary>Кнопка 'Sync Now'</summary><div class="spoiler__content"><figure class=""><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/672/0e3/ad5/6720e3ad59bf4bd1a9946609c426ec8a.jpg" width="319" height="232" data-src="https://habrastorage.org/getpro/habr/upload_files/672/0e3/ad5/6720e3ad59bf4bd1a9946609c426ec8a.jpg" data-blurred="true"/><figcaption></figcaption></figure></div></details><p>Добавляем зависимости в модули 'common', 'module_1' и 'module_2'</p><pre><code class="kotlin">implementation "com.apollographql.apollo3:apollo-runtime:3.0.0-alpha07"
+implementation "com.apollographql.apollo3:apollo-api:3.0.0-alpha07"</code></pre><details class="spoiler"><summary>Зависимости</summary><div class="spoiler__content"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/7cd/af6/1a7/7cdaf61a7d44abb8cb76099ec2eec056.jpg" width="636" height="265" data-src="https://habrastorage.org/getpro/habr/upload_files/7cd/af6/1a7/7cdaf61a7d44abb8cb76099ec2eec056.jpg" data-blurred="true"/><figcaption></figcaption></figure></div></details><p>В Gradle файлах 'app', 'module_1' и 'module_2' добавляем в зависимости модуль 'common'. Он станет  видим для этих модулей.</p><pre><code class="kotlin">implementation(project(":common"))</code></pre><figure class=""><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/0e2/899/858/0e289985854d849ee345f2c8b6c80ff0.jpg" width="452" height="108" data-src="https://habrastorage.org/getpro/habr/upload_files/0e2/899/858/0e289985854d849ee345f2c8b6c80ff0.jpg" data-blurred="true"/><figcaption></figcaption></figure><h3>Создаем необходимые классы</h3><p>Начнем с файла scheme.graphqls, это файл описывает, какие данные  могут быть запрошены, разместить его нужно в корне проекта, на одном уровне с папками 'app', 'common', 'modules'.</p><pre><code class="kotlin">schema {
+  query: Query
+}
+
+type Query {
+  "Возвращает сотрудников.\n\n\n**Returns:**\nСотрудник, если он найден."
+  employee("Идентификатор сотрудника." id: String): Employee
+}
+
+"Представляет сотрудника."
+type Employee @source(name: "Employee", schema: "Employees") {
+  "Возвращает id пользователя"
+  id: String
+  "Возвращает полное имя."
+  fullName: String!
+  "Возвращает табельный номер."
+  personnelNumber: String!
+  "Возвращает статус, показывающий присутствие сотрудника на работе."
+  workStatus: Employees_WorkingPeriod!
+}
+
+"Определяет рабочий период."
+type Employees_WorkingPeriod @source(name: "NonWorkingPeriod", schema: "Employees") {
+  "Возвращает дату начала."
+  beginDate: DateTime!
+  "Возвращает дату окончания."
+  endDate: DateTime!
+}
+
+"Annotates the original name of a type."
+directive @source("The original name of the annotated type." name: Name! "The name of the schema to which this type belongs to." schema: Name!) repeatable on ENUM | OBJECT | INTERFACE | UNION | INPUT_OBJECT | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM_VALUE
+
+"The name scalar represents a valid GraphQL name as specified in the spec and can be used to refer to fields or types."
+scalar Name
+
+"The `DateTime` scalar represents an ISO-8601 compliant date time type."
+scalar DateTime @specifiedBy(url: "https:\/\/www.graphql-scalars.com\/date-time")</code></pre><p>В модуле 'common' создадим класс 'ApolloClient', в нем напишем клиент, поскольку он находится в общем модуле, он будет виден всем другим модулям.</p><pre><code>/**
+ * Представляет клиент Apollo.
+ */
+val apolloClient = ApolloClient(
+    networkTransport = HttpNetworkTransport(
+        serverUrl = "https://your_url.com/api/graphQl",   //Адресс Вашего Api
+        okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(Interceptor { chain ->
+                val newRequestBuilder = chain.request().newBuilder()
+                newRequestBuilder.apply {
+                    addHeader(
+                        "Authorization",
+                        "Bearer &lt;Your Token>"   //Ваш токен
+                    )
+                    addHeader("Content-Type", "application/json")
+                        .build()
+                }
+                val newRequest = newRequestBuilder.build()
+                return@Interceptor chain.proceed(newRequest)
+            }).build()
+    ) )
+    .withCustomScalarAdapter(DateTime.type, dateTimeAdapter)</code></pre><p>В этом же модуле создадим класс 'GraphqlAdapters', в нем напишем скалярный адаптер для типа DateTime, который присутствует в схеме, данные которые будут приходить с этим типом, будут автоматически преобразованы в привычный класс Date.</p><pre><code class="kotlin">/**
+ * Адаптер для преобразования Any в Date.
+ */
+val dateTimeAdapter = object : Adapter&lt;Date> {
+    override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters): Date {
+        val source = reader.nextString()
+        val date: Date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'", Locale.getDefault())
+            .parse(source) ?: throw RuntimeException("Не удалось распарсить строку '${source}' в дату")
+        return date
+    }
+
+    override fun toJson(writer: JsonWriter, customScalarAdapters: CustomScalarAdapters, value: Date) {
+        AnyAdapter.toJson(writer, value)
+    }
+}</code></pre><p>Перейдем к module_1 и module_2, следующие файлы и классы  будут почти идентичны для обоих модулей, и сделано для примера.<br/>Создадим файл 'GetEmployee.graphql', он будет на основе scheme.graphqls описывать наш запрос, а apollo на основе 'GetEmployee.graphql' сгенерирует все необходимые классы.</p><pre><code class="kotlin">query GetEmployee($id: String) {
+    employee(id: $id) {
+        id,
+        fullName,
+        personnelNumber,
+        workStatus {
+            beginDate,
+            endDate
+        }
+    }
+}</code></pre><p>Далее создадим класс ApiService и cоответствующий ему интерфейс IApiService, там будем описывать наши запросы.</p><p>Интерфейс 'IApiService'</p><pre><code class="kotlin">/**
+ * Описывает методы запросов к api.
+ */
+interface IApiService {
+
+    /**
+     * Возвращает сотрудника по указанному id.
+     * @param id Идентификатор сотрудника.
+     */
+    suspend fun getEmployee(id: String): GetEmployeeQuery.Employee?
+
+}</code></pre><p>Класс 'ApiService'</p><pre><code class="kotlin">/**
+ * Представляет сервис запросов к api.
+ * @param apolloClient Apollo client.
+ */
+class ApiService(
+    private val apolloClient: ApolloClient,
+) : IApiService {
+
+    override suspend fun getEmployee(id: String): GetEmployeeQuery.Employee? {
+        return apolloClient.query(GetEmployeeQuery(id)).data?.employee
+    }
+
+}</code></pre><p>Все готово для написания самого запроса, создадим класс фрагмента, а в нем запрос</p><pre><code class="kotlin">/**
+ * Представляет фрагмент экрана.
+ */
+class ModuleFragment : Fragment() {
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return View(requireContext())
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        GlobalScope.launch {
+            val employeeResponse = apolloClient.query(GetEmployeeQuery("12345")).data?.employee
+        }
+
+    }
+}</code></pre><details class="spoiler"><summary>Структура классов в module_1 и module_2</summary><div class="spoiler__content"><figure class=""><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/ac4/79f/dfe/ac479fdfecc97c4fab4a4b9b23c4226c.jpg" width="354" height="274" data-src="https://habrastorage.org/getpro/habr/upload_files/ac4/79f/dfe/ac479fdfecc97c4fab4a4b9b23c4226c.jpg" data-blurred="true"/><figcaption></figcaption></figure></div></details><p><a href="https://github.com/AndroidLab/ApolloConfig_Example" rel="noopener noreferrer nofollow">Скачать пример можно на моем GitHub</a>.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bandroid%5D" class="tm-tags-list__link">android</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bkotlin%5D" class="tm-tags-list__link">kotlin</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bapollo%5D" class="tm-tags-list__link">apollo</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%BD%D0%BE%D0%B3%D0%BE%D0%BC%D0%BE%D0%B4%D1%83%D0%BB%D1%8C%D0%BD%D0%BE%D1%81%D1%82%D1%8C%20%D0%B2%20android%5D" class="tm-tags-list__link">многомодульность в android</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/android_dev/" class="tm-hubs-list__link">
+    Разработка под Android
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 1: ↑1 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 1: ↑1 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+1</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.1K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    11
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Winged90/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 7 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    7
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">7</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/Winged90/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Winged90
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582552/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 1 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582552/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582552/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582552":{"id":"582552","timePublished":"2021-10-09T16:01:12+00:00","isCorporative":false,"lang":"ru","titleHtml":"Apollo 3.0 для работы с GraphQL в многомодульном Android приложении","leadData":{"textHtml":"\u003Cp\u003EДавайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc19\u002F922\u002F4d9\u002Fc199224d910ec542772f2b46f9b4cb5b.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc19\u002F922\u002F4d9\u002Fc199224d910ec542772f2b46f9b4cb5b.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":7,"votesCount":7},"rating":7,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2787295","alias":"Winged90","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":1,"favoritesCount":11,"readingCount":1095,"score":1,"votesCount":1},"hubs":[{"relatedData":null,"id":"17107","alias":"android_dev","type":"collective","title":"Разработка под Android","titleHtml":"Разработка под Android","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EДавайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.\u003C\u002Fp\u003E\u003Ch3\u003EЧто такое Apollo и когда он используется?\u003C\u002Fh3\u003E\u003Cp\u003EApollo Android - это клиент GraphQL, который генерирует Kotlin модели на основе запросов GraphQL. Эти модели предоставляют вам типобезопасный API для работы с серверами GraphQL. Apollo помогает вам объединять, организовывать и легко получать доступ к вашим операторам запросов GraphQL.\u003Cbr\u002F\u003E\u003Cbr\u002F\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fapollographql\u002Fapollo-android\" rel=\"noopener noreferrer nofollow\"\u003EСсылка на официальный Github\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Ch3\u003EСоздаем проект подключаем плагин и зависимости\u003C\u002Fh3\u003E\u003Cp\u003EСоздаем новый проект на основе Empty Activity, я назову его ApolloConfig_Example \u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EСоздание нового проекта\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Feb8\u002Fe06\u002Fcaa\u002Feb8e06caaadc0f38e1a2934c6083b2ca.jpg\" width=\"902\" height=\"652\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Feb8\u002Fe06\u002Fcaa\u002Feb8e06caaadc0f38e1a2934c6083b2ca.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fdf7\u002Fc57\u002F507\u002Fdf7c575076dc482bd1d5c38e0c457398.jpg\" width=\"902\" height=\"652\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fdf7\u002Fc57\u002F507\u002Fdf7c575076dc482bd1d5c38e0c457398.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EСоздадим несколько модулей, я назову их 'common', и 'modules',последний в свою очередь будет содержать 'module_1' и 'module_2'\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EМодули проекта\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fda4\u002Fe97\u002F4f0\u002Fda4e974f00dc56216a87f99a49cadde6.jpg\" width=\"679\" height=\"558\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fda4\u002Fe97\u002F4f0\u002Fda4e974f00dc56216a87f99a49cadde6.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EПодключаем JS GraphQL плагин - он добавляет поддержку языка, подсветку синтаксиса GraphQL\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПлагин JS GraphQL\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fa98\u002F9e9\u002F212\u002Fa989e9212c9f38d7acea0d2aa4577c25.jpg\" width=\"1024\" height=\"703\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fa98\u002F9e9\u002F212\u002Fa989e9212c9f38d7acea0d2aa4577c25.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EПодключаем плагин Apollo 3.0 во всех gradle файлах наших модулях\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eid 'com.apollographql.apollo3' version(\"3.0.0-alpha07\")\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПлагин Apollo 3.0\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3a\u002Feed\u002F2b7\u002Fc3aeed2b702c1149ffaf8d7283646261.jpg\" width=\"526\" height=\"228\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3a\u002Feed\u002F2b7\u002Fc3aeed2b702c1149ffaf8d7283646261.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F40d\u002F46f\u002F0b1\u002F40d46f0b1e4c5010d09580c0ae1ed65c.jpg\" width=\"567\" height=\"214\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F40d\u002F46f\u002F0b1\u002F40d46f0b1e4c5010d09580c0ae1ed65c.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EПосле добавления apollo плагина появится сообщение о необходимости синхронизации проекта, но перед этим необходимо добавить настройки для плагина\u003C\u002Fp\u003E\u003Cp\u003EДля gradle файла модуля 'app'\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eapollo {\n        \u002F\u002FУстанавливает имя пакета куда будут помещены автоматически генерируемые классы.\n        packageName.set(\"com.alab.app\")\n        \u002F\u002FУстанавливает путь к вашей схеме (В данном случае указывает на файл в корне проекта).\n        schemaFile.set(file(\"..\u002Fschema.graphqls\"))\n    }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля gradle файла модуля 'common'\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eapollo {\n        \u002F\u002FУстанавливает имя пакета куда будут помещены автоматически генерируемые классы.\n        packageName.set(\"com.alab.common\")\n        \u002F\u002FУстанавливает путь к вашей схеме (В данном случае указывает на файл в корне проекта).\n        schemaFile.set(file(\"..\u002Fschema.graphqls\"))\n        \u002F\u002FУстанавливает сопоставление скаляра из graphql схемы к вашему классу.\n        customScalarsMapping = [\n                \"DateTime\" : \"java.util.Date\"\n        ]\n    }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля gradle файла модуля 'module_1' и 'module_2'\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eapollo {\n        \u002F\u002FУстанавливает имя пакета куда будут помещены автоматически генерируемые классы.\n        packageName.set(\"com.alab.module_1\")\n        \u002F\u002FУстанавливает путь к вашей схеме (В данном случае указывает на файл в корне проекта).\n        schemaFile.set(file(\"..\u002F..\u002Fschema.graphqls\"))\n        \u002F\u002FУстанавливает путь к пакету с файлами .qraphql, которые описывают ваши запросы.\n        srcDir(file(\"src\u002Fmain\u002Fjava\u002Fcom\u002Falab\u002Fmodule_1\u002Fservices\u002F\"))\n        \u002F\u002FУстанавливает сопоставление скаляра из graphql схемы к вашему классу.\n        customScalarsMapping = [\n                \"DateTime\" : \"java.util.Date\"\n        ]\n    }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eapollo {\n        \u002F\u002FУстанавливает имя пакета куда будут помещены автоматически генерируемые классы.\n        packageName.set(\"com.alab.module_2\")\n        \u002F\u002FУстанавливает путь к вашей схеме (В данном случае указывает на файл в корне проекта).\n        schemaFile.set(file(\"..\u002F..\u002Fschema.graphqls\"))\n        \u002F\u002FУстанавливает путь к пакету с файлами .qraphql, которые описывают ваши запросы.\n        srcDir(file(\"src\u002Fmain\u002Fjava\u002Fcom\u002Falab\u002Fmodule_2\u002Fservices\u002F\"))\n        \u002F\u002FУстанавливает сопоставление скаляра из graphql схемы к вашему классу.\n        customScalarsMapping = [\n                \"DateTime\" : \"java.util.Date\"\n        ]\n    }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНажимаем кнопку 'Sync Now'\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EКнопка 'Sync Now'\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F672\u002F0e3\u002Fad5\u002F6720e3ad59bf4bd1a9946609c426ec8a.jpg\" width=\"319\" height=\"232\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F672\u002F0e3\u002Fad5\u002F6720e3ad59bf4bd1a9946609c426ec8a.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EДобавляем зависимости в модули 'common', 'module_1' и 'module_2'\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eimplementation \"com.apollographql.apollo3:apollo-runtime:3.0.0-alpha07\"\nimplementation \"com.apollographql.apollo3:apollo-api:3.0.0-alpha07\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EЗависимости\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F7cd\u002Faf6\u002F1a7\u002F7cdaf61a7d44abb8cb76099ec2eec056.jpg\" width=\"636\" height=\"265\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F7cd\u002Faf6\u002F1a7\u002F7cdaf61a7d44abb8cb76099ec2eec056.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EВ Gradle файлах 'app', 'module_1' и 'module_2' добавляем в зависимости модуль 'common'. Он станет  видим для этих модулей.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eimplementation(project(\":common\"))\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0e2\u002F899\u002F858\u002F0e289985854d849ee345f2c8b6c80ff0.jpg\" width=\"452\" height=\"108\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0e2\u002F899\u002F858\u002F0e289985854d849ee345f2c8b6c80ff0.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch3\u003EСоздаем необходимые классы\u003C\u002Fh3\u003E\u003Cp\u003EНачнем с файла scheme.graphqls, это файл описывает, какие данные  могут быть запрошены, разместить его нужно в корне проекта, на одном уровне с папками 'app', 'common', 'modules'.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eschema {\n  query: Query\n}\n\ntype Query {\n  \"Возвращает сотрудников.\\n\\n\\n**Returns:**\\nСотрудник, если он найден.\"\n  employee(\"Идентификатор сотрудника.\" id: String): Employee\n}\n\n\"Представляет сотрудника.\"\ntype Employee @source(name: \"Employee\", schema: \"Employees\") {\n  \"Возвращает id пользователя\"\n  id: String\n  \"Возвращает полное имя.\"\n  fullName: String!\n  \"Возвращает табельный номер.\"\n  personnelNumber: String!\n  \"Возвращает статус, показывающий присутствие сотрудника на работе.\"\n  workStatus: Employees_WorkingPeriod!\n}\n\n\"Определяет рабочий период.\"\ntype Employees_WorkingPeriod @source(name: \"NonWorkingPeriod\", schema: \"Employees\") {\n  \"Возвращает дату начала.\"\n  beginDate: DateTime!\n  \"Возвращает дату окончания.\"\n  endDate: DateTime!\n}\n\n\"Annotates the original name of a type.\"\ndirective @source(\"The original name of the annotated type.\" name: Name! \"The name of the schema to which this type belongs to.\" schema: Name!) repeatable on ENUM | OBJECT | INTERFACE | UNION | INPUT_OBJECT | FIELD_DEFINITION | INPUT_FIELD_DEFINITION | ARGUMENT_DEFINITION | ENUM_VALUE\n\n\"The name scalar represents a valid GraphQL name as specified in the spec and can be used to refer to fields or types.\"\nscalar Name\n\n\"The `DateTime` scalar represents an ISO-8601 compliant date time type.\"\nscalar DateTime @specifiedBy(url: \"https:\\\u002F\\\u002Fwww.graphql-scalars.com\\\u002Fdate-time\")\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ модуле 'common' создадим класс 'ApolloClient', в нем напишем клиент, поскольку он находится в общем модуле, он будет виден всем другим модулям.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E\u002F**\n * Представляет клиент Apollo.\n *\u002F\nval apolloClient = ApolloClient(\n    networkTransport = HttpNetworkTransport(\n        serverUrl = \"https:\u002F\u002Fyour_url.com\u002Fapi\u002FgraphQl\",   \u002F\u002FАдресс Вашего Api\n        okHttpClient = OkHttpClient.Builder()\n            .addInterceptor(Interceptor { chain -\u003E\n                val newRequestBuilder = chain.request().newBuilder()\n                newRequestBuilder.apply {\n                    addHeader(\n                        \"Authorization\",\n                        \"Bearer &lt;Your Token\u003E\"   \u002F\u002FВаш токен\n                    )\n                    addHeader(\"Content-Type\", \"application\u002Fjson\")\n                        .build()\n                }\n                val newRequest = newRequestBuilder.build()\n                return@Interceptor chain.proceed(newRequest)\n            }).build()\n    ) )\n    .withCustomScalarAdapter(DateTime.type, dateTimeAdapter)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ этом же модуле создадим класс 'GraphqlAdapters', в нем напишем скалярный адаптер для типа DateTime, который присутствует в схеме, данные которые будут приходить с этим типом, будут автоматически преобразованы в привычный класс Date.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003E\u002F**\n * Адаптер для преобразования Any в Date.\n *\u002F\nval dateTimeAdapter = object : Adapter&lt;Date\u003E {\n    override fun fromJson(reader: JsonReader, customScalarAdapters: CustomScalarAdapters): Date {\n        val source = reader.nextString()\n        val date: Date = SimpleDateFormat(\"yyyy-MM-dd'T'HH:mm:ss.S'Z'\", Locale.getDefault())\n            .parse(source) ?: throw RuntimeException(\"Не удалось распарсить строку '${source}' в дату\")\n        return date\n    }\n\n    override fun toJson(writer: JsonWriter, customScalarAdapters: CustomScalarAdapters, value: Date) {\n        AnyAdapter.toJson(writer, value)\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПерейдем к module_1 и module_2, следующие файлы и классы  будут почти идентичны для обоих модулей, и сделано для примера.\u003Cbr\u002F\u003EСоздадим файл 'GetEmployee.graphql', он будет на основе scheme.graphqls описывать наш запрос, а apollo на основе 'GetEmployee.graphql' сгенерирует все необходимые классы.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Equery GetEmployee($id: String) {\n    employee(id: $id) {\n        id,\n        fullName,\n        personnelNumber,\n        workStatus {\n            beginDate,\n            endDate\n        }\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее создадим класс ApiService и cоответствующий ему интерфейс IApiService, там будем описывать наши запросы.\u003C\u002Fp\u003E\u003Cp\u003EИнтерфейс 'IApiService'\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003E\u002F**\n * Описывает методы запросов к api.\n *\u002F\ninterface IApiService {\n\n    \u002F**\n     * Возвращает сотрудника по указанному id.\n     * @param id Идентификатор сотрудника.\n     *\u002F\n    suspend fun getEmployee(id: String): GetEmployeeQuery.Employee?\n\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКласс 'ApiService'\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003E\u002F**\n * Представляет сервис запросов к api.\n * @param apolloClient Apollo client.\n *\u002F\nclass ApiService(\n    private val apolloClient: ApolloClient,\n) : IApiService {\n\n    override suspend fun getEmployee(id: String): GetEmployeeQuery.Employee? {\n        return apolloClient.query(GetEmployeeQuery(id)).data?.employee\n    }\n\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВсе готово для написания самого запроса, создадим класс фрагмента, а в нем запрос\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003E\u002F**\n * Представляет фрагмент экрана.\n *\u002F\nclass ModuleFragment : Fragment() {\n\n    override fun onCreateView(\n        inflater: LayoutInflater,\n        container: ViewGroup?,\n        savedInstanceState: Bundle?\n    ): View {\n        return View(requireContext())\n    }\n\n    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {\n        super.onViewCreated(view, savedInstanceState)\n\n        GlobalScope.launch {\n            val employeeResponse = apolloClient.query(GetEmployeeQuery(\"12345\")).data?.employee\n        }\n\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EСтруктура классов в module_1 и module_2\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fac4\u002F79f\u002Fdfe\u002Fac479fdfecc97c4fab4a4b9b23c4226c.jpg\" width=\"354\" height=\"274\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fac4\u002F79f\u002Fdfe\u002Fac479fdfecc97c4fab4a4b9b23c4226c.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FAndroidLab\u002FApolloConfig_Example\" rel=\"noopener noreferrer nofollow\"\u003EСкачать пример можно на моем GitHub\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"android"},{"titleHtml":"kotlin"},{"titleHtml":"apollo"},{"titleHtml":"многомодульность в android"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc19\u002F922\u002F4d9\u002Fc199224d910ec542772f2b46f9b4cb5b.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc19\u002F922\u002F4d9\u002Fc199224d910ec542772f2b46f9b4cb5b.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582552\\\u002F\"},\"headline\":\"Apollo 3.0 для работы с GraphQL в многомодульном Android приложении\",\"datePublished\":\"2021-10-09T19:01:12+03:00\",\"dateModified\":\"2021-10-09T23:12:07+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Winged90\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.Что такое Apo...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582552\\\u002F#post-content-body\",\"about\":[\"h_android_dev\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582552\\\u002Fd57ec6ff5c5b61265e20b16f0fde9c5d\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Feb8\\\u002Fe06\\\u002Fcaa\\\u002Feb8e06caaadc0f38e1a2934c6083b2ca.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fdf7\\\u002Fc57\\\u002F507\\\u002Fdf7c575076dc482bd1d5c38e0c457398.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fda4\\\u002Fe97\\\u002F4f0\\\u002Fda4e974f00dc56216a87f99a49cadde6.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fa98\\\u002F9e9\\\u002F212\\\u002Fa989e9212c9f38d7acea0d2aa4577c25.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fc3a\\\u002Feed\\\u002F2b7\\\u002Fc3aeed2b702c1149ffaf8d7283646261.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F40d\\\u002F46f\\\u002F0b1\\\u002F40d46f0b1e4c5010d09580c0ae1ed65c.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F672\\\u002F0e3\\\u002Fad5\\\u002F6720e3ad59bf4bd1a9946609c426ec8a.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F7cd\\\u002Faf6\\\u002F1a7\\\u002F7cdaf61a7d44abb8cb76099ec2eec056.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F0e2\\\u002F899\\\u002F858\\\u002F0e289985854d849ee345f2c8b6c80ff0.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fac4\\\u002F79f\\\u002Fdfe\\\u002Fac479fdfecc97c4fab4a4b9b23c4226c.jpg\"]}","metaDescription":"Давайте рассмотрим, каким образом настроить и использовать последнюю на данный момент версию клиента apollo в многомодульном приложении под android.Что такое Apollo и когда он используется?Apollo...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"android_dev"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

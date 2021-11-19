@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Функции области видимости (Scope Function) в Kotlin / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/580186\/"},"headline":"Функции области видимости (Scope Function) в Kotlin","datePublished":"2021-10-07T09:53:06+03:00","dateModified":"2021-10-09T19:37:57+03:00","author":{"@type":"Person","name":"pyltsinm"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведен...","url":"https:\/\/habr.com\/ru\/post\/580186\/#post-content-body","about":["h_java","h_kotlin","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/580186\/e26b9fd2bd647ea3cc4a38a332cffa1b\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/8b0\/c9d\/09a\/8b0c9d09a5ad365bdfaf573a404f4fd0.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/891\/58f\/c35\/89158fc35e8ccd89dfb7665b80047c3c.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Функции области видимости (Scope Function) в Kotlin" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Функции области видимости (Scope Function) в Kotlin" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Функции области видимости (Scope Function) в Kotlin" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведено в статье, освещено в официальной..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведено в статье, освещено в официальной..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведено в статье, освещено в официальной..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведено в статье, освещено в официальной..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведено в статье, освещено в официальной..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/853/476/712/853476712f40ce4a0818975cd2b179b4.jpg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/853/476/712/853476712f40ce4a0818975cd2b179b4.jpg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/853/476/712/853476712f40ce4a0818975cd2b179b4.jpg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/853/476/712/853476712f40ce4a0818975cd2b179b4.jpg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/853/476/712/853476712f40ce4a0818975cd2b179b4.jpg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="580186" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-07T06:53:06.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/580186/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/580186/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/853/476/712/853476712f40ce4a0818975cd2b179b4.jpg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/580186/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/pyltsinm/" title="pyltsinm" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/pyltsinm/" class="tm-user-info__username">
+      pyltsinm
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-07T06:53:06.000Z" title="2021-10-07, 09:53">7  октября   в 09:53</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Функции области видимости (Scope Function) в Kotlin</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/java/" class="tm-article-snippet__hubs-item-link"><span>Java</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/kotlin/" class="tm-article-snippet__hubs-item-link"><span>Kotlin</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведено в статье, освещено в <a href="https://kotlinlang.org/docs/scope-functions.html" rel="noopener noreferrer nofollow">официальной документации</a>, поэтому статью можно рассматривать как дополнительный материал к ней.</p><p>В статье используется термин "функции области видимости" для "Scope Function". Это определение взято из <a href="https://kotlinlang.ru/docs/reference/scope-functions.html" rel="noopener noreferrer nofollow">перевода документации на русский язык</a>. </p><p>По контекстным функциям в Kotlin есть много информации, включая на русском. Часть таких статей приведены в <a href="#references" rel="noopener noreferrer nofollow">использованных материалах</a>.</p><ul><li><p><a href="#scope" rel="noopener noreferrer nofollow">Что такое функции области видимости</a></p></li><li><p><a href="#extension" rel="noopener noreferrer nofollow">Функции расширения</a></p></li><li><p><a href="#hood" rel="noopener noreferrer nofollow">Как работают функции области видимости</a></p></li><li><p><a href="#apply" rel="noopener noreferrer nofollow">Что когда применять</a></p></li><li><p><a href="#references" rel="noopener noreferrer nofollow">Использованные материалы</a></p></li></ul><a class="anchor" name="scope" id="scope"></a><h3>Что такое функции области видимости</h3><p>В Kotlin есть 5 функций: <code>let</code>, <code>run</code>, <code>with</code>, <code>apply</code> и <code>also</code>, объединенных общим названием <strong>Scope Function</strong> (функции области видимости). Все они используются для одной цели - выполнить какой-то блок кода для конкретного объекта. Почему их так назвали? Потому что они меняют способ взаимодействия и видимость для этой переменной.</p><p>В основном они отличаются только 2 параметрами: способом ссылки на объект и возвращаемым параметром.</p><p>Давайте сначала приведем пример использования:</p><p><strong>let</strong></p><pre><code class="kotlin">val length = "test".let{
+    println(it)
+  	it.length
+}</code></pre><ul><li><p>Объект <code>"test"</code> внутри блока доступен как <code>it</code></p></li><li><p>Возвращает результат выполнения lambda-функции</p></li></ul><p><strong>also</strong></p><pre><code class="kotlin">val test = "test".also{     
+  println(it)   
+}</code></pre><ul><li><p>Объект <code>"test"</code> внутри блока доступен как <code>it</code></p></li><li><p>Возвращает контекстный объект (<code>"test"</code>)</p></li></ul><p><strong>apply</strong></p><pre><code class="kotlin">val moscow = City("Moscow").apply{
+  this.population = 15_000_000
+  println(this)
+}</code></pre><ul><li><p>Объект <code>City("Moscow")</code> внутри блока доступен как <code>this</code> (поэтому для поля popultaion - мы можем опустить обращения и будет <code>population=15_000_000</code>)</p></li><li><p>Возвращает контекстный объект (изменённый <code>City("Moscow")</code>)</p></li></ul><p><strong>run (с контекстным объектом)</strong></p><pre><code class="kotlin">val optimalSquare = City("Moscow").run {
+    this.population = 15_000_000
+  	this.solveOptimalSquare()
+}</code></pre><ul><li><p>Объект <code>City("Moscow")</code> внутри блока доступен как <code>this</code> (поэтому для поля popultaion - мы можем опустить обращения и будет <code>population=15_000_000</code>)</p></li><li><p>Возвращает результат выполнения lambda-функции (<code>solveOptimalSquare()</code>)</p></li></ul><p><strong>run (без контекстного объекта)</strong></p><pre><code class="kotlin">val length = run {
+  val test = "test"
+  test.length
+}</code></pre><ul><li><p>Нет объекта на котором применятся</p></li><li><p>Возвращает результат выполнения lambda-функции (<code>test.length</code>)</p></li></ul><p><strong>with</strong></p><pre><code class="kotlin">val length = with("test"){
+  this.length
+}</code></pre><ul><li><p>Объект <code>"test"</code> внутри блока доступен как <code>this</code></p></li><li><p>Возвращает результат выполнения lambda-функции (<code>this.length</code>)</p></li></ul><p>Как видно, функции очень похожи друг на друга. Для того чтобы разобраться как они работают нужно разобраться в понятии <em>extension function</em> (здесь и далее будет использован перевод "функции расширения")</p><a class="anchor" name="extension" id="extension"></a><h3>Функции расширения</h3><p>Функции расширения в Kotlin позволяют расширять классы, не наследуясь от них. С помощью них мы можем добавить к существующим классам свои методы. Функции расширения таким образом заменяют утилитные классы (например, StringUtils от Apache). </p><p>Давайте рассмотрим упрощенный пример из стандартной библиотеки Kotlin</p><pre><code class="kotlin">public fun CharSequence?.isNullOrBlank(): Boolean {
+    return this == null || this.isBlank()
+}</code></pre><p>Как видно в качестве класса для расширения также можно использовать null-допустимые классы.</p><p>Как это работает:</p><ul><li><p>Мы указываем тип  получателя (reciever type)</p></li><li><p>Ссылаемся на объект этого типа как this </p></li></ul><figure class="full-width "><img src="/img/image-loader.svg" height="144" data-src="https://habrastorage.org/getpro/habr/upload_files/8b0/c9d/09a/8b0c9d09a5ad365bdfaf573a404f4fd0.png" data-width="656"/><figcaption></figcaption></figure><p>Давайте посмотрим, во что компилируется функция расширения. </p><p><em>Исходный код:</em></p><pre><code class="kotlin">fun main() {
+    println("test".firstSymbol())
+}
+
+public fun String.firstSymbol(): Char{
+    return this[0]
+}</code></pre><p><em>Bytecode:</em></p><pre><code class="kotlin">  public static final char firstSymbol(java.lang.String);
+    descriptor: (Ljava/lang/String;)C
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    Code:
+      stack=2, locals=1, args_size=1
+         0: aload_0
+         1: ldc           #27                 // String &lt;this>
+         3: invokestatic  #33                 // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+         6: aload_0
+         7: iconst_0
+         8: invokevirtual #39                 // Method java/lang/String.charAt:(I)C
+        11: ireturn
+      LineNumberTable:
+        line 6: 6
+      LocalVariableTable:
+        Start  Length  Slot  Name   Signature
+            0      12     0 $this$firstSymbol   Ljava/lang/String;
+    RuntimeInvisibleParameterAnnotations:
+      parameter 0:
+        0: #25()
+          org.jetbrains.annotations.NotNull</code></pre><p><em>Соответствующий java-code:</em></p><pre><code class="java">public static final char firstSymbol(@NotNull String $this$firstSymbol) {
+  Intrinsics.checkNotNullParameter($this$firstSymbol, "$this$firstSymbol");
+  return $this$firstSymbol.charAt(0);
+}</code></pre><p>Как видно, она комплируется в статический метод, где первым параметром выступает объект, на котором применяется функция расширения. </p><p>Как раз поэтому функция расширения не может получить доступ к приватным полям и методам и поэтому функции расширения вычиляются статически.</p><pre><code class="kotlin">//Код НЕ рабочий
+fun main() {
+    println(Test("test").firstSymbol())
+}
+
+class Test(private val value: String)
+
+public fun Test.firstSymbol(): Char{
+// поле является приватным и из статического метода к нему нет доступа
+    return this.value[0] //ОШИБКА
+}</code></pre><p>Следующий пример взят из <a href="https://kotlinlang.org/docs/extensions.html#extensions-are-resolved-statically" rel="noopener noreferrer nofollow">документации</a></p><pre><code class="kotlin">open class Shape
+class Rectangle: Shape()
+
+fun Shape.getName() = "Shape"
+fun Rectangle.getName() = "Rectangle"
+
+fun printClassName(s: Shape) {
+    println(s.getName())
+}
+
+printClassName(Rectangle())</code></pre><p>Распечатается <code>Shape</code></p><figure class="full-width "><img src="/img/image-loader.svg" height="329" data-src="https://habrastorage.org/getpro/habr/upload_files/891/58f/c35/89158fc35e8ccd89dfb7665b80047c3c.png" data-width="762"/><figcaption></figcaption></figure><a class="anchor" name="hood" id="hood"></a><h3>Как работают функции области видимости</h3><p>После того, как мы разобрались с функциями расширения, самое время взглянуть, что под капотом функций области видимости.</p><p>Для начала приведем исходный код всех рассматриваемых функций и разберем его</p><p><strong>let</strong></p><pre><code class="kotlin">public inline fun &lt;T, R> T.let(block: (T) -> R): R {
+    return block(this)
+}</code></pre><p><code>let</code> - сама является функцией расширения и принимает обычную lambda-функцию, которая вызывается с параметром <code>this</code> (объектом, на котором вызывается <code>let</code>). Так как <code>block</code> - это обычная lambda-функция, то единственный аргумент в ней доступен как <code>it</code>. Возвращается результат выполнения <code>block(this)</code></p><p><strong>also</strong></p><pre><code class="kotlin">public inline fun &lt;T> T.also(block: (T) -> Unit): T {
+    block(this)
+    return this
+}</code></pre><p><code>also</code> - очень похож на <code>let</code>, но возвращается объект <code>this</code> (объект, на котором вызывается also)</p><p><strong>apply</strong></p><pre><code class="kotlin">public inline fun &lt;T> T.apply(block: T.() -> Unit): T {
+    block()
+    return this
+}</code></pre><p>Функция  <code>apply</code> устроена довольно интересно. Она является функцией расширения, при этом как параметр она принимет lambda-функцию, которая тоже является расширением для того же типа. Поэтому вызов <code>block()</code> здесь нужно рассматривать как вызов <code>this.block()</code>. Возвращается объект, на котором была вызвана функция apply</p><p><strong>run (с контекстным объектом)</strong></p><pre><code class="kotlin">public inline fun &lt;T, R> T.run(block: T.() -> R): R {
+    return block()
+}</code></pre><p><code>run</code> очень похож на apply, но возвращает результат выполнения <code>this.block()</code></p><p><strong>run (без контекстного объекта)</strong></p><pre><code class="kotlin">public inline fun &lt;R> run(block: () -> R): R {
+    return block()
+}</code></pre><p>Не является функцией расширения, и принимет обычную lambda-функцию. Возвращает результат выполнения этой lambda-функции.</p><p><strong>with</strong></p><pre><code class="kotlin">public inline fun &lt;T, R> with(receiver: T, block: T.() -> R): R {
+    return receiver.block()
+}</code></pre><p>Не является функцией расширением. Принимает два параметра - объект и функция расширения, которая будет вызываться на нем. Возвращает результат этого выполнения.</p><p>Как можно заметить, все функции области видимости являются <code>inline</code>, то есть их тело вставляется в место, где они вызываются, что позволяет исключить накладные расходы на вызов метода.</p><p><em>Исходный код:</em></p><pre><code>fun main() {
+    val length = "test".let {
+        println(it)
+        it.length
+    }
+    println(length)
+}</code></pre><p><em>Bytecode:</em></p><pre><code class="bash">  public static final void main();
+    descriptor: ()V
+    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL
+    Code:
+      stack=2, locals=7, args_size=0
+         0: ldc           #8                  // String test
+         2: astore_1
+         3: iconst_0
+         4: istore_2
+         5: iconst_0
+         6: istore_3
+         7: aload_1
+         8: astore        4
+        10: iconst_0
+        11: istore        5
+        13: iconst_0
+        14: istore        6
+        16: getstatic     #14                 // Field java/lang/System.out:Ljava/io/PrintStream;
+        19: aload         4
+        21: invokevirtual #20                 // Method java/io/PrintStream.println:(Ljava/lang/Object;)V
+        24: aload         4
+        26: invokevirtual #26                 // Method java/lang/String.length:()I
+        29: nop
+        30: istore_0
+        31: iconst_0
+        32: istore_1
+        33: getstatic     #14                 // Field java/lang/System.out:Ljava/io/PrintStream;
+        36: iload_0
+        37: invokevirtual #29                 // Method java/io/PrintStream.println:(I)V
+        40: return
+</code></pre><p><em>Близко-соответствующий java-code (часть служебных переменных удалено):</em></p><pre><code class="java">   public static final void main() {
+      String var1 = "test";
+      System.out.println(var1);
+      int length = var1.length();
+      System.out.println(length);
+   }</code></pre><p>Как видно, здесь нет никакого упоминания об <code>let</code></p><h3>Что когда применять</h3><p>Какую функцию когда применять - вопрос довольно сложный и дискуссионный.</p><p>Здесь я постарался собрать те рекомендации, что встречал в разных источниках и что было удобно мне самому. Эти рекомендации не являются всеобъемлющими и каждая команда, как мне кажется, сама должна определять, когда что применять. Буду рад комментариям, каким рекомендациям следуете вы.</p><p>Самая главная рекомендация - <strong>не переусложняйте код</strong>, он должен быть легко читаем и однозначен. Чем сложнее код - тем больше ошибок мы можем в нем совершить. И помним, что IDEA у нас не всегда под рукой, например, часто простые исправления проверяются online, например, в gitlab, где нет таких возможностей как в IDEA.</p><p> Основные грамматические отличия можно свести в таблицу:</p><div><div class="table"><table><tbody><tr><td data-colwidth="223" width="223"><p></p></td><td data-colwidth="223" width="223"><p>Функция будет принимать <strong><em>this</em></strong></p></td><td><p>Функция будет принимать <strong><em>it</em></strong></p></td></tr><tr><td data-colwidth="223" width="223"><p>Будет возвращен объект на котором вызывается функция (<strong><em>self</em></strong>)</p></td><td data-colwidth="223" width="223"><p><strong>apply</strong></p></td><td><p><strong>also</strong></p></td></tr><tr><td data-colwidth="223" width="223"><p>Будет возвращен результат функции (<strong><em>result</em></strong>)</p></td><td data-colwidth="223" width="223"><p><strong>run</strong>, <strong>with</strong></p></td><td><p><strong>let</strong></p></td></tr></tbody></table></div></div><p>С различием по тому, что возвращается,как мне кажется, все понятно. Давайте внимательно рассмотрим различие: что принимает функция (<code>this</code> или <code>it</code>). С точки зрения возможностей - <code>this</code> и <code>it</code> полностью одинаковы, так как они предоставляют доступ к одному и тому же набору параметров. <code>this</code> <strong>НЕ</strong> предоставляет доступ к приватным методам. Единственное различие в том, что this может быть опущено, а it в явном виде заменено на другое имя переменной. Поэтому this рекомендуется для тех случаев, когда вызываются функции и присваиваются свойства - для настройки объектов, it - когда объект используется в основном в качестве аргумента вызова функции. </p><p>Большую часть функций удобно использовать для реализации сокращенной записи (см. ниже пример с apply)</p><p><strong>let</strong></p><ul><li><p>часто используется для безопасного выполнения блока кода с null-выражениями</p></li></ul><pre><code class="kotlin">val b: Int? = null
+
+val a = b?.let { nonNullable -> nonNullable } ?: "Equal to 'null' or not set"
+println(a)</code></pre><p><strong>also</strong></p><ul><li><p>используется для выполнения каких-либо дополнительных действий</p></li></ul><pre><code class="kotlin">val numbers = mutableListOf("one", "two", "three")
+ numbers
+ .also { println("The list elements before adding new one: $it") }
+ .add("four")</code></pre><p><strong>apply</strong> </p><ul><li><p>настроить объекта  и не надо возвращать результат (удобно использовать для настройки Spring beans (бинов)</p></li></ul><pre><code class="kotlin">val registrar = DateTimeFormatterRegistrar().apply {
+  setUseIsoFormat(true)
+  registerFormatters(registry)
+}</code></pre><p><strong>run</strong>, <strong>with</strong></p><ul><li><p><strong>run</strong> и <strong>with</strong> очень похожи, поэтому не рекомендуется использовать их вместе. </p></li><li><p><strong>run </strong>- используется для настройки объекта и вычисления результата</p></li></ul><pre><code class="kotlin">fun printAlphabet() = StringBuilder().run{
+    for (letter in 'A'..'Z'){
+        append(letter)
+    }
+    toString()
+}</code></pre><ul><li><p><strong>run без контекстного объекта</strong> - выполнение набора операций в отдельной зоне видимости</p></li><li><p><strong>with</strong> - используется для объединения вызовов функций объекта </p></li></ul><pre><code class="kotlin">// выводим все буквы алфавита
+fun printAlphabet() = with(StringBuilder()){
+    for (letter in 'A'..'Z'){
+        append(letter)
+    }
+    toString()
+}</code></pre><a class="anchor" name="references" id="references"></a><h3>Использованные материалы</h3><ul><li><p><a href="https://kotlinlang.org/docs/scope-functions.html" rel="noopener noreferrer nofollow">Официальная документация по функциям области видимости</a> (<a href="https://kotlinlang.ru/docs/reference/extensions.html" rel="noopener noreferrer nofollow">перевод</a>)</p></li><li><p><a href="https://kotlinlang.org/docs/extensions.html" rel="noopener noreferrer nofollow">Официальная документация по функциям расширениям </a>(<a href="https://kotlinlang.ru/docs/reference/extensions.html" rel="noopener noreferrer nofollow">перевод</a>)</p></li><li><p><a href="https://www.baeldung.com/kotlin/scope-functions" rel="noopener noreferrer nofollow">Статья от baeldung по функциям области видимости</a></p></li><li><p><a href="https://levelup.gitconnected.com/kotlin-scope-functions-the-god-sent-guide-4930533874de" rel="noopener noreferrer nofollow">Статья о том, как запомнить что есть что на англ.</a></p></li><li><p><a href="https://stackoverflow.com/questions/45977011/example-of-when-should-we-use-run-let-apply-also-and-with-on-kotlin" rel="noopener noreferrer nofollow">Интересная дискусия о функциях области видимости на stackoverflow</a> </p></li><li><p><a href="https://medium.com/mobile-app-development-publication/mastering-kotlin-standard-functions-run-with-let-also-and-apply-9cd334b0ef84" rel="noopener noreferrer nofollow">Рекомендации по применению функций области видимости с medium</a> (<a href="https://bimlibik.github.io/posts/kotlin-scope-functions/" rel="noopener noreferrer nofollow">перевод</a>) </p></li></ul></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bkotlin%5D" class="tm-tags-list__link">kotlin</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bscope%20function%5D" class="tm-tags-list__link">scope function</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/java/" class="tm-hubs-list__link">
+    Java
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/kotlin/" class="tm-hubs-list__link">
+    Kotlin
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 8: ↑6 и ↓2</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 8: ↑6 и ↓2" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+4</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">2.7K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    30
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/pyltsinm/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 30 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    28
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">9</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/pyltsinm/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @pyltsinm
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/580186/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 4 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/580186/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/580186/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"580186":{"id":"580186","timePublished":"2021-10-07T06:53:06+00:00","isCorporative":false,"lang":"ru","titleHtml":"Функции области видимости (Scope Function) в Kotlin","leadData":{"textHtml":"\u003Cp\u003EСразу оговорюсь, что статья объясняет базовые понятия, и если вы уже программируете на Kotlin, то, скорее всего, вы уже все знаете. Большая часть того, что приведено в статье, освещено в \u003Ca href=\"https:\u002F\u002Fkotlinlang.org\u002Fdocs\u002Fscope-functions.html\" rel=\"noopener noreferrer nofollow\"\u003Eофициальной документации\u003C\u002Fa\u003E, поэтому статью можно рассматривать как дополнительный материал к ней.\u003C\u002Fp\u003E\u003Cp\u003EВ статье показано как реализованы функции области видимости, даны примеры и рекомендации по их использованию\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F853\u002F476\u002F712\u002F853476712f40ce4a0818975cd2b179b4.jpg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F853\u002F476\u002F712\u002F853476712f40ce4a0818975cd2b179b4.jpg","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":28,"votesCount":30},"rating":9,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2523969","alias":"pyltsinm","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":4,"favoritesCount":30,"readingCount":2714,"score":4,"votesCount":8},"hubs":[{"relatedData":null,"id":"375","alias":"java","type":"collective","title":"Java","titleHtml":"Java","isProfiled":true},{"relatedData":null,"id":"19441","alias":"kotlin","type":"collective","title":"Kotlin","titleHtml":"Kotlin","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EСразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведено в статье, освещено в \u003Ca href=\"https:\u002F\u002Fkotlinlang.org\u002Fdocs\u002Fscope-functions.html\" rel=\"noopener noreferrer nofollow\"\u003Eофициальной документации\u003C\u002Fa\u003E, поэтому статью можно рассматривать как дополнительный материал к ней.\u003C\u002Fp\u003E\u003Cp\u003EВ статье используется термин \"функции области видимости\" для \"Scope Function\". Это определение взято из \u003Ca href=\"https:\u002F\u002Fkotlinlang.ru\u002Fdocs\u002Freference\u002Fscope-functions.html\" rel=\"noopener noreferrer nofollow\"\u003Eперевода документации на русский язык\u003C\u002Fa\u003E. \u003C\u002Fp\u003E\u003Cp\u003EПо контекстным функциям в Kotlin есть много информации, включая на русском. Часть таких статей приведены в \u003Ca href=\"#references\" rel=\"noopener noreferrer nofollow\"\u003Eиспользованных материалах\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#scope\" rel=\"noopener noreferrer nofollow\"\u003EЧто такое функции области видимости\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#extension\" rel=\"noopener noreferrer nofollow\"\u003EФункции расширения\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#hood\" rel=\"noopener noreferrer nofollow\"\u003EКак работают функции области видимости\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#apply\" rel=\"noopener noreferrer nofollow\"\u003EЧто когда применять\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#references\" rel=\"noopener noreferrer nofollow\"\u003EИспользованные материалы\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Ca class=\"anchor\" name=\"scope\" id=\"scope\"\u003E\u003C\u002Fa\u003E\u003Ch3\u003EЧто такое функции области видимости\u003C\u002Fh3\u003E\u003Cp\u003EВ Kotlin есть 5 функций: \u003Ccode\u003Elet\u003C\u002Fcode\u003E, \u003Ccode\u003Erun\u003C\u002Fcode\u003E, \u003Ccode\u003Ewith\u003C\u002Fcode\u003E, \u003Ccode\u003Eapply\u003C\u002Fcode\u003E и \u003Ccode\u003Ealso\u003C\u002Fcode\u003E, объединенных общим названием \u003Cstrong\u003EScope Function\u003C\u002Fstrong\u003E (функции области видимости). Все они используются для одной цели - выполнить какой-то блок кода для конкретного объекта. Почему их так назвали? Потому что они меняют способ взаимодействия и видимость для этой переменной.\u003C\u002Fp\u003E\u003Cp\u003EВ основном они отличаются только 2 параметрами: способом ссылки на объект и возвращаемым параметром.\u003C\u002Fp\u003E\u003Cp\u003EДавайте сначала приведем пример использования:\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Elet\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval length = \"test\".let{\n    println(it)\n  \tit.length\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОбъект \u003Ccode\u003E\"test\"\u003C\u002Fcode\u003E внутри блока доступен как \u003Ccode\u003Eit\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВозвращает результат выполнения lambda-функции\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E\u003Cstrong\u003Ealso\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval test = \"test\".also{     \n  println(it)   \n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОбъект \u003Ccode\u003E\"test\"\u003C\u002Fcode\u003E внутри блока доступен как \u003Ccode\u003Eit\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВозвращает контекстный объект (\u003Ccode\u003E\"test\"\u003C\u002Fcode\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E\u003Cstrong\u003Eapply\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval moscow = City(\"Moscow\").apply{\n  this.population = 15_000_000\n  println(this)\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОбъект \u003Ccode\u003ECity(\"Moscow\")\u003C\u002Fcode\u003E внутри блока доступен как \u003Ccode\u003Ethis\u003C\u002Fcode\u003E (поэтому для поля popultaion - мы можем опустить обращения и будет \u003Ccode\u003Epopulation=15_000_000\u003C\u002Fcode\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВозвращает контекстный объект (изменённый \u003Ccode\u003ECity(\"Moscow\")\u003C\u002Fcode\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E\u003Cstrong\u003Erun (с контекстным объектом)\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval optimalSquare = City(\"Moscow\").run {\n    this.population = 15_000_000\n  \tthis.solveOptimalSquare()\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОбъект \u003Ccode\u003ECity(\"Moscow\")\u003C\u002Fcode\u003E внутри блока доступен как \u003Ccode\u003Ethis\u003C\u002Fcode\u003E (поэтому для поля popultaion - мы можем опустить обращения и будет \u003Ccode\u003Epopulation=15_000_000\u003C\u002Fcode\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВозвращает результат выполнения lambda-функции (\u003Ccode\u003EsolveOptimalSquare()\u003C\u002Fcode\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E\u003Cstrong\u003Erun (без контекстного объекта)\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval length = run {\n  val test = \"test\"\n  test.length\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EНет объекта на котором применятся\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВозвращает результат выполнения lambda-функции (\u003Ccode\u003Etest.length\u003C\u002Fcode\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E\u003Cstrong\u003Ewith\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval length = with(\"test\"){\n  this.length\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОбъект \u003Ccode\u003E\"test\"\u003C\u002Fcode\u003E внутри блока доступен как \u003Ccode\u003Ethis\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВозвращает результат выполнения lambda-функции (\u003Ccode\u003Ethis.length\u003C\u002Fcode\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EКак видно, функции очень похожи друг на друга. Для того чтобы разобраться как они работают нужно разобраться в понятии \u003Cem\u003Eextension function\u003C\u002Fem\u003E (здесь и далее будет использован перевод \"функции расширения\")\u003C\u002Fp\u003E\u003Ca class=\"anchor\" name=\"extension\" id=\"extension\"\u003E\u003C\u002Fa\u003E\u003Ch3\u003EФункции расширения\u003C\u002Fh3\u003E\u003Cp\u003EФункции расширения в Kotlin позволяют расширять классы, не наследуясь от них. С помощью них мы можем добавить к существующим классам свои методы. Функции расширения таким образом заменяют утилитные классы (например, StringUtils от Apache). \u003C\u002Fp\u003E\u003Cp\u003EДавайте рассмотрим упрощенный пример из стандартной библиотеки Kotlin\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Epublic fun CharSequence?.isNullOrBlank(): Boolean {\n    return this == null || this.isBlank()\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКак видно в качестве класса для расширения также можно использовать null-допустимые классы.\u003C\u002Fp\u003E\u003Cp\u003EКак это работает:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EМы указываем тип  получателя (reciever type)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСсылаемся на объект этого типа как this \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"144\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F8b0\u002Fc9d\u002F09a\u002F8b0c9d09a5ad365bdfaf573a404f4fd0.png\" data-width=\"656\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EДавайте посмотрим, во что компилируется функция расширения. \u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EИсходный код:\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Efun main() {\n    println(\"test\".firstSymbol())\n}\n\npublic fun String.firstSymbol(): Char{\n    return this[0]\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cem\u003EBytecode:\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003E  public static final char firstSymbol(java.lang.String);\n    descriptor: (Ljava\u002Flang\u002FString;)C\n    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL\n    Code:\n      stack=2, locals=1, args_size=1\n         0: aload_0\n         1: ldc           #27                 \u002F\u002F String &lt;this\u003E\n         3: invokestatic  #33                 \u002F\u002F Method kotlin\u002Fjvm\u002Finternal\u002FIntrinsics.checkNotNullParameter:(Ljava\u002Flang\u002FObject;Ljava\u002Flang\u002FString;)V\n         6: aload_0\n         7: iconst_0\n         8: invokevirtual #39                 \u002F\u002F Method java\u002Flang\u002FString.charAt:(I)C\n        11: ireturn\n      LineNumberTable:\n        line 6: 6\n      LocalVariableTable:\n        Start  Length  Slot  Name   Signature\n            0      12     0 $this$firstSymbol   Ljava\u002Flang\u002FString;\n    RuntimeInvisibleParameterAnnotations:\n      parameter 0:\n        0: #25()\n          org.jetbrains.annotations.NotNull\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cem\u003EСоответствующий java-code:\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epublic static final char firstSymbol(@NotNull String $this$firstSymbol) {\n  Intrinsics.checkNotNullParameter($this$firstSymbol, \"$this$firstSymbol\");\n  return $this$firstSymbol.charAt(0);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКак видно, она комплируется в статический метод, где первым параметром выступает объект, на котором применяется функция расширения. \u003C\u002Fp\u003E\u003Cp\u003EКак раз поэтому функция расширения не может получить доступ к приватным полям и методам и поэтому функции расширения вычиляются статически.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003E\u002F\u002FКод НЕ рабочий\nfun main() {\n    println(Test(\"test\").firstSymbol())\n}\n\nclass Test(private val value: String)\n\npublic fun Test.firstSymbol(): Char{\n\u002F\u002F поле является приватным и из статического метода к нему нет доступа\n    return this.value[0] \u002F\u002FОШИБКА\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСледующий пример взят из \u003Ca href=\"https:\u002F\u002Fkotlinlang.org\u002Fdocs\u002Fextensions.html#extensions-are-resolved-statically\" rel=\"noopener noreferrer nofollow\"\u003Eдокументации\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eopen class Shape\nclass Rectangle: Shape()\n\nfun Shape.getName() = \"Shape\"\nfun Rectangle.getName() = \"Rectangle\"\n\nfun printClassName(s: Shape) {\n    println(s.getName())\n}\n\nprintClassName(Rectangle())\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EРаспечатается \u003Ccode\u003EShape\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"329\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F891\u002F58f\u002Fc35\u002F89158fc35e8ccd89dfb7665b80047c3c.png\" data-width=\"762\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ca class=\"anchor\" name=\"hood\" id=\"hood\"\u003E\u003C\u002Fa\u003E\u003Ch3\u003EКак работают функции области видимости\u003C\u002Fh3\u003E\u003Cp\u003EПосле того, как мы разобрались с функциями расширения, самое время взглянуть, что под капотом функций области видимости.\u003C\u002Fp\u003E\u003Cp\u003EДля начала приведем исходный код всех рассматриваемых функций и разберем его\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Elet\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Epublic inline fun &lt;T, R\u003E T.let(block: (T) -\u003E R): R {\n    return block(this)\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003Elet\u003C\u002Fcode\u003E - сама является функцией расширения и принимает обычную lambda-функцию, которая вызывается с параметром \u003Ccode\u003Ethis\u003C\u002Fcode\u003E (объектом, на котором вызывается \u003Ccode\u003Elet\u003C\u002Fcode\u003E). Так как \u003Ccode\u003Eblock\u003C\u002Fcode\u003E - это обычная lambda-функция, то единственный аргумент в ней доступен как \u003Ccode\u003Eit\u003C\u002Fcode\u003E. Возвращается результат выполнения \u003Ccode\u003Eblock(this)\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Ealso\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Epublic inline fun &lt;T\u003E T.also(block: (T) -\u003E Unit): T {\n    block(this)\n    return this\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003Ealso\u003C\u002Fcode\u003E - очень похож на \u003Ccode\u003Elet\u003C\u002Fcode\u003E, но возвращается объект \u003Ccode\u003Ethis\u003C\u002Fcode\u003E (объект, на котором вызывается also)\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Eapply\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Epublic inline fun &lt;T\u003E T.apply(block: T.() -\u003E Unit): T {\n    block()\n    return this\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФункция  \u003Ccode\u003Eapply\u003C\u002Fcode\u003E устроена довольно интересно. Она является функцией расширения, при этом как параметр она принимет lambda-функцию, которая тоже является расширением для того же типа. Поэтому вызов \u003Ccode\u003Eblock()\u003C\u002Fcode\u003E здесь нужно рассматривать как вызов \u003Ccode\u003Ethis.block()\u003C\u002Fcode\u003E. Возвращается объект, на котором была вызвана функция apply\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Erun (с контекстным объектом)\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Epublic inline fun &lt;T, R\u003E T.run(block: T.() -\u003E R): R {\n    return block()\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003Erun\u003C\u002Fcode\u003E очень похож на apply, но возвращает результат выполнения \u003Ccode\u003Ethis.block()\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Erun (без контекстного объекта)\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Epublic inline fun &lt;R\u003E run(block: () -\u003E R): R {\n    return block()\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНе является функцией расширения, и принимет обычную lambda-функцию. Возвращает результат выполнения этой lambda-функции.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Ewith\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Epublic inline fun &lt;T, R\u003E with(receiver: T, block: T.() -\u003E R): R {\n    return receiver.block()\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНе является функцией расширением. Принимает два параметра - объект и функция расширения, которая будет вызываться на нем. Возвращает результат этого выполнения.\u003C\u002Fp\u003E\u003Cp\u003EКак можно заметить, все функции области видимости являются \u003Ccode\u003Einline\u003C\u002Fcode\u003E, то есть их тело вставляется в место, где они вызываются, что позволяет исключить накладные расходы на вызов метода.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EИсходный код:\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Efun main() {\n    val length = \"test\".let {\n        println(it)\n        it.length\n    }\n    println(length)\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cem\u003EBytecode:\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E  public static final void main();\n    descriptor: ()V\n    flags: (0x0019) ACC_PUBLIC, ACC_STATIC, ACC_FINAL\n    Code:\n      stack=2, locals=7, args_size=0\n         0: ldc           #8                  \u002F\u002F String test\n         2: astore_1\n         3: iconst_0\n         4: istore_2\n         5: iconst_0\n         6: istore_3\n         7: aload_1\n         8: astore        4\n        10: iconst_0\n        11: istore        5\n        13: iconst_0\n        14: istore        6\n        16: getstatic     #14                 \u002F\u002F Field java\u002Flang\u002FSystem.out:Ljava\u002Fio\u002FPrintStream;\n        19: aload         4\n        21: invokevirtual #20                 \u002F\u002F Method java\u002Fio\u002FPrintStream.println:(Ljava\u002Flang\u002FObject;)V\n        24: aload         4\n        26: invokevirtual #26                 \u002F\u002F Method java\u002Flang\u002FString.length:()I\n        29: nop\n        30: istore_0\n        31: iconst_0\n        32: istore_1\n        33: getstatic     #14                 \u002F\u002F Field java\u002Flang\u002FSystem.out:Ljava\u002Fio\u002FPrintStream;\n        36: iload_0\n        37: invokevirtual #29                 \u002F\u002F Method java\u002Fio\u002FPrintStream.println:(I)V\n        40: return\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cem\u003EБлизко-соответствующий java-code (часть служебных переменных удалено):\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003E   public static final void main() {\n      String var1 = \"test\";\n      System.out.println(var1);\n      int length = var1.length();\n      System.out.println(length);\n   }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКак видно, здесь нет никакого упоминания об \u003Ccode\u003Elet\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Ch3\u003EЧто когда применять\u003C\u002Fh3\u003E\u003Cp\u003EКакую функцию когда применять - вопрос довольно сложный и дискуссионный.\u003C\u002Fp\u003E\u003Cp\u003EЗдесь я постарался собрать те рекомендации, что встречал в разных источниках и что было удобно мне самому. Эти рекомендации не являются всеобъемлющими и каждая команда, как мне кажется, сама должна определять, когда что применять. Буду рад комментариям, каким рекомендациям следуете вы.\u003C\u002Fp\u003E\u003Cp\u003EСамая главная рекомендация - \u003Cstrong\u003Eне переусложняйте код\u003C\u002Fstrong\u003E, он должен быть легко читаем и однозначен. Чем сложнее код - тем больше ошибок мы можем в нем совершить. И помним, что IDEA у нас не всегда под рукой, например, часто простые исправления проверяются online, например, в gitlab, где нет таких возможностей как в IDEA.\u003C\u002Fp\u003E\u003Cp\u003E Основные грамматические отличия можно свести в таблицу:\u003C\u002Fp\u003E\u003Cdiv\u003E\u003Cdiv class=\"table\"\u003E\u003Ctable\u003E\u003Ctbody\u003E\u003Ctr\u003E\u003Ctd data-colwidth=\"223\" width=\"223\"\u003E\u003Cp\u003E\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"223\" width=\"223\"\u003E\u003Cp\u003EФункция будет принимать \u003Cstrong\u003E\u003Cem\u003Ethis\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd\u003E\u003Cp\u003EФункция будет принимать \u003Cstrong\u003E\u003Cem\u003Eit\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003C\u002Ftr\u003E\u003Ctr\u003E\u003Ctd data-colwidth=\"223\" width=\"223\"\u003E\u003Cp\u003EБудет возвращен объект на котором вызывается функция (\u003Cstrong\u003E\u003Cem\u003Eself\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E)\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"223\" width=\"223\"\u003E\u003Cp\u003E\u003Cstrong\u003Eapply\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd\u003E\u003Cp\u003E\u003Cstrong\u003Ealso\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003C\u002Ftr\u003E\u003Ctr\u003E\u003Ctd data-colwidth=\"223\" width=\"223\"\u003E\u003Cp\u003EБудет возвращен результат функции (\u003Cstrong\u003E\u003Cem\u003Eresult\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E)\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd data-colwidth=\"223\" width=\"223\"\u003E\u003Cp\u003E\u003Cstrong\u003Erun\u003C\u002Fstrong\u003E, \u003Cstrong\u003Ewith\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003Ctd\u003E\u003Cp\u003E\u003Cstrong\u003Elet\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003C\u002Ftd\u003E\u003C\u002Ftr\u003E\u003C\u002Ftbody\u003E\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003Cp\u003EС различием по тому, что возвращается,как мне кажется, все понятно. Давайте внимательно рассмотрим различие: что принимает функция (\u003Ccode\u003Ethis\u003C\u002Fcode\u003E или \u003Ccode\u003Eit\u003C\u002Fcode\u003E). С точки зрения возможностей - \u003Ccode\u003Ethis\u003C\u002Fcode\u003E и \u003Ccode\u003Eit\u003C\u002Fcode\u003E полностью одинаковы, так как они предоставляют доступ к одному и тому же набору параметров. \u003Ccode\u003Ethis\u003C\u002Fcode\u003E \u003Cstrong\u003EНЕ\u003C\u002Fstrong\u003E предоставляет доступ к приватным методам. Единственное различие в том, что this может быть опущено, а it в явном виде заменено на другое имя переменной. Поэтому this рекомендуется для тех случаев, когда вызываются функции и присваиваются свойства - для настройки объектов, it - когда объект используется в основном в качестве аргумента вызова функции. \u003C\u002Fp\u003E\u003Cp\u003EБольшую часть функций удобно использовать для реализации сокращенной записи (см. ниже пример с apply)\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Elet\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eчасто используется для безопасного выполнения блока кода с null-выражениями\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval b: Int? = null\n\nval a = b?.let { nonNullable -\u003E nonNullable } ?: \"Equal to 'null' or not set\"\nprintln(a)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003Ealso\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eиспользуется для выполнения каких-либо дополнительных действий\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval numbers = mutableListOf(\"one\", \"two\", \"three\")\n numbers\n .also { println(\"The list elements before adding new one: $it\") }\n .add(\"four\")\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003Eapply\u003C\u002Fstrong\u003E \u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eнастроить объекта  и не надо возвращать результат (удобно использовать для настройки Spring beans (бинов)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eval registrar = DateTimeFormatterRegistrar().apply {\n  setUseIsoFormat(true)\n  registerFormatters(registry)\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003Erun\u003C\u002Fstrong\u003E, \u003Cstrong\u003Ewith\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Cstrong\u003Erun\u003C\u002Fstrong\u003E и \u003Cstrong\u003Ewith\u003C\u002Fstrong\u003E очень похожи, поэтому не рекомендуется использовать их вместе. \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cstrong\u003Erun \u003C\u002Fstrong\u003E- используется для настройки объекта и вычисления результата\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Efun printAlphabet() = StringBuilder().run{\n    for (letter in 'A'..'Z'){\n        append(letter)\n    }\n    toString()\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Cstrong\u003Erun без контекстного объекта\u003C\u002Fstrong\u003E - выполнение набора операций в отдельной зоне видимости\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cstrong\u003Ewith\u003C\u002Fstrong\u003E - используется для объединения вызовов функций объекта \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003E\u002F\u002F выводим все буквы алфавита\nfun printAlphabet() = with(StringBuilder()){\n    for (letter in 'A'..'Z'){\n        append(letter)\n    }\n    toString()\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ca class=\"anchor\" name=\"references\" id=\"references\"\u003E\u003C\u002Fa\u003E\u003Ch3\u003EИспользованные материалы\u003C\u002Fh3\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fkotlinlang.org\u002Fdocs\u002Fscope-functions.html\" rel=\"noopener noreferrer nofollow\"\u003EОфициальная документация по функциям области видимости\u003C\u002Fa\u003E (\u003Ca href=\"https:\u002F\u002Fkotlinlang.ru\u002Fdocs\u002Freference\u002Fextensions.html\" rel=\"noopener noreferrer nofollow\"\u003Eперевод\u003C\u002Fa\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fkotlinlang.org\u002Fdocs\u002Fextensions.html\" rel=\"noopener noreferrer nofollow\"\u003EОфициальная документация по функциям расширениям \u003C\u002Fa\u003E(\u003Ca href=\"https:\u002F\u002Fkotlinlang.ru\u002Fdocs\u002Freference\u002Fextensions.html\" rel=\"noopener noreferrer nofollow\"\u003Eперевод\u003C\u002Fa\u003E)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fwww.baeldung.com\u002Fkotlin\u002Fscope-functions\" rel=\"noopener noreferrer nofollow\"\u003EСтатья от baeldung по функциям области видимости\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Flevelup.gitconnected.com\u002Fkotlin-scope-functions-the-god-sent-guide-4930533874de\" rel=\"noopener noreferrer nofollow\"\u003EСтатья о том, как запомнить что есть что на англ.\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fstackoverflow.com\u002Fquestions\u002F45977011\u002Fexample-of-when-should-we-use-run-let-apply-also-and-with-on-kotlin\" rel=\"noopener noreferrer nofollow\"\u003EИнтересная дискусия о функциях области видимости на stackoverflow\u003C\u002Fa\u003E \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fmedium.com\u002Fmobile-app-development-publication\u002Fmastering-kotlin-standard-functions-run-with-let-also-and-apply-9cd334b0ef84\" rel=\"noopener noreferrer nofollow\"\u003EРекомендации по применению функций области видимости с medium\u003C\u002Fa\u003E (\u003Ca href=\"https:\u002F\u002Fbimlibik.github.io\u002Fposts\u002Fkotlin-scope-functions\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eперевод\u003C\u002Fa\u003E) \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"kotlin"},{"titleHtml":"scope function"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F853\u002F476\u002F712\u002F853476712f40ce4a0818975cd2b179b4.jpg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F853\u002F476\u002F712\u002F853476712f40ce4a0818975cd2b179b4.jpg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F580186\\\u002F\"},\"headline\":\"Функции области видимости (Scope Function) в Kotlin\",\"datePublished\":\"2021-10-07T09:53:06+03:00\",\"dateModified\":\"2021-10-09T19:37:57+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"pyltsinm\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведен...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F580186\\\u002F#post-content-body\",\"about\":[\"h_java\",\"h_kotlin\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F580186\\\u002Fe26b9fd2bd647ea3cc4a38a332cffa1b\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F8b0\\\u002Fc9d\\\u002F09a\\\u002F8b0c9d09a5ad365bdfaf573a404f4fd0.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F891\\\u002F58f\\\u002Fc35\\\u002F89158fc35e8ccd89dfb7665b80047c3c.png\"]}","metaDescription":"Сразу оговорюсь, что статья объясняет базовые понятия и если вы уже программируете на Kotlin, то скорее всего вы уже все знаете. Большая часть того, что приведено в статье, освещено в официальной...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"java,kotlin"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

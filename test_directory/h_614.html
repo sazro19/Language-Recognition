@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>О чем нельзя забывать при работе с POSIX-сигналами / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583110\/"},"headline":"О чем нельзя забывать при работе с POSIX-сигналами","datePublished":"2021-10-12T21:45:30+03:00","dateModified":"2021-10-14T12:26:33+03:00","author":{"@type":"Person","name":"K. just K."},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте P...","url":"https:\/\/habr.com\/ru\/post\/583110\/#post-content-body","about":["h_programming","h_cpp","h_system_programming","h_c","h_linux_dev","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583110\/c8cc250017a016e769c86ab783f77e45\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/91c\/a95\/d30\/91ca95d30e47cf543c7a95e576ecfd13.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="О чем нельзя забывать при работе с POSIX-сигналами" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="О чем нельзя забывать при работе с POSIX-сигналами" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="О чем нельзя забывать при работе с POSIX-сигналами" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/fa4/c0f/f39/fa4c0ff3960e4c2ec9cdc64f39b96d3d.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/fa4/c0f/f39/fa4c0ff3960e4c2ec9cdc64f39b96d3d.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/fa4/c0f/f39/fa4c0ff3960e4c2ec9cdc64f39b96d3d.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/fa4/c0f/f39/fa4c0ff3960e4c2ec9cdc64f39b96d3d.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/fa4/c0f/f39/fa4c0ff3960e4c2ec9cdc64f39b96d3d.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583110" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-12T18:45:30.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583110/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583110/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/fa4/c0f/f39/fa4c0ff3960e4c2ec9cdc64f39b96d3d.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583110/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/F0iL/" title="F0iL" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/bcd/9c7/270/bcd9c7270c0727e164ac404a7f929971.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/F0iL/" class="tm-user-info__username">
+      F0iL
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-12T18:45:30.000Z" title="2021-10-12, 21:45">12  октября   в 21:45</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>О чем нельзя забывать при работе с POSIX-сигналами</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/system_programming/" class="tm-article-snippet__hubs-item-link"><span>Системное программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/c/" class="tm-article-snippet__hubs-item-link"><span>C</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка под Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков программирования, в manpages, однако и по сей день я нередко встречаю связанные с этим грубые ошибки даже в коде опытных разработчиков, что в коммерческих проектах, что в открытых. Поэтому давайте поговорим о важном еще раз (кстати, для новичков в мире разработки ПО: коммитить в открытые проекты исправления явных косяков в обработчиках POSIX-сигналов — прекрасный способ набить руку в опенсорсе и пополнить себе портфолио, благо, проектов с подобными ошибками немало).</p><h2>1. Набор доступных вызовов из обработчика сигнала строго ограничен</h2><p>Начнем с самого важного. Что происходит, когда процесс получает сигнал? Обработчик сигнала может быть вызван в любом из потоков процесса, для которого этот конктретный сигнал (например, SIGINT) не отмечен как заблокированный (blocked). Если таких потоков несколько, то ядро выбирает один из них — чаще всего, это будет основной поток программы, но это не гарантировано, и не стоит на это рассчитывать. Ядро создает на специальный фрейм на стеке, который, во-первых, нужен для непосредственно работы функции-обработчика сигнала, а во-вторых, в него сохраняются данные, необходимые для продолжения работы, такие как значения регистра счетчика команд (program counter register, адрес, с которого будет продолжено выполнение кода), специфичные для архитектуры регистры, которые необходимы для продолжения выполнения выполнявшегося кода, текущую маску сигналов потока, и т.д. После этого непосредственно в этом потоке вызывается функция-обработчик сигнала.</p><p>О чем это говорит? О том, что выполнение любого потока (который не заблокирован для обработки нашего сигнала) может быть прервано в любой момент. Абсолютно любой. Даже посреди выполнения любой функции, любого системного вызова. А теперь представим, если этот вызов у нас имеет какое-то статическое, глобальное или thread-local внутреннее состояние, например, буфер, какие-то флаги, мьютекс, или что-либо еще, то вызов функции еще раз, когда она еще не закончила работу, может привести к совершенно непредсказуемым результатам. В компьютерных науках про такую функцию говорят, что она non-reentrant (нереентерабельна).</p><p>Пусть мы используем какую-нибудь функцию из stdio.h, например, всем известную printf(). Она использует внутри статически выделенный буфер данных вместе со счетчиками и индексами, которые хранят объем данных и текущую позицию в буфере. Обновляется все это не атомарно, и если вдруг в момент выполнения printf() в каком-нибудь потоке мы поймаем сигнал и запустим его обработчик, который тоже вызовет printf(), то эта функция будет работать с некорректным внутренним состоянием, что в лучшем случае приведет просто к неправильному результату, а в худшем случае уронит всю программу в segmentation fault. </p><p>Другой пример: на большинстве платформ malloc() и free() не реентерабельны, потому что они используют внутри статическую структуру данных, в которой хранится, какие блоки памяти свободны. Проблема усугубляется тем, что malloc()/free() могут неявно использоваться в глубине других библиотечных функций, и об этом вы можете даже не подозревать.</p><p>Поэтому существует такое понятие, как  <em>async-signal-safety</em>. А именно, стандарт POSIX явно предприсывает в обработчиках сигналов функции из строго ограниченного набора и ничего больше. </p><details class="spoiler"><summary>Список разрешенных функций</summary><div class="spoiler__content"><pre><code>       Function              Notes
+       abort()               Added in POSIX.1-001 TC1
+       accept()
+       access()
+       aio_error()
+       aio_return()
+       aio_suspend()        
+       alarm()
+
+       bind()
+       cfgetispeed()
+       cfgetospeed()
+       cfsetispeed()
+       cfsetospeed()
+       chdir()
+       chmod()
+       chown()
+       clock_gettime()
+       close()
+       connect()
+       creat()
+       dup()
+       dup()
+       execl()               Added in POSIX.1-008;
+                              
+       execle()              
+       execv()               Added in POSIX.1-008
+       execve()
+       _exit()
+       _Exit()
+       faccessat()           Added in POSIX.1-008
+       fchdir()              Added in POSIX.1-008 TC1
+       fchmod()
+       fchmodat()            Added in POSIX.1-008
+       fchown()
+       fchownat()            Added in POSIX.1-008
+       fcntl()
+       fdatasync()
+       fexecve()             Added in POSIX.1-008
+       ffs()                 Added in POSIX.1-008 TC
+       fork()                
+       fstat()
+       fstatat()             Added in POSIX.1-008
+       fsync()
+       ftruncate()
+       futimens()            Added in POSIX.1-008
+       getegid()
+       geteuid()
+       getgid()
+       getgroups()
+       getpeername()
+       getpgrp()
+       getpid()
+       getppid()
+       getsockname()
+       getsockopt()
+       getuid()
+       htonl()               Added in POSIX.1-008 TC
+       htons()               Added in POSIX.1-008 TC
+       kill()
+       link()
+       linkat()              Added in POSIX.1-008
+       listen()
+       longjmp()             Added in POSIX.1-008 TC;
+       lseek()
+       lstat()
+       memccpy()             Added in POSIX.1-008 TC
+       memchr()              Added in POSIX.1-008 TC
+       memcmp()              Added in POSIX.1-008 TC
+       memcpy()              Added in POSIX.1-008 TC
+       memmove()             Added in POSIX.1-008 TC
+       memset()              Added in POSIX.1-008 TC
+       mkdir()
+
+       mkdirat()             Added in POSIX.1-008
+       mkfifo()
+       mkfifoat()            Added in POSIX.1-008
+       mknod()               Added in POSIX.1-008
+       mknodat()             Added in POSIX.1-008
+       ntohl()               Added in POSIX.1-008 TC
+       ntohs()               Added in POSIX.1-008 TC
+       open()
+       openat()              Added in POSIX.1-008
+       pause()
+       pipe()
+       poll()
+       posix_trace_event()
+       pselect()
+       pthread_kill()        Added in POSIX.1-008 TC1
+       pthread_self()        Added in POSIX.1-008 TC1
+       pthread_sigmask()     Added in POSIX.1-008 TC1
+       raise()
+       read()
+       readlink()
+       readlinkat()          Added in POSIX.1-008
+       recv()
+       recvfrom()
+       recvmsg()
+       rename()
+       renameat()            Added in POSIX.1-008
+       rmdir()
+       select()
+       sem_post()
+       send()
+       sendmsg()
+       sendto()
+       setgid()
+       setpgid()
+       setsid()
+       setsockopt()
+       setuid()
+       shutdown()
+       sigaction()
+       sigaddset()
+       sigdelset()
+       sigemptyset()
+       sigfillset()
+       sigismember()
+       siglongjmp()          Added in POSIX.1-008 TC; 
+       signal()
+       sigpause()
+       sigpending()
+       sigprocmask()
+       sigqueue()
+       sigset()
+       sigsuspend()
+       sleep()
+       sockatmark()          Added in POSIX.1-001 TC
+       socket()
+       socketpair()
+       stat()
+       stpcpy()              Added in POSIX.1-008 TC
+       stpncpy()             Added in POSIX.1-008 TC
+       strcat()              Added in POSIX.1-008 TC
+       strchr()              Added in POSIX.1-008 TC
+       strcmp()              Added in POSIX.1-008 TC
+       strcpy()              Added in POSIX.1-008 TC
+       strcspn()             Added in POSIX.1-008 TC
+
+       strlen()              Added in POSIX.1-008 TC
+       strncat()             Added in POSIX.1-008 TC
+       strncmp()             Added in POSIX.1-008 TC
+       strncpy()             Added in POSIX.1-008 TC
+       strnlen()             Added in POSIX.1-008 TC
+       strpbrk()             Added in POSIX.1-008 TC
+       strrchr()             Added in POSIX.1-008 TC
+       strspn()              Added in POSIX.1-008 TC
+       strstr()              Added in POSIX.1-008 TC
+       strtok_r()            Added in POSIX.1-008 TC
+       symlink()
+       symlinkat()           Added in POSIX.1-008
+       tcdrain()
+       tcflow()
+       tcflush()
+       tcgetattr()
+       tcgetpgrp()
+       tcsendbreak()
+       tcsetattr()
+       tcsetpgrp()
+       time()
+       timer_getoverrun()
+       timer_gettime()
+       timer_settime()
+       times()
+       umask()
+       uname()
+       unlink()
+       unlinkat()            Added in POSIX.1-008
+       utime()
+       utimensat()           Added in POSIX.1-008
+       utimes()              Added in POSIX.1-008
+       wait()
+       waitpid()
+       wcpcpy()              Added in POSIX.1-008 TC
+       wcpncpy()             Added in POSIX.1-008 TC
+       wcscat()              Added in POSIX.1-008 TC
+       wcschr()              Added in POSIX.1-008 TC
+       wcscmp()              Added in POSIX.1-008 TC
+       wcscpy()              Added in POSIX.1-008 TC
+       wcscspn()             Added in POSIX.1-008 TC
+       wcslen()              Added in POSIX.1-008 TC
+       wcsncat()             Added in POSIX.1-008 TC
+       wcsncmp()             Added in POSIX.1-008 TC
+       wcsncpy()             Added in POSIX.1-008 TC
+       wcsnlen()             Added in POSIX.1-008 TC
+       wcspbrk()             Added in POSIX.1-008 TC
+       wcsrchr()             Added in POSIX.1-008 TC
+       wcsspn()              Added in POSIX.1-008 TC
+       wcsstr()              Added in POSIX.1-008 TC
+       wcstok()              Added in POSIX.1-008 TC
+       wmemchr()             Added in POSIX.1-008 TC
+       wmemcmp()             Added in POSIX.1-008 TC
+       wmemcpy()             Added in POSIX.1-008 TC
+       wmemmove()            Added in POSIX.1-008 TC
+       wmemset()             Added in POSIX.1-008 TC
+       write()</code></pre></div></details><p>Обратите внимание, что список функций отличается между разными версиями стандарта POSIX, причем изменения могут происходить в обе стороны. Например, fpathconf(), pathconf() и sysconf() в стандарте 2001 года считались безопасными, а в стандарте 2008 года уже перестали. fork() пока что относится к безопасным функциям, но есть планы удалить его из списка в следущих версиях стандарта по ряду причин. </p><p>А теперь самое главное. Внимательный глаз заметит, что <strong>в этом списке функций нет ни printf(), ни syslog(), ни malloc(</strong>). Вообще нет. Соответственно, использовать их и всё, что в теории может использовать их внутри себя, в обработчике сигналов <strong>нельзя</strong>. В std::cout и std::cerr в C++ писать тоже нельзя, эти операции тоже нереентерабельны.</p><p>Среди функций стандартной библиотеки языка C очень многие функции тоже нереентерабельны, например, почти все функции из &lt;stdio.h>, многие функции из &lt;string.h>, ряд функций из  &lt;stdlib.h> (некоторые, правда, напротив явно есть в списке разрешенных). Впрочем, <strong>стандарт языка C явно запрещает вызывать в обработчиках сигналов практически всё из стандартной библиотеки</strong>, кроме abort(), _Exit(), quick_exit() и самого signal():</p><blockquote><p>ISO/IEC 9899:2011 §7.14.1.1 The signal function</p><p>5. If the signal occurs other than as the result of calling the <code>abort</code> or <code>raise</code> function, <strong>the behavior is undefined</strong> if ... <strong>the signal handler calls any function in the standard library other than</strong> the <code>abort</code> function, the <code>_Exit</code> function, the <code>quick_exit</code> function, or the <code>signal</code> function with the first argument equal to the signal number corresponding to the signal that caused the invocation of the handler. </p></blockquote><p>Так что если вам уж очень сильно хочется что-то вывести в консольку из обработчика сигналов, можно сделать это старым дедовским методом: </p><pre><code class="cpp">#include &lt;unistd.h> 
+ ...
+write(1,"Hello World!", 12); </code></pre><p>Но вообще, хороший практикой (кстати, явно рекомендуемой в документации libc) будет делать обработчики сигналов как можно более простыми и короткими: в идеале они должны вообще сводиться к установке переменной-флага, которая будет обрабатываться в основном цикле программы, либо вообще ожидать и обрабатывать сигналы в специально выделенном для этого потоке. Правда, с переменными-флагами тоже не все так просто, об этом в следущем пункте.</p><h2>2. Используйте только volatile sig_atomic_t или atomic-типы в качестве флагов</h2><p>Смотрим тот же пункт из стандарта языка C:</p><blockquote><p>ISO/IEC 9899:2011 §7.14.1.1 The signal function</p><p>5. If the signal occurs other than as the result of calling the <code>abort</code> or <code>raise</code> function, <strong>the behavior is undefined if the signal handler refers to any object with static or thread storage duration that is not a lock-free atomic object other than by assigning a value to an object declared as </strong><code>volatile sig_atomic_t</code></p></blockquote><p>В современных стандартах C++ упомянуто примерно то же самое. Логика тут точно такая же, как в предыдущем пункте: поскольку обработчик сигнала может быть вызван в абсолютно любой момент, важно, чтобы не-локальные переменные, с которыми вы в нем имеете дело, во-первых обновлялись атомарно (в противном случае при прерывании в неудачный момент есть риск получить в них некорректное содержимое), а во-вторых, поскольку с точки зрения выполняемой функции они изменяются "чем-то другим", важно чтобы обращения к ним не оптимизировались компилятором (иначе компилятор может решить, что между итерациями цикла изменение значения переменной невозможно и вообще выкинет эту проверку, либо поместит переменную в регистр процессора для оптимизации). Поэтому в качестве статических/глобальных флагов, изменяемых из обработчика сигнала, можно использовать или atomic-типы (при условии, что на вашей платформе они точно lock-free), либо специально созданный для этого тип <em>sig_atomic_t</em> со спецификатором volatile.</p><p>И боже упаси вас блокировать в обработчике сигналов какой-нибудь мьютекс, также используемый в остальной части программы или в хендлерах других сигналов — это самый прямой путь к дедлоку. Поэтому о conditional variables в качестве флагов можно тоже забыть.</p><h2>3. Сохраняйте errno</h2><p>Тут все просто: Если в обработчике сигнала вы вызываете какую-либо функцию, которая теоретически может изменить глобальную переменную errno, сохраняйте текущее значение errno в начале обработчика сигнала куда-нибудь, и восстанавливайте обратно в конце. Иначе вы можете сломать какой-либо внешний код, проверяющий этот самый errno.</p><h2>4. Помните, что поведение signal() может сильно отличаться в разных ОС и даже в разных версиях одной ОС</h2><p>Начнем с того, что у signal() есть весомый плюс: он входит в стандарт языка Си, а вот sigaction() — это уже чисто POSIX-штука. С другой стороны, поведение signal() может довольно сильно отличаться в разных ОС, и более того, в интернете встречаются упоминания, что поведение signal() может отличаться даже при разных версиях ядра Linux.</p><p>Для начала, немного истории.</p><p>В оригинальных системах UNIX, когда вызывался обработчик сигнала, ранее установленный с помощью signal(), обработчик сбрасывался на SIG_DFL, и система не блокировала доставку последующих экземпляров сигнала (в наше время это эквивалентно вызову sigaction() с флагами SA_RESETHAND | SA_NODEFER). Иными словами, получили сигнал, обработали -> обработчик сбросился на стандартный, и поэтому закончив обработку полученного сигнала мы должны были не забыть вызвать signal() еще раз и снова установить вместо стандартного обработчика нашу функцию. В System V было то же самое. Это было плохо, потому что следущий сигнал мог быть послан и доставлен процессу еще раз до того, как обработчик успел восстановить себя. Более того, быстрая доставка одного и того же сигнала могла привести к рекурсивным вызовам обработчика.</p><p>В BSD улучшили эту ситуацию, там когда сигнал получен, обработчики сигнала не сбрасываются на стандартные. Но это было не единственное изменение в поведении: там еще обработка всех последующих экземпляров этого сигнала блокируется на время обработки первого из них. Кроме того, некоторые блокирующие системные вызовы (типа read() или wait()) автоматически перезапускаются, если их прерывает обработчик сигнала.  Семантика BSD эквивалентна вызову sigaction() с флагом SA_RESTART.</p><p>В Linux же ситуация следующая:</p><ul><li><p>Системный вызов ядра signal() обеспечивает семантику System V.</p></li><li><p>По умолчанию в glibc 2 и новее функция-оболочка signal() не вызывает системный вызов ядра. Вместо этого он вызывает sigaction(), используя флаги, обеспечивающие семантику BSD. Это поведение по умолчанию обеспечивается до тех пор, пока определен макрос _BSD_SOURCE в glibc 2.19 и ранее или _DEFAULT_SOURCE в glibc 2.19 и новее.  Если такой макрос не определен, то signal() предоставляет семантику System V. По умолчанию он определен :)</p></li></ul><p>Итак, основные различия между signal() и sigaction() следущие:</p><ol><li><p>Функция signal() во многих реализациях не блокирует поступление других сигналов во время выполнения текущего обработчика; sigaction() в зависимости от флагов может блокировать другие сигналы, пока не вернется текущий обработчик.</p></li><li><p>Системный вызов signal() (без учета оберток типа libc) по умолчанию на многих платформах сбрасывает обработчик  сигнала обратно на SIG_DFL почти для всех сигналов. К чему это может привести, описано выше.</p></li><li><p>Итого, поведение signal() варьируется в зависимости от платформы, системы  и даже сборки libc — и стандарты допускают такие вариации. Короче говоря, при использовании signal() никто вам ничего не гарантирует. sigaction() гораздо более предсказуем.</p></li></ol><p>Поэтому во избежании нежданчиков и проблем с переносимостью, рекомендация не использовать signal(), а предпочитать вместо него sigaction() в новом коде дана прямым текстом в The Open Group Base Specification. </p><h2>5. Аккуратнее с fork() и execve()</h2><p>Дочерний процесс, созданный с помощью fork(), наследует установленные обработчики сигналов своего родителя. Во время execve() обработчики сигналов сбрасывается на дефолтные, а вот настройки заблокированных (blocked) сигналов остаются неизменными для свежезапущенного процесса. Поэтому если вы, например, в родителе заигнорили SIGINT, SIGUSR1, или еще что-нибудь, а запущенный процесс рассчитывает на них, то это может привести к интересным эффектам.</p><h2>6. Еще пара мелочей</h2><p>Если процессу отправлено несколько стандартных (не realtime) сигналов, порядок, в котором они доставятся вашему процессу, может быть любым.</p><p>Стандартные сигналы не ставятся в очередь. Если несколько экземпляров стандартного сигнала были посланы вашему процессу, пока этот сигнал заблокирован, то только один экземпляр сигнала будет помечен как ожидающий (и сигнал будет доставлен только один раз, когда он разблокирован).</p><h2>7. Читайте документацию</h2><figure class=""><img src="/img/image-loader.svg" height="425" data-src="https://habrastorage.org/getpro/habr/upload_files/91c/a95/d30/91ca95d30e47cf543c7a95e576ecfd13.png" data-width="500"/><figcaption></figcaption></figure><p>Всё, что я написал выше, там есть. Да и вообще, там есть очень много интересного, полезного и неожиданного, особенно в секциях Portability, Bugs и Known issues. </p><p>Например, мне очень нравится описание функции <a href="https://linux.die.net/man/3/cuserid" rel="noopener noreferrer nofollow">getlogin()/cuserid()</a>: </p><blockquote><p><strong>Sometimes it does not work at all</strong>, because some program messed up the utmp file. Often, it gives only the first 8 characters of the login name.</p></blockquote><p>и дальше еще прекрасное:</p><blockquote><p><strong>Nobody knows precisely what cuserid() does</strong>; avoid it in portable programs.</p></blockquote><p>На этом все. Безбажного вам кода!</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bposix%5D" class="tm-tags-list__link">posix</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Blinux%5D" class="tm-tags-list__link">linux</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bunix%5D" class="tm-tags-list__link">unix</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bthread%20safe%5D" class="tm-tags-list__link">thread safe</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Breentrancy%5D" class="tm-tags-list__link">reentrancy</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bsignal%5D" class="tm-tags-list__link">signal</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bc%5D" class="tm-tags-list__link">c</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bc%2B%2B%5D" class="tm-tags-list__link">c++</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bbsd-%D1%81%D0%B8%D1%81%D1%82%D0%B5%D0%BC%D1%8B%5D" class="tm-tags-list__link">bsd-системы</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/system_programming/" class="tm-hubs-list__link">
+    Системное программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/c/" class="tm-hubs-list__link">
+    C
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/linux_dev/" class="tm-hubs-list__link">
+    Разработка под Linux
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 63: ↑63 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 63: ↑63 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+63</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">9K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    102
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/F0iL/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/bcd/9c7/270/bcd9c7270c0727e164ac404a7f929971.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 227 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    160
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">101.2</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">K. just K.</span> <a href="/ru/users/F0iL/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @F0iL
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Разработчик</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://github.com/uprt/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Github
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583110/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 18 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583110/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583110/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583110":{"id":"583110","timePublished":"2021-10-12T18:45:30+00:00","isCorporative":false,"lang":"ru","titleHtml":"О чем нельзя забывать при работе с POSIX-сигналами","leadData":{"textHtml":"\u003Cp\u003EКак и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков программирования, в manpages, однако и по сей день я нередко встречаю связанные с этим грубые ошибки даже в коде опытных разработчиков, что в коммерческих проектах, что в открытых. Поэтому давайте поговорим о важном еще раз.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffa4\u002Fc0f\u002Ff39\u002Ffa4c0ff3960e4c2ec9cdc64f39b96d3d.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffa4\u002Fc0f\u002Ff39\u002Ffa4c0ff3960e4c2ec9cdc64f39b96d3d.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":160,"votesCount":227},"rating":101.2,"relatedData":null,"contacts":[{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Fuprt\u002F","value":"uprt"}],"authorContacts":[{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Fuprt\u002F","value":"uprt"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"936030","alias":"F0iL","fullname":"K. just K.","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Fbcd\u002F9c7\u002F270\u002Fbcd9c7270c0727e164ac404a7f929971.jpg","speciality":"Разработчик"},"statistics":{"commentsCount":18,"favoritesCount":102,"readingCount":8951,"score":63,"votesCount":63},"hubs":[{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true},{"relatedData":null,"id":"5767","alias":"system_programming","type":"collective","title":"Системное программирование","titleHtml":"Системное программирование","isProfiled":true},{"relatedData":null,"id":"17717","alias":"c","type":"collective","title":"C","titleHtml":"C","isProfiled":true},{"relatedData":null,"id":"19727","alias":"linux_dev","type":"collective","title":"Разработка под Linux","titleHtml":"Разработка под Linux","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EКак и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков программирования, в manpages, однако и по сей день я нередко встречаю связанные с этим грубые ошибки даже в коде опытных разработчиков, что в коммерческих проектах, что в открытых. Поэтому давайте поговорим о важном еще раз (кстати, для новичков в мире разработки ПО: коммитить в открытые проекты исправления явных косяков в обработчиках POSIX-сигналов — прекрасный способ набить руку в опенсорсе и пополнить себе портфолио, благо, проектов с подобными ошибками немало).\u003C\u002Fp\u003E\u003Ch2\u003E1. Набор доступных вызовов из обработчика сигнала строго ограничен\u003C\u002Fh2\u003E\u003Cp\u003EНачнем с самого важного. Что происходит, когда процесс получает сигнал? Обработчик сигнала может быть вызван в любом из потоков процесса, для которого этот конктретный сигнал (например, SIGINT) не отмечен как заблокированный (blocked). Если таких потоков несколько, то ядро выбирает один из них — чаще всего, это будет основной поток программы, но это не гарантировано, и не стоит на это рассчитывать. Ядро создает на специальный фрейм на стеке, который, во-первых, нужен для непосредственно работы функции-обработчика сигнала, а во-вторых, в него сохраняются данные, необходимые для продолжения работы, такие как значения регистра счетчика команд (program counter register, адрес, с которого будет продолжено выполнение кода), специфичные для архитектуры регистры, которые необходимы для продолжения выполнения выполнявшегося кода, текущую маску сигналов потока, и т.д. После этого непосредственно в этом потоке вызывается функция-обработчик сигнала.\u003C\u002Fp\u003E\u003Cp\u003EО чем это говорит? О том, что выполнение любого потока (который не заблокирован для обработки нашего сигнала) может быть прервано в любой момент. Абсолютно любой. Даже посреди выполнения любой функции, любого системного вызова. А теперь представим, если этот вызов у нас имеет какое-то статическое, глобальное или thread-local внутреннее состояние, например, буфер, какие-то флаги, мьютекс, или что-либо еще, то вызов функции еще раз, когда она еще не закончила работу, может привести к совершенно непредсказуемым результатам. В компьютерных науках про такую функцию говорят, что она non-reentrant (нереентерабельна).\u003C\u002Fp\u003E\u003Cp\u003EПусть мы используем какую-нибудь функцию из stdio.h, например, всем известную printf(). Она использует внутри статически выделенный буфер данных вместе со счетчиками и индексами, которые хранят объем данных и текущую позицию в буфере. Обновляется все это не атомарно, и если вдруг в момент выполнения printf() в каком-нибудь потоке мы поймаем сигнал и запустим его обработчик, который тоже вызовет printf(), то эта функция будет работать с некорректным внутренним состоянием, что в лучшем случае приведет просто к неправильному результату, а в худшем случае уронит всю программу в segmentation fault. \u003C\u002Fp\u003E\u003Cp\u003EДругой пример: на большинстве платформ malloc() и free() не реентерабельны, потому что они используют внутри статическую структуру данных, в которой хранится, какие блоки памяти свободны. Проблема усугубляется тем, что malloc()\u002Ffree() могут неявно использоваться в глубине других библиотечных функций, и об этом вы можете даже не подозревать.\u003C\u002Fp\u003E\u003Cp\u003EПоэтому существует такое понятие, как  \u003Cem\u003Easync-signal-safety\u003C\u002Fem\u003E. А именно, стандарт POSIX явно предприсывает в обработчиках сигналов функции из строго ограниченного набора и ничего больше. \u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EСписок разрешенных функций\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode\u003E       Function              Notes\n       abort()               Added in POSIX.1-001 TC1\n       accept()\n       access()\n       aio_error()\n       aio_return()\n       aio_suspend()        \n       alarm()\n\n       bind()\n       cfgetispeed()\n       cfgetospeed()\n       cfsetispeed()\n       cfsetospeed()\n       chdir()\n       chmod()\n       chown()\n       clock_gettime()\n       close()\n       connect()\n       creat()\n       dup()\n       dup()\n       execl()               Added in POSIX.1-008;\n                              \n       execle()              \n       execv()               Added in POSIX.1-008\n       execve()\n       _exit()\n       _Exit()\n       faccessat()           Added in POSIX.1-008\n       fchdir()              Added in POSIX.1-008 TC1\n       fchmod()\n       fchmodat()            Added in POSIX.1-008\n       fchown()\n       fchownat()            Added in POSIX.1-008\n       fcntl()\n       fdatasync()\n       fexecve()             Added in POSIX.1-008\n       ffs()                 Added in POSIX.1-008 TC\n       fork()                \n       fstat()\n       fstatat()             Added in POSIX.1-008\n       fsync()\n       ftruncate()\n       futimens()            Added in POSIX.1-008\n       getegid()\n       geteuid()\n       getgid()\n       getgroups()\n       getpeername()\n       getpgrp()\n       getpid()\n       getppid()\n       getsockname()\n       getsockopt()\n       getuid()\n       htonl()               Added in POSIX.1-008 TC\n       htons()               Added in POSIX.1-008 TC\n       kill()\n       link()\n       linkat()              Added in POSIX.1-008\n       listen()\n       longjmp()             Added in POSIX.1-008 TC;\n       lseek()\n       lstat()\n       memccpy()             Added in POSIX.1-008 TC\n       memchr()              Added in POSIX.1-008 TC\n       memcmp()              Added in POSIX.1-008 TC\n       memcpy()              Added in POSIX.1-008 TC\n       memmove()             Added in POSIX.1-008 TC\n       memset()              Added in POSIX.1-008 TC\n       mkdir()\n\n       mkdirat()             Added in POSIX.1-008\n       mkfifo()\n       mkfifoat()            Added in POSIX.1-008\n       mknod()               Added in POSIX.1-008\n       mknodat()             Added in POSIX.1-008\n       ntohl()               Added in POSIX.1-008 TC\n       ntohs()               Added in POSIX.1-008 TC\n       open()\n       openat()              Added in POSIX.1-008\n       pause()\n       pipe()\n       poll()\n       posix_trace_event()\n       pselect()\n       pthread_kill()        Added in POSIX.1-008 TC1\n       pthread_self()        Added in POSIX.1-008 TC1\n       pthread_sigmask()     Added in POSIX.1-008 TC1\n       raise()\n       read()\n       readlink()\n       readlinkat()          Added in POSIX.1-008\n       recv()\n       recvfrom()\n       recvmsg()\n       rename()\n       renameat()            Added in POSIX.1-008\n       rmdir()\n       select()\n       sem_post()\n       send()\n       sendmsg()\n       sendto()\n       setgid()\n       setpgid()\n       setsid()\n       setsockopt()\n       setuid()\n       shutdown()\n       sigaction()\n       sigaddset()\n       sigdelset()\n       sigemptyset()\n       sigfillset()\n       sigismember()\n       siglongjmp()          Added in POSIX.1-008 TC; \n       signal()\n       sigpause()\n       sigpending()\n       sigprocmask()\n       sigqueue()\n       sigset()\n       sigsuspend()\n       sleep()\n       sockatmark()          Added in POSIX.1-001 TC\n       socket()\n       socketpair()\n       stat()\n       stpcpy()              Added in POSIX.1-008 TC\n       stpncpy()             Added in POSIX.1-008 TC\n       strcat()              Added in POSIX.1-008 TC\n       strchr()              Added in POSIX.1-008 TC\n       strcmp()              Added in POSIX.1-008 TC\n       strcpy()              Added in POSIX.1-008 TC\n       strcspn()             Added in POSIX.1-008 TC\n\n       strlen()              Added in POSIX.1-008 TC\n       strncat()             Added in POSIX.1-008 TC\n       strncmp()             Added in POSIX.1-008 TC\n       strncpy()             Added in POSIX.1-008 TC\n       strnlen()             Added in POSIX.1-008 TC\n       strpbrk()             Added in POSIX.1-008 TC\n       strrchr()             Added in POSIX.1-008 TC\n       strspn()              Added in POSIX.1-008 TC\n       strstr()              Added in POSIX.1-008 TC\n       strtok_r()            Added in POSIX.1-008 TC\n       symlink()\n       symlinkat()           Added in POSIX.1-008\n       tcdrain()\n       tcflow()\n       tcflush()\n       tcgetattr()\n       tcgetpgrp()\n       tcsendbreak()\n       tcsetattr()\n       tcsetpgrp()\n       time()\n       timer_getoverrun()\n       timer_gettime()\n       timer_settime()\n       times()\n       umask()\n       uname()\n       unlink()\n       unlinkat()            Added in POSIX.1-008\n       utime()\n       utimensat()           Added in POSIX.1-008\n       utimes()              Added in POSIX.1-008\n       wait()\n       waitpid()\n       wcpcpy()              Added in POSIX.1-008 TC\n       wcpncpy()             Added in POSIX.1-008 TC\n       wcscat()              Added in POSIX.1-008 TC\n       wcschr()              Added in POSIX.1-008 TC\n       wcscmp()              Added in POSIX.1-008 TC\n       wcscpy()              Added in POSIX.1-008 TC\n       wcscspn()             Added in POSIX.1-008 TC\n       wcslen()              Added in POSIX.1-008 TC\n       wcsncat()             Added in POSIX.1-008 TC\n       wcsncmp()             Added in POSIX.1-008 TC\n       wcsncpy()             Added in POSIX.1-008 TC\n       wcsnlen()             Added in POSIX.1-008 TC\n       wcspbrk()             Added in POSIX.1-008 TC\n       wcsrchr()             Added in POSIX.1-008 TC\n       wcsspn()              Added in POSIX.1-008 TC\n       wcsstr()              Added in POSIX.1-008 TC\n       wcstok()              Added in POSIX.1-008 TC\n       wmemchr()             Added in POSIX.1-008 TC\n       wmemcmp()             Added in POSIX.1-008 TC\n       wmemcpy()             Added in POSIX.1-008 TC\n       wmemmove()            Added in POSIX.1-008 TC\n       wmemset()             Added in POSIX.1-008 TC\n       write()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EОбратите внимание, что список функций отличается между разными версиями стандарта POSIX, причем изменения могут происходить в обе стороны. Например, fpathconf(), pathconf() и sysconf() в стандарте 2001 года считались безопасными, а в стандарте 2008 года уже перестали. fork() пока что относится к безопасным функциям, но есть планы удалить его из списка в следущих версиях стандарта по ряду причин. \u003C\u002Fp\u003E\u003Cp\u003EА теперь самое главное. Внимательный глаз заметит, что \u003Cstrong\u003Eв этом списке функций нет ни printf(), ни syslog(), ни malloc(\u003C\u002Fstrong\u003E). Вообще нет. Соответственно, использовать их и всё, что в теории может использовать их внутри себя, в обработчике сигналов \u003Cstrong\u003Eнельзя\u003C\u002Fstrong\u003E. В std::cout и std::cerr в C++ писать тоже нельзя, эти операции тоже нереентерабельны.\u003C\u002Fp\u003E\u003Cp\u003EСреди функций стандартной библиотеки языка C очень многие функции тоже нереентерабельны, например, почти все функции из &lt;stdio.h\u003E, многие функции из &lt;string.h\u003E, ряд функций из  &lt;stdlib.h\u003E (некоторые, правда, напротив явно есть в списке разрешенных). Впрочем, \u003Cstrong\u003Eстандарт языка C явно запрещает вызывать в обработчиках сигналов практически всё из стандартной библиотеки\u003C\u002Fstrong\u003E, кроме abort(), _Exit(), quick_exit() и самого signal():\u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003EISO\u002FIEC 9899:2011 §7.14.1.1 The signal function\u003C\u002Fp\u003E\u003Cp\u003E5. If the signal occurs other than as the result of calling the \u003Ccode\u003Eabort\u003C\u002Fcode\u003E or \u003Ccode\u003Eraise\u003C\u002Fcode\u003E function, \u003Cstrong\u003Ethe behavior is undefined\u003C\u002Fstrong\u003E if ... \u003Cstrong\u003Ethe signal handler calls any function in the standard library other than\u003C\u002Fstrong\u003E the \u003Ccode\u003Eabort\u003C\u002Fcode\u003E function, the \u003Ccode\u003E_Exit\u003C\u002Fcode\u003E function, the \u003Ccode\u003Equick_exit\u003C\u002Fcode\u003E function, or the \u003Ccode\u003Esignal\u003C\u002Fcode\u003E function with the first argument equal to the signal number corresponding to the signal that caused the invocation of the handler. \u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EТак что если вам уж очень сильно хочется что-то вывести в консольку из обработчика сигналов, можно сделать это старым дедовским методом: \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E#include &lt;unistd.h\u003E \n ...\nwrite(1,\"Hello World!\", 12); \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНо вообще, хороший практикой (кстати, явно рекомендуемой в документации libc) будет делать обработчики сигналов как можно более простыми и короткими: в идеале они должны вообще сводиться к установке переменной-флага, которая будет обрабатываться в основном цикле программы, либо вообще ожидать и обрабатывать сигналы в специально выделенном для этого потоке. Правда, с переменными-флагами тоже не все так просто, об этом в следущем пункте.\u003C\u002Fp\u003E\u003Ch2\u003E2. Используйте только volatile sig_atomic_t или atomic-типы в качестве флагов\u003C\u002Fh2\u003E\u003Cp\u003EСмотрим тот же пункт из стандарта языка C:\u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003EISO\u002FIEC 9899:2011 §7.14.1.1 The signal function\u003C\u002Fp\u003E\u003Cp\u003E5. If the signal occurs other than as the result of calling the \u003Ccode\u003Eabort\u003C\u002Fcode\u003E or \u003Ccode\u003Eraise\u003C\u002Fcode\u003E function, \u003Cstrong\u003Ethe behavior is undefined if the signal handler refers to any object with static or thread storage duration that is not a lock-free atomic object other than by assigning a value to an object declared as \u003C\u002Fstrong\u003E\u003Ccode\u003Evolatile sig_atomic_t\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EВ современных стандартах C++ упомянуто примерно то же самое. Логика тут точно такая же, как в предыдущем пункте: поскольку обработчик сигнала может быть вызван в абсолютно любой момент, важно, чтобы не-локальные переменные, с которыми вы в нем имеете дело, во-первых обновлялись атомарно (в противном случае при прерывании в неудачный момент есть риск получить в них некорректное содержимое), а во-вторых, поскольку с точки зрения выполняемой функции они изменяются \"чем-то другим\", важно чтобы обращения к ним не оптимизировались компилятором (иначе компилятор может решить, что между итерациями цикла изменение значения переменной невозможно и вообще выкинет эту проверку, либо поместит переменную в регистр процессора для оптимизации). Поэтому в качестве статических\u002Fглобальных флагов, изменяемых из обработчика сигнала, можно использовать или atomic-типы (при условии, что на вашей платформе они точно lock-free), либо специально созданный для этого тип \u003Cem\u003Esig_atomic_t\u003C\u002Fem\u003E со спецификатором volatile.\u003C\u002Fp\u003E\u003Cp\u003EИ боже упаси вас блокировать в обработчике сигналов какой-нибудь мьютекс, также используемый в остальной части программы или в хендлерах других сигналов — это самый прямой путь к дедлоку. Поэтому о conditional variables в качестве флагов можно тоже забыть.\u003C\u002Fp\u003E\u003Ch2\u003E3. Сохраняйте errno\u003C\u002Fh2\u003E\u003Cp\u003EТут все просто: Если в обработчике сигнала вы вызываете какую-либо функцию, которая теоретически может изменить глобальную переменную errno, сохраняйте текущее значение errno в начале обработчика сигнала куда-нибудь, и восстанавливайте обратно в конце. Иначе вы можете сломать какой-либо внешний код, проверяющий этот самый errno.\u003C\u002Fp\u003E\u003Ch2\u003E4. Помните, что поведение signal() может сильно отличаться в разных ОС и даже в разных версиях одной ОС\u003C\u002Fh2\u003E\u003Cp\u003EНачнем с того, что у signal() есть весомый плюс: он входит в стандарт языка Си, а вот sigaction() — это уже чисто POSIX-штука. С другой стороны, поведение signal() может довольно сильно отличаться в разных ОС, и более того, в интернете встречаются упоминания, что поведение signal() может отличаться даже при разных версиях ядра Linux.\u003C\u002Fp\u003E\u003Cp\u003EДля начала, немного истории.\u003C\u002Fp\u003E\u003Cp\u003EВ оригинальных системах UNIX, когда вызывался обработчик сигнала, ранее установленный с помощью signal(), обработчик сбрасывался на SIG_DFL, и система не блокировала доставку последующих экземпляров сигнала (в наше время это эквивалентно вызову sigaction() с флагами SA_RESETHAND | SA_NODEFER). Иными словами, получили сигнал, обработали -\u003E обработчик сбросился на стандартный, и поэтому закончив обработку полученного сигнала мы должны были не забыть вызвать signal() еще раз и снова установить вместо стандартного обработчика нашу функцию. В System V было то же самое. Это было плохо, потому что следущий сигнал мог быть послан и доставлен процессу еще раз до того, как обработчик успел восстановить себя. Более того, быстрая доставка одного и того же сигнала могла привести к рекурсивным вызовам обработчика.\u003C\u002Fp\u003E\u003Cp\u003EВ BSD улучшили эту ситуацию, там когда сигнал получен, обработчики сигнала не сбрасываются на стандартные. Но это было не единственное изменение в поведении: там еще обработка всех последующих экземпляров этого сигнала блокируется на время обработки первого из них. Кроме того, некоторые блокирующие системные вызовы (типа read() или wait()) автоматически перезапускаются, если их прерывает обработчик сигнала.  Семантика BSD эквивалентна вызову sigaction() с флагом SA_RESTART.\u003C\u002Fp\u003E\u003Cp\u003EВ Linux же ситуация следующая:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EСистемный вызов ядра signal() обеспечивает семантику System V.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПо умолчанию в glibc 2 и новее функция-оболочка signal() не вызывает системный вызов ядра. Вместо этого он вызывает sigaction(), используя флаги, обеспечивающие семантику BSD. Это поведение по умолчанию обеспечивается до тех пор, пока определен макрос _BSD_SOURCE в glibc 2.19 и ранее или _DEFAULT_SOURCE в glibc 2.19 и новее.  Если такой макрос не определен, то signal() предоставляет семантику System V. По умолчанию он определен :)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EИтак, основные различия между signal() и sigaction() следущие:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EФункция signal() во многих реализациях не блокирует поступление других сигналов во время выполнения текущего обработчика; sigaction() в зависимости от флагов может блокировать другие сигналы, пока не вернется текущий обработчик.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСистемный вызов signal() (без учета оберток типа libc) по умолчанию на многих платформах сбрасывает обработчик  сигнала обратно на SIG_DFL почти для всех сигналов. К чему это может привести, описано выше.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EИтого, поведение signal() варьируется в зависимости от платформы, системы  и даже сборки libc — и стандарты допускают такие вариации. Короче говоря, при использовании signal() никто вам ничего не гарантирует. sigaction() гораздо более предсказуем.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EПоэтому во избежании нежданчиков и проблем с переносимостью, рекомендация не использовать signal(), а предпочитать вместо него sigaction() в новом коде дана прямым текстом в The Open Group Base Specification. \u003C\u002Fp\u003E\u003Ch2\u003E5. Аккуратнее с fork() и execve()\u003C\u002Fh2\u003E\u003Cp\u003EДочерний процесс, созданный с помощью fork(), наследует установленные обработчики сигналов своего родителя. Во время execve() обработчики сигналов сбрасывается на дефолтные, а вот настройки заблокированных (blocked) сигналов остаются неизменными для свежезапущенного процесса. Поэтому если вы, например, в родителе заигнорили SIGINT, SIGUSR1, или еще что-нибудь, а запущенный процесс рассчитывает на них, то это может привести к интересным эффектам.\u003C\u002Fp\u003E\u003Ch2\u003E6. Еще пара мелочей\u003C\u002Fh2\u003E\u003Cp\u003EЕсли процессу отправлено несколько стандартных (не realtime) сигналов, порядок, в котором они доставятся вашему процессу, может быть любым.\u003C\u002Fp\u003E\u003Cp\u003EСтандартные сигналы не ставятся в очередь. Если несколько экземпляров стандартного сигнала были посланы вашему процессу, пока этот сигнал заблокирован, то только один экземпляр сигнала будет помечен как ожидающий (и сигнал будет доставлен только один раз, когда он разблокирован).\u003C\u002Fp\u003E\u003Ch2\u003E7. Читайте документацию\u003C\u002Fh2\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"425\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F91c\u002Fa95\u002Fd30\u002F91ca95d30e47cf543c7a95e576ecfd13.png\" data-width=\"500\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВсё, что я написал выше, там есть. Да и вообще, там есть очень много интересного, полезного и неожиданного, особенно в секциях Portability, Bugs и Known issues. \u003C\u002Fp\u003E\u003Cp\u003EНапример, мне очень нравится описание функции \u003Ca href=\"https:\u002F\u002Flinux.die.net\u002Fman\u002F3\u002Fcuserid\" rel=\"noopener noreferrer nofollow\"\u003Egetlogin()\u002Fcuserid()\u003C\u002Fa\u003E: \u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Cstrong\u003ESometimes it does not work at all\u003C\u002Fstrong\u003E, because some program messed up the utmp file. Often, it gives only the first 8 characters of the login name.\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003Eи дальше еще прекрасное:\u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Cstrong\u003ENobody knows precisely what cuserid() does\u003C\u002Fstrong\u003E; avoid it in portable programs.\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EНа этом все. Безбажного вам кода!\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"posix"},{"titleHtml":"linux"},{"titleHtml":"unix"},{"titleHtml":"thread safe"},{"titleHtml":"reentrancy"},{"titleHtml":"signal"},{"titleHtml":"c"},{"titleHtml":"c++"},{"titleHtml":"bsd-системы"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffa4\u002Fc0f\u002Ff39\u002Ffa4c0ff3960e4c2ec9cdc64f39b96d3d.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffa4\u002Fc0f\u002Ff39\u002Ffa4c0ff3960e4c2ec9cdc64f39b96d3d.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583110\\\u002F\"},\"headline\":\"О чем нельзя забывать при работе с POSIX-сигналами\",\"datePublished\":\"2021-10-12T21:45:30+03:00\",\"dateModified\":\"2021-10-14T12:26:33+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"K. just K.\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте P...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583110\\\u002F#post-content-body\",\"about\":[\"h_programming\",\"h_cpp\",\"h_system_programming\",\"h_c\",\"h_linux_dev\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583110\\\u002Fc8cc250017a016e769c86ab783f77e45\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F91c\\\u002Fa95\\\u002Fd30\\\u002F91ca95d30e47cf543c7a95e576ecfd13.png\"]}","metaDescription":"Как и любой другой инструмент, POSIX-сигналы имеют свои правила, как их использовать грамотно, надежно и безопасно. Они испокон веков описаны в самом стандарте POSIX, в стандартах языков...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"programming,cpp,system_programming,c,linux_dev"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

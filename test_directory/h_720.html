@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Самосохраняющийся компонент выбора / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/tinkoff\/blog\/582738\/"},"headline":"Самосохраняющийся компонент выбора","datePublished":"2021-10-11T13:07:34+03:00","dateModified":"2021-10-11T13:55:57+03:00","author":{"@type":"Person","name":"Александр Инкин"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Недавно Бхарат Рави опубликовал статью о директиве самосохраняющегося select-элемента на InDepth. Это интересная концепция изолирования логики в директиве, что в...","url":"https:\/\/habr.com\/ru\/company\/tinkoff\/blog\/582738\/#post-content-body","about":["c_tinkoff","h_webdev","h_angular","h_typescript","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582738\/51e0ea4c427bdfcff9d546e81ea93a00\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/d8d\/a57\/07a\/d8da5707a7e4206714c8fc6f32365c5a.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/fe1\/7ca\/cf4\/fe17cacf424897127040de0f034f27d9.jpg"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Самосохраняющийся компонент выбора" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Самосохраняющийся компонент выбора" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Самосохраняющийся компонент выбора" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Недавно Бхарат Рави опубликовал статью о директиве самосохраняющегося select-элемента на InDepth. Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.Однако в этом..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Недавно Бхарат Рави опубликовал статью о директиве самосохраняющегося select-элемента на InDepth. Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.Однако в этом..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Недавно Бхарат Рави опубликовал статью о директиве самосохраняющегося select-элемента на InDepth. Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.Однако в этом..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Недавно Бхарат Рави опубликовал статью о директиве самосохраняющегося select-элемента на InDepth. Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.Однако в этом..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Недавно Бхарат Рави опубликовал статью о директиве самосохраняющегося select-элемента на InDepth. Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.Однако в этом..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/d8d/a57/07a/d8da5707a7e4206714c8fc6f32365c5a.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/d8d/a57/07a/d8da5707a7e4206714c8fc6f32365c5a.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/d8d/a57/07a/d8da5707a7e4206714c8fc6f32365c5a.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/d8d/a57/07a/d8da5707a7e4206714c8fc6f32365c5a.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/d8d/a57/07a/d8da5707a7e4206714c8fc6f32365c5a.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582738" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-11T10:07:34.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582738/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/tinkoff/blog/582738/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/d8d/a57/07a/d8da5707a7e4206714c8fc6f32365c5a.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582738/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="tinkoff" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <img src="//habrastorage.org/getpro/habr/branding/2df/b89/248/2dfb89248ab9bc5d3c0794e44d25f33c.png" width="100%" class="tm-company-card__branding-image"></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/tinkoff/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/6f0/965/c1f/6f0965c1feae8a79dc103989aa6c7e91.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">310.12</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/tinkoff/profile/" class="tm-company-card__name">
+        TINKOFF
+      </a> <div class="tm-company-card__description">IT’s Tinkoff — просто о сложном</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Waterplea/" title="Waterplea" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/a70/569/f31/a70569f31346559ce2b8b875e7f97480.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Waterplea/" class="tm-user-info__username">
+      Waterplea
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-11T10:07:34.000Z" title="2021-10-11, 13:07">11  октября   в 13:07</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Самосохраняющийся компонент выбора</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/tinkoff/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании TINKOFF</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/webdev/" class="tm-article-snippet__hubs-item-link"><span>Разработка веб-сайтов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/angular/" class="tm-article-snippet__hubs-item-link"><span>Angular</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/typescript/" class="tm-article-snippet__hubs-item-link"><span>TypeScript</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Недавно <a href="https://twitter.com/_bharath_ravi"><u>Бхарат Рави</u></a> опубликовал <a href="https://indepth.dev/posts/1472/angular-self-saving-drop-downs-yet-another-directive"><u>статью о директиве самосохраняющегося select-элемента на InDepth.</u></a> Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.</p><p>Однако в этом случае у меня есть сомнения, которые я хочу подсветить. Я предлагаю свою версию компонента, исправляющую эти моменты. Начнем с того, что назовем проблемы текущего решения.</p><figure class="full-width "><img src="/img/image-loader.svg" height="881" data-src="https://habrastorage.org/getpro/habr/upload_files/d8d/a57/07a/d8da5707a7e4206714c8fc6f32365c5a.png" data-width="1561"/><figcaption></figcaption></figure><h2>Директивы работают со своим элементом</h2><p>Когда вы задумываетесь о создании директивы, обратите внимание на работу с шаблоном. Если для функционирования нужно несколько элементов, то для этой цели лучше подойдет компонент.</p><div class="persona" persona="true"><img persona="true" class="image persona__image" src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/fe1/7ca/cf4/fe17cacf424897127040de0f034f27d9.jpg" data-src="https://habrastorage.org/getpro/habr/upload_files/fe1/7ca/cf4/fe17cacf424897127040de0f034f27d9.jpg" data-blurred="true"/><h5 class="persona__heading" persona="true">«Ваши директивы не вольны модифицировать DOM за рамками своего элемента»</h5></div><p>Вот фрагмент кода из оригинальной статьи:</p><pre><code class="dart">handleErrorCase(element) {
+  this.removeBackground(element);
+  const child = this.document.createElement('img');
+  child.src = ERROR_ICON;
+  const parent = this.renderer.parentNode(this.elRef.nativeElement);
+  this.renderer.appendChild(parent, child);
+  setTimeout(() => {
+    this.renderer.removeChild(parent, child);
+  }, 1000);
+}</code></pre><p>Здесь директива добавляет сиблинга своему элементу, проходя через родителя. У директив не может быть своих стилей, поэтому позиционировать новый элемент будет сложно.</p><p>Мы также не знаем о стилях родителя, возможно, еще один ребенок сломает верстку. И, наконец, мы даже не знаем, существует ли родитель. Если ваша директива лежит в контенте другого компонента, есть шанс, что она отрендерится до прикрепления к DOM. Поэтому золотое правило гласит: <strong>в директивах оставайтесь в рамках их элемента</strong>.</p><h2>Избегайте ручной работы с DOM</h2><p>Мне понятно желание минимизировать вложенность. Вместо прикрепления иконок как картинок мы могли бы менять фон элемента через CSS и помещать иконки в нужное место. Это полезно для UX, так как картинки не блокируют клики. Но ручная работа с DOM — плохая затея по ряду причин:</p><ol><li><p>Это угроза кросс-платформенности.</p></li><li><p>Это потенциально небезопасно, так как мы минуем санитайзер.</p></li><li><p>Оптимизация становится нашей ответственностью.</p></li><li><p>Это не по-Ангуляровски.</p></li></ol><p>Мы могли бы применить <code>@HostBinding</code> для задания стилей. Но их непросто использовать с <code>Observable</code> (см. <a href="https://habr.com/ru/company/tinkoff/blog/542984/"><u>мою статью по теме</u></a>) и <em>OnPush</em>-проверкой изменений. Кроме того, все будет гораздо прозрачнее, если у нас будет шаблон со всеми нужными элементами. Так что вместо запихивания всего в один элемент давайте сделаем небольшую обертку:</p><pre><code class="xml">&lt;autosave-select>
+  &lt;select>...&lt;/select>
+&lt;/autosave-select></code></pre><h2>Пишите асинхронные действия декларативно</h2><p>Обычно мы прибегаем к RxJS для асинхронных операций. Директива из статьи тоже начинает с RxJS, но быстро переходит к императивным манипуляциям и <code>setTimeout</code>. Все это можно решить, не покидая реактивный мир. Я очень рекомендую всем вкладываться в изучение RxJS. Это один из самых мощных инструментов в экосистеме Angular.</p><blockquote><p><a href="https://github.com/AngularWave/rxjs-challenge">Подборка задачек</a> для тренировки RxJS от нас с <a href="https://habr.com/ru/users/MarsiBarsi/">Ромой</a></p></blockquote><p>В данном случае мы можем сделать нехитрую цепочку операторов, которая обработает все за нас. Еще мы избавимся от необходимости ручной подписки. С <code>async</code>-пайпом в конце мы сможем подключить <em>OnPush</em> и забыть про отписки.</p><h2>Передача методов через инпут — сомнительная затея</h2><p>Я не против чистых функций в инпутах. Мы часто используем их в <a href="https://taiga-ui.dev/"><u>Taiga UI</u></a>, например методы преобразования <code>&lt;T></code> в строку или проверку на состояние <code>disabled</code>. Но в этом случае она выглядит странно.</p><p>Обычно инпуты используют для переменных значений. Для статичных данных я предпочитаю <em>Dependency Injection</em>. Директива задумана самодостаточной, но работа с сервером все равно скинута на родительский компонент, когда мы передаем метод через инпут. С помощью DI можно добавить уровень абстракции:</p><pre><code class="dart">export abstract class SaveService&lt;T> {
+  abstract save(value: T): Observable&lt;unknown>;
+}</code></pre><p>Теперь реально передавать реализации через сервисы или директивы на случай нескольких таких компонентов на странице.</p><h2>Рефактор</h2><p>Теперь давайте сделаем компонент с той же задачей. Для начала мы запустим поток при выборе. Это может быть <code>fromEvent</code> или <code>Subject</code> + <code>@HostListener</code>:</p><pre><code class="dart">export class AutosaveSelectComponent&lt;T> {
+  private readonly change$ = new Subject&lt;T>();
+
+  @HostListener('change', ['$event.target.value'])
+  onChange(value: T) {
+    this.change$.next(value);
+  }
+}</code></pre><p>Затем создадим <code>Observable</code> состояния, отвечающий за индикацию:</p><pre><code class="dart">readonly state$ = this.change$.pipe(
+  switchMap(value =>
+    this.service.save(value).pipe(
+      switchMapTo(
+        timer(3000).pipe(
+          mapTo(null),
+          startWith(State.Success)
+        )
+      ),
+      startWith(State.Loading),
+      catchError(() => of(State.Error))
+    )
+  ),
+);</code></pre><p>На каждое изменение он стартует в состоянии загрузки. При ошибке он сбрасывается на состояние ошибки, которое остается висеть. При успешном значении из нашего метода сохранения мы переключимся на таймер, чтобы показать галочку на 3 секунды.</p><p>Осталось слегка приправить CSS’ом:</p><pre><code class="xml">&lt;ng-content>&lt;/ng-content>
+&lt;ng-container [ngSwitch]="state$ | async">
+  &lt;img
+    *ngSwitchCase="state.Loading"
+    class="icon icon_loading"
+    alt="" 
+    src="loading.png"
+  />
+  &lt;img
+    *ngSwitchCase="state.Success"
+    class="icon"
+    alt="" 
+    src="success.png"
+  />
+  &lt;img
+    *ngSwitchCase="state.Error"
+    class="icon"
+    alt="" 
+    src="error.png"
+  />
+&lt;/ng-container></code></pre><p>Рабочий пример с использованием нескольких сервисов <a href="https://stackblitz.com/edit/angular-autosave-select"><u>смотрите на StackBlitz</u></a>.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Brxjs%5D" class="tm-tags-list__link">rxjs</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bselect%5D" class="tm-tags-list__link">select</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdom%5D" class="tm-tags-list__link">dom</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bhtml%5D" class="tm-tags-list__link">html</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/tinkoff/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании TINKOFF
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/webdev/" class="tm-hubs-list__link">
+    Разработка веб-сайтов
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/angular/" class="tm-hubs-list__link">
+    Angular
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/typescript/" class="tm-hubs-list__link">
+    TypeScript
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 17: ↑17 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 17: ↑17 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+17</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.5K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    17
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/tinkoff/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/6f0/965/c1f/6f0965c1feae8a79dc103989aa6c7e91.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/tinkoff/profile/" class="tm-company-snippet__title">TINKOFF</a> <div class="tm-company-snippet__description">IT’s Tinkoff — просто о сложном</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <!----> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Waterplea/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/a70/569/f31/a70569f31346559ce2b8b875e7f97480.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 66 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    63.2
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">62.1</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Александр Инкин</span> <a href="/ru/users/Waterplea/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Waterplea
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Google Developer Expert | Angular</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://taiga-ui.dev" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://twitter.com/waterplea" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/tinkoff/blog/582738/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 4 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2005-11-17T21:00:00.000Z" title="2005-11-18, 00:00">18  ноября  2005</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://www.tinkoff.ru/career/" target="_blank" class="tm-company-basic-info__link">
+      www.tinkoff.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    5 001–10 000 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2011-10-26T13:45:16.000Z" title="2011-10-26, 17:45">26  октября  2011</time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/tinkoff/blog/582738/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/tinkoff/blog/582738/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582738":{"id":"582738","timePublished":"2021-10-11T10:07:34+00:00","isCorporative":true,"lang":"ru","titleHtml":"Самосохраняющийся компонент выбора","leadData":{"textHtml":"\u003Cp\u003EНедавно \u003Ca href=\"https:\u002F\u002Ftwitter.com\u002F_bharath_ravi\"\u003E\u003Cu\u003EБхарат Рави\u003C\u002Fu\u003E\u003C\u002Fa\u003E опубликовал \u003Ca href=\"https:\u002F\u002Findepth.dev\u002Fposts\u002F1472\u002Fangular-self-saving-drop-downs-yet-another-directive\"\u003E\u003Cu\u003Eстатью о директиве самосохраняющегося select-элемента на InDepth.\u003C\u002Fu\u003E\u003C\u002Fa\u003E Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.\u003C\u002Fp\u003E\u003Cp\u003EОднако в этом случае у меня есть сомнения, которые я хочу подсветить. Я предлагаю свою версию компонента, исправляющую эти моменты. Начнем с того, что назовем проблемы текущего решения.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd8d\u002Fa57\u002F07a\u002Fd8da5707a7e4206714c8fc6f32365c5a.png","buttonTextHtml":"Поехали!","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd8d\u002Fa57\u002F07a\u002Fd8da5707a7e4206714c8fc6f32365c5a.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":63.2,"votesCount":66},"rating":62.1,"relatedData":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Ftaiga-ui.dev","value":"https:\u002F\u002Ftaiga-ui.dev"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fwaterplea","value":"waterplea"}],"authorContacts":[{"title":"Сайт","url":"https:\u002F\u002Ftaiga-ui.dev","value":"https:\u002F\u002Ftaiga-ui.dev"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fwaterplea","value":"waterplea"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1050218","alias":"Waterplea","fullname":"Александр Инкин","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Fa70\u002F569\u002Ff31\u002Fa70569f31346559ce2b8b875e7f97480.jpg","speciality":"Google Developer Expert | Angular"},"statistics":{"commentsCount":4,"favoritesCount":17,"readingCount":1498,"score":17,"votesCount":17},"hubs":[{"relatedData":null,"id":"17420","alias":"tinkoff","type":"corporative","title":"Блог компании TINKOFF","titleHtml":"Блог компании TINKOFF","isProfiled":false},{"relatedData":null,"id":"91","alias":"webdev","type":"collective","title":"Разработка веб-сайтов","titleHtml":"Разработка веб-сайтов","isProfiled":true},{"relatedData":null,"id":"18109","alias":"angular","type":"collective","title":"Angular","titleHtml":"Angular","isProfiled":true},{"relatedData":null,"id":"21370","alias":"typescript","type":"collective","title":"TypeScript","titleHtml":"TypeScript","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EНедавно \u003Ca href=\"https:\u002F\u002Ftwitter.com\u002F_bharath_ravi\"\u003E\u003Cu\u003EБхарат Рави\u003C\u002Fu\u003E\u003C\u002Fa\u003E опубликовал \u003Ca href=\"https:\u002F\u002Findepth.dev\u002Fposts\u002F1472\u002Fangular-self-saving-drop-downs-yet-another-directive\"\u003E\u003Cu\u003Eстатью о директиве самосохраняющегося select-элемента на InDepth.\u003C\u002Fu\u003E\u003C\u002Fa\u003E Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.\u003C\u002Fp\u003E\u003Cp\u003EОднако в этом случае у меня есть сомнения, которые я хочу подсветить. Я предлагаю свою версию компонента, исправляющую эти моменты. Начнем с того, что назовем проблемы текущего решения.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"881\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd8d\u002Fa57\u002F07a\u002Fd8da5707a7e4206714c8fc6f32365c5a.png\" data-width=\"1561\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EДирективы работают со своим элементом\u003C\u002Fh2\u003E\u003Cp\u003EКогда вы задумываетесь о создании директивы, обратите внимание на работу с шаблоном. Если для функционирования нужно несколько элементов, то для этой цели лучше подойдет компонент.\u003C\u002Fp\u003E\u003Cdiv class=\"persona\" persona=\"true\"\u003E\u003Cimg persona=\"true\" class=\"image persona__image\" src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffe1\u002F7ca\u002Fcf4\u002Ffe17cacf424897127040de0f034f27d9.jpg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffe1\u002F7ca\u002Fcf4\u002Ffe17cacf424897127040de0f034f27d9.jpg\" data-blurred=\"true\"\u002F\u003E\u003Ch5 class=\"persona__heading\" persona=\"true\"\u003E«Ваши директивы не вольны модифицировать DOM за рамками своего элемента»\u003C\u002Fh5\u003E\u003C\u002Fdiv\u003E\u003Cp\u003EВот фрагмент кода из оригинальной статьи:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"dart\"\u003EhandleErrorCase(element) {\n  this.removeBackground(element);\n  const child = this.document.createElement('img');\n  child.src = ERROR_ICON;\n  const parent = this.renderer.parentNode(this.elRef.nativeElement);\n  this.renderer.appendChild(parent, child);\n  setTimeout(() =\u003E {\n    this.renderer.removeChild(parent, child);\n  }, 1000);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗдесь директива добавляет сиблинга своему элементу, проходя через родителя. У директив не может быть своих стилей, поэтому позиционировать новый элемент будет сложно.\u003C\u002Fp\u003E\u003Cp\u003EМы также не знаем о стилях родителя, возможно, еще один ребенок сломает верстку. И, наконец, мы даже не знаем, существует ли родитель. Если ваша директива лежит в контенте другого компонента, есть шанс, что она отрендерится до прикрепления к DOM. Поэтому золотое правило гласит: \u003Cstrong\u003Eв директивах оставайтесь в рамках их элемента\u003C\u002Fstrong\u003E.\u003C\u002Fp\u003E\u003Ch2\u003EИзбегайте ручной работы с DOM\u003C\u002Fh2\u003E\u003Cp\u003EМне понятно желание минимизировать вложенность. Вместо прикрепления иконок как картинок мы могли бы менять фон элемента через CSS и помещать иконки в нужное место. Это полезно для UX, так как картинки не блокируют клики. Но ручная работа с DOM — плохая затея по ряду причин:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EЭто угроза кросс-платформенности.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЭто потенциально небезопасно, так как мы минуем санитайзер.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EОптимизация становится нашей ответственностью.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЭто не по-Ангуляровски.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EМы могли бы применить \u003Ccode\u003E@HostBinding\u003C\u002Fcode\u003E для задания стилей. Но их непросто использовать с \u003Ccode\u003EObservable\u003C\u002Fcode\u003E (см. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Ftinkoff\u002Fblog\u002F542984\u002F\"\u003E\u003Cu\u003Eмою статью по теме\u003C\u002Fu\u003E\u003C\u002Fa\u003E) и \u003Cem\u003EOnPush\u003C\u002Fem\u003E-проверкой изменений. Кроме того, все будет гораздо прозрачнее, если у нас будет шаблон со всеми нужными элементами. Так что вместо запихивания всего в один элемент давайте сделаем небольшую обертку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E&lt;autosave-select\u003E\n  &lt;select\u003E...&lt;\u002Fselect\u003E\n&lt;\u002Fautosave-select\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EПишите асинхронные действия декларативно\u003C\u002Fh2\u003E\u003Cp\u003EОбычно мы прибегаем к RxJS для асинхронных операций. Директива из статьи тоже начинает с RxJS, но быстро переходит к императивным манипуляциям и \u003Ccode\u003EsetTimeout\u003C\u002Fcode\u003E. Все это можно решить, не покидая реактивный мир. Я очень рекомендую всем вкладываться в изучение RxJS. Это один из самых мощных инструментов в экосистеме Angular.\u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FAngularWave\u002Frxjs-challenge\"\u003EПодборка задачек\u003C\u002Fa\u003E для тренировки RxJS от нас с \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fusers\u002FMarsiBarsi\u002F\"\u003EРомой\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EВ данном случае мы можем сделать нехитрую цепочку операторов, которая обработает все за нас. Еще мы избавимся от необходимости ручной подписки. С \u003Ccode\u003Easync\u003C\u002Fcode\u003E-пайпом в конце мы сможем подключить \u003Cem\u003EOnPush\u003C\u002Fem\u003E и забыть про отписки.\u003C\u002Fp\u003E\u003Ch2\u003EПередача методов через инпут — сомнительная затея\u003C\u002Fh2\u003E\u003Cp\u003EЯ не против чистых функций в инпутах. Мы часто используем их в \u003Ca href=\"https:\u002F\u002Ftaiga-ui.dev\u002F\"\u003E\u003Cu\u003ETaiga UI\u003C\u002Fu\u003E\u003C\u002Fa\u003E, например методы преобразования \u003Ccode\u003E&lt;T\u003E\u003C\u002Fcode\u003E в строку или проверку на состояние \u003Ccode\u003Edisabled\u003C\u002Fcode\u003E. Но в этом случае она выглядит странно.\u003C\u002Fp\u003E\u003Cp\u003EОбычно инпуты используют для переменных значений. Для статичных данных я предпочитаю \u003Cem\u003EDependency Injection\u003C\u002Fem\u003E. Директива задумана самодостаточной, но работа с сервером все равно скинута на родительский компонент, когда мы передаем метод через инпут. С помощью DI можно добавить уровень абстракции:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"dart\"\u003Eexport abstract class SaveService&lt;T\u003E {\n  abstract save(value: T): Observable&lt;unknown\u003E;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь реально передавать реализации через сервисы или директивы на случай нескольких таких компонентов на странице.\u003C\u002Fp\u003E\u003Ch2\u003EРефактор\u003C\u002Fh2\u003E\u003Cp\u003EТеперь давайте сделаем компонент с той же задачей. Для начала мы запустим поток при выборе. Это может быть \u003Ccode\u003EfromEvent\u003C\u002Fcode\u003E или \u003Ccode\u003ESubject\u003C\u002Fcode\u003E + \u003Ccode\u003E@HostListener\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"dart\"\u003Eexport class AutosaveSelectComponent&lt;T\u003E {\n  private readonly change$ = new Subject&lt;T\u003E();\n\n  @HostListener('change', ['$event.target.value'])\n  onChange(value: T) {\n    this.change$.next(value);\n  }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗатем создадим \u003Ccode\u003EObservable\u003C\u002Fcode\u003E состояния, отвечающий за индикацию:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"dart\"\u003Ereadonly state$ = this.change$.pipe(\n  switchMap(value =\u003E\n    this.service.save(value).pipe(\n      switchMapTo(\n        timer(3000).pipe(\n          mapTo(null),\n          startWith(State.Success)\n        )\n      ),\n      startWith(State.Loading),\n      catchError(() =\u003E of(State.Error))\n    )\n  ),\n);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа каждое изменение он стартует в состоянии загрузки. При ошибке он сбрасывается на состояние ошибки, которое остается висеть. При успешном значении из нашего метода сохранения мы переключимся на таймер, чтобы показать галочку на 3 секунды.\u003C\u002Fp\u003E\u003Cp\u003EОсталось слегка приправить CSS’ом:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E&lt;ng-content\u003E&lt;\u002Fng-content\u003E\n&lt;ng-container [ngSwitch]=\"state$ | async\"\u003E\n  &lt;img\n    *ngSwitchCase=\"state.Loading\"\n    class=\"icon icon_loading\"\n    alt=\"\" \n    src=\"loading.png\"\n  \u002F\u003E\n  &lt;img\n    *ngSwitchCase=\"state.Success\"\n    class=\"icon\"\n    alt=\"\" \n    src=\"success.png\"\n  \u002F\u003E\n  &lt;img\n    *ngSwitchCase=\"state.Error\"\n    class=\"icon\"\n    alt=\"\" \n    src=\"error.png\"\n  \u002F\u003E\n&lt;\u002Fng-container\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EРабочий пример с использованием нескольких сервисов \u003Ca href=\"https:\u002F\u002Fstackblitz.com\u002Fedit\u002Fangular-autosave-select\"\u003E\u003Cu\u003Eсмотрите на StackBlitz\u003C\u002Fu\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"rxjs"},{"titleHtml":"select"},{"titleHtml":"dom"},{"titleHtml":"html"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd8d\u002Fa57\u002F07a\u002Fd8da5707a7e4206714c8fc6f32365c5a.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd8d\u002Fa57\u002F07a\u002Fd8da5707a7e4206714c8fc6f32365c5a.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Ftinkoff\\\u002Fblog\\\u002F582738\\\u002F\"},\"headline\":\"Самосохраняющийся компонент выбора\",\"datePublished\":\"2021-10-11T13:07:34+03:00\",\"dateModified\":\"2021-10-11T13:55:57+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Александр Инкин\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Недавно Бхарат Рави опубликовал статью о директиве самосохраняющегося select-элемента на InDepth. Это интересная концепция изолирования логики в директиве, что в...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Ftinkoff\\\u002Fblog\\\u002F582738\\\u002F#post-content-body\",\"about\":[\"c_tinkoff\",\"h_webdev\",\"h_angular\",\"h_typescript\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582738\\\u002F51e0ea4c427bdfcff9d546e81ea93a00\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fd8d\\\u002Fa57\\\u002F07a\\\u002Fd8da5707a7e4206714c8fc6f32365c5a.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ffe1\\\u002F7ca\\\u002Fcf4\\\u002Ffe17cacf424897127040de0f034f27d9.jpg\"]}","metaDescription":"Недавно Бхарат Рави опубликовал статью о директиве самосохраняющегося select-элемента на InDepth. Это интересная концепция изолирования логики в директиве, что в целом идея хорошая.Однако в этом...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"tinkoff":{"alias":"tinkoff","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F6f0\u002F965\u002Fc1f\u002F6f0965c1feae8a79dc103989aa6c7e91.png","titleHtml":"TINKOFF","descriptionHtml":"IT’s Tinkoff — просто о сложном","relatedData":null,"statistics":{"postsCount":275,"newsCount":2,"vacanciesCount":50,"employeesCount":192,"careerRating":null,"subscribersCount":38295,"rating":310.12,"invest":null},"foundationDate":{"year":"2005","month":"11","day":"18"},"location":{"city":null,"region":null,"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fwww.tinkoff.ru\u002Fcareer\u002F","staffNumber":"5 001–10 000 человек","registrationDate":"2011-10-26T13:45:16+00:00","representativeUser":null,"contacts":[],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-9110453-17"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002F2df\u002Fb89\u002F248\u002F2dfb89248ab9bc5d3c0794e44d25f33c.png","linkUrl":"","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"TINKOFF, Россия - IT’s Tinkoff — просто о сложном с 18 ноября 2005 г.","title":"TINKOFF, Россия - IT’s Tinkoff — просто о сложном с 18 ноября 2005 г.","keywords":["Разработка веб-сайтов","Angular","TypeScript","JavaScript","Разработка под Android"],"descriptionHtml":"275 статей от авторов компании TINKOFF","description":"275 статей от авторов компании TINKOFF"},"aDeskSettings":null,"careerAlias":"tinkoff","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

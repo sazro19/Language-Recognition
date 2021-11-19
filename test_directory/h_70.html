@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Готовим Json в Apache NiFi или снова Jolt Transform / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/585184\/"},"headline":"Готовим Json в Apache NiFi или снова Jolt Transform","datePublished":"2021-10-24T16:33:42+03:00","dateModified":"2021-10-24T20:17:45+03:00","author":{"@type":"Person","name":"Валерий Шинкевич"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"На текущем проекте у нас начинает активно использоваться Apache NiFi в качестве основного ETL\/ELT-инструмента. NiFi используется для получения данных из различны...","url":"https:\/\/habr.com\/ru\/post\/585184\/#post-content-body","about":["h_bigdata","h_data_engineering","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/585184\/dc7953963c1ceeda570a8e9b1a7b4c1a\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/81a\/4e0\/e61\/81a4e0e6133ae6168b8aa183ed1fc57d.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/c8b\/fa4\/35b\/c8bfa435b7eb453f6097db2b06033750.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/532\/72c\/d43\/53272cd43c1accd63a0a964d00b4027d.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b81\/8d3\/410\/b818d3410b7ea7615ab726700bcdd4cd.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/667\/c46\/2e7\/667c462e77f54bcfa13924d3c229806e.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Готовим Json в Apache NiFi или снова Jolt Transform" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Готовим Json в Apache NiFi или снова Jolt Transform" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Готовим Json в Apache NiFi или снова Jolt Transform" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="На текущем проекте у нас начинает активно использоваться Apache NiFi в качестве основного ETL/ELT-инструмента. NiFi используется для получения данных из различных источников (Kafka, REST, HDFS) и..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="На текущем проекте у нас начинает активно использоваться Apache NiFi в качестве основного ETL/ELT-инструмента. NiFi используется для получения данных из различных источников (Kafka, REST, HDFS) и..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="На текущем проекте у нас начинает активно использоваться Apache NiFi в качестве основного ETL/ELT-инструмента. NiFi используется для получения данных из различных источников (Kafka, REST, HDFS) и..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="На текущем проекте у нас начинает активно использоваться Apache NiFi в качестве основного ETL/ELT-инструмента. NiFi используется для получения данных из различных источников (Kafka, REST, HDFS) и..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="На текущем проекте у нас начинает активно использоваться Apache NiFi в качестве основного ETL/ELT-инструмента. NiFi используется для получения данных из различных источников (Kafka, REST, HDFS) и..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/81a/4e0/e61/81a4e0e6133ae6168b8aa183ed1fc57d.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/81a/4e0/e61/81a4e0e6133ae6168b8aa183ed1fc57d.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/81a/4e0/e61/81a4e0e6133ae6168b8aa183ed1fc57d.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/81a/4e0/e61/81a4e0e6133ae6168b8aa183ed1fc57d.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/81a/4e0/e61/81a4e0e6133ae6168b8aa183ed1fc57d.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="585184" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-24T13:33:42.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/585184/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/585184/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/81a/4e0/e61/81a4e0e6133ae6168b8aa183ed1fc57d.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/585184/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/kxl/" title="kxl" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/19c/67d/329/19c67d32929b0dc53ba5a882027a0ce3.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/kxl/" class="tm-user-info__username">
+      kxl
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-24T13:33:42.000Z" title="2021-10-24, 16:33">вчера в 16:33</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Готовим Json в Apache NiFi или снова Jolt Transform</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/bigdata/" class="tm-article-snippet__hubs-item-link"><span>Big Data</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/data_engineering/" class="tm-article-snippet__hubs-item-link"><span>Data Engineering</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="348" data-src="https://habrastorage.org/getpro/habr/upload_files/81a/4e0/e61/81a4e0e6133ae6168b8aa183ed1fc57d.png" data-width="1011"/><figcaption></figcaption></figure><p>На текущем проекте у нас начинает активно использоваться <a href="https://nifi.apache.org/" rel="noopener noreferrer nofollow">Apache NiFi</a> в качестве основного <a href="https://habr.com/ru/post/441538/" rel="noopener noreferrer nofollow">ETL/ELT</a>-инструмента. <abbr title="NiFi">NiFi </abbr>используется для получения данных из различных источников (Kafka, REST, HDFS) и подготовки данных для их последующей загрузки в основное хранилище на базе <a href="https://greenplum.org/" rel="noopener noreferrer nofollow">Greenplum</a>. Загрузка подготовленных данных в Greenplum реализована средствами последнего (<a href="https://docs.greenplum.org/6-4/pxf/access_hdfs.html" rel="noopener noreferrer nofollow">PXF</a>), поэтому NiFi только подготавливает данные в формате <a href="https://ru.bmstu.wiki/Apache_Avro" rel="noopener noreferrer nofollow">Avro</a> и записывает их в <a href="https://ru.bmstu.wiki/HDFS_(Hadoop_Distributed_Filesystem)" rel="noopener noreferrer nofollow">HDFS</a>. </p><p>Немного о задаче. Пусть мы имеем информацию о подписках пользователя на уведомления для различных разделов/сервисов портала. Для каждого раздела пользователи могут указать от нуля до нескольких видов транспорта, которым эти уведомления будут доставляться, например, PUSH, EMAIL, SMS. Требуется обеспечить загрузку этих данных в наше аналитическое хранилище. </p><h4>Исходные данные</h4><p>Данные приходят в <a href="https://kafka.apache.org/" rel="noopener noreferrer nofollow">Apache Kafka</a>, формат данных примерно такой:</p><pre><code class="json">{
+    "uID": 1000358546,
+    "events": [{
+            "eventTypeCode": "FEEDBACK",
+            "transports": ["PUSH", "SMS"]
+        }, {
+            "eventTypeCode": "MARKETING",
+            "transports": ["PUSH", "EMAIL"]
+        }, {
+            "eventTypeCode": "ORDER_STATUS",
+            "transports": ["SOC_VK"]
+        }
+    ]
+ }</code></pre><p>Вроде всё просто, но у PXF есть некоторые сложности с загрузкой иерархических структур (массив простых значений оно загрузит, но массив объектов - нет), поэтому нам нужно сделать наши данные максимально плоскими.  Да,  и цель статьи - показать, что можно сделать с JSON используя встроенные процессоры.</p><details class="spoiler"><summary>Для начинающих</summary><div class="spoiler__content"><p>Для экспериментов в NiFi можно создать процессорную группу, выбрав в качестве первого процессора <strong>GenerateFlowFile </strong>поместив в параметр Custom Text текст нашего Json.</p><figure class=""><img src="/img/image-loader.svg" height="118" data-src="https://habrastorage.org/getpro/habr/upload_files/c8b/fa4/35b/c8bfa435b7eb453f6097db2b06033750.png" data-width="304"/><figcaption></figcaption></figure><figure class="full-width "><img src="/img/image-loader.svg" height="254" data-src="https://habrastorage.org/getpro/habr/upload_files/532/72c/d43/53272cd43c1accd63a0a964d00b4027d.png" data-width="713"/><figcaption></figcaption></figure></div></details><h4>FlattenJson</h4><p>Одним из способов сделать из произвольного json плоский является процессор <a href="https://nifi.apache.org/docs/nifi-docs/components/org.apache.nifi/nifi-standard-nar/1.12.0/org.apache.nifi.processors.standard.FlattenJson/" rel="noopener noreferrer nofollow">FlattenJson</a>. Процессор предоставляет пользователю возможность взять вложенный документ JSON и представить его в простой документ содержащий пары ключ/значение. Ключи объединяются на каждом уровне с помощью определяемого пользователем разделителя, который по умолчанию имеет значение ".". Процессор поддерживает три режима преобразования (Flatten Mode):  normal, keep-arrays и dot notation (применяется для запросов в MongoDB). Режим преобразования по умолчанию - "keep-arrays". В режиме keep-arrays мы получим, для нашего примера, практически исходный Json. Поэтому этот режим нам не подходит, и мы переключим процесоор на режим normal. В результате мы получим такой json: </p><pre><code class="json">{
+  "uID" : 1000358546,
+  "events[0].eventTypeCode" : "FEEDBACK",
+  "events[0].transports[0]" : "PUSH",
+  "events[0].transports[1]" : "SMS",
+  "events[1].eventTypeCode" : "MARKETING",
+  "events[1].transports[0]" : "PUSH",
+  "events[1].transports[1]" : "EMAIL",
+  "events[2].eventTypeCode" : "ORDER_STATUS",
+  "events[2].transports[0]" : "SOC_VK"
+}</code></pre><p>Что-ж, оно действительно плоское, но... Если такое попытаться завернуть в avro, то оно сломается. Если не на этапе конвертации, то на этапе загрузки в Greenplum точно. Всё по причине того, что тут буквально для каждого пользователя будет свой набор полей и схема каждого avro-файла будет различаться. </p><p>Этот процессор, сам по себе весьма полезный в иных случаях, в чистом виде нам не подходит. Смотрим, что же мы можем использовать ещё.</p><h4>JoltTransformJSON</h4><figure class="float bordered "><img src="/img/image-loader.svg" height="121" data-src="https://habrastorage.org/getpro/habr/upload_files/b81/8d3/410/b818d3410b7ea7615ab726700bcdd4cd.png" data-width="326"/><figcaption></figcaption></figure><p><a href="https://nifi.apache.org/docs/nifi-docs/components/org.apache.nifi/nifi-standard-nar/1.12.0/org.apache.nifi.processors.standard.JoltTransformJSON/" rel="noopener noreferrer nofollow">JoltTransformJSON</a>, пожалуй, самый мощный в арсенале NiFi, процессор для трансформации Json. Он позволяет применять список <a href="https://github.com/bazaarvoice/jolt#Documentation" rel="noopener noreferrer nofollow">Jolt-спецификаций</a> к нашему Json. На хабре уже была <a href="https://habr.com/ru/post/541904/" rel="noopener noreferrer nofollow">статья, посвященная этому процессору</a>. Но, позвольте мне рассказать об этом процессоре применительно к нашей задаче.</p><p>Вариантов решения нашей задачи как минимум два - это либо обработать Json, полученный с помощью FlattenJson-процессора с помощью Jolt, либо попробовать от FlattenJson избавиться и решить всё с помощью JoltTransformJson. </p><p>Но, для начала опишем, какие же возможности предоставляет нам этот процессор. Самое главное - это возможность работать с Jolt-спецификацией в расширенном редакторе, где можно не только писать спецификацию, проверить её корректность, но и выполнить трансформацию произвольного json не покидая окна редактора. </p><figure class="full-width "><img src="/img/image-loader.svg" height="814" data-src="https://habrastorage.org/getpro/habr/upload_files/667/c46/2e7/667c462e77f54bcfa13924d3c229806e.png" data-width="1835"/><figcaption></figcaption></figure><p>Это всё круто и очень помогает в работе, но, если честно, я предпочитаю использовать <a href="https://jolt-demo.appspot.com/#bucketToPrefixSoup" rel="noopener noreferrer nofollow">Jolt Transform Demo (jolt-demo.appspot.com)</a> . Субъективно он более удобен и там есть примеры с комментариями для начала работы с Jolt.</p><p>Итак, как вы видите, на картинке выше, я начал с простой спецификации: </p><pre><code class="json">[{
+	"operation": "shift",
+	"spec": {
+		"*": "&amp;"
+	}
+}]</code></pre><p>Эта спецификация, по сути ничего не трансформирует, поскольку говорит "возьми любое поле и выведи его как оно есть". Будем исправлять. Для начала определить нашу цель. А уже потом напишем для неё Jolt-спецификацию.</p><p>Итак, у нас на входе:</p><pre><code class="json">{
+    "uID": 1000358546,
+    "events": [{
+            "eventTypeCode": "FEEDBACK",
+            "transports": ["PUSH", "SMS"]
+        }, {
+            "eventTypeCode": "MARKETING",
+            "transports": ["PUSH", "EMAIL"]
+        }, {
+            "eventTypeCode": "ORDER_STATUS",
+            "transports": ["SOC_VK"]
+        }
+    ]
+}</code></pre><p>А хотим мы получить такой json на выходе:</p><pre><code class="json">{
+	"uID": 1000358546,
+	"FEEDBACK": ["PUSH", "SMS"],
+	"MARKETING": ["PUSH", "EMAIL"],
+	"ORDER_STATUS": ["SOC_VK"]
+}</code></pre><p>Давайте напишем для него спецификацию. Нам нужно для каждого значения в <strong>events->transports </strong>взять ключ из <strong>events->eventTypeCode </strong>и в результате записать с этим ключем массив значений. Поле <strong>uID</strong> оставляем без изменений.</p><pre><code class="json">[{
+	"operation": "shift",
+	"spec": {
+		"events": {
+			"*": {
+				"transports": {
+					"*": {
+						"@": "@(3,eventTypeCode)[]"
+					}
+				}
+			}
+		},
+		"*": "&amp;"
+	}
+}]</code></pre><details class="spoiler"><summary>Пояснение спецификации</summary><div class="spoiler__content"><p><code>"events":{"*":{"transports":{"*":{</code>,думаю, не вызывает особых сложностей. Здесь мы для каждого <strong>events</strong> берём каждый элемент массива (это первая <strong>"*"</strong>) для которого из <strong>transports</strong> берём каждый элемент массива (вторая <strong>"*"</strong>).</p><p><code>"@": "@(3,eventTypeCode)[]"</code> вот тут самое интересное. Левая, от двоеточия, часть (<strong>"@"</strong>) говорит о том, что мы берём текущее значение элемента массива, а это у нас <strong>PUSH</strong> для самого первого совпадения. А вот правая часть говорит о том, с каким ключём мы запишем это значение в результирующий json. И запись <em><abbr title="@(3,eventTypeCode)">@(3,eventTypeCode)</abbr></em> означает, что для того, чтобы получить имя ключа, нам нужно поднятся на 3 уровня выше (на уровень первой <strong>"*"</strong>) и взять там значение поля <strong>eventTypeCode</strong>. Если, опять же, рассматривать самое первое совпадение, то это значение будет <strong>FEEDBACK</strong> - это и будет ключём, в который будет записано значение <strong>PUSH</strong>.</p><p>Думаю, вы заметили квадратные скобки на конце правой части выражения? Они говорят о том, что ключ, который мы определяем, должен быть массивом. Если их не поставить, то тогда, например для <strong>ORDER_STATUS,</strong> мы получим не массив, а просто строку. Для других типов событий у нас определено несколько значений транспорта, поэтому они будут объединены в массив автоматически. Т.е. результат мог бы выглядеть так:</p><pre><code class="json">{
+    "uID": 1000358546,
+    "FEEDBACK": ["PUSH", "SMS"],
+    "MARKETING": ["PUSH", "EMAIL"],
+    "ORDER_STATUS": "SOC_VK"
+}</code></pre></div></details><p>И так, мы добились желаемого результата. Но, давайте подумаем, какие сложности с данным вариантом. А мы опять имеем проблемы с потенциально различными схемами для разных пользователей. Я бы даже сказал с гарантированными. Это можно обойти, если при конвертации в <em>avro</em> будем использовать определенную схему, а не выводить её из данных <em>json</em>. Но, это значит, что мы должны в этой схеме заранее прописать все типы событий всех наших сервисов, и менять схему при каждом изменении их состава. Было бы легче, если бы мы взяли в качестве ключа транспорт, а в качестве значения массив  типов событий, для которых уведомления используют данный транспорт. Я не буду приводить <em>Jolt-спецификацию</em> для данной трансформации, оставлю это в качестве <em>задания читателю</em>. Да, видов транспорта сильно меньше, чем событий, но это не гарантирует нам постоянство их списка.</p><p>И так, подумаем, как мы можем обеспечить постоянство схемы выходных данных, если у нас на входе могут меняться как типы событий так и виды транспортов. Вариантов не так много: </p><ul><li><p>сделать два массива, один для событий, другой для транспортов, а соответствующие значения записывать с одним и тем-же индексом</p></li><li><p>сделать один массив, в котором пары событие/транспорт будут строками с разделителем</p></li></ul><p>Первый вариант был отклонён из-за более сложной реализации разбора на стороне Greenplum. Второй вариант выглядит, для нашего примера, так:</p><pre><code class="json">{
+  "uID" : 1000358546,
+  "events" : [ 
+    "FEEDBACK|PUSH", "FEEDBACK|SMS",
+    "MARKETING|PUSH", "MARKETING|EMAIL",
+    "ORDER_STATUS|SOC_VK"
+  ]
+}</code></pre><p>Чтобы выполнить такую Jolt-трансформацию понадобится цепочка преобразований. Для начала, нужно развернуть массив транспортов и желательно вывести тип событий на один уровень с транспортом. Затем склеить строки и убрать лишние поля.</p><details class="spoiler"><summary>Первый этап</summary><div class="spoiler__content"><pre><code class="json">[{
+     "operation": "shift",
+     "spec": {
+       "nET": {
+         "*": {
+           "transports": {
+             "*": {
+               "*": {
+                 "@1": "outer[&amp;4].inner[&amp;2].t",
+                 "@(3,eventTypeCode)": "outer[&amp;4].inner[&amp;2].etc"
+               }
+             }
+           }
+         }
+       },
+       "*": "&amp;"
+     }
+}]</code></pre><p>Здесь  мы для каждого транспорта создаём объект, который вложен в два массива - внешний и внутренний (относительно <strong>"transports</strong>"). Значение транспорта записываем в поле <strong>t</strong> этого объекта, потом добавляем в этот объект поле <strong>etc</strong>, которое будет иметь значение из <strong>eventTypeCode</strong>. </p><p>Результат выполнения:</p><pre><code class="json">{
+  "uID" : 1000358546,
+  "outer" : [ {
+    "inner" : [ {
+      "t" : "PUSH",
+      "etc" : "FEEDBACK"
+    }, {
+      "t" : "SMS",
+      "etc" : "FEEDBACK"
+    } ]
+  }, {
+    "inner" : [ {
+      "t" : "PUSH",
+      "etc" : "MARKETING"
+    }, {
+      "t" : "EMAIL",
+      "etc" : "MARKETING"
+    } ]
+  }, {
+    "inner" : [ {
+      "t" : "SOC_VK",
+      "etc" : "ORDER_STATUS"
+    } ]
+  } ]
+}</code></pre></div></details><details class="spoiler"><summary>Второй этап</summary><div class="spoiler__content"><p>Итак, у нас есть пары, но, прежде чем склеивать, давайте упростим массив:</p><pre><code class="json">{
+   "operation": "shift",
+   "spec": {
+     "outer": {
+       "*": {
+         "inner": {
+           "*": "events[]"
+         }
+       }
+     },
+     "*": "&amp;"
+   }
+  }</code></pre><p>Добавив эту спецификацию в список Jolt-спецификаций получим результат:</p><pre><code class="json">{
+  "uID" : 1000358546,
+  "events" : [ {
+    "t" : "PUSH",
+    "etc" : "FEEDBACK"
+  }, {
+    "t" : "SMS",
+    "etc" : "FEEDBACK"
+  }, {
+    "t" : "PUSH",
+    "etc" : "MARKETING"
+  }, {
+    "t" : "EMAIL",
+    "etc" : "MARKETING"
+  }, {
+    "t" : "SOC_VK",
+    "etc" : "ORDER_STATUS"
+  } ]
+}</code></pre></div></details><details class="spoiler"><summary>Третий этап</summary><div class="spoiler__content"><p>Теперь наш массив не выглядит так страшно, как после первого этапа. Теперь мы можем легко склеить пары значений в одну строку.</p><pre><code class="json"> {
+     "operation": "modify-default-beta",
+     "spec": {
+       "events": {
+         "*": {
+           "transport": "=concat(@(1,etc),'|',@(1,t))"
+         }
+       }
+     }
+  }</code></pre><p>Добавив этот этап к нашему списку спецификаций получим:</p><pre><code class="json">{
+  "uID" : 1000358546,
+  "events" : [ {
+    "t" : "PUSH",
+    "etc" : "FEEDBACK",
+    "transport" : "FEEDBACK|PUSH"
+  }, {
+    "t" : "SMS",
+    "etc" : "FEEDBACK",
+    "transport" : "FEEDBACK|SMS"
+  }, {
+    "t" : "PUSH",
+    "etc" : "MARKETING",
+    "transport" : "MARKETING|PUSH"
+  }, {
+    "t" : "EMAIL",
+    "etc" : "MARKETING",
+    "transport" : "MARKETING|EMAIL"
+  }, {
+    "t" : "SOC_VK",
+    "etc" : "ORDER_STATUS",
+    "transport" : "ORDER_STATUS|SOC_VK"
+  } ]
+}</code></pre></div></details><details class="spoiler"><summary>Последний этап</summary><div class="spoiler__content"><p>Теперь нам остаётся только преобразовать массив объектов в массив строк, взяв только значения поля <strong>transport</strong>.</p><pre><code class="json">{
+     "operation": "shift",
+     "spec": {
+       "events": {
+         "*": {
+           "@transport": "events[]"
+         }
+       },
+       "*": "&amp;"
+     }
+  }</code></pre><p>Добавление этой операции приведёт нас к желаемому результату:</p><pre><code class="json">{
+  "uID" : 1000358546,
+  "events" : [ 
+  	"FEEDBACK|PUSH", "FEEDBACK|SMS",
+    "MARKETING|PUSH", "MARKETING|EMAIL",
+    "ORDER_STATUS|SOC_VK"
+  ]
+}
+</code></pre></div></details><p>Итак, цепочка спецификаций выглядит так:</p><pre><code class="json"> [
+ 	{
+     "operation": "shift",
+     "spec": {
+       "events": {
+         "*": {
+           "transports": {
+             "*": {
+               "*": {
+                 "@1": "outer[&amp;4].inner[&amp;2].t",
+                 "@(3,eventTypeCode)": "outer[&amp;4].inner[&amp;2].etc"
+               }
+             }
+           }
+         }
+       },
+       "*": "&amp;"
+     }
+  }, {
+     "operation": "shift",
+     "spec": {
+       "outer": {
+         "*": {
+           "inner": {
+             "*": "events[]"
+           }
+         }
+       },
+       "*": "&amp;"
+     }
+  },
+   {
+     "operation": "modify-default-beta",
+     "spec": {
+       "events": {
+         "*": {
+           "transport": "=concat(@(1,etc),'|',@(1,t))"
+         }
+       }
+     }
+  },
+   {
+     "operation": "shift",
+     "spec": {
+       "events": {
+         "*": {
+           "@transport": "events[]"
+         }
+       },
+       "*": "&amp;"
+     }
+  }
+]</code></pre><p>Результат наших преобразований будет иметь простую схему при конвертации в avro и не будет изменяться от пользователя к пользователю. Строка легко разбивается в запросе к внешней pxf-таблице в Greenplum.</p><p>Коллеги, вопросы, предложения, комментарии...</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bapache%20nifi%5D" class="tm-tags-list__link">apache nifi</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnifi%5D" class="tm-tags-list__link">nifi</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bjolt%5D" class="tm-tags-list__link">jolt</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bjson%5D" class="tm-tags-list__link">json</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/bigdata/" class="tm-hubs-list__link">
+    Big Data
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/data_engineering/" class="tm-hubs-list__link">
+    Data Engineering
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 6: ↑6 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 6: ↑6 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+6</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">750</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    5
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/kxl/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/19c/67d/329/19c67d32929b0dc53ba5a882027a0ce3.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 11 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">6</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Валерий Шинкевич</span> <a href="/ru/users/kxl/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @kxl
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Разработчик ПО</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://lombard-service.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://twitter.com/v_shinkevich" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/v_v_shinkevich" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://telegram.me/Shinkevich_V" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/585184/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментировать 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/585184/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/585184/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"585184":{"id":"585184","timePublished":"2021-10-24T13:33:42+00:00","isCorporative":false,"lang":"ru","titleHtml":"Готовим Json в Apache NiFi или снова Jolt Transform","leadData":{"textHtml":"\u003Cp\u003EПример использования процессора JoltTransformJson в Apache NiFi. Можно рассматривать как небольшой туториал по использованию Jolt-спецификаций.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F81a\u002F4e0\u002Fe61\u002F81a4e0e6133ae6168b8aa183ed1fc57d.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F81a\u002F4e0\u002Fe61\u002F81a4e0e6133ae6168b8aa183ed1fc57d.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":5,"votesCount":11},"rating":6,"relatedData":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Flombard-service.ru\u002F","value":"https:\u002F\u002Flombard-service.ru\u002F"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fv_shinkevich","value":"v_shinkevich"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fv_v_shinkevich","value":"v_v_shinkevich"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002FShinkevich_V","value":"Shinkevich_V"}],"authorContacts":[{"title":"Сайт","url":"https:\u002F\u002Flombard-service.ru\u002F","value":"https:\u002F\u002Flombard-service.ru\u002F"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fv_shinkevich","value":"v_shinkevich"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fv_v_shinkevich","value":"v_v_shinkevich"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002FShinkevich_V","value":"Shinkevich_V"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"96019","alias":"kxl","fullname":"Валерий Шинкевич","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F19c\u002F67d\u002F329\u002F19c67d32929b0dc53ba5a882027a0ce3.jpg","speciality":"Разработчик ПО"},"statistics":{"commentsCount":0,"favoritesCount":5,"readingCount":750,"score":6,"votesCount":6},"hubs":[{"relatedData":null,"id":"17795","alias":"bigdata","type":"collective","title":"Big Data","titleHtml":"Big Data","isProfiled":true},{"relatedData":null,"id":"22374","alias":"data_engineering","type":"collective","title":"Data Engineering","titleHtml":"Data Engineering","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"348\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F81a\u002F4e0\u002Fe61\u002F81a4e0e6133ae6168b8aa183ed1fc57d.png\" data-width=\"1011\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EНа текущем проекте у нас начинает активно использоваться \u003Ca href=\"https:\u002F\u002Fnifi.apache.org\u002F\" rel=\"noopener noreferrer nofollow\"\u003EApache NiFi\u003C\u002Fa\u003E в качестве основного \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F441538\u002F\" rel=\"noopener noreferrer nofollow\"\u003EETL\u002FELT\u003C\u002Fa\u003E-инструмента. \u003Cabbr title=\"NiFi\"\u003ENiFi \u003C\u002Fabbr\u003Eиспользуется для получения данных из различных источников (Kafka, REST, HDFS) и подготовки данных для их последующей загрузки в основное хранилище на базе \u003Ca href=\"https:\u002F\u002Fgreenplum.org\u002F\" rel=\"noopener noreferrer nofollow\"\u003EGreenplum\u003C\u002Fa\u003E. Загрузка подготовленных данных в Greenplum реализована средствами последнего (\u003Ca href=\"https:\u002F\u002Fdocs.greenplum.org\u002F6-4\u002Fpxf\u002Faccess_hdfs.html\" rel=\"noopener noreferrer nofollow\"\u003EPXF\u003C\u002Fa\u003E), поэтому NiFi только подготавливает данные в формате \u003Ca href=\"https:\u002F\u002Fru.bmstu.wiki\u002FApache_Avro\" rel=\"noopener noreferrer nofollow\"\u003EAvro\u003C\u002Fa\u003E и записывает их в \u003Ca href=\"https:\u002F\u002Fru.bmstu.wiki\u002FHDFS_(Hadoop_Distributed_Filesystem)\" rel=\"noopener noreferrer nofollow\"\u003EHDFS\u003C\u002Fa\u003E. \u003C\u002Fp\u003E\u003Cp\u003EНемного о задаче. Пусть мы имеем информацию о подписках пользователя на уведомления для различных разделов\u002Fсервисов портала. Для каждого раздела пользователи могут указать от нуля до нескольких видов транспорта, которым эти уведомления будут доставляться, например, PUSH, EMAIL, SMS. Требуется обеспечить загрузку этих данных в наше аналитическое хранилище. \u003C\u002Fp\u003E\u003Ch4\u003EИсходные данные\u003C\u002Fh4\u003E\u003Cp\u003EДанные приходят в \u003Ca href=\"https:\u002F\u002Fkafka.apache.org\u002F\" rel=\"noopener noreferrer nofollow\"\u003EApache Kafka\u003C\u002Fa\u003E, формат данных примерно такой:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n    \"uID\": 1000358546,\n    \"events\": [{\n            \"eventTypeCode\": \"FEEDBACK\",\n            \"transports\": [\"PUSH\", \"SMS\"]\n        }, {\n            \"eventTypeCode\": \"MARKETING\",\n            \"transports\": [\"PUSH\", \"EMAIL\"]\n        }, {\n            \"eventTypeCode\": \"ORDER_STATUS\",\n            \"transports\": [\"SOC_VK\"]\n        }\n    ]\n }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВроде всё просто, но у PXF есть некоторые сложности с загрузкой иерархических структур (массив простых значений оно загрузит, но массив объектов - нет), поэтому нам нужно сделать наши данные максимально плоскими.  Да,  и цель статьи - показать, что можно сделать с JSON используя встроенные процессоры.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EДля начинающих\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003EДля экспериментов в NiFi можно создать процессорную группу, выбрав в качестве первого процессора \u003Cstrong\u003EGenerateFlowFile \u003C\u002Fstrong\u003Eпоместив в параметр Custom Text текст нашего Json.\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"118\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc8b\u002Ffa4\u002F35b\u002Fc8bfa435b7eb453f6097db2b06033750.png\" data-width=\"304\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"254\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F532\u002F72c\u002Fd43\u002F53272cd43c1accd63a0a964d00b4027d.png\" data-width=\"713\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Ch4\u003EFlattenJson\u003C\u002Fh4\u003E\u003Cp\u003EОдним из способов сделать из произвольного json плоский является процессор \u003Ca href=\"https:\u002F\u002Fnifi.apache.org\u002Fdocs\u002Fnifi-docs\u002Fcomponents\u002Forg.apache.nifi\u002Fnifi-standard-nar\u002F1.12.0\u002Forg.apache.nifi.processors.standard.FlattenJson\u002F\" rel=\"noopener noreferrer nofollow\"\u003EFlattenJson\u003C\u002Fa\u003E. Процессор предоставляет пользователю возможность взять вложенный документ JSON и представить его в простой документ содержащий пары ключ\u002Fзначение. Ключи объединяются на каждом уровне с помощью определяемого пользователем разделителя, который по умолчанию имеет значение \".\". Процессор поддерживает три режима преобразования (Flatten Mode):  normal, keep-arrays и dot notation (применяется для запросов в MongoDB). Режим преобразования по умолчанию - \"keep-arrays\". В режиме keep-arrays мы получим, для нашего примера, практически исходный Json. Поэтому этот режим нам не подходит, и мы переключим процесоор на режим normal. В результате мы получим такой json: \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"uID\" : 1000358546,\n  \"events[0].eventTypeCode\" : \"FEEDBACK\",\n  \"events[0].transports[0]\" : \"PUSH\",\n  \"events[0].transports[1]\" : \"SMS\",\n  \"events[1].eventTypeCode\" : \"MARKETING\",\n  \"events[1].transports[0]\" : \"PUSH\",\n  \"events[1].transports[1]\" : \"EMAIL\",\n  \"events[2].eventTypeCode\" : \"ORDER_STATUS\",\n  \"events[2].transports[0]\" : \"SOC_VK\"\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЧто-ж, оно действительно плоское, но... Если такое попытаться завернуть в avro, то оно сломается. Если не на этапе конвертации, то на этапе загрузки в Greenplum точно. Всё по причине того, что тут буквально для каждого пользователя будет свой набор полей и схема каждого avro-файла будет различаться. \u003C\u002Fp\u003E\u003Cp\u003EЭтот процессор, сам по себе весьма полезный в иных случаях, в чистом виде нам не подходит. Смотрим, что же мы можем использовать ещё.\u003C\u002Fp\u003E\u003Ch4\u003EJoltTransformJSON\u003C\u002Fh4\u003E\u003Cfigure class=\"float bordered \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"121\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb81\u002F8d3\u002F410\u002Fb818d3410b7ea7615ab726700bcdd4cd.png\" data-width=\"326\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fnifi.apache.org\u002Fdocs\u002Fnifi-docs\u002Fcomponents\u002Forg.apache.nifi\u002Fnifi-standard-nar\u002F1.12.0\u002Forg.apache.nifi.processors.standard.JoltTransformJSON\u002F\" rel=\"noopener noreferrer nofollow\"\u003EJoltTransformJSON\u003C\u002Fa\u003E, пожалуй, самый мощный в арсенале NiFi, процессор для трансформации Json. Он позволяет применять список \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fbazaarvoice\u002Fjolt#Documentation\" rel=\"noopener noreferrer nofollow\"\u003EJolt-спецификаций\u003C\u002Fa\u003E к нашему Json. На хабре уже была \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F541904\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eстатья, посвященная этому процессору\u003C\u002Fa\u003E. Но, позвольте мне рассказать об этом процессоре применительно к нашей задаче.\u003C\u002Fp\u003E\u003Cp\u003EВариантов решения нашей задачи как минимум два - это либо обработать Json, полученный с помощью FlattenJson-процессора с помощью Jolt, либо попробовать от FlattenJson избавиться и решить всё с помощью JoltTransformJson. \u003C\u002Fp\u003E\u003Cp\u003EНо, для начала опишем, какие же возможности предоставляет нам этот процессор. Самое главное - это возможность работать с Jolt-спецификацией в расширенном редакторе, где можно не только писать спецификацию, проверить её корректность, но и выполнить трансформацию произвольного json не покидая окна редактора. \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"814\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F667\u002Fc46\u002F2e7\u002F667c462e77f54bcfa13924d3c229806e.png\" data-width=\"1835\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЭто всё круто и очень помогает в работе, но, если честно, я предпочитаю использовать \u003Ca href=\"https:\u002F\u002Fjolt-demo.appspot.com\u002F#bucketToPrefixSoup\" rel=\"noopener noreferrer nofollow\"\u003EJolt Transform Demo (jolt-demo.appspot.com)\u003C\u002Fa\u003E . Субъективно он более удобен и там есть примеры с комментариями для начала работы с Jolt.\u003C\u002Fp\u003E\u003Cp\u003EИтак, как вы видите, на картинке выше, я начал с простой спецификации: \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E[{\n\t\"operation\": \"shift\",\n\t\"spec\": {\n\t\t\"*\": \"&amp;\"\n\t}\n}]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭта спецификация, по сути ничего не трансформирует, поскольку говорит \"возьми любое поле и выведи его как оно есть\". Будем исправлять. Для начала определить нашу цель. А уже потом напишем для неё Jolt-спецификацию.\u003C\u002Fp\u003E\u003Cp\u003EИтак, у нас на входе:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n    \"uID\": 1000358546,\n    \"events\": [{\n            \"eventTypeCode\": \"FEEDBACK\",\n            \"transports\": [\"PUSH\", \"SMS\"]\n        }, {\n            \"eventTypeCode\": \"MARKETING\",\n            \"transports\": [\"PUSH\", \"EMAIL\"]\n        }, {\n            \"eventTypeCode\": \"ORDER_STATUS\",\n            \"transports\": [\"SOC_VK\"]\n        }\n    ]\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА хотим мы получить такой json на выходе:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n\t\"uID\": 1000358546,\n\t\"FEEDBACK\": [\"PUSH\", \"SMS\"],\n\t\"MARKETING\": [\"PUSH\", \"EMAIL\"],\n\t\"ORDER_STATUS\": [\"SOC_VK\"]\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДавайте напишем для него спецификацию. Нам нужно для каждого значения в \u003Cstrong\u003Eevents-\u003Etransports \u003C\u002Fstrong\u003Eвзять ключ из \u003Cstrong\u003Eevents-\u003EeventTypeCode \u003C\u002Fstrong\u003Eи в результате записать с этим ключем массив значений. Поле \u003Cstrong\u003EuID\u003C\u002Fstrong\u003E оставляем без изменений.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E[{\n\t\"operation\": \"shift\",\n\t\"spec\": {\n\t\t\"events\": {\n\t\t\t\"*\": {\n\t\t\t\t\"transports\": {\n\t\t\t\t\t\"*\": {\n\t\t\t\t\t\t\"@\": \"@(3,eventTypeCode)[]\"\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\t\t},\n\t\t\"*\": \"&amp;\"\n\t}\n}]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПояснение спецификации\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003E\u003Ccode\u003E\"events\":{\"*\":{\"transports\":{\"*\":{\u003C\u002Fcode\u003E,думаю, не вызывает особых сложностей. Здесь мы для каждого \u003Cstrong\u003Eevents\u003C\u002Fstrong\u003E берём каждый элемент массива (это первая \u003Cstrong\u003E\"*\"\u003C\u002Fstrong\u003E) для которого из \u003Cstrong\u003Etransports\u003C\u002Fstrong\u003E берём каждый элемент массива (вторая \u003Cstrong\u003E\"*\"\u003C\u002Fstrong\u003E).\u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003E\"@\": \"@(3,eventTypeCode)[]\"\u003C\u002Fcode\u003E вот тут самое интересное. Левая, от двоеточия, часть (\u003Cstrong\u003E\"@\"\u003C\u002Fstrong\u003E) говорит о том, что мы берём текущее значение элемента массива, а это у нас \u003Cstrong\u003EPUSH\u003C\u002Fstrong\u003E для самого первого совпадения. А вот правая часть говорит о том, с каким ключём мы запишем это значение в результирующий json. И запись \u003Cem\u003E\u003Cabbr title=\"@(3,eventTypeCode)\"\u003E@(3,eventTypeCode)\u003C\u002Fabbr\u003E\u003C\u002Fem\u003E означает, что для того, чтобы получить имя ключа, нам нужно поднятся на 3 уровня выше (на уровень первой \u003Cstrong\u003E\"*\"\u003C\u002Fstrong\u003E) и взять там значение поля \u003Cstrong\u003EeventTypeCode\u003C\u002Fstrong\u003E. Если, опять же, рассматривать самое первое совпадение, то это значение будет \u003Cstrong\u003EFEEDBACK\u003C\u002Fstrong\u003E - это и будет ключём, в который будет записано значение \u003Cstrong\u003EPUSH\u003C\u002Fstrong\u003E.\u003C\u002Fp\u003E\u003Cp\u003EДумаю, вы заметили квадратные скобки на конце правой части выражения? Они говорят о том, что ключ, который мы определяем, должен быть массивом. Если их не поставить, то тогда, например для \u003Cstrong\u003EORDER_STATUS,\u003C\u002Fstrong\u003E мы получим не массив, а просто строку. Для других типов событий у нас определено несколько значений транспорта, поэтому они будут объединены в массив автоматически. Т.е. результат мог бы выглядеть так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n    \"uID\": 1000358546,\n    \"FEEDBACK\": [\"PUSH\", \"SMS\"],\n    \"MARKETING\": [\"PUSH\", \"EMAIL\"],\n    \"ORDER_STATUS\": \"SOC_VK\"\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EИ так, мы добились желаемого результата. Но, давайте подумаем, какие сложности с данным вариантом. А мы опять имеем проблемы с потенциально различными схемами для разных пользователей. Я бы даже сказал с гарантированными. Это можно обойти, если при конвертации в \u003Cem\u003Eavro\u003C\u002Fem\u003E будем использовать определенную схему, а не выводить её из данных \u003Cem\u003Ejson\u003C\u002Fem\u003E. Но, это значит, что мы должны в этой схеме заранее прописать все типы событий всех наших сервисов, и менять схему при каждом изменении их состава. Было бы легче, если бы мы взяли в качестве ключа транспорт, а в качестве значения массив  типов событий, для которых уведомления используют данный транспорт. Я не буду приводить \u003Cem\u003EJolt-спецификацию\u003C\u002Fem\u003E для данной трансформации, оставлю это в качестве \u003Cem\u003Eзадания читателю\u003C\u002Fem\u003E. Да, видов транспорта сильно меньше, чем событий, но это не гарантирует нам постоянство их списка.\u003C\u002Fp\u003E\u003Cp\u003EИ так, подумаем, как мы можем обеспечить постоянство схемы выходных данных, если у нас на входе могут меняться как типы событий так и виды транспортов. Вариантов не так много: \u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eсделать два массива, один для событий, другой для транспортов, а соответствующие значения записывать с одним и тем-же индексом\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eсделать один массив, в котором пары событие\u002Fтранспорт будут строками с разделителем\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EПервый вариант был отклонён из-за более сложной реализации разбора на стороне Greenplum. Второй вариант выглядит, для нашего примера, так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"uID\" : 1000358546,\n  \"events\" : [ \n    \"FEEDBACK|PUSH\", \"FEEDBACK|SMS\",\n    \"MARKETING|PUSH\", \"MARKETING|EMAIL\",\n    \"ORDER_STATUS|SOC_VK\"\n  ]\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЧтобы выполнить такую Jolt-трансформацию понадобится цепочка преобразований. Для начала, нужно развернуть массив транспортов и желательно вывести тип событий на один уровень с транспортом. Затем склеить строки и убрать лишние поля.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПервый этап\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E[{\n     \"operation\": \"shift\",\n     \"spec\": {\n       \"nET\": {\n         \"*\": {\n           \"transports\": {\n             \"*\": {\n               \"*\": {\n                 \"@1\": \"outer[&amp;4].inner[&amp;2].t\",\n                 \"@(3,eventTypeCode)\": \"outer[&amp;4].inner[&amp;2].etc\"\n               }\n             }\n           }\n         }\n       },\n       \"*\": \"&amp;\"\n     }\n}]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗдесь  мы для каждого транспорта создаём объект, который вложен в два массива - внешний и внутренний (относительно \u003Cstrong\u003E\"transports\u003C\u002Fstrong\u003E\"). Значение транспорта записываем в поле \u003Cstrong\u003Et\u003C\u002Fstrong\u003E этого объекта, потом добавляем в этот объект поле \u003Cstrong\u003Eetc\u003C\u002Fstrong\u003E, которое будет иметь значение из \u003Cstrong\u003EeventTypeCode\u003C\u002Fstrong\u003E. \u003C\u002Fp\u003E\u003Cp\u003EРезультат выполнения:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"uID\" : 1000358546,\n  \"outer\" : [ {\n    \"inner\" : [ {\n      \"t\" : \"PUSH\",\n      \"etc\" : \"FEEDBACK\"\n    }, {\n      \"t\" : \"SMS\",\n      \"etc\" : \"FEEDBACK\"\n    } ]\n  }, {\n    \"inner\" : [ {\n      \"t\" : \"PUSH\",\n      \"etc\" : \"MARKETING\"\n    }, {\n      \"t\" : \"EMAIL\",\n      \"etc\" : \"MARKETING\"\n    } ]\n  }, {\n    \"inner\" : [ {\n      \"t\" : \"SOC_VK\",\n      \"etc\" : \"ORDER_STATUS\"\n    } ]\n  } ]\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EВторой этап\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003EИтак, у нас есть пары, но, прежде чем склеивать, давайте упростим массив:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n   \"operation\": \"shift\",\n   \"spec\": {\n     \"outer\": {\n       \"*\": {\n         \"inner\": {\n           \"*\": \"events[]\"\n         }\n       }\n     },\n     \"*\": \"&amp;\"\n   }\n  }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДобавив эту спецификацию в список Jolt-спецификаций получим результат:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"uID\" : 1000358546,\n  \"events\" : [ {\n    \"t\" : \"PUSH\",\n    \"etc\" : \"FEEDBACK\"\n  }, {\n    \"t\" : \"SMS\",\n    \"etc\" : \"FEEDBACK\"\n  }, {\n    \"t\" : \"PUSH\",\n    \"etc\" : \"MARKETING\"\n  }, {\n    \"t\" : \"EMAIL\",\n    \"etc\" : \"MARKETING\"\n  }, {\n    \"t\" : \"SOC_VK\",\n    \"etc\" : \"ORDER_STATUS\"\n  } ]\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EТретий этап\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003EТеперь наш массив не выглядит так страшно, как после первого этапа. Теперь мы можем легко склеить пары значений в одну строку.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E {\n     \"operation\": \"modify-default-beta\",\n     \"spec\": {\n       \"events\": {\n         \"*\": {\n           \"transport\": \"=concat(@(1,etc),'|',@(1,t))\"\n         }\n       }\n     }\n  }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДобавив этот этап к нашему списку спецификаций получим:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"uID\" : 1000358546,\n  \"events\" : [ {\n    \"t\" : \"PUSH\",\n    \"etc\" : \"FEEDBACK\",\n    \"transport\" : \"FEEDBACK|PUSH\"\n  }, {\n    \"t\" : \"SMS\",\n    \"etc\" : \"FEEDBACK\",\n    \"transport\" : \"FEEDBACK|SMS\"\n  }, {\n    \"t\" : \"PUSH\",\n    \"etc\" : \"MARKETING\",\n    \"transport\" : \"MARKETING|PUSH\"\n  }, {\n    \"t\" : \"EMAIL\",\n    \"etc\" : \"MARKETING\",\n    \"transport\" : \"MARKETING|EMAIL\"\n  }, {\n    \"t\" : \"SOC_VK\",\n    \"etc\" : \"ORDER_STATUS\",\n    \"transport\" : \"ORDER_STATUS|SOC_VK\"\n  } ]\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПоследний этап\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003EТеперь нам остаётся только преобразовать массив объектов в массив строк, взяв только значения поля \u003Cstrong\u003Etransport\u003C\u002Fstrong\u003E.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n     \"operation\": \"shift\",\n     \"spec\": {\n       \"events\": {\n         \"*\": {\n           \"@transport\": \"events[]\"\n         }\n       },\n       \"*\": \"&amp;\"\n     }\n  }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДобавление этой операции приведёт нас к желаемому результату:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"uID\" : 1000358546,\n  \"events\" : [ \n  \t\"FEEDBACK|PUSH\", \"FEEDBACK|SMS\",\n    \"MARKETING|PUSH\", \"MARKETING|EMAIL\",\n    \"ORDER_STATUS|SOC_VK\"\n  ]\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EИтак, цепочка спецификаций выглядит так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E [\n \t{\n     \"operation\": \"shift\",\n     \"spec\": {\n       \"events\": {\n         \"*\": {\n           \"transports\": {\n             \"*\": {\n               \"*\": {\n                 \"@1\": \"outer[&amp;4].inner[&amp;2].t\",\n                 \"@(3,eventTypeCode)\": \"outer[&amp;4].inner[&amp;2].etc\"\n               }\n             }\n           }\n         }\n       },\n       \"*\": \"&amp;\"\n     }\n  }, {\n     \"operation\": \"shift\",\n     \"spec\": {\n       \"outer\": {\n         \"*\": {\n           \"inner\": {\n             \"*\": \"events[]\"\n           }\n         }\n       },\n       \"*\": \"&amp;\"\n     }\n  },\n   {\n     \"operation\": \"modify-default-beta\",\n     \"spec\": {\n       \"events\": {\n         \"*\": {\n           \"transport\": \"=concat(@(1,etc),'|',@(1,t))\"\n         }\n       }\n     }\n  },\n   {\n     \"operation\": \"shift\",\n     \"spec\": {\n       \"events\": {\n         \"*\": {\n           \"@transport\": \"events[]\"\n         }\n       },\n       \"*\": \"&amp;\"\n     }\n  }\n]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EРезультат наших преобразований будет иметь простую схему при конвертации в avro и не будет изменяться от пользователя к пользователю. Строка легко разбивается в запросе к внешней pxf-таблице в Greenplum.\u003C\u002Fp\u003E\u003Cp\u003EКоллеги, вопросы, предложения, комментарии...\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"apache nifi"},{"titleHtml":"nifi"},{"titleHtml":"jolt"},{"titleHtml":"json"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F81a\u002F4e0\u002Fe61\u002F81a4e0e6133ae6168b8aa183ed1fc57d.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F81a\u002F4e0\u002Fe61\u002F81a4e0e6133ae6168b8aa183ed1fc57d.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F585184\\\u002F\"},\"headline\":\"Готовим Json в Apache NiFi или снова Jolt Transform\",\"datePublished\":\"2021-10-24T16:33:42+03:00\",\"dateModified\":\"2021-10-24T20:17:45+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Валерий Шинкевич\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"На текущем проекте у нас начинает активно использоваться Apache NiFi в качестве основного ETL\\\u002FELT-инструмента. NiFi используется для получения данных из различны...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F585184\\\u002F#post-content-body\",\"about\":[\"h_bigdata\",\"h_data_engineering\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F585184\\\u002Fdc7953963c1ceeda570a8e9b1a7b4c1a\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F81a\\\u002F4e0\\\u002Fe61\\\u002F81a4e0e6133ae6168b8aa183ed1fc57d.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fc8b\\\u002Ffa4\\\u002F35b\\\u002Fc8bfa435b7eb453f6097db2b06033750.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F532\\\u002F72c\\\u002Fd43\\\u002F53272cd43c1accd63a0a964d00b4027d.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb81\\\u002F8d3\\\u002F410\\\u002Fb818d3410b7ea7615ab726700bcdd4cd.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F667\\\u002Fc46\\\u002F2e7\\\u002F667c462e77f54bcfa13924d3c229806e.png\"]}","metaDescription":"На текущем проекте у нас начинает активно использоваться Apache NiFi в качестве основного ETL\u002FELT-инструмента. NiFi используется для получения данных из различных источников (Kafka, REST, HDFS) и...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"bigdata,data_engineering"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

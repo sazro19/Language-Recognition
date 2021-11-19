@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Создайте средство проверки на плагиат с помощью машинного обучения / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582094\/"},"headline":"Создайте средство проверки на плагиат с помощью машинного обучения","datePublished":"2021-10-13T11:07:18+03:00","dateModified":"2021-10-14T00:48:18+03:00","author":{"@type":"Person","name":"val6852"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных...","url":"https:\/\/habr.com\/ru\/post\/582094\/#post-content-body","about":["h_python","h_machine_learning","h_natural_language_processing","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582094\/8884ee85150fb7f09be3fa2f25106142\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/c3f\/2c6\/e0e\/c3f2c6e0e513c5227fb7f017e6cf47dd.gif","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/ce0\/579\/730\/ce05797307a76597f1984a5a91c64624.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Создайте средство проверки на плагиат с помощью машинного обучения" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Создайте средство проверки на плагиат с помощью машинного обучения" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Создайте средство проверки на плагиат с помощью машинного обучения" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных.&amp;nbsp;В этой статье мы сделаем..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных.&amp;nbsp;В этой статье мы сделаем..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных.&amp;nbsp;В этой статье мы сделаем..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных.&amp;nbsp;В этой статье мы сделаем..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных.&amp;nbsp;В этой статье мы сделаем..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/c3f/2c6/e0e/c3f2c6e0e513c5227fb7f017e6cf47dd.gif" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/c3f/2c6/e0e/c3f2c6e0e513c5227fb7f017e6cf47dd.gif" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/c3f/2c6/e0e/c3f2c6e0e513c5227fb7f017e6cf47dd.gif" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/c3f/2c6/e0e/c3f2c6e0e513c5227fb7f017e6cf47dd.gif" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/c3f/2c6/e0e/c3f2c6e0e513c5227fb7f017e6cf47dd.gif" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582094" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-13T08:07:18.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582094/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582094/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/c3f/2c6/e0e/c3f2c6e0e513c5227fb7f017e6cf47dd.gif" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582094/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/val6852/" title="val6852" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/val6852/" class="tm-user-info__username">
+      val6852
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-13T08:07:18.000Z" title="2021-10-13, 11:07">13  октября   в 11:07</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Создайте средство проверки на плагиат с помощью машинного обучения</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/machine_learning/" class="tm-article-snippet__hubs-item-link"><span>Машинное обучение</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/natural_language_processing/" class="tm-article-snippet__hubs-item-link"><span>Natural Language Processing</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://dzone.com/articles/build-a-plagiarism-checker-using-machine-learning" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Tyler Hawkins
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><h4>Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных. В этой статье мы сделаем  демонстрационное приложение для этой цели.</h4><p>Плагиат широко распространен в Интернете и в процессе обучения. При большом количестве контента иногда трудно определить, когда что-то стало плагиатом. </p><p>Авторы, пишущие сообщения в блогах, могут захотеть проверить, не украл ли кто-то их работу и не разместил ли ее в другом месте. Учителя могут захотеть сравнить работы студентов с другими научными статьями на предмет скопированных работ. Новостные агентства могут захотеть проверить, не украла ли контент-ферма их новостные статьи и не презентовала ли на это содержание как на свое.</p><p>Итак, как нам защититься от плагиата? Разве не было бы хорошо, если бы у нас было программное обеспечение, которое делало бы за нас всю тяжелую работу? Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных. В этой статье мы сделаем именно это.</p><p>Мы создадим Python Flask приложение, которое использует <a href="https://www.pinecone.io/" rel="noopener noreferrer nofollow"> Pinecone</a> — службу поиска сходства — для поиска возможного плагиата.</p><h3>Обзор демонстрационного приложения</h3><p>Давайте посмотрим на демонстрационное приложение, которое мы создадим сегодня. Ниже вы можете увидеть краткую анимацию приложения в действии.</p><p>Пользовательский интерфейс имеет простое текстовое поле для ввода, в которое пользователь может вставить текст из статьи. Когда пользователь нажимает кнопку «Отправить», этот ввод используется для запроса в базе данных статей. Затем пользователю отображаются результаты поиска и их проценты совпадения. Чтобы уменьшить количество шума, приложение также включает ползунок, в котором пользователь может указать порог схожести, чтобы показывать только очень сильные совпадения.</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Демо приложение — проверка на плагиат" title="Демо приложение — проверка на плагиат" height="569" data-src="https://habrastorage.org/getpro/habr/upload_files/c3f/2c6/e0e/c3f2c6e0e513c5227fb7f017e6cf47dd.gif" data-width="600"/><figcaption>Демо приложение — проверка на плагиат</figcaption></figure><p>Как видите, когда исходный контент используется в качестве входных данных для поиска, оценки совпадений для статей, возможно, являющихся плагиатом, относительно низкие. Однако, если бы мы скопировали и вставили текст из одной из статей в нашей базе данных, результаты для статьи с плагиатом вернутся с совпадением 99,99%!</p><p>Итак, как мы это сделали?</p><p>При создании приложения мы начинаем с <a href="https://www.kaggle.com/snapcrack/all-the-news" rel="noopener noreferrer nofollow">набора данных новостных статей</a> от Kaggle. Этот набор данных содержит 143 000 новостных статей из 15 крупных публикаций, но мы используем только первые 20 000. (Полный набор данных, из которого создан этот, содержит более двух миллионов статей!)</p><p>Затем мы очищаем набор данных, переименовав пару столбцов и удалив несколько ненужных. Затем мы пропускаем статьи через модель вложения для создания <a href="https://www.pinecone.io/learn/vector-embeddings/" rel="noopener noreferrer nofollow">vector embeddings</a> (сопоставлений векторов) - это метаданные для алгоритмов машинного обучения для определения сходства между различными входными данными. </p><blockquote><p>Подробнее см. статью на Хабре: "<a href="https://habr.com/ru/company/ods/blog/329410/" rel="noopener noreferrer nofollow">Чудесный мир Word Embeddings: какие они бывают и зачем нужны?</a>"</p></blockquote><p>Мы используем модель <a href="https://nlp.stanford.edu/projects/glove/" rel="noopener noreferrer nofollow">Average Word Embeddings Model</a>  (модель среднего количества сопоставлений слов). Наконец, мы вставляем эти сопоставления векторов в <a href="https://www.pinecone.io/learn/vector-database/" rel="noopener noreferrer nofollow">векторную базу данных,</a> управляемую Pinecone.</p><p>Когда векторные сопоставления добавлены в базу данных и проиндексированы, мы готовы начать поиск аналогичного контента. Когда пользователи отправляют текст своей статьи в качестве входных данных, делается запрос к конечной точке API, использующей SDK Pinecone для запроса индекса сопоставлений векторов. Конечная точка API возвращает 10 похожих статей, которые, возможно, были плагиатом, и отображает их в пользовательском интерфейсе приложения. Вот и все! Достаточно просто, правда?</p><p>Если вы хотите попробовать это сами, вы можете <a href="https://github.com/thawkin3/plagiarism-checker" rel="noopener noreferrer nofollow">найти код этого приложения на GitHub</a>. README содержит инструкции по локальному запуску приложения на вашем компьютере.</p><h3>Пошаговое ревью кода демонстрационного приложения</h3><p>Мы рассмотрели внутреннюю работу приложения, но как мы на самом деле его создали? Как отмечалось ранее, это Python Flask приложение, которое использует Pinecone SDK. HTML использует файл шаблона, а остальная часть интерфейса создается с использованием статических ресурсов CSS и JS. Для простоты весь внутренний код находится в файле app.py, который мы полностью воспроизвели ниже:</p><pre><code class="python">from dotenv import load_dotenv
+from flask import Flask
+from flask import render_template
+from flask import request
+from flask import url_for
+import json
+import os
+import pandas as pd
+import pinecone
+import re
+import requests
+from sentence_transformers import SentenceTransformer
+from statistics import mean
+import swifter
+
+app = Flask(__name__)
+
+PINECONE_INDEX_NAME = "plagiarism-checker"
+DATA_FILE = "articles.csv"
+NROWS = 20000
+
+def initialize_pinecone():
+    load_dotenv()
+    PINECONE_API_KEY = os.environ["PINECONE_API_KEY"]
+    pinecone.init(api_key=PINECONE_API_KEY)
+
+def delete_existing_pinecone_index():
+    if PINECONE_INDEX_NAME in pinecone.list_indexes():
+        pinecone.delete_index(PINECONE_INDEX_NAME)
+
+def create_pinecone_index():
+    pinecone.create_index(name=PINECONE_INDEX_NAME, metric="cosine", shards=1)
+    pinecone_index = pinecone.Index(name=PINECONE_INDEX_NAME)
+
+    return pinecone_index
+
+def create_model():
+    model = SentenceTransformer('average_word_embeddings_komninos')
+
+    return model
+
+def prepare_data(data):
+    # rename id column and remove unnecessary columns
+    data.rename(columns={"Unnamed: 0": "article_id"}, inplace = True)
+    data.drop(columns=['date'], inplace = True)
+
+    # combine the article title and content into a single field
+    data['content'] = data['content'].fillna('')
+    data['content'] = data.content.swifter.apply(lambda x: ' '.join(re.split(r'(?&lt;=[.:;])\s', x)))
+    data['title_and_content'] = data['title'] + ' ' + data['content']
+
+    # create a vector embedding based on title and article content
+    encoded_articles = model.encode(data['title_and_content'], show_progress_bar=True)
+    data['article_vector'] = pd.Series(encoded_articles.tolist())
+
+    return data
+
+def upload_items(data):
+    items_to_upload = [(row.id, row.article_vector) for i, row in data.iterrows()]
+    pinecone_index.upsert(items=items_to_upload)
+
+def process_file(filename):
+    data = pd.read_csv(filename, nrows=NROWS)
+    data = prepare_data(data)
+    upload_items(data)
+    pinecone_index.info()
+
+    return data
+
+def map_titles(data):
+    return dict(zip(uploaded_data.id, uploaded_data.title))
+
+def map_publications(data):
+    return dict(zip(uploaded_data.id, uploaded_data.publication))
+
+def query_pinecone(originalContent):
+    query_content = str(originalContent)
+    query_vectors = [model.encode(query_content)]
+
+    query_results = pinecone_index.query(queries=query_vectors, top_k=10)
+    res = query_results[0]
+
+    results_list = []
+
+    for idx, _id in enumerate(res.ids):
+        results_list.append({
+            "id": _id,
+            "title": titles_mapped[int(_id)],
+            "publication": publications_mapped[int(_id)],
+            "score": res.scores[idx],
+        })
+
+    return json.dumps(results_list)
+
+initialize_pinecone()
+delete_existing_pinecone_index()
+pinecone_index = create_pinecone_index()
+model = create_model()
+uploaded_data = process_file(filename=DATA_FILE)
+titles_mapped = map_titles(uploaded_data)
+publications_mapped = map_publications(uploaded_data)
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/api/search", methods=["POST", "GET"])
+def search():
+    if request.method == "POST":
+        return query_pinecone(request.form.get("originalContent", ""))
+    if request.method == "GET":
+        return query_pinecone(request.args.get("originalContent", ""))
+    return "Only GET and POST methods are allowed for this endpoint"</code></pre><p>Давайте пройдемся по важным частям файла <code>app.py</code>, чтобы понять его.</p><p>В строках 1–14 мы импортируем зависимости нашего приложения. Наше приложение использует следующее зависимости:</p><ul><li><p><code>dotenv</code> для чтения переменных среды из файла .env</p></li><li><p><code>flask</code> для настройки веб-приложения</p></li><li><p><code>json</code> для работы с JSON</p></li><li><p><code>os</code> также для получения переменных среды</p></li><li><p><code>pandas</code> для работы с набором данных</p></li><li><p><code>pinecone</code> для работы с Pinecone SDK</p></li><li><p><code>re</code> для работы с регулярными выражениями (RegEx)</p></li><li><p><code>requests</code> для выполнения запросов API для загрузки нашего набора данных</p></li><li><p><code>statistics</code> для некоторых удобных методов статистики</p></li><li><p><code>sentence_transformers</code> для нашей модели встраивания</p></li><li><p><code>swifter</code> для работы с фреймом данных pandas</p></li></ul><p>В строке 16 мы предоставляем шаблонный код, чтобы сообщить Flask имя нашего приложения.</p><p>В строках 18-20 мы определяем некоторые константы, которые будут использоваться в приложении. К ним относятся имя нашего индекса Pinecone, имя файла набора данных и количество строк для чтения из файла CSV.</p><p>В строках 22-25, метод <code>initialize_pinecone</code> получает наш ключ API из файла <code>.env </code>и использует его для инициализации Pinecone.</p><p>В строках 27-29, наш метод <code>delete_existing_pinecone_index</code>ищет в нашем экземпляре Pinecone индексы с тем же именем, что и тот, который мы используем («проверка на плагиат»). Если найден существующий индекс, мы его удаляем.</p><p>В строках 31-35,  наш метод <code>create_pinecone_index</code> создает новый индекс, используя выбранное нами имя («проверка на плагиат»), метрику близости «косинус» и только одну shard.</p><p>В строках 37-40, наш метод <code>create_model</code> использует библиотеку offer_transformers для работы с моделью среднего количества сопоставлений слов. Позже мы закодируем наши сопоставлений векторов, используя эту модель.</p><p>В строках 62-68, наш метод <code>process_file </code>считывает CSV файл и затем вызывает методы <code>prepare_data </code>и <code>upload_items</code>. Эти два метода описаны ниже.</p><p>В строках 42-56 наш метод <code>prepare_data </code>корректирует набор данных, переименовывая первый столбец «id» и удаляя столбец «date». Затем он объединяет заголовок статьи с содержанием статьи в одно поле. Мы будем использовать это комбинированное поле при создании сопоставлений векторов.</p><p>В строках 58-60 наш <code>upload_items</code>метод создает сопоставление векторов для каждой статьи, кодируя его с помощью нашей модели. Затем мы вставляем сопоставления векторов в индекс Pinecone.</p><p>В строках 70-74, наши методы <code>map_titles</code>и <code>map_publications </code>создают некоторые словари названий и имен публикаций, чтобы позже легче найти статьи по их идентификаторам.</p><p>Каждый из описанных методов вызывается в строках 95-101 при запуске серверной части приложения. Ее работа подготавливает нас к последнему этапу фактического запроса индекса Pinecone на основе пользовательского ввода.</p><p>В строках 103–113 мы определяем два маршрута для нашего приложения: один для домашней страницы и один для конечной точки API. Домашняя страница обслуживает файл шаблона <code>index.html</code> вместе с активами JS и CSS, а конечная точка API предоставляет функции поиска для запроса индекса Pinecone.</p><p>Наконец, в строках 76-93 наш метод <code>query_pinecone </code>принимает вводимое пользователем содержимое статьи, преобразует его в сопоставления векторов, а затем запрашивает индекс Pinecone, чтобы найти похожие статьи. Этот метод вызывается при  переходе на конечную точку <code>/api/search</code>, что происходит каждый раз, когда пользователь отправляет новый поисковый запрос.</p><p>Для визуализации процесса, вот схема, показывающая, как работает приложение:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Архитектура приложения и пользовательский интерфейс" title="Архитектура приложения и пользовательский интерфейс" height="362" data-src="https://habrastorage.org/getpro/habr/upload_files/ce0/579/730/ce05797307a76597f1984a5a91c64624.png" data-width="741"/><figcaption>Архитектура приложения и пользовательский интерфейс</figcaption></figure><h3>Примеры сценариев</h3><p>Итак, суммируя сказанное, как выглядит пользовательский сценарий? Давайте рассмотрим три сценария: оригинальный контент, точная копия плагиата и контент с «исправлением написанного».</p><p>Когда отправляется оригинальный контент, приложение отвечает некоторыми, возможно, связанными статьями, но оценки соответствия довольно низкие. Это хороший знак, поскольку контент не является плагиатом, поэтому мы ожидаем низких оценок соответствия.</p><p>Когда отправляется точная копия плагиата, приложение выдает почти идеальную оценку совпадения для одной статьи. Это потому, что контент идентичен. Хорошая проверка на плагиат!</p><p>Теперь, для третьего сценария, мы должны определить, что мы подразумеваем под «исправлением написанного». Исправление написанного - это форма плагиата, при которой кто-то копирует и вставляет украденный контент, но затем пытается замаскировать факт плагиата, изменяя некоторые слова здесь и там. Если в предложении из исходной статьи говорится: «Он был вне себя от радости найдя свою потерянную собаку», кто-то может написать исправление, чтобы вместо этого сказать: «Он был счастлив вернуть свою пропавшую собаку». Это несколько отличается от перефразирования, потому что основная структура предложения содержания часто остается неизменной на протяжении всей статьи, подвергшейся плагиату.</p><p>Вот что самое интересное: наша программа проверки на плагиат действительно хорошо распознает контент с «исправлением написанного»! Если вы скопируете и вставите одну из статей в базе данных, а затем измените несколько слов здесь и там, и, возможно, даже удалите несколько предложений или абзацев, оценка совпадения все равно вернется как почти идеальное совпадение! Когда я попытался сделать это со скопированной и вставленной статьей, у которой была оценка совпадения 99,99%, содержание «записанного исправления» по-прежнему давало оценку совпадения 99,88% после моих изменений!</p><p>Не слишком испорчена оценка! Похоже, наша программа проверки на плагиат работает нормально.</p><h3>Заключение и следующие шаги</h3><p>Мы создали простое приложение Python для решения реальной проблемы. Подражание может быть высшей формой лести, но никому не нравится, когда его работы крадут. В мире растущего контента подобная программа для проверки плагиата будет очень полезна как авторам, так и учителям.</p><p>У этого демонстрационного приложения есть некоторые ограничения, так как это всего лишь демонстрация. База данных статей, загруженных в наш индекс, содержит всего 20 000 статей из 15 крупных новостных изданий. Однако существуют миллионы или даже миллиарды статей и сообщений в блогах. Подобная программа проверки на плагиат полезна только в том случае, если она проверяет ваш ввод на предмет всех мест, где ваша работа могла быть плагиатом. Это приложение было бы лучше, если бы в нашем индексе было больше статей и если бы мы постоянно добавляли в него.</p><p>Тем не менее, на данный момент мы продемонстрировали важное подтверждение концепции. Pinecone, как сервис поиска сходства, сделала за нас тяжелую работу, когда дело дошло до аспекта машинного обучения. С его помощью мы смогли создать полезное приложение, которое довольно легко использует обработку естественного языка и <a href="https://www.pinecone.io/learn/semantic-search/" rel="noopener noreferrer nofollow">семантический поиск</a>, и теперь мы можем быть спокойны, зная, что наша работа не является плагиатом.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmachine%20learning%5D" class="tm-tags-list__link">machine learning</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpython%5D" class="tm-tags-list__link">python</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnatural%20language%20processing%5D" class="tm-tags-list__link">natural language processing</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnlp%5D" class="tm-tags-list__link">nlp</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/machine_learning/" class="tm-hubs-list__link">
+    Машинное обучение
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/natural_language_processing/" class="tm-hubs-list__link">
+    Natural Language Processing
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 2: ↑1 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 2: ↑1 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_medium">0</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.5K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    19
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/val6852/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 102 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    58
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">30</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/val6852/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @val6852
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582094/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 4 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582094/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582094/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582094":{"id":"582094","timePublished":"2021-10-13T08:07:18+00:00","isCorporative":false,"lang":"ru","titleHtml":"Создайте средство проверки на плагиат с помощью машинного обучения","leadData":{"textHtml":"\u003Cp\u003EИспользуя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных.&nbsp;В этой статье мы сделаем &nbsp;демонстрационное  приложение для этой цели.\u003C\u002Fp\u003E\u003Cp\u003EПлагиат широко распространен в Интернете и в процессе обучения.&nbsp;При большом количестве контента иногда трудно определить, когда что-то стало плагиатом.&nbsp;\u003C\u002Fp\u003E\u003Cp\u003EАвторы, пишущие сообщения в блогах, могут захотеть проверить, не украл ли кто-то их работу и не разместил ли ее в другом месте.&nbsp;Учителя могут захотеть сравнить работы студентов с другими научными статьями на предмет скопированных работ.&nbsp;Новостные агентства могут захотеть проверить, не украла ли контент ферма их новостные статьи и не презентовала ли на это содержание как на свое.\u003C\u002Fp\u003E\u003Cp\u003EИтак, как нам защититься от плагиата?&nbsp;Разве не было бы хорошо, если бы у нас было программное обеспечение, которое делало бы за нас всю тяжелую работу?&nbsp;\u003C\u002Fp\u003E\u003Cp\u003EИспользуя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных.&nbsp;В этой статье мы сделаем именно это.\u003C\u002Fp\u003E\u003Cp\u003EМы создадим Python Flask приложение, которое использует&nbsp;\u003Ca href=\"https:\u002F\u002Fwww.pinecone.io\u002F\" rel=\"noopener noreferrer nofollow\"\u003E&nbsp;Pinecone\u003C\u002Fa\u003E&nbsp;- службу поиска сходства для поиска возможного плагиата.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3f\u002F2c6\u002Fe0e\u002Fc3f2c6e0e513c5227fb7f017e6cf47dd.gif","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3f\u002F2c6\u002Fe0e\u002Fc3f2c6e0e513c5227fb7f017e6cf47dd.gif","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Tyler Hawkins","originalUrl":"https:\u002F\u002Fdzone.com\u002Farticles\u002Fbuild-a-plagiarism-checker-using-machine-learning"}},{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":58,"votesCount":102},"rating":30,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2187018","alias":"val6852","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":4,"favoritesCount":19,"readingCount":1532,"score":0,"votesCount":2},"hubs":[{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true},{"relatedData":null,"id":"19439","alias":"machine_learning","type":"collective","title":"Машинное обучение","titleHtml":"Машинное обучение","isProfiled":true},{"relatedData":null,"id":"22125","alias":"natural_language_processing","type":"collective","title":"Natural Language Processing","titleHtml":"Natural Language Processing","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Ch4\u003EИспользуя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных. В этой статье мы сделаем  демонстрационное приложение для этой цели.\u003C\u002Fh4\u003E\u003Cp\u003EПлагиат широко распространен в Интернете и в процессе обучения. При большом количестве контента иногда трудно определить, когда что-то стало плагиатом. \u003C\u002Fp\u003E\u003Cp\u003EАвторы, пишущие сообщения в блогах, могут захотеть проверить, не украл ли кто-то их работу и не разместил ли ее в другом месте. Учителя могут захотеть сравнить работы студентов с другими научными статьями на предмет скопированных работ. Новостные агентства могут захотеть проверить, не украла ли контент-ферма их новостные статьи и не презентовала ли на это содержание как на свое.\u003C\u002Fp\u003E\u003Cp\u003EИтак, как нам защититься от плагиата? Разве не было бы хорошо, если бы у нас было программное обеспечение, которое делало бы за нас всю тяжелую работу? Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных. В этой статье мы сделаем именно это.\u003C\u002Fp\u003E\u003Cp\u003EМы создадим Python Flask приложение, которое использует \u003Ca href=\"https:\u002F\u002Fwww.pinecone.io\u002F\" rel=\"noopener noreferrer nofollow\"\u003E Pinecone\u003C\u002Fa\u003E — службу поиска сходства — для поиска возможного плагиата.\u003C\u002Fp\u003E\u003Ch3\u003EОбзор демонстрационного приложения\u003C\u002Fh3\u003E\u003Cp\u003EДавайте посмотрим на демонстрационное приложение, которое мы создадим сегодня. Ниже вы можете увидеть краткую анимацию приложения в действии.\u003C\u002Fp\u003E\u003Cp\u003EПользовательский интерфейс имеет простое текстовое поле для ввода, в которое пользователь может вставить текст из статьи. Когда пользователь нажимает кнопку «Отправить», этот ввод используется для запроса в базе данных статей. Затем пользователю отображаются результаты поиска и их проценты совпадения. Чтобы уменьшить количество шума, приложение также включает ползунок, в котором пользователь может указать порог схожести, чтобы показывать только очень сильные совпадения.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Демо приложение — проверка на плагиат\" title=\"Демо приложение — проверка на плагиат\" height=\"569\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3f\u002F2c6\u002Fe0e\u002Fc3f2c6e0e513c5227fb7f017e6cf47dd.gif\" data-width=\"600\"\u002F\u003E\u003Cfigcaption\u003EДемо приложение — проверка на плагиат\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EКак видите, когда исходный контент используется в качестве входных данных для поиска, оценки совпадений для статей, возможно, являющихся плагиатом, относительно низкие. Однако, если бы мы скопировали и вставили текст из одной из статей в нашей базе данных, результаты для статьи с плагиатом вернутся с совпадением 99,99%!\u003C\u002Fp\u003E\u003Cp\u003EИтак, как мы это сделали?\u003C\u002Fp\u003E\u003Cp\u003EПри создании приложения мы начинаем с \u003Ca href=\"https:\u002F\u002Fwww.kaggle.com\u002Fsnapcrack\u002Fall-the-news\" rel=\"noopener noreferrer nofollow\"\u003Eнабора данных новостных статей\u003C\u002Fa\u003E от Kaggle. Этот набор данных содержит 143 000 новостных статей из 15 крупных публикаций, но мы используем только первые 20 000. (Полный набор данных, из которого создан этот, содержит более двух миллионов статей!)\u003C\u002Fp\u003E\u003Cp\u003EЗатем мы очищаем набор данных, переименовав пару столбцов и удалив несколько ненужных. Затем мы пропускаем статьи через модель вложения для создания \u003Ca href=\"https:\u002F\u002Fwww.pinecone.io\u002Flearn\u002Fvector-embeddings\u002F\" rel=\"noopener noreferrer nofollow\"\u003Evector embeddings\u003C\u002Fa\u003E (сопоставлений векторов) - это метаданные для алгоритмов машинного обучения для определения сходства между различными входными данными. \u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003EПодробнее см. статью на Хабре: \"\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fods\u002Fblog\u002F329410\u002F\" rel=\"noopener noreferrer nofollow\"\u003EЧудесный мир Word Embeddings: какие они бывают и зачем нужны?\u003C\u002Fa\u003E\"\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EМы используем модель \u003Ca href=\"https:\u002F\u002Fnlp.stanford.edu\u002Fprojects\u002Fglove\u002F\" rel=\"noopener noreferrer nofollow\"\u003EAverage Word Embeddings Model\u003C\u002Fa\u003E  (модель среднего количества сопоставлений слов). Наконец, мы вставляем эти сопоставления векторов в \u003Ca href=\"https:\u002F\u002Fwww.pinecone.io\u002Flearn\u002Fvector-database\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eвекторную базу данных,\u003C\u002Fa\u003E управляемую Pinecone.\u003C\u002Fp\u003E\u003Cp\u003EКогда векторные сопоставления добавлены в базу данных и проиндексированы, мы готовы начать поиск аналогичного контента. Когда пользователи отправляют текст своей статьи в качестве входных данных, делается запрос к конечной точке API, использующей SDK Pinecone для запроса индекса сопоставлений векторов. Конечная точка API возвращает 10 похожих статей, которые, возможно, были плагиатом, и отображает их в пользовательском интерфейсе приложения. Вот и все! Достаточно просто, правда?\u003C\u002Fp\u003E\u003Cp\u003EЕсли вы хотите попробовать это сами, вы можете \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fthawkin3\u002Fplagiarism-checker\" rel=\"noopener noreferrer nofollow\"\u003Eнайти код этого приложения на GitHub\u003C\u002Fa\u003E. README содержит инструкции по локальному запуску приложения на вашем компьютере.\u003C\u002Fp\u003E\u003Ch3\u003EПошаговое ревью кода демонстрационного приложения\u003C\u002Fh3\u003E\u003Cp\u003EМы рассмотрели внутреннюю работу приложения, но как мы на самом деле его создали? Как отмечалось ранее, это Python Flask приложение, которое использует Pinecone SDK. HTML использует файл шаблона, а остальная часть интерфейса создается с использованием статических ресурсов CSS и JS. Для простоты весь внутренний код находится в файле app.py, который мы полностью воспроизвели ниже:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom dotenv import load_dotenv\nfrom flask import Flask\nfrom flask import render_template\nfrom flask import request\nfrom flask import url_for\nimport json\nimport os\nimport pandas as pd\nimport pinecone\nimport re\nimport requests\nfrom sentence_transformers import SentenceTransformer\nfrom statistics import mean\nimport swifter\n\napp = Flask(__name__)\n\nPINECONE_INDEX_NAME = \"plagiarism-checker\"\nDATA_FILE = \"articles.csv\"\nNROWS = 20000\n\ndef initialize_pinecone():\n    load_dotenv()\n    PINECONE_API_KEY = os.environ[\"PINECONE_API_KEY\"]\n    pinecone.init(api_key=PINECONE_API_KEY)\n\ndef delete_existing_pinecone_index():\n    if PINECONE_INDEX_NAME in pinecone.list_indexes():\n        pinecone.delete_index(PINECONE_INDEX_NAME)\n\ndef create_pinecone_index():\n    pinecone.create_index(name=PINECONE_INDEX_NAME, metric=\"cosine\", shards=1)\n    pinecone_index = pinecone.Index(name=PINECONE_INDEX_NAME)\n\n    return pinecone_index\n\ndef create_model():\n    model = SentenceTransformer('average_word_embeddings_komninos')\n\n    return model\n\ndef prepare_data(data):\n    # rename id column and remove unnecessary columns\n    data.rename(columns={\"Unnamed: 0\": \"article_id\"}, inplace = True)\n    data.drop(columns=['date'], inplace = True)\n\n    # combine the article title and content into a single field\n    data['content'] = data['content'].fillna('')\n    data['content'] = data.content.swifter.apply(lambda x: ' '.join(re.split(r'(?&lt;=[.:;])\\s', x)))\n    data['title_and_content'] = data['title'] + ' ' + data['content']\n\n    # create a vector embedding based on title and article content\n    encoded_articles = model.encode(data['title_and_content'], show_progress_bar=True)\n    data['article_vector'] = pd.Series(encoded_articles.tolist())\n\n    return data\n\ndef upload_items(data):\n    items_to_upload = [(row.id, row.article_vector) for i, row in data.iterrows()]\n    pinecone_index.upsert(items=items_to_upload)\n\ndef process_file(filename):\n    data = pd.read_csv(filename, nrows=NROWS)\n    data = prepare_data(data)\n    upload_items(data)\n    pinecone_index.info()\n\n    return data\n\ndef map_titles(data):\n    return dict(zip(uploaded_data.id, uploaded_data.title))\n\ndef map_publications(data):\n    return dict(zip(uploaded_data.id, uploaded_data.publication))\n\ndef query_pinecone(originalContent):\n    query_content = str(originalContent)\n    query_vectors = [model.encode(query_content)]\n\n    query_results = pinecone_index.query(queries=query_vectors, top_k=10)\n    res = query_results[0]\n\n    results_list = []\n\n    for idx, _id in enumerate(res.ids):\n        results_list.append({\n            \"id\": _id,\n            \"title\": titles_mapped[int(_id)],\n            \"publication\": publications_mapped[int(_id)],\n            \"score\": res.scores[idx],\n        })\n\n    return json.dumps(results_list)\n\ninitialize_pinecone()\ndelete_existing_pinecone_index()\npinecone_index = create_pinecone_index()\nmodel = create_model()\nuploaded_data = process_file(filename=DATA_FILE)\ntitles_mapped = map_titles(uploaded_data)\npublications_mapped = map_publications(uploaded_data)\n\n@app.route(\"\u002F\")\ndef index():\n    return render_template(\"index.html\")\n\n@app.route(\"\u002Fapi\u002Fsearch\", methods=[\"POST\", \"GET\"])\ndef search():\n    if request.method == \"POST\":\n        return query_pinecone(request.form.get(\"originalContent\", \"\"))\n    if request.method == \"GET\":\n        return query_pinecone(request.args.get(\"originalContent\", \"\"))\n    return \"Only GET and POST methods are allowed for this endpoint\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДавайте пройдемся по важным частям файла \u003Ccode\u003Eapp.py\u003C\u002Fcode\u003E, чтобы понять его.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 1–14 мы импортируем зависимости нашего приложения. Наше приложение использует следующее зависимости:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Edotenv\u003C\u002Fcode\u003E для чтения переменных среды из файла .env\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Eflask\u003C\u002Fcode\u003E для настройки веб-приложения\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Ejson\u003C\u002Fcode\u003E для работы с JSON\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Eos\u003C\u002Fcode\u003E также для получения переменных среды\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Epandas\u003C\u002Fcode\u003E для работы с набором данных\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Epinecone\u003C\u002Fcode\u003E для работы с Pinecone SDK\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Ere\u003C\u002Fcode\u003E для работы с регулярными выражениями (RegEx)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Erequests\u003C\u002Fcode\u003E для выполнения запросов API для загрузки нашего набора данных\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Estatistics\u003C\u002Fcode\u003E для некоторых удобных методов статистики\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esentence_transformers\u003C\u002Fcode\u003E для нашей модели встраивания\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Eswifter\u003C\u002Fcode\u003E для работы с фреймом данных pandas\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EВ строке 16 мы предоставляем шаблонный код, чтобы сообщить Flask имя нашего приложения.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 18-20 мы определяем некоторые константы, которые будут использоваться в приложении. К ним относятся имя нашего индекса Pinecone, имя файла набора данных и количество строк для чтения из файла CSV.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 22-25, метод \u003Ccode\u003Einitialize_pinecone\u003C\u002Fcode\u003E получает наш ключ API из файла \u003Ccode\u003E.env \u003C\u002Fcode\u003Eи использует его для инициализации Pinecone.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 27-29, наш метод \u003Ccode\u003Edelete_existing_pinecone_index\u003C\u002Fcode\u003Eищет в нашем экземпляре Pinecone индексы с тем же именем, что и тот, который мы используем («проверка на плагиат»). Если найден существующий индекс, мы его удаляем.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 31-35,  наш метод \u003Ccode\u003Ecreate_pinecone_index\u003C\u002Fcode\u003E создает новый индекс, используя выбранное нами имя («проверка на плагиат»), метрику близости «косинус» и только одну shard.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 37-40, наш метод \u003Ccode\u003Ecreate_model\u003C\u002Fcode\u003E использует библиотеку offer_transformers для работы с моделью среднего количества сопоставлений слов. Позже мы закодируем наши сопоставлений векторов, используя эту модель.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 62-68, наш метод \u003Ccode\u003Eprocess_file \u003C\u002Fcode\u003Eсчитывает CSV файл и затем вызывает методы \u003Ccode\u003Eprepare_data \u003C\u002Fcode\u003Eи \u003Ccode\u003Eupload_items\u003C\u002Fcode\u003E. Эти два метода описаны ниже.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 42-56 наш метод \u003Ccode\u003Eprepare_data \u003C\u002Fcode\u003Eкорректирует набор данных, переименовывая первый столбец «id» и удаляя столбец «date». Затем он объединяет заголовок статьи с содержанием статьи в одно поле. Мы будем использовать это комбинированное поле при создании сопоставлений векторов.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 58-60 наш \u003Ccode\u003Eupload_items\u003C\u002Fcode\u003Eметод создает сопоставление векторов для каждой статьи, кодируя его с помощью нашей модели. Затем мы вставляем сопоставления векторов в индекс Pinecone.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 70-74, наши методы \u003Ccode\u003Emap_titles\u003C\u002Fcode\u003Eи \u003Ccode\u003Emap_publications \u003C\u002Fcode\u003Eсоздают некоторые словари названий и имен публикаций, чтобы позже легче найти статьи по их идентификаторам.\u003C\u002Fp\u003E\u003Cp\u003EКаждый из описанных методов вызывается в строках 95-101 при запуске серверной части приложения. Ее работа подготавливает нас к последнему этапу фактического запроса индекса Pinecone на основе пользовательского ввода.\u003C\u002Fp\u003E\u003Cp\u003EВ строках 103–113 мы определяем два маршрута для нашего приложения: один для домашней страницы и один для конечной точки API. Домашняя страница обслуживает файл шаблона \u003Ccode\u003Eindex.html\u003C\u002Fcode\u003E вместе с активами JS и CSS, а конечная точка API предоставляет функции поиска для запроса индекса Pinecone.\u003C\u002Fp\u003E\u003Cp\u003EНаконец, в строках 76-93 наш метод \u003Ccode\u003Equery_pinecone \u003C\u002Fcode\u003Eпринимает вводимое пользователем содержимое статьи, преобразует его в сопоставления векторов, а затем запрашивает индекс Pinecone, чтобы найти похожие статьи. Этот метод вызывается при  переходе на конечную точку \u003Ccode\u003E\u002Fapi\u002Fsearch\u003C\u002Fcode\u003E, что происходит каждый раз, когда пользователь отправляет новый поисковый запрос.\u003C\u002Fp\u003E\u003Cp\u003EДля визуализации процесса, вот схема, показывающая, как работает приложение:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Архитектура приложения и пользовательский интерфейс\" title=\"Архитектура приложения и пользовательский интерфейс\" height=\"362\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fce0\u002F579\u002F730\u002Fce05797307a76597f1984a5a91c64624.png\" data-width=\"741\"\u002F\u003E\u003Cfigcaption\u003EАрхитектура приложения и пользовательский интерфейс\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch3\u003EПримеры сценариев\u003C\u002Fh3\u003E\u003Cp\u003EИтак, суммируя сказанное, как выглядит пользовательский сценарий? Давайте рассмотрим три сценария: оригинальный контент, точная копия плагиата и контент с «исправлением написанного».\u003C\u002Fp\u003E\u003Cp\u003EКогда отправляется оригинальный контент, приложение отвечает некоторыми, возможно, связанными статьями, но оценки соответствия довольно низкие. Это хороший знак, поскольку контент не является плагиатом, поэтому мы ожидаем низких оценок соответствия.\u003C\u002Fp\u003E\u003Cp\u003EКогда отправляется точная копия плагиата, приложение выдает почти идеальную оценку совпадения для одной статьи. Это потому, что контент идентичен. Хорошая проверка на плагиат!\u003C\u002Fp\u003E\u003Cp\u003EТеперь, для третьего сценария, мы должны определить, что мы подразумеваем под «исправлением написанного». Исправление написанного - это форма плагиата, при которой кто-то копирует и вставляет украденный контент, но затем пытается замаскировать факт плагиата, изменяя некоторые слова здесь и там. Если в предложении из исходной статьи говорится: «Он был вне себя от радости найдя свою потерянную собаку», кто-то может написать исправление, чтобы вместо этого сказать: «Он был счастлив вернуть свою пропавшую собаку». Это несколько отличается от перефразирования, потому что основная структура предложения содержания часто остается неизменной на протяжении всей статьи, подвергшейся плагиату.\u003C\u002Fp\u003E\u003Cp\u003EВот что самое интересное: наша программа проверки на плагиат действительно хорошо распознает контент с «исправлением написанного»! Если вы скопируете и вставите одну из статей в базе данных, а затем измените несколько слов здесь и там, и, возможно, даже удалите несколько предложений или абзацев, оценка совпадения все равно вернется как почти идеальное совпадение! Когда я попытался сделать это со скопированной и вставленной статьей, у которой была оценка совпадения 99,99%, содержание «записанного исправления» по-прежнему давало оценку совпадения 99,88% после моих изменений!\u003C\u002Fp\u003E\u003Cp\u003EНе слишком испорчена оценка! Похоже, наша программа проверки на плагиат работает нормально.\u003C\u002Fp\u003E\u003Ch3\u003EЗаключение и следующие шаги\u003C\u002Fh3\u003E\u003Cp\u003EМы создали простое приложение Python для решения реальной проблемы. Подражание может быть высшей формой лести, но никому не нравится, когда его работы крадут. В мире растущего контента подобная программа для проверки плагиата будет очень полезна как авторам, так и учителям.\u003C\u002Fp\u003E\u003Cp\u003EУ этого демонстрационного приложения есть некоторые ограничения, так как это всего лишь демонстрация. База данных статей, загруженных в наш индекс, содержит всего 20 000 статей из 15 крупных новостных изданий. Однако существуют миллионы или даже миллиарды статей и сообщений в блогах. Подобная программа проверки на плагиат полезна только в том случае, если она проверяет ваш ввод на предмет всех мест, где ваша работа могла быть плагиатом. Это приложение было бы лучше, если бы в нашем индексе было больше статей и если бы мы постоянно добавляли в него.\u003C\u002Fp\u003E\u003Cp\u003EТем не менее, на данный момент мы продемонстрировали важное подтверждение концепции. Pinecone, как сервис поиска сходства, сделала за нас тяжелую работу, когда дело дошло до аспекта машинного обучения. С его помощью мы смогли создать полезное приложение, которое довольно легко использует обработку естественного языка и \u003Ca href=\"https:\u002F\u002Fwww.pinecone.io\u002Flearn\u002Fsemantic-search\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eсемантический поиск\u003C\u002Fa\u003E, и теперь мы можем быть спокойны, зная, что наша работа не является плагиатом.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"machine learning"},{"titleHtml":"python"},{"titleHtml":"natural language processing"},{"titleHtml":"nlp"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3f\u002F2c6\u002Fe0e\u002Fc3f2c6e0e513c5227fb7f017e6cf47dd.gif","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3f\u002F2c6\u002Fe0e\u002Fc3f2c6e0e513c5227fb7f017e6cf47dd.gif","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582094\\\u002F\"},\"headline\":\"Создайте средство проверки на плагиат с помощью машинного обучения\",\"datePublished\":\"2021-10-13T11:07:18+03:00\",\"dateModified\":\"2021-10-14T00:48:18+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"val6852\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582094\\\u002F#post-content-body\",\"about\":[\"h_python\",\"h_machine_learning\",\"h_natural_language_processing\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582094\\\u002F8884ee85150fb7f09be3fa2f25106142\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fc3f\\\u002F2c6\\\u002Fe0e\\\u002Fc3f2c6e0e513c5227fb7f017e6cf47dd.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fce0\\\u002F579\\\u002F730\\\u002Fce05797307a76597f1984a5a91c64624.png\"]}","metaDescription":"Используя машинное обучение, мы можем создать нашу собственную программу проверки на плагиат, которая выполняет поиск украденного контента в огромной базе данных.&nbsp;В этой статье мы сделаем...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"python,machine_learning,natural_language_processing"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

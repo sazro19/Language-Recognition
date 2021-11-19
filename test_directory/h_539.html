@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Airflow + Ray: Data Science История / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/leroy_merlin\/blog\/583424\/"},"headline":"Airflow + Ray: Data Science История","datePublished":"2021-10-14T13:16:22+03:00","dateModified":"2021-10-14T13:17:04+03:00","author":{"@type":"Person","name":"Дмитрий Ибрагимов"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно проч...","url":"https:\/\/habr.com\/ru\/company\/leroy_merlin\/blog\/583424\/#post-content-body","about":["c_leroy_merlin","h_apache","h_bigdata","h_data_engineering","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/583424\/32c9793dc3d0b7ce24802b8f88a0394f\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b5d\/dfc\/078\/b5ddfc07851a106edea235c351bcc7ed.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/bf4\/3fd\/557\/bf43fd55717bd1791327df821ca93e09.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/a1f\/04d\/c4d\/a1f04dc4d14ee4250208aed96310e0d2.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Airflow + Ray: Data Science История" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Airflow + Ray: Data Science История" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Airflow + Ray: Data Science История" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать тут. А также мы находимся в..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать тут. А также мы находимся в..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать тут. А также мы находимся в..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать тут. А также мы находимся в..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать тут. А также мы находимся в..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/741/6c3/40c/7416c340c99e3ebc7dad8fd171fbb494.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/741/6c3/40c/7416c340c99e3ebc7dad8fd171fbb494.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/741/6c3/40c/7416c340c99e3ebc7dad8fd171fbb494.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/741/6c3/40c/7416c340c99e3ebc7dad8fd171fbb494.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/741/6c3/40c/7416c340c99e3ebc7dad8fd171fbb494.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583424" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-14T10:16:22.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583424/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/leroy_merlin/blog/583424/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/741/6c3/40c/7416c340c99e3ebc7dad8fd171fbb494.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583424/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="leroy_merlin" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/leroy_merlin/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f4d/f89/aaf/f4df89aaf5d4dcfc45d4da846e78640c.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">80.33</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/leroy_merlin/profile/" class="tm-company-card__name">
+        Леруа Мерлен
+      </a> <div class="tm-company-card__description">Мы строим технологическую компанию-платформу.</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/diarworld/" title="diarworld" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/558/f45/68d/558f4568dbe8e91ac436583e9123f968.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/diarworld/" class="tm-user-info__username">
+      diarworld
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-14T10:16:22.000Z" title="2021-10-14, 13:16">14  октября   в 13:16</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Airflow + Ray: Data Science История</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/leroy_merlin/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Леруа Мерлен</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/apache/" class="tm-article-snippet__hubs-item-link"><span>Apache</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/bigdata/" class="tm-article-snippet__hubs-item-link"><span>Big Data</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/data_engineering/" class="tm-article-snippet__hubs-item-link"><span>Data Engineering</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://www.astronomer.io/blog/airflow-ray-data-science-story" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Daniel Imberman, Rob Deeb, Richard Liaw, Will Drevo
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="506" data-src="https://habrastorage.org/getpro/habr/upload_files/b5d/dfc/078/b5ddfc07851a106edea235c351bcc7ed.png" data-width="900"/><figcaption></figcaption></figure><p>Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать <a href="https://habr.com/ru/company/leroy_merlin/blog/580944/"><u>тут</u></a>. А также мы находимся в постоянном поиске инструментов и фреймворков для упрощения работы наших дата сайентистов и дата инженеров. Один из таких инструментов – фреймворк Ray, который позволяет создавать ML пайплайны из DAGов Airflow. В статье от Astronomer подробно рассматривается, как начать его использовать и с его помощью быстро развернуть и обучить модель.</p><h2>Airflow и Ray</h2><p><em>Мы рады анонсировать сервис Ray для Apache Airflow, который позволит перенести DAG’и в масштабируемые ML-пайплайны. </em></p><h3>Потребность в комбинации Airflow + ML</h3><p>Машинное обучение стало неотъемлемой частью дата-экосистемы во всем мире в разных индустриях и компаниях. А так как коммьюнити AirFlow постоянно растет и пополняется, мы считаем необходимым наделить команды дата-сайентистов и инженеров возможностью развивать их пайплайны и достигать еще более высоких результатов. Именно поэтому мы бросили свои силы на создание оптимальной комбинации Airflow + ML.</p><p>Один из основных показателей качества современных ML-моделей это гибкость и оперативность, которыми они наделяют дата-сайентистов и инженеров. Грамотно смоделированные фреймворки и инструменты экономят время специалиста. Чтобы подготовить обучающий датасет и сделать из него работающую модель у него уйдет несколько часов вместо нескольких дней, а внести правки или дополнения не составит большого труда.</p><p>Сам по себе Airflow это ценный инструмент для запуска качественных ML-моделей. Построение моделей с помощью DAG’ов дает свои бенефиты:</p><ul><li><p>легкая параметризация;</p></li><li><p>SLA и оповещения;</p></li><li><p>data watermarking; </p></li><li><p>возможности анализа происхождения данных;</p></li><li><p>эффективная и надежная масштабируемость.</p></li></ul><p>Тем не менее, это не единственные преимущества. Есть и другие, которые также важны при работе:</p><ul><li><p>минимальные изменения. Дата-сайентисты должны иметь возможность переносить код из Jupyter и т.д. с минимальными изменениями;</p></li><li><p>широкие возможности обработки датасетов. ML-модели состоят из больших датасетов, перемещение которых между разными тасками должны быть удобными и простыми;</p></li><li><p>масштабируемость каждой задачи. Дата-сайентист должен иметь возможность быстро и качественно аллоцировать свои ресурсы: GPUs для PyTorch, RAM для датафреймов, или ядра CPU для XGBoost.</p></li><li><p>интеграция ML-экосистем. Дата сайентист должен иметь возможность легко интегрировать инструменты для регистрации, отслеживание и воспроизведения экспериментов, а также для регистрации и деплоя полученных моделей.</p></li></ul><p>К счастью существует несколько open-source фреймворков, которые можно использовать в Airflow при разработке ML-моделей. Одна из них – Ray.</p><h3>Ray</h3><p>Ray это фреймворк кластерных вычислений с отличной поддержкой Python, который позволяет передавать и запускать код (даже со сложными зависимостями пакетов и библиотек) на кластерах разного размера. В отличие от систем по типу Spark, которые для продакшена требуют сложную установку кластера и поддержку Java, Ray может работать с минимальным количеством настроек с любым кодом на любой машине, будь то обычный ноутбук или высокомощная виртуальная машина.</p><p>При запуске на Ray пользователь может размещать ресурсы для каждой функции (например, можно выделить 2 CPU и 1 GPU для одной функции). Если все сделано правильно, распределенные вычисления на Ray вместе с мощными оркестрацией и шедулингом в Airflow дают идеальную основу для быстрого создания и внедрения ML-модели.</p><p>Ray показывает высокую производительность, под капотом у него C++ для быстрого автоматического перемещения Python-объектов по кластеру с использованием новых функций gRPC, в тот момент, когда требуются данные предыдущих вызовов. Но все это не видно пользователю – все, что от него требуется, это писать код.</p><h3>Airflow + Ray: пара, созданная в раю дата сайенс</h3><p>Airflow и Ray не требуют специальных пакетов/библиотек или настроек, чтобы работать вместе. Но мы увидели недостатки в том, как большинство пользователей интегрировали эти два инструмента. Поэтому мы захотели разработать наилучший способ, который бы помог стандартизировать использование пары Airflow + Ray в части проведения тестирований и масштабирования.</p><p>Весь код инициализации/установки фреймворка мы упаковали в декораторы вместо Оператора Airflow, расширив <a href="https://airflow.apache.org/docs/apache-airflow/stable/tutorial_taskflow_api.html#example-taskflow-api-etl-pipeline"><u>TaskFlow API</u></a>. Эти декораторы позволяют пользователям Airflow держать код на Ray в функциях Python, а также определять зависимости тасков  вынося данные в функции Python.</p><p>В итоге пользователи сервиса Airflow + Ray могут видеть свой код, одновременно имея полную свободу изменять и создавать шаблоны по своим DAG’ам, при этом используя все преимущества распределенных вычислений Ray. </p><p>Чтобы показать важность такой интеграции, давайте напишем наш DS-пайплайн там, где все пайплайны берут свое начало – Jupyter notebook. </p><h3>Обучение XGBoost модели с помощью Ray в Jupyter Notebook </h3><p>В этом примере мы создали простую модель на Jupyter notebook, которая выводит датасет HIGGS, разделяет обучающие и тестовые данные, а также создает / валидирует модель, используя XGBoost на Ray, который распределяет вычисления по обучению модели с помощью Ray на кластер. Данный код можно запустить локально на ноутбуке или с минимальными усилиями на удаленном кластере Ray, что отлично подходит для проведения экспериментов при создании модели. Теперь мы можем погрузиться в то, как перейти от экспериментов  к продакшен решению на DAG Airflow. </p><figure class=""><img src="/img/image-loader.svg" height="391" data-src="https://habrastorage.org/getpro/habr/upload_files/bf4/3fd/557/bf43fd55717bd1791327df821ca93e09.png" data-width="512"/><figcaption></figcaption></figure><h3>Запуск Ray + Airflow</h3><p>Загляните в этот <a href="https://github.com/astronomer/ray-airflow-demo"><u>репозиторий</u></a>. Следуйте инструкциям и у вас все получится. Нашли баг или проблему – напишите нам.</p><p>Обратите внимание, что пример в данном репозитории находится в альфа версии, он будет улучшаться по мере перехода в бету.</p><p><strong>От Jupyter Notebook к DAG’ам Airflow – 5 шагов</strong></p><p>Давайте поговорим о том, как мы адаптировали наш код в Jupyter notebook в первой секции к примеру в репозитории. Чтобы конвертировать наш ML notebook в Airflow DAG с помощью декораторов Ray, мы выполняем 5 шагов: </p><ol><li><p>Добавить коннектор Ray к кластеру, чтобы управлять параметрами соединения с кластером Ray.</p></li><li><p>Преобразовать каждый логический блок в отдельную функцию на Python:</p><pre><code class="python">@ray.remote
+def train_model(
+        data
+):
+    train_df, validation_df = data
+    evallist = [(validation_df, 'eval')]
+    evals_result = {}
+    config = {
+        "tree_method": "hist",
+        "eval_metric": ["logloss", "error"],
+    }
+    write("Start training")
+    bst = xgboost_ray.train(
+        params=config,
+        dtrain=train_df,
+        evals_result=evals_result,
+        ray_params=xgb.RayParams(max_actor_restarts=1,
+                                 num_actors=8, cpus_per_actor=2),
+        num_boost_round=100,
+        evals=evallist)
+    return bst</code></pre></li><li><p>Добавить <code>@ray_task</code> декоратор к каждой из этих функций:</p><pre><code class="python">@ray_task(**task_args)
+def train_model(
+        data
+):
+    train_df, validation_df = data
+    evallist = [(validation_df, 'eval')]
+    evals_result = {}
+    config = {
+        "tree_method": "hist",
+        "eval_metric": ["logloss", "error"],
+    }
+    bst = xgb.train(
+        params=config,
+        dtrain=train_df,
+        evals_result=evals_result,
+        ray_params=xgb.RayParams(max_actor_restarts=1,
+                                 num_actors=8, cpus_per_actor=2),
+        num_boost_round=100,
+        evals=evallist)
+    return bst</code></pre></li><li><p>Создать DAG функцию с логическим потоком данных:</p><pre><code class="python">@dag(default_args=default_args, schedule_interval=None,
+     start_date=days_ago(2), tags=['finished-modin-example'])
+def task_flow_xgboost_modin():
+    build_raw_df = load_dataframe()
+    data = create_data(build_raw_df)
+    trained_model = train_model(data)
+
+
+task_flow_xgboost_modin = task_flow_xgboost_modin()</code></pre></li><li><p>Загрузить DAG в Airflow, теперьу у вас есть работающий Airflow DAG! Прямо из дата пайплайна Jupyter notebook!</p></li></ol><p>Всего лишь за 20 минут дата-сайентист может превратить локальный скрипт на Python в масштабируемый воспроизводимый пайплайн со всей  мощью распределенных вычислений Ray и оркестрацией Airflow. Также дата-инженеры могут воспользоваться преимуществами <a href="https://airflow.apache.org/docs/apache-airflow/stable/concepts/variables.html"><u>переменных</u></a>, <a href="https://airflow.apache.org/docs/apache-airflow/stable/concepts/connections.html"><u>коннекторов</u></a>, интервальным шедулингом и другми фичами, которые и сделали Airflow таким популярным среди дата-команд, которым необходимо промышленное решение по оркестрации и шедулингу.</p><p>Простейший workflow на Ray в Airflow UI может выглядеть примерно вот так:</p><figure class="full-width "><img src="/img/image-loader.svg" height="479" data-src="https://habrastorage.org/getpro/habr/upload_files/a1f/04d/c4d/a1f04dc4d14ee4250208aed96310e0d2.png" data-width="1514"/><figcaption></figcaption></figure><blockquote><p>Обратите внимание! В alpha версии библиотеки, ваш Airflow потребует установки <a href="https://registry.astronomer.io/providers/ray/modules/raybackend"><u>Ray XCom Backend</u></a>, чтобы декоратор функционировал полностью.</p></blockquote><p><strong>Прохождение данных между тасками: быстрее с Plasma</strong></p><p>В примере выше пользователь Airflow может заметить, что мы пропускаем целые датафреймы между тасками, не направляя напрямую эти куски данных во внешнее хранилище. С традиционным XCom это было бы практически невозможно, потому что Airflow хранит каждую часть датасета между тасками в отдельных ячейках БД метаданных.</p><p>Чтобы решить эту проблему мы обратились к одной из самых крутых фич Ray – хранение объектов в оперативке. Чтобы обеспечить качественную обработку данных для ML, Ray использует систему хранения данных, которая дает возможность быстрой передачи данных и zero-copy чтения. С использованием Ray декоратор Airflow использует систему хранения данных как систему кэширования, что позволяет большим дата-объектам оставаться внутри RAM воркеров. И больше никакого написания и чтения данных из S3 между тасками!</p><p>Пока что этот альфа-релиз осуществляет Ray plasma store для передачи данных между тасками Ray, будущие релизы упростят перемещение данных между Ray и разными хранилищами данных, и может даже расширит Ray custom Xcom Backend и позволит перемещать данные между тасками с помощью множества разных операторов Airflow. </p><p><strong>Существующие ограничения</strong></p><p>Как и сказано выше, Ray Provider для Airflow сейчас в альфа версии. Это значит, что в нем будут свои нюансы. Мы будем рады любому фидбеку – инфо о багах, предложениям по улучшению или продвижению. <a href="https://github.com/anyscale/airflow-provider-ray"><u>Код можете найти здесь</u></a>.</p><h3>Смотрим вперед: будущее Airflow и Ray</h3><p><strong>Тюнинг гиперпараметров</strong></p><p>Airflow имеет возможности шаблонизации и динамической параметризации. В связке с <a href="https://docs.ray.io/en/master/tune/index.html"><u>Ray Tune</u></a> он может оркестрировать и динамически масштабировать процесс подбора гиперпараметров моделей для любого ML фреймворка – включая PyTorch, XGBoost, MXNet, and Keras – при этом легко интегрируя инструменты для записи, запуска и воспроизведения экспериментов, также как и регистрация и деплой готовых моделей.</p><p>Пример использования XGBoost и Tune может выглядеть так:</p><pre><code class="python">@ray_task(**task_args)
+def tune_model(data):
+
+    search_space = {
+        # You can mix constants with search space objects.
+        "objective": "binary:logistic",
+        "eval_metric": ["logloss", "error"],
+        "max_depth": tune.randint(1, 9),
+        "min_child_weight": tune.choice([1, 2, 3]),
+        "subsample": tune.uniform(0.5, 1.0),
+        "eta": tune.loguniform(1e-4, 1e-1),
+    }
+
+    print("enabling aggressive early stopping of bad trials")
+    # This will enable aggressive early stopping of bad trials.
+    scheduler = ASHAScheduler(
+        max_t=10, grace_period=1, reduction_factor=2  # 10 training iterations
+    )
+
+    print("Tuning")
+
+    analysis = tune.run(
+        tune.with_parameters(train_model, data=data),
+        metric="eval-logloss",
+        mode="min",
+        local_dir=LOCAL_DIR,
+        # You can add "gpu": 0.1 to allocate GPUs
+        resources_per_trial=XGB_RAY_PARAMS.get_tune_resources(),
+        config=search_space,
+        num_samples=10,
+        scheduler=scheduler,
+    )
+
+    print("Done Tuning")
+
+    return analysis
+
+
+@ray_task(**task_args)
+def load_best_model_checkpoint(analysis):
+
+    print("Checking Analysis")
+
+    best_bst = xgb.Booster()
+
+    print(
+        f"Analysis Best Result on eval-error is: {analysis.best_result['eval-error']}")
+    print("Loading Model with Best Params")
+
+    best_bst.load_model(os.path.join(
+        analysis.best_checkpoint, "model.xgb"))
+    accuracy = 1. - analysis.best_result["eval-error"]
+
+    print(f"Best model parameters: {analysis.best_config}")
+    print(f"Best model total accuracy: {accuracy:.4f}")
+
+    # We could now do further predictions with
+    # best_bst.predict(...)
+    return best_bst
+
+
+analysis = tune_model(data)
+best_checkpoint = load_best_model_checkpoint(analysis)</code></pre><p><strong>Checkpointing данных при использовании Ray</strong></p><p>Один из основных плюсов, который Airflow дает пользователям Ray, это возможность переписывать таски на работу с надежным хранилищем. Ray использует local plasma store на каждом процессе воркера, чтобы сохранять в памяти данные для быстрой обработки. Эта система отлично работает, когда доходит до быстрой обработки данных, но может не работать, если есть проблема на кластере Ray. </p><p>Пользователи Airflow Ray могут сохранить чекпоинт на шаге с DAG’ами, на котором данные лежат во внешнем хранилище (например, S3). Эта отказоустойчивость будет значить, что если таск переписывается, а данные больше не доступны локально, таск сможет подтягивать данные из постоянного хранилища.</p><pre><code class="python">@dag(default_args=default_args, schedule_interval=None, start_date=datetime(2021, 1, 1, 0, 0, 0), tags=['finished-modin-example'])
+def checkpoint_data_example():
+    @ray_task(**task_args, checkpoint=True, checkpoint_source="s3_connection_id")
+    def really_long_task(data):
+        ...
+        return model
+
+    @ray_task(**task_args)
+    def deploy_model(model):
+        deploy(model)
+
+    data = load_data()
+    model = really_long_task(data)
+    deploy_model(model)</code></pre><p><strong>Перемещение данных между Airflow и Ray</strong></p><p>В грядущих итерациях этого декоратора мы создадим функцию, которая поможет легко перемещать данные с локального таска Airflow на таск Ray и обратно. Эта система будет работать с любым <a href="https://airflow.apache.org/docs/apache-airflow/stable/concepts.html?highlight=xcom#custom-xcom-backend"><u>Custom Xcom Backend</u></a> (включая Ray Custom Xcom backend), для  нативной поддержки кода на python пользователям Airflow.</p><h3>Выводы</h3><p>Airflow + Ray – это сильная комбинация для написания ML или ETL пайплайнов. Эта интеграция всего лишь начало, а мы с нетерпением ждем, когда сможем поделиться новыми фичами и улучшениями. </p><p>Вы можете найти демо-код, приведенный в этой статье, <a href="https://github.com/astronomer/ray-airflow-demo"><u>в этом репозитории</u></a>, а код для Airflow Ray provider <a href="https://github.com/anyscale/airflow-provider-ray"><u>в этом репозитории</u></a>.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bairflow%5D" class="tm-tags-list__link">airflow</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdatascience%5D" class="tm-tags-list__link">datascience</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bml%5D" class="tm-tags-list__link">ml</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmachinelearning%5D" class="tm-tags-list__link">machinelearning</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/leroy_merlin/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Леруа Мерлен
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/apache/" class="tm-hubs-list__link">
+    Apache
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/bigdata/" class="tm-hubs-list__link">
+    Big Data
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/data_engineering/" class="tm-hubs-list__link">
+    Data Engineering
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 3: ↑3 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 3: ↑3 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+3</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    18
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/leroy_merlin/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f4d/f89/aaf/f4df89aaf5d4dcfc45d4da846e78640c.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/leroy_merlin/profile/" class="tm-company-snippet__title">Леруа Мерлен</a> <div class="tm-company-snippet__description">Мы строим технологическую компанию-платформу.</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://leroymerlin.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/diarworld/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/558/f45/68d/558f4568dbe8e91ac436583e9123f968.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 30 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    6
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">1.2</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Дмитрий Ибрагимов</span> <a href="/ru/users/diarworld/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @diarworld
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">SRE</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/leroy_merlin/blog/583424/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментировать 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><span>
+      2004
+    </span></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://leroymerlin.ru/" target="_blank" class="tm-company-basic-info__link">
+      leroymerlin.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    свыше 10 000 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2020-05-13T14:23:35.000Z" title="2020-05-13, 17:23">13  мая  2020</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/annikamartynova/" class="tm-company-basic-info__link">
+      annikamartynova
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/leroy_merlin/blog/583424/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/leroy_merlin/blog/583424/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583424":{"id":"583424","timePublished":"2021-10-14T10:16:22+00:00","isCorporative":true,"lang":"ru","titleHtml":"Airflow + Ray: Data Science История","leadData":{"textHtml":"\u003Cp\u003EВсем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fleroy_merlin\u002Fblog\u002F580944\u002F\"\u003E\u003Cu\u003Eтут\u003C\u002Fu\u003E\u003C\u002Fa\u003E. А также мы находимся в постоянном поиске инструментов и фреймворков для упрощения работы наших дата сайентистов и дата инженеров. Один из таких инструментов – фреймворк Ray, который позволяет создавать ML пайплайны из DAGов Airflow. В статье от Astronomer подробно рассматривается, как начать его использовать и с его помощью быстро развернуть и обучить модель.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F741\u002F6c3\u002F40c\u002F7416c340c99e3ebc7dad8fd171fbb494.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F741\u002F6c3\u002F40c\u002F7416c340c99e3ebc7dad8fd171fbb494.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Daniel Imberman, Rob Deeb, Richard Liaw, Will Drevo","originalUrl":"https:\u002F\u002Fwww.astronomer.io\u002Fblog\u002Fairflow-ray-data-science-story"}}],"author":{"scoreStats":{"score":6,"votesCount":30},"rating":1.2,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"42275","alias":"diarworld","fullname":"Дмитрий Ибрагимов","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F558\u002Ff45\u002F68d\u002F558f4568dbe8e91ac436583e9123f968.jpg","speciality":"SRE"},"statistics":{"commentsCount":0,"favoritesCount":18,"readingCount":1324,"score":3,"votesCount":3},"hubs":[{"relatedData":null,"id":"22087","alias":"leroy_merlin","type":"corporative","title":"Блог компании Леруа Мерлен","titleHtml":"Блог компании Леруа Мерлен","isProfiled":false},{"relatedData":null,"id":"17697","alias":"apache","type":"collective","title":"Apache","titleHtml":"Apache","isProfiled":true},{"relatedData":null,"id":"17795","alias":"bigdata","type":"collective","title":"Big Data","titleHtml":"Big Data","isProfiled":true},{"relatedData":null,"id":"22374","alias":"data_engineering","type":"collective","title":"Data Engineering","titleHtml":"Data Engineering","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"506\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb5d\u002Fdfc\u002F078\u002Fb5ddfc07851a106edea235c351bcc7ed.png\" data-width=\"900\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВсем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fleroy_merlin\u002Fblog\u002F580944\u002F\"\u003E\u003Cu\u003Eтут\u003C\u002Fu\u003E\u003C\u002Fa\u003E. А также мы находимся в постоянном поиске инструментов и фреймворков для упрощения работы наших дата сайентистов и дата инженеров. Один из таких инструментов – фреймворк Ray, который позволяет создавать ML пайплайны из DAGов Airflow. В статье от Astronomer подробно рассматривается, как начать его использовать и с его помощью быстро развернуть и обучить модель.\u003C\u002Fp\u003E\u003Ch2\u003EAirflow и Ray\u003C\u002Fh2\u003E\u003Cp\u003E\u003Cem\u003EМы рады анонсировать сервис Ray для Apache Airflow, который позволит перенести DAG’и в масштабируемые ML-пайплайны. \u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Ch3\u003EПотребность в комбинации Airflow + ML\u003C\u002Fh3\u003E\u003Cp\u003EМашинное обучение стало неотъемлемой частью дата-экосистемы во всем мире в разных индустриях и компаниях. А так как коммьюнити AirFlow постоянно растет и пополняется, мы считаем необходимым наделить команды дата-сайентистов и инженеров возможностью развивать их пайплайны и достигать еще более высоких результатов. Именно поэтому мы бросили свои силы на создание оптимальной комбинации Airflow + ML.\u003C\u002Fp\u003E\u003Cp\u003EОдин из основных показателей качества современных ML-моделей это гибкость и оперативность, которыми они наделяют дата-сайентистов и инженеров. Грамотно смоделированные фреймворки и инструменты экономят время специалиста. Чтобы подготовить обучающий датасет и сделать из него работающую модель у него уйдет несколько часов вместо нескольких дней, а внести правки или дополнения не составит большого труда.\u003C\u002Fp\u003E\u003Cp\u003EСам по себе Airflow это ценный инструмент для запуска качественных ML-моделей. Построение моделей с помощью DAG’ов дает свои бенефиты:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eлегкая параметризация;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003ESLA и оповещения;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Edata watermarking; \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eвозможности анализа происхождения данных;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eэффективная и надежная масштабируемость.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EТем не менее, это не единственные преимущества. Есть и другие, которые также важны при работе:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eминимальные изменения. Дата-сайентисты должны иметь возможность переносить код из Jupyter и т.д. с минимальными изменениями;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eширокие возможности обработки датасетов. ML-модели состоят из больших датасетов, перемещение которых между разными тасками должны быть удобными и простыми;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eмасштабируемость каждой задачи. Дата-сайентист должен иметь возможность быстро и качественно аллоцировать свои ресурсы: GPUs для PyTorch, RAM для датафреймов, или ядра CPU для XGBoost.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eинтеграция ML-экосистем. Дата сайентист должен иметь возможность легко интегрировать инструменты для регистрации, отслеживание и воспроизведения экспериментов, а также для регистрации и деплоя полученных моделей.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EК счастью существует несколько open-source фреймворков, которые можно использовать в Airflow при разработке ML-моделей. Одна из них – Ray.\u003C\u002Fp\u003E\u003Ch3\u003ERay\u003C\u002Fh3\u003E\u003Cp\u003ERay это фреймворк кластерных вычислений с отличной поддержкой Python, который позволяет передавать и запускать код (даже со сложными зависимостями пакетов и библиотек) на кластерах разного размера. В отличие от систем по типу Spark, которые для продакшена требуют сложную установку кластера и поддержку Java, Ray может работать с минимальным количеством настроек с любым кодом на любой машине, будь то обычный ноутбук или высокомощная виртуальная машина.\u003C\u002Fp\u003E\u003Cp\u003EПри запуске на Ray пользователь может размещать ресурсы для каждой функции (например, можно выделить 2 CPU и 1 GPU для одной функции). Если все сделано правильно, распределенные вычисления на Ray вместе с мощными оркестрацией и шедулингом в Airflow дают идеальную основу для быстрого создания и внедрения ML-модели.\u003C\u002Fp\u003E\u003Cp\u003ERay показывает высокую производительность, под капотом у него C++ для быстрого автоматического перемещения Python-объектов по кластеру с использованием новых функций gRPC, в тот момент, когда требуются данные предыдущих вызовов. Но все это не видно пользователю – все, что от него требуется, это писать код.\u003C\u002Fp\u003E\u003Ch3\u003EAirflow + Ray: пара, созданная в раю дата сайенс\u003C\u002Fh3\u003E\u003Cp\u003EAirflow и Ray не требуют специальных пакетов\u002Fбиблиотек или настроек, чтобы работать вместе. Но мы увидели недостатки в том, как большинство пользователей интегрировали эти два инструмента. Поэтому мы захотели разработать наилучший способ, который бы помог стандартизировать использование пары Airflow + Ray в части проведения тестирований и масштабирования.\u003C\u002Fp\u003E\u003Cp\u003EВесь код инициализации\u002Fустановки фреймворка мы упаковали в декораторы вместо Оператора Airflow, расширив \u003Ca href=\"https:\u002F\u002Fairflow.apache.org\u002Fdocs\u002Fapache-airflow\u002Fstable\u002Ftutorial_taskflow_api.html#example-taskflow-api-etl-pipeline\"\u003E\u003Cu\u003ETaskFlow API\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Эти декораторы позволяют пользователям Airflow держать код на Ray в функциях Python, а также определять зависимости тасков  вынося данные в функции Python.\u003C\u002Fp\u003E\u003Cp\u003EВ итоге пользователи сервиса Airflow + Ray могут видеть свой код, одновременно имея полную свободу изменять и создавать шаблоны по своим DAG’ам, при этом используя все преимущества распределенных вычислений Ray. \u003C\u002Fp\u003E\u003Cp\u003EЧтобы показать важность такой интеграции, давайте напишем наш DS-пайплайн там, где все пайплайны берут свое начало – Jupyter notebook. \u003C\u002Fp\u003E\u003Ch3\u003EОбучение XGBoost модели с помощью Ray в Jupyter Notebook \u003C\u002Fh3\u003E\u003Cp\u003EВ этом примере мы создали простую модель на Jupyter notebook, которая выводит датасет HIGGS, разделяет обучающие и тестовые данные, а также создает \u002F валидирует модель, используя XGBoost на Ray, который распределяет вычисления по обучению модели с помощью Ray на кластер. Данный код можно запустить локально на ноутбуке или с минимальными усилиями на удаленном кластере Ray, что отлично подходит для проведения экспериментов при создании модели. Теперь мы можем погрузиться в то, как перейти от экспериментов  к продакшен решению на DAG Airflow. \u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"391\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fbf4\u002F3fd\u002F557\u002Fbf43fd55717bd1791327df821ca93e09.png\" data-width=\"512\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch3\u003EЗапуск Ray + Airflow\u003C\u002Fh3\u003E\u003Cp\u003EЗагляните в этот \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fastronomer\u002Fray-airflow-demo\"\u003E\u003Cu\u003Eрепозиторий\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Следуйте инструкциям и у вас все получится. Нашли баг или проблему – напишите нам.\u003C\u002Fp\u003E\u003Cp\u003EОбратите внимание, что пример в данном репозитории находится в альфа версии, он будет улучшаться по мере перехода в бету.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EОт Jupyter Notebook к DAG’ам Airflow – 5 шагов\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EДавайте поговорим о том, как мы адаптировали наш код в Jupyter notebook в первой секции к примеру в репозитории. Чтобы конвертировать наш ML notebook в Airflow DAG с помощью декораторов Ray, мы выполняем 5 шагов: \u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EДобавить коннектор Ray к кластеру, чтобы управлять параметрами соединения с кластером Ray.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПреобразовать каждый логический блок в отдельную функцию на Python:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@ray.remote\ndef train_model(\n        data\n):\n    train_df, validation_df = data\n    evallist = [(validation_df, 'eval')]\n    evals_result = {}\n    config = {\n        \"tree_method\": \"hist\",\n        \"eval_metric\": [\"logloss\", \"error\"],\n    }\n    write(\"Start training\")\n    bst = xgboost_ray.train(\n        params=config,\n        dtrain=train_df,\n        evals_result=evals_result,\n        ray_params=xgb.RayParams(max_actor_restarts=1,\n                                 num_actors=8, cpus_per_actor=2),\n        num_boost_round=100,\n        evals=evallist)\n    return bst\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДобавить \u003Ccode\u003E@ray_task\u003C\u002Fcode\u003E декоратор к каждой из этих функций:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@ray_task(**task_args)\ndef train_model(\n        data\n):\n    train_df, validation_df = data\n    evallist = [(validation_df, 'eval')]\n    evals_result = {}\n    config = {\n        \"tree_method\": \"hist\",\n        \"eval_metric\": [\"logloss\", \"error\"],\n    }\n    bst = xgb.train(\n        params=config,\n        dtrain=train_df,\n        evals_result=evals_result,\n        ray_params=xgb.RayParams(max_actor_restarts=1,\n                                 num_actors=8, cpus_per_actor=2),\n        num_boost_round=100,\n        evals=evallist)\n    return bst\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСоздать DAG функцию с логическим потоком данных:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@dag(default_args=default_args, schedule_interval=None,\n     start_date=days_ago(2), tags=['finished-modin-example'])\ndef task_flow_xgboost_modin():\n    build_raw_df = load_dataframe()\n    data = create_data(build_raw_df)\n    trained_model = train_model(data)\n\n\ntask_flow_xgboost_modin = task_flow_xgboost_modin()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЗагрузить DAG в Airflow, теперьу у вас есть работающий Airflow DAG! Прямо из дата пайплайна Jupyter notebook!\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EВсего лишь за 20 минут дата-сайентист может превратить локальный скрипт на Python в масштабируемый воспроизводимый пайплайн со всей  мощью распределенных вычислений Ray и оркестрацией Airflow. Также дата-инженеры могут воспользоваться преимуществами \u003Ca href=\"https:\u002F\u002Fairflow.apache.org\u002Fdocs\u002Fapache-airflow\u002Fstable\u002Fconcepts\u002Fvariables.html\"\u003E\u003Cu\u003Eпеременных\u003C\u002Fu\u003E\u003C\u002Fa\u003E, \u003Ca href=\"https:\u002F\u002Fairflow.apache.org\u002Fdocs\u002Fapache-airflow\u002Fstable\u002Fconcepts\u002Fconnections.html\"\u003E\u003Cu\u003Eконнекторов\u003C\u002Fu\u003E\u003C\u002Fa\u003E, интервальным шедулингом и другми фичами, которые и сделали Airflow таким популярным среди дата-команд, которым необходимо промышленное решение по оркестрации и шедулингу.\u003C\u002Fp\u003E\u003Cp\u003EПростейший workflow на Ray в Airflow UI может выглядеть примерно вот так:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"479\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fa1f\u002F04d\u002Fc4d\u002Fa1f04dc4d14ee4250208aed96310e0d2.png\" data-width=\"1514\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cblockquote\u003E\u003Cp\u003EОбратите внимание! В alpha версии библиотеки, ваш Airflow потребует установки \u003Ca href=\"https:\u002F\u002Fregistry.astronomer.io\u002Fproviders\u002Fray\u002Fmodules\u002Fraybackend\"\u003E\u003Cu\u003ERay XCom Backend\u003C\u002Fu\u003E\u003C\u002Fa\u003E, чтобы декоратор функционировал полностью.\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003E\u003Cstrong\u003EПрохождение данных между тасками: быстрее с Plasma\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EВ примере выше пользователь Airflow может заметить, что мы пропускаем целые датафреймы между тасками, не направляя напрямую эти куски данных во внешнее хранилище. С традиционным XCom это было бы практически невозможно, потому что Airflow хранит каждую часть датасета между тасками в отдельных ячейках БД метаданных.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы решить эту проблему мы обратились к одной из самых крутых фич Ray – хранение объектов в оперативке. Чтобы обеспечить качественную обработку данных для ML, Ray использует систему хранения данных, которая дает возможность быстрой передачи данных и zero-copy чтения. С использованием Ray декоратор Airflow использует систему хранения данных как систему кэширования, что позволяет большим дата-объектам оставаться внутри RAM воркеров. И больше никакого написания и чтения данных из S3 между тасками!\u003C\u002Fp\u003E\u003Cp\u003EПока что этот альфа-релиз осуществляет Ray plasma store для передачи данных между тасками Ray, будущие релизы упростят перемещение данных между Ray и разными хранилищами данных, и может даже расширит Ray custom Xcom Backend и позволит перемещать данные между тасками с помощью множества разных операторов Airflow. \u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EСуществующие ограничения\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EКак и сказано выше, Ray Provider для Airflow сейчас в альфа версии. Это значит, что в нем будут свои нюансы. Мы будем рады любому фидбеку – инфо о багах, предложениям по улучшению или продвижению. \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fanyscale\u002Fairflow-provider-ray\"\u003E\u003Cu\u003EКод можете найти здесь\u003C\u002Fu\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Ch3\u003EСмотрим вперед: будущее Airflow и Ray\u003C\u002Fh3\u003E\u003Cp\u003E\u003Cstrong\u003EТюнинг гиперпараметров\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EAirflow имеет возможности шаблонизации и динамической параметризации. В связке с \u003Ca href=\"https:\u002F\u002Fdocs.ray.io\u002Fen\u002Fmaster\u002Ftune\u002Findex.html\"\u003E\u003Cu\u003ERay Tune\u003C\u002Fu\u003E\u003C\u002Fa\u003E он может оркестрировать и динамически масштабировать процесс подбора гиперпараметров моделей для любого ML фреймворка – включая PyTorch, XGBoost, MXNet, and Keras – при этом легко интегрируя инструменты для записи, запуска и воспроизведения экспериментов, также как и регистрация и деплой готовых моделей.\u003C\u002Fp\u003E\u003Cp\u003EПример использования XGBoost и Tune может выглядеть так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@ray_task(**task_args)\ndef tune_model(data):\n\n    search_space = {\n        # You can mix constants with search space objects.\n        \"objective\": \"binary:logistic\",\n        \"eval_metric\": [\"logloss\", \"error\"],\n        \"max_depth\": tune.randint(1, 9),\n        \"min_child_weight\": tune.choice([1, 2, 3]),\n        \"subsample\": tune.uniform(0.5, 1.0),\n        \"eta\": tune.loguniform(1e-4, 1e-1),\n    }\n\n    print(\"enabling aggressive early stopping of bad trials\")\n    # This will enable aggressive early stopping of bad trials.\n    scheduler = ASHAScheduler(\n        max_t=10, grace_period=1, reduction_factor=2  # 10 training iterations\n    )\n\n    print(\"Tuning\")\n\n    analysis = tune.run(\n        tune.with_parameters(train_model, data=data),\n        metric=\"eval-logloss\",\n        mode=\"min\",\n        local_dir=LOCAL_DIR,\n        # You can add \"gpu\": 0.1 to allocate GPUs\n        resources_per_trial=XGB_RAY_PARAMS.get_tune_resources(),\n        config=search_space,\n        num_samples=10,\n        scheduler=scheduler,\n    )\n\n    print(\"Done Tuning\")\n\n    return analysis\n\n\n@ray_task(**task_args)\ndef load_best_model_checkpoint(analysis):\n\n    print(\"Checking Analysis\")\n\n    best_bst = xgb.Booster()\n\n    print(\n        f\"Analysis Best Result on eval-error is: {analysis.best_result['eval-error']}\")\n    print(\"Loading Model with Best Params\")\n\n    best_bst.load_model(os.path.join(\n        analysis.best_checkpoint, \"model.xgb\"))\n    accuracy = 1. - analysis.best_result[\"eval-error\"]\n\n    print(f\"Best model parameters: {analysis.best_config}\")\n    print(f\"Best model total accuracy: {accuracy:.4f}\")\n\n    # We could now do further predictions with\n    # best_bst.predict(...)\n    return best_bst\n\n\nanalysis = tune_model(data)\nbest_checkpoint = load_best_model_checkpoint(analysis)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003ECheckpointing данных при использовании Ray\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EОдин из основных плюсов, который Airflow дает пользователям Ray, это возможность переписывать таски на работу с надежным хранилищем. Ray использует local plasma store на каждом процессе воркера, чтобы сохранять в памяти данные для быстрой обработки. Эта система отлично работает, когда доходит до быстрой обработки данных, но может не работать, если есть проблема на кластере Ray. \u003C\u002Fp\u003E\u003Cp\u003EПользователи Airflow Ray могут сохранить чекпоинт на шаге с DAG’ами, на котором данные лежат во внешнем хранилище (например, S3). Эта отказоустойчивость будет значить, что если таск переписывается, а данные больше не доступны локально, таск сможет подтягивать данные из постоянного хранилища.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@dag(default_args=default_args, schedule_interval=None, start_date=datetime(2021, 1, 1, 0, 0, 0), tags=['finished-modin-example'])\ndef checkpoint_data_example():\n    @ray_task(**task_args, checkpoint=True, checkpoint_source=\"s3_connection_id\")\n    def really_long_task(data):\n        ...\n        return model\n\n    @ray_task(**task_args)\n    def deploy_model(model):\n        deploy(model)\n\n    data = load_data()\n    model = really_long_task(data)\n    deploy_model(model)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EПеремещение данных между Airflow и Ray\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EВ грядущих итерациях этого декоратора мы создадим функцию, которая поможет легко перемещать данные с локального таска Airflow на таск Ray и обратно. Эта система будет работать с любым \u003Ca href=\"https:\u002F\u002Fairflow.apache.org\u002Fdocs\u002Fapache-airflow\u002Fstable\u002Fconcepts.html?highlight=xcom#custom-xcom-backend\"\u003E\u003Cu\u003ECustom Xcom Backend\u003C\u002Fu\u003E\u003C\u002Fa\u003E (включая Ray Custom Xcom backend), для  нативной поддержки кода на python пользователям Airflow.\u003C\u002Fp\u003E\u003Ch3\u003EВыводы\u003C\u002Fh3\u003E\u003Cp\u003EAirflow + Ray – это сильная комбинация для написания ML или ETL пайплайнов. Эта интеграция всего лишь начало, а мы с нетерпением ждем, когда сможем поделиться новыми фичами и улучшениями. \u003C\u002Fp\u003E\u003Cp\u003EВы можете найти демо-код, приведенный в этой статье, \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fastronomer\u002Fray-airflow-demo\"\u003E\u003Cu\u003Eв этом репозитории\u003C\u002Fu\u003E\u003C\u002Fa\u003E, а код для Airflow Ray provider \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fanyscale\u002Fairflow-provider-ray\"\u003E\u003Cu\u003Eв этом репозитории\u003C\u002Fu\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"airflow"},{"titleHtml":"datascience"},{"titleHtml":"ml"},{"titleHtml":"machinelearning"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F741\u002F6c3\u002F40c\u002F7416c340c99e3ebc7dad8fd171fbb494.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F741\u002F6c3\u002F40c\u002F7416c340c99e3ebc7dad8fd171fbb494.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fleroy_merlin\\\u002Fblog\\\u002F583424\\\u002F\"},\"headline\":\"Airflow + Ray: Data Science История\",\"datePublished\":\"2021-10-14T13:16:22+03:00\",\"dateModified\":\"2021-10-14T13:17:04+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Дмитрий Ибрагимов\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно проч...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fleroy_merlin\\\u002Fblog\\\u002F583424\\\u002F#post-content-body\",\"about\":[\"c_leroy_merlin\",\"h_apache\",\"h_bigdata\",\"h_data_engineering\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583424\\\u002F32c9793dc3d0b7ce24802b8f88a0394f\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb5d\\\u002Fdfc\\\u002F078\\\u002Fb5ddfc07851a106edea235c351bcc7ed.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fbf4\\\u002F3fd\\\u002F557\\\u002Fbf43fd55717bd1791327df821ca93e09.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fa1f\\\u002F04d\\\u002Fc4d\\\u002Fa1f04dc4d14ee4250208aed96310e0d2.png\"]}","metaDescription":"Всем привет! Основным инструментом оркестрации задач для обработки данных в Леруа Мерлен является Apache Airflow, подробнее о нашем опыте работы с ним можно прочитать тут. А также мы находимся в...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"leroy_merlin":{"alias":"leroy_merlin","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff4d\u002Ff89\u002Faaf\u002Ff4df89aaf5d4dcfc45d4da846e78640c.png","titleHtml":"Леруа Мерлен","descriptionHtml":"Мы строим технологическую компанию-платформу.","relatedData":null,"statistics":{"postsCount":33,"newsCount":0,"vacanciesCount":5,"employeesCount":32,"careerRating":null,"subscribersCount":869,"rating":80.33,"invest":null},"foundationDate":{"year":"2004","month":null,"day":null},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fleroymerlin.ru\u002F","staffNumber":"свыше 10 000 человек","registrationDate":"2020-05-13T14:23:35+00:00","representativeUser":{"alias":"annikamartynova","fullname":null},"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fleroymerlin.ru\u002F"}],"settings":{"analyticsSettings":[],"branding":null,"status":"active"},"metadata":{"titleHtml":"Леруа Мерлен, Москва - Мы строим технологическую компанию-платформу. с 2004 год","title":"Леруа Мерлен, Москва - Мы строим технологическую компанию-платформу. с 2004 год","keywords":["Big Data","Data Engineering","Хранилища данных","Микросервисы","Apache"],"descriptionHtml":"33 статьи от авторов компании Леруа Мерлен","description":"33 статьи от авторов компании Леруа Мерлен"},"aDeskSettings":null,"careerAlias":"leroy-merlin","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

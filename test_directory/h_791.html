@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Выявляем ошибки в релизе LLVM 13.0.0 / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/pvs-studio\/blog\/582494\/"},"headline":"Выявляем ошибки в релизе LLVM 13.0.0","datePublished":"2021-10-08T22:16:39+03:00","dateModified":"2021-10-09T23:34:25+03:00","author":{"@type":"Person","name":"Andrey Karpov"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в...","url":"https:\/\/habr.com\/ru\/company\/pvs-studio\/blog\/582494\/#post-content-body","about":["c_pvs-studio","h_infosecurity","h_open_source","h_cpp","h_compilers","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582494\/e137cb27f1cc98cedaf5a8f494580bd5\/","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/55c\/8fd\/cd5\/55c8fdcd54e43716b78c0a88732e93ea.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/f1c\/21d\/c50\/f1c21dc50713903f8555056632101a8f.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/2e0\/ce0\/be5\/2e0ce0be5675f1a7d0ab63003f077760.png","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/0b6\/7b0\/3be\/0b67b03be8b5f603b32935e2aaec6de2.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Выявляем ошибки в релизе LLVM 13.0.0" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Выявляем ошибки в релизе LLVM 13.0.0" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Выявляем ошибки в релизе LLVM 13.0.0" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/ul/9b/iq/ul9biqsabvilnw-7un7gb65b23w.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/ul/9b/iq/ul9biqsabvilnw-7un7gb65b23w.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/ul/9b/iq/ul9biqsabvilnw-7un7gb65b23w.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/ul/9b/iq/ul9biqsabvilnw-7un7gb65b23w.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/ul/9b/iq/ul9biqsabvilnw-7un7gb65b23w.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582494" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-08T19:16:39.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582494/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/pvs-studio/blog/582494/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/ul/9b/iq/ul9biqsabvilnw-7un7gb65b23w.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="pvs-studio" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/pvs-studio/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/95a/244/327/95a244327fc36477b6048c0f8b67df8b.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">263.5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/pvs-studio/profile/" class="tm-company-card__name">
+        PVS-Studio
+      </a> <div class="tm-company-card__description">Статический анализ кода для C, C++, C# и Java</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Andrey2008/" title="Andrey2008" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/71b/4ac/f13/71b4acf131d3d675b999b4a47f573b0a.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Andrey2008/" class="tm-user-info__username">
+      Andrey2008
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-08T19:16:39.000Z" title="2021-10-08, 22:16">8  октября   в 22:16</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Выявляем ошибки в релизе LLVM 13.0.0</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/pvs-studio/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании PVS-Studio</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/infosecurity/" class="tm-article-snippet__hubs-item-link"><span>Информационная безопасность</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/open_source/" class="tm-article-snippet__hubs-item-link"><span>Open source</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/compilers/" class="tm-article-snippet__hubs-item-link"><span>Компиляторы</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><p><img src="/img/image-loader.svg" alt="PVS-Studio и LLVM 13" data-src="https://habrastorage.org/getpro/habr/post_images/55c/8fd/cd5/55c8fdcd54e43716b78c0a88732e93ea.png"/></p><br/>
+<p>Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM 13.0.0.</p><a name="habracut"></a><br/>
+<h2 id="kak-poyavilas-eta-statya">Как появилась эта статья</h2><br/>
+<p>Компиляторы и встроенные в них анализаторы кода постоянно развиваются. Развиваются и анализаторы, встроенные в среды разработки, такие как Visual Studio и CLion. У разработчиков возникает резонный вопрос, есть ли смысл использовать дополнительные решения для контроля качества кода? Или можно положиться на встроенные средства современного компилятора или IDE?</p><br/>
+<p>Разрабатывая проект, рационально использовать минимально необходимое количество приложений. Поэтому если встроенные механизмы обеспечивают необходимый уровень анализа кода, то есть смысл ограничиться ими и не добавлять в пайплайн дополнительные утилиты.</p><br/>
+<p>Для нашей команды разработчиков <a href="https://pvs-studio.com/ru/pvs-studio/">PVS-Studio</a> это проявляется следующим образом. Время от времени нас спрашивают, обеспечиваем ли мы анализ лучше, чем компилятор X или встроенный в этот компилятор статический анализатор? Как правило, количество таких вопросов увеличивается в момент очередного релиза компилятора.</p><br/>
+<p>Правильные варианты ответов на такие вопросы:</p><br/>
+<ul>
+<li>наш анализатор постоянно развивается. Появляются новые диагностики (<a href="https://pvs-studio.com/ru/blog/posts/cpp/0814/">пример</a>), совершенствуется механизм анализа потока данных (<a href="https://pvs-studio.com/ru/blog/posts/cpp/0824/">пример</a>) и так далее. Компиляторы учатся находить новые ошибки, а PVS-Studio учится ещё быстрее. В этом суть существования платных профессиональных решений статического анализа кода;</li>
+<li>некорректно сравнивать анализаторы по количеству диагностик. Важно и их качество, и возможность лёгкой интеграции в процесс разработки. Много значит развитая инфраструктура и интеграция с такими системами, как SonarQube, PlatformIO, Azure DevOps, Travis CI, CircleCI, GitLab CI/CD, Jenkins и так далее. И, конечно, следует помнить про поддержку. Поэтому несколько новых диагностических правил, появившихся в компиляторе, ничего не меняют.</li>
+</ul><br/>
+<p>Но это неинтересные ответы :). Закрадывается впечатление, что мы хотим уйти от вопроса в сторону. Выходом является написание таких статей, как эта. Наша команда проверяет компиляторы и тем самым демонстрирует возможности продукта.</p><br/>
+<p>В данном случае мы проверим недавний релиз LLVM 13.0.0. Конечно, читателю и нам интересен не сам LLVM. Подразумевается, что мы оцениваем мощь PVS-Studio в сравнении с компилятором Clang, Clang Static Analyzer и Clang-Tidy. Перечисленные программы используются при разработке проекта LLVM. И если, несмотря на их использование, удастся что-то найти, это продемонстрирует пользу внедрения PVS-Studio в процесс разработки.</p><br/>
+<p>Если интересно, <a href="https://pvs-studio.com/ru/blog/posts/cpp/0771/">здесь</a> можно познакомиться с предыдущей аналогичной статьёй времён LLVM 11.</p><br/>
+<h2 id="proverka-llvm">Проверка LLVM</h2><br/>
+<p>Предупреждения PVS-Studio удобнее всего смотреть в среде разработки. У меня на машине из сред разработки оказалась доступна Visual Studio 2019. Ей я и воспользовался. Процесс крайне прост:</p><br/>
+<ul>
+<li>скачиваем исходные коды <a href="https://github.com/llvm/llvm-project/releases/tag/llvmorg-13.0.0">LLVM 13.0.0</a>;</li>
+<li>создаём проект для VS2019: cmake -S llvm -B build -G "Visual Studio 16 2019";</li>
+<li>компилируем. Этот шаг необходим, чтобы были сгенерированы различные inc-файлы. Без них невозможно препроцессировать, а следовательно, и анализировать многие cpp-файлы;</li>
+<li>удивляемся, что создалось разных файлов более чем на 100 Gb;</li>
+<li>в меню Visual Studio указываем плагину PVS-Studio проверить проект;</li>
+<li>profit.</li>
+</ul><br/>
+<p>На самом деле, не всё так радужно. Без предварительной настройки анализатора вы, скорее всего, столкнётесь с большим количеством ложных или неинтересных (в рамках данного проекта) предупреждений. Для меня лишние предупреждения не являются проблемой, так как моя задача найти некоторое количество интересных багов, достаточных для написания статьи. Не более того.</p><br/>
+<p>Если вы хотите начать использовать анализатор регулярно, то требуется его настройка. Помимо этого, на начальном этапе будет полезно объявить все предупреждения техническим долгом и спрятать их. После чего начать работать только с новыми предупреждениями, постепенно ликвидируя технический долг. Более подробно этот подход описан <a href="https://pvs-studio.com/ru/blog/posts/0743/">здесь</a>.</p><br/>
+<p>Настройке и внедрению анализатора посвящены многие другие статьи, поэтому не будем здесь удаляться от главной темы. Давайте же, наконец, посмотрим, что удалось найти интересного. </p><br/>
+<p>Я потратил на просмотр лога один вечер и выписал то, что показалось мне интересным. Уверен, можно найти гораздо больше ошибок. Однако даже то, что, просто бегло пробежавшись по отчёту, можно исправить 20 ошибок, демонстрирует анализатор в выгодном свете. </p><br/>
+<h2 id="opechatki">Опечатки</h2><br/>
+<p>PVS-Studio всегда был и остаётся силён в обнаружении опечаток. Опечатки сразу хорошо видны в демонстрируемом фрагменте кода. Но, несмотря на свою простоту, эти ошибки проходят обзоры кода и затем заставляют морщиться, когда выявляются после отладки :).</p><br/>
+<p>Несложно придумать идеи правил для обнаружения опечаток. А вот реализовать их куда сложнее. Нужно соблюсти баланс между полезными предупреждениями и <a href="https://pvs-studio.com/ru/blog/terms/6461/">ложно-положительными срабатываниями</a>. В компиляторе Clang и сопутствующих анализаторах есть диагностики для выявления многих разновидностей ошибок, которые будут описаны ниже. Но раз они не помогли, значит в нашем анализаторе эти диагностики сделаны более качественно.</p><br/>
+<h3 id="bag-n1-oshibka-konstruirovaniya-64-bitnogo-znacheniya-iz-dvuh-32-bitnyh-znacheniy">Баг N1, ошибка конструирования 64-битного значения из двух 32-битных значений</h3><br/>
+<pre><code class="cpp">uint64_t uval;
+....
+bool DWARFFormValue::extractValue(const DWARFDataExtractor &amp;Data,
+                                  uint64_t *OffsetPtr, dwarf::FormParams FP,
+                                  const DWARFContext *Ctx,
+                                  const DWARFUnit *CU) {
+  ....
+  case DW_FORM_LLVM_addrx_offset:
+    Value.uval = Data.getULEB128(OffsetPtr, &amp;Err) &lt;&lt; 32;
+    Value.uval = Data.getU32(OffsetPtr, &amp;Err);
+    break;
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v519/">V519</a> [CWE-563, CERT-MSC13-C] The 'Value.uval' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 334, 335. DWARFFormValue.cpp 335</p><br/>
+<p>Нет смысла в одну и ту же переменную записывать поочередно разные значения. Об этом и предупреждает анализатор. Скорее всего, автор кода немного поспешил и допустил опечатку, забыв добавить '|'. Данный код должен создавать из двух 32-битных значений одно 64-битное. Корректный вариант этого кода:</p><br/>
+<pre><code class="cpp">case DW_FORM_LLVM_addrx_offset:
+  Value.uval = Data.getULEB128(OffsetPtr, &amp;Err) &lt;&lt; 32;
+  Value.uval |= Data.getU32(OffsetPtr, &amp;Err);
+  break;</code></pre><br/>
+<h3 id="bag-n2-pospeshnyy-copy-paste-koda">Баг N2, поспешный copy-paste кода</h3><br/>
+<p>В классе <em>ExecutorAddress</em> потребовалось реализовать набор однотипных операторов. Почти наверняка это делалось с помощью <a href="https://pvs-studio.com/ru/blog/terms/0068/">copy-paste</a>. Согласитесь, достаточно скучно писать следующий код, не копируя строки.</p><br/>
+<pre><code class="cpp">class ExecutorAddress {
+  ....
+  ExecutorAddress &amp;operator++() {
+    ++Addr;
+    return *this;
+  }
+  ExecutorAddress &amp;operator--() {
+    --Addr;
+    return *this;
+  }
+  ExecutorAddress operator++(int) { return ExecutorAddress(Addr++); }
+  ExecutorAddress operator--(int) { return ExecutorAddress(Addr++); }
+
+  ExecutorAddress &amp;operator+=(const ExecutorAddrDiff Delta) {
+    Addr += Delta.getValue();
+    return *this;
+  }
+
+  ExecutorAddress &amp;operator-=(const ExecutorAddrDiff Delta) {
+    Addr -= Delta.getValue();
+    return *this;
+  }
+  ....
+private:
+  uint64_t Addr = 0;
+}</code></pre><br/>
+<p>К сожалению, за скорость написания, приходится расплачиваться высокой вероятностью забыть что-то исправить в скопированном коде. А поскольку скучно не только писать, но и проверять такой код, то он "притягивает" к себе ошибки.</p><br/>
+<p>К счастью, статические анализаторы не устают и не ленятся :). PVS-Studio хорошо дополняет классический обзор кода, предлагая обратить внимание на эти две функции:</p><br/>
+<pre><code class="cpp">ExecutorAddress operator++(int) { return ExecutorAddress(Addr++); }
+ExecutorAddress operator--(int) { return ExecutorAddress(Addr++); }</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v524/">V524</a> It is odd that the body of '--' function is fully equivalent to the body of '++' function. ExecutorAddress.h 104</p><br/>
+<p>Явная ошибка: забыли заменить в правой части скопированной строки оператор ++ на --.</p><br/>
+<h3 id="bag-n3-nikto-ne-umeet-pisat-funkcii-sravneniya">Баг N3, никто не умеет писать функции сравнения</h3><br/>
+<pre><code class="cpp">bool operator==(const BDVState &amp;Other) const {
+  return OriginalValue == OriginalValue &amp;&amp; BaseValue == Other.BaseValue &amp;&amp;
+    Status == Other.Status;
+}</code></pre><br/>
+<p><a href="https://pvs-studio.com/ru/w/v501/">V501</a> [CWE-571] There are identical sub-expressions to the left and to the right of the '==' operator: OriginalValue == OriginalValue RewriteStatepointsForGC.cpp 758</p><br/>
+<p><img src="/img/image-loader.svg" alt="Опечатка в коде" data-src="https://habrastorage.org/getpro/habr/post_images/f1c/21d/c50/f1c21dc50713903f8555056632101a8f.png"/></p><br/>
+<p>Классика! Я даже отдельную большую статью писал на эту тему — "<a href="https://pvs-studio.com/ru/blog/posts/cpp/0509/">Зло живёт в функциях сравнения</a>".</p><br/>
+<p>Чтобы снизить количество таких ошибок, рекомендую всегда оформлять однотипные операции табличным методом. Я бы оформил эту функцию так:</p><br/>
+<pre><code class="cpp">bool operator==(const BDVState &amp;Other) const {
+  return
+       OriginalValue == OriginalValue
+    &amp;&amp; BaseValue == Other.BaseValue
+    &amp;&amp; Status == Other.Status;
+}</code></pre><br/>
+<p>Так длиннее, но зато больше вероятность, что опечатка будет замечена на code review. Впрочем, даже так ошибку можно просмотреть и лучше дополнительно подстраховаться, используя профессиональный анализатор.</p><br/>
+<h3 id="bag-n4-nikto-ne-umeet-pisat-funkcii-sravneniya-ya-serezno">Баг N4, никто не умеет писать функции сравнения (я серьезно)</h3><br/>
+<p>Возможно, рассматривая предыдущий пример, вы подумали, что я преувеличиваю и перед нами одиночный случайный ляп. К сожалению, функции сравнения действительно тяготеют к опечаткам. Рассмотрим ещё один пример.</p><br/>
+<pre><code class="cpp">bool TypeInfer::EnforceSmallerThan(TypeSetByHwMode &amp;Small,
+                                   TypeSetByHwMode &amp;Big) {
+  ....
+  if (Small.empty())
+    Changed |= EnforceAny(Small);
+  if (Big.empty())
+    Changed |= EnforceAny(Big);
+
+  assert(Small.hasDefault() &amp;&amp; Big.hasDefault());
+
+  SmallVector&lt;unsigned, 4> Modes;
+  union_modes(Small, Big, Modes);
+
+  for (unsigned M : Modes) {
+    TypeSetByHwMode::SetType &amp;S = Small.get(M);
+    TypeSetByHwMode::SetType &amp;B = Big.get(M);
+
+    if (any_of(S, isIntegerOrPtr) &amp;&amp; any_of(S, isIntegerOrPtr)) {
+      auto NotInt = [](MVT VT) { return !isIntegerOrPtr(VT); };
+      Changed |= berase_if(S, NotInt);
+      Changed |= berase_if(B, NotInt);
+    } else if (any_of(S, isFloatingPoint) &amp;&amp; any_of(B, isFloatingPoint)) {
+      auto NotFP = [](MVT VT) { return !isFloatingPoint(VT); };
+      Changed |= berase_if(S, NotFP);
+      Changed |= berase_if(B, NotFP);
+    } else if (S.empty() || B.empty()) {
+      Changed = !S.empty() || !B.empty();
+      S.clear();
+      B.clear();
+    } else {
+      TP.error("Incompatible types");
+      return Changed;
+    }
+  ....
+}</code></pre><br/>
+<p>Прежде чем я покажу, где ошибка, можете попробовать проверить свою внимательность и найти опечатку самостоятельно. Вставлю картинку, чтобы вы сразу не посмотрели ответ.</p><br/>
+<p><img src="/img/image-loader.svg" alt="Найди ошибку в коде" data-src="https://habrastorage.org/getpro/habr/post_images/2e0/ce0/be5/2e0ce0be5675f1a7d0ab63003f077760.png"/></p><br/>
+<p>Проблема здесь:</p><br/>
+<pre><code class="cpp">if (any_of(S, isIntegerOrPtr) &amp;&amp; any_of(S, isIntegerOrPtr))</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v501/">V501</a> [CWE-571] There are identical sub-expressions 'any_of(S, isIntegerOrPtr)' to the left and to the right of the '&amp;&amp;' operator. CodeGenDAGPatterns.cpp 479</p><br/>
+<p>Правильно:</p><br/>
+<pre><code class="cpp">if (any_of(S, isIntegerOrPtr) &amp;&amp; any_of(B, isIntegerOrPtr))</code></pre><br/>
+<h3 id="bag-n5-formatirovanie-tablicey-ne-vsegda-pomogaet">Баг N5, форматирование таблицей не всегда помогает</h3><br/>
+<pre><code class="cpp">LegalizerHelper::LegalizeResult LegalizerHelper::lowerRotate(MachineInstr &amp;MI) {
+  Register Dst = MI.getOperand(0).getReg();
+  Register Src = MI.getOperand(1).getReg();
+  Register Amt = MI.getOperand(2).getReg();
+  LLT DstTy = MRI.getType(Dst);
+  LLT SrcTy = MRI.getType(Dst);
+  LLT AmtTy = MRI.getType(Amt);
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v656/">V656</a> [CWE-665] Variables 'DstTy', 'SrcTy' are initialized through the call to the same function. It's probably an error or un-optimized code. Consider inspecting the 'MRI.getType(Dst)' expression. Check lines: 5953, 5954. LegalizerHelper.cpp 5954</p><br/>
+<p>Ранее я писал, что от опечаток помогает защититься форматирование кода таблицей. Да, помогает, но гарантии не даёт. Перед нами красиво оформленный код, похожий на таблицу. Но ошибка всё равно там есть.</p><br/>
+<p>Скорее всего, код писался копированием. Скопировали строчку</p><br/>
+<pre><code class="cpp">LLT DstTy = MRI.getType(Dst);</code></pre><br/>
+<p>Но только в одном месте заменили <em>Dst</em> на <em>Src</em>:</p><br/>
+<pre><code class="cpp">LLT SrcTy = MRI.getType(Dst);</code></pre><br/>
+<p>Правильный вариант кода:</p><br/>
+<pre><code class="cpp">LLT DstTy = MRI.getType(Dst);
+LLT SrcTy = MRI.getType(Src);
+LLT AmtTy = MRI.getType(Amt);</code></pre><br/>
+<h2 id="nulevye-ukazateli">Нулевые указатели</h2><br/>
+<p>Писать код на C или C++ и случайно не разыменовать где-то нулевой указатель – это научная фантастика :). Есть такие места и в LLVM. Изучать предупреждения про нулевые указатели скучно и утомительно. Я просмотрел такие предупреждения очень бегло и подозреваю, что при желании таких ошибок будет выявлено намного больше.</p><br/>
+<h3 id="bag-n6-razymenovanie-ukazatelya-kotoryy-mozhet-byt-nulevym">Баг N6, разыменование указателя, который может быть нулевым</h3><br/>
+<pre><code class="cpp">void DwarfCompileUnit::addLabelAddress(DIE &amp;Die, dwarf::Attribute Attribute,
+                                       const MCSymbol *Label) {
+  ....
+  if (Label)
+    DD->addArangeLabel(SymbolCU(this, Label));
+
+  bool UseAddrOffsetFormOrExpressions =
+      DD->useAddrOffsetForm() || DD->useAddrOffsetExpressions();
+
+  const MCSymbol *Base = nullptr;
+  if (Label->isInSection() &amp;&amp; UseAddrOffsetFormOrExpressions)
+    Base = DD->getSectionLabel(&amp;Label->getSection());
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v1004/">V1004</a> [CWE-476, CERT-EXP34-C] The 'Label' pointer was used unsafely after it was verified against nullptr. Check lines: 74, 81. DwarfCompileUnit.cpp 81</p><br/>
+<p>Проверка "<em>if (Label)</em>" говорит нам и анализатору, что указатель <em>Label</em> может быть нулевым. Но ниже этот указатель смело разыменовывается без всякой проверки:</p><br/>
+<pre><code class="cpp">if (Label->isInSection() &amp;&amp; UseAddrOffsetFormOrExpressions)</code></pre><br/>
+<p>Так явно не стоит делать.</p><br/>
+<h3 id="bag-n7-n9-razymenovanie-ukazatelya-kotoryy-mozhet-byt-nulevym">Баг N7-N9, разыменование указателя, который может быть нулевым</h3><br/>
+<pre><code class="cpp">static bool HandleUse(....)
+{
+  ....
+  if (Pat->isLeaf()) {
+    DefInit *DI = dyn_cast&lt;DefInit>(Pat->getLeafValue());
+    if (!DI)
+      I.error("Input $" + Pat->getName() + " must be an identifier!");
+    Rec = DI->getDef();
+  }
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v1004/">V1004</a> [CWE-476, CERT-EXP34-C] The 'DI' pointer was used unsafely after it was verified against nullptr. Check lines: 3349, 3351. CodeGenDAGPatterns.cpp 3351</p><br/>
+<p>Указатель <em>DI</em> проверятся, но далее сразу разыменовывается уже без проверки. Обосновано задаться вопросом, а является ли этой ошибкой? Ведь если указатель <em>DI</em> нулевой, то вызывается некая функция <em>error</em>, которая может генерировать исключение. Давайте заглянем в эту функцию:</p><br/>
+<pre><code class="cpp">void TreePattern::error(const Twine &amp;Msg) {
+  if (HasError)
+    return;
+  dump();
+  PrintError(TheRecord->getLoc(), "In " + TheRecord->getName() + ": " + Msg);
+  HasError = true;
+}</code></pre><br/>
+<p>Нет, эта функция не генерирует исключение и не останавливает выполнение программы каким-либо способом.</p><br/>
+<p>Получается, что сразу после фиксации ошибочного состояния (записи в лог) произойдёт разыменование нулевого указателя.</p><br/>
+<p>Как минимум, есть ещё пара аналогичных ошибок, которые нет смысла рассматривать отдельно:</p><br/>
+<ul>
+<li>V1004 [CWE-476, CERT-EXP34-C] The 'OpDef' pointer was used unsafely after it was verified against nullptr. Check lines: 2843, 2844. CodeGenDAGPatterns.cpp 2844</li>
+<li>V1004 [CWE-476, CERT-EXP34-C] The 'Val' pointer was used unsafely after it was verified against nullptr. Check lines: 3418, 3420. CodeGenDAGPatterns.cpp 3420</li>
+</ul><br/>
+<h3 id="bag-n10-nedostatochnaya-zaschita-ot-nulevogo-ukazatelya">Баг N10, недостаточная защита от нулевого указателя</h3><br/>
+<pre><code class="cpp">Error DWARFDebugLine::LineTable::parse(...., raw_ostream *OS, bool Verbose) {
+  assert((OS || !Verbose) &amp;&amp; "cannot have verbose output without stream");
+  ....
+  auto EmitRow = [&amp;] {
+    if (!TombstonedAddress) {
+      if (Verbose) {
+        *OS &lt;&lt; "\n";
+        OS->indent(12);
+      }
+      if (OS)
+        State.Row.dump(*OS);
+      State.appendRowToMatrix();
+    }
+  };
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v595/">V595</a> [CWE-476, CERT-EXP12-C] The 'OS' pointer was utilized before it was verified against nullptr. Check lines: 791, 793. DWARFDebugLine.cpp 791</p><br/>
+<p>Указатель OS может быть нулевым, о чём свидетельствует проверка "<em>if (OS)</em>". Однако ранее этот указатель может быть разыменован без предварительной проверки.</p><br/>
+<p>В начале есть <em>assert</em>, который защищает от нулевых указателей. Однако этого явно недостаточно, так как в релизной сборке макрос <em>assert</em> раскрывается в ничто.</p><br/>
+<p>Рационально сделать код более безопасным:</p><br/>
+<pre><code class="cpp">auto EmitRow = [&amp;] {
+  if (!TombstonedAddress) {
+    if (OS)
+    {
+      if (Verbose) {
+        *OS &lt;&lt; "\n";
+        OS->indent(12);
+      }
+      State.Row.dump(*OS);
+    }
+    State.appendRowToMatrix();
+  }
+};</code></pre><br/>
+<h2 id="problemy-s-perechisleniyami-enum">Проблемы с перечислениями (enum)</h2><br/>
+<p>Разработчики LLVM иногда полагаются на то, что небольшие перечисления (<em>enum</em>) будут представлены одним байтом. То есть <em>sizeof(enum) == sizeof(char)</em>. Такое предположение опасно. Например, компилятор Visual C++ предпочитает по умолчанию делать размер перечисления, равным размеру <em>int</em>.</p><br/>
+<h3 id="bag-n11-opasnyy-indeks">Баг N11, опасный индекс</h3><br/>
+<pre><code class="cpp">enum class FunctionKinds { ENTRY, EXIT, TAIL, LOG_ARGS_ENTER, CUSTOM_EVENT };
+....
+static Error loadObj(....) {
+  ....
+  auto Kind = Extractor.getU8(&amp;OffsetPtr);
+  static constexpr SledEntry::FunctionKinds Kinds[] = {
+      SledEntry::FunctionKinds::ENTRY, SledEntry::FunctionKinds::EXIT,
+      SledEntry::FunctionKinds::TAIL,
+      SledEntry::FunctionKinds::LOG_ARGS_ENTER,
+      SledEntry::FunctionKinds::CUSTOM_EVENT};
+  if (Kind >= sizeof(Kinds))
+    return errorCodeToError(
+        std::make_error_code(std::errc::executable_format_error));
+  Entry.Kind = Kinds[Kind];
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v557/">V557</a> [CWE-125, CERT-ARR30-C] Array overrun is possible. The value of 'Kind' index could reach 19. InstrumentationMap.cpp 196</p><br/>
+<p>Текст сообщения требует пояснения. Механизм анализа потока данных обрабатывает этот код:</p><br/>
+<pre><code class="cpp">if (Kind >= sizeof(Kinds))
+  return errorCodeToError(...);</code></pre><br/>
+<p>И приходит к выводу, что если условие не выполняется, то переменная <em>Kind</em> имеет далее значение [0..19].</p><br/>
+<p>Почему 19, а не 4? Я осуществлял проверку проекта с помощью плагина для Visual Studio 2019. Соответственно, анализатор знает, что использовался компилятор Visual C++ и что перечисление будет представлено четырьмя байтами. В этом можно убедиться, написав следующую тестовую программу:</p><br/>
+<pre><code class="cpp">int main()
+{
+  enum class FunctionKinds { ENTRY, EXIT, TAIL, LOG_ARGS_ENTER, CUSTOM_EVENT };
+  static constexpr FunctionKinds Kinds[] = {
+    FunctionKinds::ENTRY, FunctionKinds::EXIT, FunctionKinds::TAIL,
+    FunctionKinds::LOG_ARGS_ENTER, FunctionKinds::CUSTOM_EVENT
+  };
+  std::cout &lt;&lt; sizeof(Kinds) &lt;&lt; std::endl;
+  return 0;
+}</code></pre><br/>
+<p>Собираем с помощью компилятора Visual C++, запускаем и видим число "20".</p><br/>
+<p>Получается, что защита от выхода за границу массива не работает. Чтобы исправить код, нужно сравнивать <em>Kind</em> не с размером массива в байтах, а с количеством элементом массива.</p><br/>
+<p>Корректная проверка:</p><br/>
+<pre><code class="cpp">if (Kind >= sizeof(Kinds) / sizeof(Kinds[0]))
+  return errorCodeToError(....);</code></pre><br/>
+<h3 id="bag-n12-oshibka-inicializacii-massiva">Баг N12, ошибка инициализации массива</h3><br/>
+<pre><code class="cpp">enum CondCode {
+  // Opcode       N U L G E       Intuitive operation
+  SETFALSE, //      0 0 0 0       Always false (always folded)
+  SETOEQ,   //      0 0 0 1       True if ordered and equal
+  ....
+  SETCC_INVALID // Marker value.
+};
+
+static void InitCmpLibcallCCs(ISD::CondCode *CCs) {
+  memset(CCs, ISD::SETCC_INVALID, sizeof(ISD::CondCode)*RTLIB::UNKNOWN_LIBCALL);
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v575/">V575</a> [CWE-628, CERT-EXP37-C] The 'memset' function processes the pointer to enum type. Inspect the first argument. TargetLoweringBase.cpp 662</p><br/>
+<p>Код будет работать только в том случае, если повезёт и элементы перечисления <em>CondCode</em> будут представлены одним байтом.</p><br/>
+<p>Функция <em>memset</em> заполняет массив байт. В каждый байт записывается значение <em>SETCC_INVALID</em>. Если <em>enum</em> представлен 4 байтами, как это происходит в случае сборки с помощью Visual C++, массив будет заполнен бессмысленными значениями. Эти значения будут равны результату повторения константы в каждом из 4 байт:</p><br/>
+<pre><code class="cpp">SETCC_INVALID &lt;&lt; 24 | SETCC_INVALID &lt;&lt; 16 | SETCC_INVALID &lt;&lt; 8 | SETCC_INVALID</code></pre><br/>
+<p>Правильный вариант заполнения массива:</p><br/>
+<pre><code class="cpp">std::fill(CCs, CCs + RTLIB::UNKNOWN_LIBCALL, ISD::SETCC_INVALID);</code></pre><br/>
+<h2 id="oshibki-v-potoke-upravleniya">Ошибки в потоке управления</h2><br/>
+<h3 id="bag-n13-n14-neinicializirovannaya-peremennaya">Баг N13-N14, неинициализированная переменная</h3><br/>
+<pre><code class="cpp">Expected&lt;std::pair&lt;JITTargetAddress, Edge::Kind>>
+EHFrameEdgeFixer::readEncodedPointer(uint8_t PointerEncoding,
+                                     JITTargetAddress PointerFieldAddress,
+                                     BinaryStreamReader &amp;RecordReader) {
+  .....
+  Edge::Kind PointerEdgeKind;
+
+  switch (EffectiveType) {
+  case DW_EH_PE_udata4: {
+    ....
+    PointerEdgeKind = Delta32;
+    break;
+  }
+  case DW_EH_PE_udata8: {
+    ....
+    PointerEdgeKind = Delta64;
+    break;
+  }
+  case DW_EH_PE_sdata4: {
+    ....
+    PointerEdgeKind = Delta32;
+    break;
+  }
+  case DW_EH_PE_sdata8: {
+    ....
+    PointerEdgeKind = Delta64;
+    break;
+  }
+  }
+
+  if (PointerEdgeKind == Edge::Invalid)
+    return make_error&lt;JITLinkError>(
+        "Unspported edge kind for encoded pointer at " +
+        formatv("{0:x}", PointerFieldAddress));
+
+  return std::make_pair(Addr, Delta64);
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v614/">V614</a> [CWE-457, CERT-EXP53-CPP] Potentially uninitialized variable 'PointerEdgeKind' used. EHFrameSupport.cpp 704</p><br/>
+<p>Переменная <em>PointerEdgeKind</em> может остаться неинициализированной после выполнения switch-блока. Однако если переменная ничем не инициализировалась, то ожидается, что она равна именованной константе <em>Edge::Invalid</em>.</p><br/>
+<p>Следует сразу при объявлении переменной инициализировать её этой константой:</p><br/>
+<pre><code class="cpp">Edge::Kind PointerEdgeKind = Edge::Invalid;</code></pre><br/>
+<p>Ещё одна такая ошибка: V614 [CWE-457, CERT-EXP53-CPP] Potentially uninitialized variable 'Result' used. llvm-rtdyld.cpp 998</p><br/>
+<h3 id="bag-n15-nedostizhimyy-kod">Баг N15, недостижимый код</h3><br/>
+<p>В начале рассмотрим вспомогательную функцию <em>report_fatal_error</em>:</p><br/>
+<pre><code class="cpp">void llvm::report_fatal_error(const Twine &amp;Reason, bool GenCrashDiag) {
+  ....
+  abort();
+}</code></pre><br/>
+<p>Для нас важно то, что она прекращает выполнение программы с помощью вызова функции <a href="https://en.cppreference.com/w/cpp/utility/program/abort">abort</a>. Т. е. функция <em>report_fatal_error</em> никогда не возвращает управление.</p><br/>
+<p>Ещё есть вот такая промежуточная функция, вызов которой мы рассмотрим далее:</p><br/>
+<pre><code class="cpp">void llvm::report_fatal_error(const char *Reason, bool GenCrashDiag) {
+  report_fatal_error(Twine(Reason), GenCrashDiag);
+}</code></pre><br/>
+<p>Примечание. Аргумент <em>GenCrashDiag</em> является необязательным:</p><br/>
+<pre><code class="cpp">__declspec(noreturn) void report_fatal_error(const char *reason, 
+                                                bool gen_crash_diag = true);</code></pre><br/>
+<p>Кстати, сейчас подумал, что тело функции можно было и не рассматривать. Уже из аннотации функции <em>__declspec(noreturn)</em> понятно, что она не возвращает управление. Но решил оставить как есть, чтобы объяснить ситуацию максимально подробно.</p><br/>
+<p>Теперь к сути. Рассмотрим вот этот фрагмент кода:</p><br/>
+<pre><code class="cpp">int AMDGPUCFGStructurizer::improveSimpleJumpintoIf(....)
+{
+  ....
+  if (LandBlkHasOtherPred) {
+    report_fatal_error("Extra register needed to handle CFG");
+    Register CmpResReg =
+        HeadMBB->getParent()->getRegInfo().createVirtualRegister(I32RC);
+    report_fatal_error("Extra compare instruction needed to handle CFG");
+    insertCondBranchBefore(LandBlk, I, R600::IF_PREDICATE_SET,
+        CmpResReg, DebugLoc());
+  }
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v779/">V779</a> [CWE-561, CERT-MSC12-C] Unreachable code detected. It is possible that an error is present. AMDILCFGStructurizer.cpp 1286</p><br/>
+<p>Обратите внимание, что после вызова функции <em>report_fatal_error</em> программа ещё пытается что-то делать. Все эти действия уже не имеют смысла.</p><br/>
+<p>Есть подозрение, что автор кода вовсе не планировал полностью прекратить выполнение программы, а просто хотел сообщить об ошибке. Возможно, нужно было использовать какую-то другую функцию для логирования информации о проблеме.</p><br/>
+<h3 id="bag-n16-n17-utechka-pamyati">Баг N16-N17, утечка памяти</h3><br/>
+<pre><code class="cpp">uint64_t WinCOFFObjectWriter::writeObject(MCAssembler &amp;Asm,
+                                          const MCAsmLayout &amp;Layout) {
+  ....
+  if (EmitAddrsigSection) {
+    auto Frag = new MCDataFragment(AddrsigSection);
+    Frag->setLayoutOrder(0);
+    raw_svector_ostream OS(Frag->getContents());
+    for (const MCSymbol *S : AddrsigSyms) {
+      if (!S->isTemporary()) {
+        encodeULEB128(S->getIndex(), OS);
+        continue;
+      }
+
+      MCSection *TargetSection = &amp;S->getSection();
+      assert(SectionMap.find(TargetSection) != SectionMap.end() &amp;&amp;
+             "Section must already have been defined in "
+             "executePostLayoutBinding!");
+      encodeULEB128(SectionMap[TargetSection]->Symbol->getIndex(), OS);
+    }
+  }
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v773/">V773</a> [CWE-401, CERT-MEM31-C, CERT-MEM51-CPP] Visibility scope of the 'Frag' pointer was exited without releasing the memory. A memory leak is possible. WinCOFFObjectWriter.cpp 1116</p><br/>
+<p>Возможно, я чего-то не понимаю и это не ошибка. Но я не вижу, где и как может быть удалён объект, на который ссылается указатель <em>Frag</em>. Я согласен с анализатором: это очень похоже на утечку памяти.</p><br/>
+<p>Аналогичная ситуация: V773 [CWE-401, CERT-MEM31-C, CERT-MEM51-CPP] Visibility scope of the 'Frag' pointer was exited without releasing the memory. A memory leak is possible. WinCOFFObjectWriter.cpp 1130</p><br/>
+<h2 id="kod-s-zapahom">Код с запахом</h2><br/>
+<p>В данном разделе я собрал фрагменты кода, которые обратили на себя внимание, но которые я не спешу назвать багами. Скорее это избыточный и неудачный код. Сейчас сразу станет понятно, что я имею в виду.</p><br/>
+<h3 id="kod-s-zapahom-n1-dublikaty-strok">Код с запахом N1, дубликаты строк</h3><br/>
+<pre><code class="cpp">static uint16_t toSecMapFlags(uint32_t Flags) {
+  uint16_t Ret = 0;
+  if (Flags &amp; COFF::IMAGE_SCN_MEM_READ)
+    Ret |= static_cast&lt;uint16_t>(OMFSegDescFlags::Read);
+  if (Flags &amp; COFF::IMAGE_SCN_MEM_WRITE)
+    Ret |= static_cast&lt;uint16_t>(OMFSegDescFlags::Write);
+  if (Flags &amp; COFF::IMAGE_SCN_MEM_EXECUTE)
+    Ret |= static_cast&lt;uint16_t>(OMFSegDescFlags::Execute);
+  if (Flags &amp; COFF::IMAGE_SCN_MEM_EXECUTE)
+    Ret |= static_cast&lt;uint16_t>(OMFSegDescFlags::Execute);
+  if (!(Flags &amp; COFF::IMAGE_SCN_MEM_16BIT))
+    Ret |= static_cast&lt;uint16_t>(OMFSegDescFlags::AddressIs32Bit);
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v581/">V581</a> [CWE-670] The conditional expressions of the 'if' statements situated alongside each other are identical. Check lines: 335, 337. DbiStreamBuilder.cpp 337</p><br/>
+<p>Вот этот фрагмент повторяется два раза:</p><br/>
+<pre><code class="cpp">if (Flags &amp; COFF::IMAGE_SCN_MEM_EXECUTE)
+  Ret |= static_cast&lt;uint16_t>(OMFSegDescFlags::Execute);</code></pre><br/>
+<p>Я склонен считать, что это случайный лишний код и его следует просто удалить. Впрочем, это может быть и настоящей ошибкой, если во втором блоке предполагалось выполнять другие проверки и действия.</p><br/>
+<h3 id="kod-s-zapahom-n2-atavizm">Код с запахом N2, атавизм</h3><br/>
+<pre><code class="cpp">std::string pathname_;
+....
+void FilePath::Normalize() {
+  if (pathname_.c_str() == nullptr) {
+    pathname_ = "";
+    return;
+  }
+....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v547/">V547</a> [CWE-570] Expression 'pathname_.c_str() == nullptr' is always false. gtest-filepath.cc 349</p><br/>
+<p>Если удалить всё содержимое функции, то ничего не изменится. Она всё равно ничего не делает. Похоже на артефакт нескольких последовательных рефакторингов.</p><br/>
+<h3 id="kod-s-zapahom-n3-ne-tam-postavlena-skobka">Код с запахом N3, не там поставлена скобка</h3><br/>
+<pre><code class="cpp">raw_ostream &amp;raw_ostream::write_escaped(StringRef Str,
+                                        bool UseHexEscapes) {
+  ....
+  *this &lt;&lt; hexdigit((c >> 4 &amp; 0xF));
+  *this &lt;&lt; hexdigit((c >> 0) &amp; 0xF);
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v592/">V592</a> The expression was enclosed by parentheses twice: '((c >> 4 &amp; 0xF))'. One pair of parentheses is unnecessary or misprint is present. raw_ostream.cpp 188</p><br/>
+<p>В первой строчке используются двойные скобки. Эта избыточность скобок говорит, что хотели написать выражение как-то по-другому. И действительно, как хотели написать на самом деле видно в следующей строке. Становится понятно, что скобки хотели использовать для упрощения чтения выражения.</p><br/>
+<p>Задумывалось написать такой код:</p><br/>
+<pre><code class="cpp">*this &lt;&lt; hexdigit((c >> 4) &amp; 0xF);
+*this &lt;&lt; hexdigit((c >> 0) &amp; 0xF);</code></pre><br/>
+<p>Хотя скобка поставлена не там, это не ошибка. Всё равно приоритет сдвига (>>) выше, чем приоритет двоичного И (&amp;). Всё вычисляется корректно.</p><br/>
+<h3 id="kod-s-zapahom-n4-n6-neudachnoe-sliyanie-koda">Код с запахом N4-N6, неудачное слияние кода?</h3><br/>
+<pre><code class="cpp">template &lt;class ELFT>
+void ELFState&lt;ELFT>::writeSectionContent(
+    Elf_Shdr &amp;SHeader, const ELFYAML::StackSizesSection &amp;Section,
+    ContiguousBlobAccumulator &amp;CBA) {
+  if (!Section.Entries)
+    return;
+
+  if (!Section.Entries)
+    return;
+  ....
+}</code></pre><br/>
+<p>Предупреждение PVS-Studio: <a href="https://pvs-studio.com/ru/w/v581/">V581</a> [CWE-670] The conditional expressions of the 'if' statements situated alongside each other are identical. Check lines: 1380, 1383. ELFEmitter.cpp 1383</p><br/>
+<p>Это похоже на какое-то неудачное слияние двух веток кода, из-за которого возникли дублирующиеся строки. Не ошибка, но стоит удалить дубликат.</p><br/>
+<p>Вот ещё схожие фрагменты с дубликатами кода:</p><br/>
+<ul>
+<li>V581 [CWE-670] The conditional expressions of the 'if' statements situated alongside each other are identical. Check lines: 1488, 1491. ELFEmitter.cpp 1491</li>
+<li>V581 [CWE-670] The conditional expressions of the 'if' statements situated alongside each other are identical. Check lines: 1663, 1666. ELFEmitter.cpp 1666</li>
+</ul><br/>
+<h2 id="zaklyuchenie">Заключение</h2><br/>
+<p>PVS-Studio по прежнему занимает достойное место среди решений для разработчиков. Он производил и продолжает производить более глубокий и разнообразный анализ кода, чем компиляторы и бесплатные инструменты.</p><br/>
+<p><img src="/img/image-loader.svg" alt="PVS-Studio достоин!" data-src="https://habrastorage.org/getpro/habr/post_images/0b6/7b0/3be/0b67b03be8b5f603b32935e2aaec6de2.png"/></p><br/>
+<p>Раз PVS-Studio способен находить ошибки даже в таких хорошо оттестированных приложениях, как компиляторы, то есть смысл посмотреть, что он сможет найти в ваших проектах :). Предлагаю, не откладывая <a href="https://pvs-studio.com/ru/pvs-studio/try-free/">попробовать триальную версию</a> анализатора. Спасибо за внимание.</p><br/>
+<h2 id="dopolnitelnye-ssylki">Дополнительные ссылки</h2><br/>
+<ol>
+<li><a href="https://pvs-studio.com/ru/blog/posts/0743/">Как внедрить статический анализатор кода в legacy проект и не демотивировать команду</a>.</li>
+<li><a href="https://pvs-studio.com/ru/docs/manual/6521/">Технология статического анализа кода PVS-Studio</a>.</li>
+<li><a href="https://pvs-studio.com/ru/blog/posts/cpp/0817/">Как PVS-Studio защищает от поспешных правок кода</a>.</li>
+<li><a href="https://pvs-studio.com/ru/blog/posts/cpp/0639/">Ошибки, которые не находит статический анализ кода, потому что он не используется</a>.</li>
+</ol><br/>
+<p>Если хотите поделиться этой статьей с англоязычной аудиторией, то прошу использовать ссылку на перевод: Andrey Karpov. <a href="https://habr.com/en/company/pvs-studio/blog/582492/">Detecting errors in the LLVM release 13.0.0</a>.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%81%D0%B8%2B%2B%5D" class="tm-tags-list__link">си++</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%81%D1%82%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9%20%D0%B0%D0%BD%D0%B0%D0%BB%D0%B8%D0%B7%20%D0%BA%D0%BE%D0%B4%D0%B0%5D" class="tm-tags-list__link">статический анализ кода</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%B1%D0%B7%D0%BE%D1%80%D1%8B%20%D0%BA%D0%BE%D0%B4%D0%B0%5D" class="tm-tags-list__link">обзоры кода</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpvs-studio%5D" class="tm-tags-list__link">pvs-studio</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bllvm%5D" class="tm-tags-list__link">llvm</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bllvm%2013%5D" class="tm-tags-list__link">llvm 13</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%BF%D0%B5%D1%87%D0%B0%D1%82%D0%BA%D0%B8%5D" class="tm-tags-list__link">опечатки</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bclang%5D" class="tm-tags-list__link">clang</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bclang%20static%20analyzer%5D" class="tm-tags-list__link">clang static analyzer</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bclang-tidy%5D" class="tm-tags-list__link">clang-tidy</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D1%82%D0%BA%D1%80%D1%8B%D1%82%D1%8B%D0%B9%20%D0%B8%D1%81%D1%85%D0%BE%D0%B4%D0%BD%D1%8B%D0%B9%20%D0%BA%D0%BE%D0%B4%5D" class="tm-tags-list__link">открытый исходный код</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B1%D0%B0%D0%B3%D0%B8%5D" class="tm-tags-list__link">баги</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D1%88%D0%B8%D0%B1%D0%BA%D0%B8%20%D0%B2%20%D0%BA%D0%BE%D0%B4%D0%B5%5D" class="tm-tags-list__link">ошибки в коде</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BA%D0%BE%D0%BC%D0%BF%D0%B8%D0%BB%D1%8F%D1%82%D0%BE%D1%80%D1%8B%5D" class="tm-tags-list__link">компиляторы</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/pvs-studio/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании PVS-Studio
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/infosecurity/" class="tm-hubs-list__link">
+    Информационная безопасность
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/open_source/" class="tm-hubs-list__link">
+    Open source
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/compilers/" class="tm-hubs-list__link">
+    Компиляторы
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 45: ↑42 и ↓3</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 45: ↑42 и ↓3" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+39</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">7.6K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    11
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/pvs-studio/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/95a/244/327/95a244327fc36477b6048c0f8b67df8b.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/pvs-studio/profile/" class="tm-company-snippet__title">PVS-Studio</a> <div class="tm-company-snippet__description">Статический анализ кода для C, C++, C# и Java</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://pvs-studio.com/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://facebook.com/StaticCodeAnalyzer" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/Code_Analysis" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://instagram.com/pvsstudio_rus" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Instagram
+    </a><a href="https://telegram.me/pvsstudio_rus" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Andrey2008/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/71b/4ac/f13/71b4acf131d3d675b999b4a47f573b0a.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 1345 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    509.3
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">62.4</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Andrey Karpov</span> <a href="/ru/users/Andrey2008/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Andrey2008
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">DevRel</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/pvs-studio/blog/582494/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 13 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><span>
+      2008
+    </span></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://pvs-studio.com/" target="_blank" class="tm-company-basic-info__link">
+      pvs-studio.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    31–50 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2013-05-06T12:33:02.000Z" title="2013-05-06, 16:33">6  мая  2013</time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/pvs-studio/blog/582494/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/pvs-studio/blog/582494/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582494":{"id":"582494","timePublished":"2021-10-08T19:16:39+00:00","isCorporative":true,"lang":"ru","titleHtml":"Выявляем ошибки в релизе LLVM 13.0.0","leadData":{"textHtml":"\u003Cp\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F55c\u002F8fd\u002Fcd5\u002F55c8fdcd54e43716b78c0a88732e93ea.png\" alt=\"PVS-Studio и LLVM 13\"\u003E\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EЗадача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM 13.0.0.\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":509.3,"votesCount":1345},"rating":62.4,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"39063","alias":"Andrey2008","fullname":"Andrey Karpov","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F71b\u002F4ac\u002Ff13\u002F71b4acf131d3d675b999b4a47f573b0a.jpg","speciality":"DevRel"},"statistics":{"commentsCount":13,"favoritesCount":11,"readingCount":7578,"score":39,"votesCount":45},"hubs":[{"relatedData":null,"id":"18095","alias":"pvs-studio","type":"corporative","title":"Блог компании PVS-Studio","titleHtml":"Блог компании PVS-Studio","isProfiled":false},{"relatedData":null,"id":"50","alias":"infosecurity","type":"collective","title":"Информационная безопасность","titleHtml":"Информационная безопасность","isProfiled":true},{"relatedData":null,"id":"144","alias":"open_source","type":"collective","title":"Open source","titleHtml":"Open source","isProfiled":true},{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true},{"relatedData":null,"id":"17188","alias":"compilers","type":"collective","title":"Компиляторы","titleHtml":"Компиляторы","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"PVS-Studio и LLVM 13\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F55c\u002F8fd\u002Fcd5\u002F55c8fdcd54e43716b78c0a88732e93ea.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗадача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM 13.0.0.\u003C\u002Fp\u003E\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"kak-poyavilas-eta-statya\"\u003EКак появилась эта статья\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКомпиляторы и встроенные в них анализаторы кода постоянно развиваются. Развиваются и анализаторы, встроенные в среды разработки, такие как Visual Studio и CLion. У разработчиков возникает резонный вопрос, есть ли смысл использовать дополнительные решения для контроля качества кода? Или можно положиться на встроенные средства современного компилятора или IDE?\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРазрабатывая проект, рационально использовать минимально необходимое количество приложений. Поэтому если встроенные механизмы обеспечивают необходимый уровень анализа кода, то есть смысл ограничиться ими и не добавлять в пайплайн дополнительные утилиты.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля нашей команды разработчиков \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fpvs-studio\u002F\"\u003EPVS-Studio\u003C\u002Fa\u003E это проявляется следующим образом. Время от времени нас спрашивают, обеспечиваем ли мы анализ лучше, чем компилятор X или встроенный в этот компилятор статический анализатор? Как правило, количество таких вопросов увеличивается в момент очередного релиза компилятора.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПравильные варианты ответов на такие вопросы:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eнаш анализатор постоянно развивается. Появляются новые диагностики (\u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fposts\u002Fcpp\u002F0814\u002F\"\u003Eпример\u003C\u002Fa\u003E), совершенствуется механизм анализа потока данных (\u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fposts\u002Fcpp\u002F0824\u002F\"\u003Eпример\u003C\u002Fa\u003E) и так далее. Компиляторы учатся находить новые ошибки, а PVS-Studio учится ещё быстрее. В этом суть существования платных профессиональных решений статического анализа кода;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eнекорректно сравнивать анализаторы по количеству диагностик. Важно и их качество, и возможность лёгкой интеграции в процесс разработки. Много значит развитая инфраструктура и интеграция с такими системами, как SonarQube, PlatformIO, Azure DevOps, Travis CI, CircleCI, GitLab CI\u002FCD, Jenkins и так далее. И, конечно, следует помнить про поддержку. Поэтому несколько новых диагностических правил, появившихся в компиляторе, ничего не меняют.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНо это неинтересные ответы :). Закрадывается впечатление, что мы хотим уйти от вопроса в сторону. Выходом является написание таких статей, как эта. Наша команда проверяет компиляторы и тем самым демонстрирует возможности продукта.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ данном случае мы проверим недавний релиз LLVM 13.0.0. Конечно, читателю и нам интересен не сам LLVM. Подразумевается, что мы оцениваем мощь PVS-Studio в сравнении с компилятором Clang, Clang Static Analyzer и Clang-Tidy. Перечисленные программы используются при разработке проекта LLVM. И если, несмотря на их использование, удастся что-то найти, это продемонстрирует пользу внедрения PVS-Studio в процесс разработки.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли интересно, \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fposts\u002Fcpp\u002F0771\u002F\"\u003Eздесь\u003C\u002Fa\u003E можно познакомиться с предыдущей аналогичной статьёй времён LLVM 11.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"proverka-llvm\"\u003EПроверка LLVM\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждения PVS-Studio удобнее всего смотреть в среде разработки. У меня на машине из сред разработки оказалась доступна Visual Studio 2019. Ей я и воспользовался. Процесс крайне прост:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eскачиваем исходные коды \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fllvm\u002Fllvm-project\u002Freleases\u002Ftag\u002Fllvmorg-13.0.0\"\u003ELLVM 13.0.0\u003C\u002Fa\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eсоздаём проект для VS2019: cmake -S llvm -B build -G \"Visual Studio 16 2019\";\u003C\u002Fli\u003E\r\n\u003Cli\u003Eкомпилируем. Этот шаг необходим, чтобы были сгенерированы различные inc-файлы. Без них невозможно препроцессировать, а следовательно, и анализировать многие cpp-файлы;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eудивляемся, что создалось разных файлов более чем на 100 Gb;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eв меню Visual Studio указываем плагину PVS-Studio проверить проект;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eprofit.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНа самом деле, не всё так радужно. Без предварительной настройки анализатора вы, скорее всего, столкнётесь с большим количеством ложных или неинтересных (в рамках данного проекта) предупреждений. Для меня лишние предупреждения не являются проблемой, так как моя задача найти некоторое количество интересных багов, достаточных для написания статьи. Не более того.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли вы хотите начать использовать анализатор регулярно, то требуется его настройка. Помимо этого, на начальном этапе будет полезно объявить все предупреждения техническим долгом и спрятать их. После чего начать работать только с новыми предупреждениями, постепенно ликвидируя технический долг. Более подробно этот подход описан \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fposts\u002F0743\u002F\"\u003Eздесь\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНастройке и внедрению анализатора посвящены многие другие статьи, поэтому не будем здесь удаляться от главной темы. Давайте же, наконец, посмотрим, что удалось найти интересного. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЯ потратил на просмотр лога один вечер и выписал то, что показалось мне интересным. Уверен, можно найти гораздо больше ошибок. Однако даже то, что, просто бегло пробежавшись по отчёту, можно исправить 20 ошибок, демонстрирует анализатор в выгодном свете. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"opechatki\"\u003EОпечатки\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EPVS-Studio всегда был и остаётся силён в обнаружении опечаток. Опечатки сразу хорошо видны в демонстрируемом фрагменте кода. Но, несмотря на свою простоту, эти ошибки проходят обзоры кода и затем заставляют морщиться, когда выявляются после отладки :).\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНесложно придумать идеи правил для обнаружения опечаток. А вот реализовать их куда сложнее. Нужно соблюсти баланс между полезными предупреждениями и \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fterms\u002F6461\u002F\"\u003Eложно-положительными срабатываниями\u003C\u002Fa\u003E. В компиляторе Clang и сопутствующих анализаторах есть диагностики для выявления многих разновидностей ошибок, которые будут описаны ниже. Но раз они не помогли, значит в нашем анализаторе эти диагностики сделаны более качественно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n1-oshibka-konstruirovaniya-64-bitnogo-znacheniya-iz-dvuh-32-bitnyh-znacheniy\"\u003EБаг N1, ошибка конструирования 64-битного значения из двух 32-битных значений\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Euint64_t uval;\n....\nbool DWARFFormValue::extractValue(const DWARFDataExtractor &amp;Data,\n                                  uint64_t *OffsetPtr, dwarf::FormParams FP,\n                                  const DWARFContext *Ctx,\n                                  const DWARFUnit *CU) {\n  ....\n  case DW_FORM_LLVM_addrx_offset:\n    Value.uval = Data.getULEB128(OffsetPtr, &amp;Err) &lt;&lt; 32;\n    Value.uval = Data.getU32(OffsetPtr, &amp;Err);\n    break;\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv519\u002F\"\u003EV519\u003C\u002Fa\u003E [CWE-563, CERT-MSC13-C] The 'Value.uval' variable is assigned values twice successively. Perhaps this is a mistake. Check lines: 334, 335. DWARFFormValue.cpp 335\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНет смысла в одну и ту же переменную записывать поочередно разные значения. Об этом и предупреждает анализатор. Скорее всего, автор кода немного поспешил и допустил опечатку, забыв добавить '|'. Данный код должен создавать из двух 32-битных значений одно 64-битное. Корректный вариант этого кода:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Ecase DW_FORM_LLVM_addrx_offset:\n  Value.uval = Data.getULEB128(OffsetPtr, &amp;Err) &lt;&lt; 32;\n  Value.uval |= Data.getU32(OffsetPtr, &amp;Err);\n  break;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n2-pospeshnyy-copy-paste-koda\"\u003EБаг N2, поспешный copy-paste кода\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ классе \u003Cem\u003EExecutorAddress\u003C\u002Fem\u003E потребовалось реализовать набор однотипных операторов. Почти наверняка это делалось с помощью \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fterms\u002F0068\u002F\"\u003Ecopy-paste\u003C\u002Fa\u003E. Согласитесь, достаточно скучно писать следующий код, не копируя строки.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eclass ExecutorAddress {\n  ....\n  ExecutorAddress &amp;operator++() {\n    ++Addr;\n    return *this;\n  }\n  ExecutorAddress &amp;operator--() {\n    --Addr;\n    return *this;\n  }\n  ExecutorAddress operator++(int) { return ExecutorAddress(Addr++); }\n  ExecutorAddress operator--(int) { return ExecutorAddress(Addr++); }\n\n  ExecutorAddress &amp;operator+=(const ExecutorAddrDiff Delta) {\n    Addr += Delta.getValue();\n    return *this;\n  }\n\n  ExecutorAddress &amp;operator-=(const ExecutorAddrDiff Delta) {\n    Addr -= Delta.getValue();\n    return *this;\n  }\n  ....\nprivate:\n  uint64_t Addr = 0;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EК сожалению, за скорость написания, приходится расплачиваться высокой вероятностью забыть что-то исправить в скопированном коде. А поскольку скучно не только писать, но и проверять такой код, то он \"притягивает\" к себе ошибки.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EК счастью, статические анализаторы не устают и не ленятся :). PVS-Studio хорошо дополняет классический обзор кода, предлагая обратить внимание на эти две функции:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EExecutorAddress operator++(int) { return ExecutorAddress(Addr++); }\nExecutorAddress operator--(int) { return ExecutorAddress(Addr++); }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv524\u002F\"\u003EV524\u003C\u002Fa\u003E It is odd that the body of '--' function is fully equivalent to the body of '++' function. ExecutorAddress.h 104\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЯвная ошибка: забыли заменить в правой части скопированной строки оператор ++ на --.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n3-nikto-ne-umeet-pisat-funkcii-sravneniya\"\u003EБаг N3, никто не умеет писать функции сравнения\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Ebool operator==(const BDVState &amp;Other) const {\n  return OriginalValue == OriginalValue &amp;&amp; BaseValue == Other.BaseValue &amp;&amp;\n    Status == Other.Status;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv501\u002F\"\u003EV501\u003C\u002Fa\u003E [CWE-571] There are identical sub-expressions to the left and to the right of the '==' operator: OriginalValue == OriginalValue RewriteStatepointsForGC.cpp 758\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Опечатка в коде\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002Ff1c\u002F21d\u002Fc50\u002Ff1c21dc50713903f8555056632101a8f.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКлассика! Я даже отдельную большую статью писал на эту тему — \"\u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fposts\u002Fcpp\u002F0509\u002F\"\u003EЗло живёт в функциях сравнения\u003C\u002Fa\u003E\".\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧтобы снизить количество таких ошибок, рекомендую всегда оформлять однотипные операции табличным методом. Я бы оформил эту функцию так:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Ebool operator==(const BDVState &amp;Other) const {\n  return\n       OriginalValue == OriginalValue\n    &amp;&amp; BaseValue == Other.BaseValue\n    &amp;&amp; Status == Other.Status;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТак длиннее, но зато больше вероятность, что опечатка будет замечена на code review. Впрочем, даже так ошибку можно просмотреть и лучше дополнительно подстраховаться, используя профессиональный анализатор.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n4-nikto-ne-umeet-pisat-funkcii-sravneniya-ya-serezno\"\u003EБаг N4, никто не умеет писать функции сравнения (я серьезно)\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВозможно, рассматривая предыдущий пример, вы подумали, что я преувеличиваю и перед нами одиночный случайный ляп. К сожалению, функции сравнения действительно тяготеют к опечаткам. Рассмотрим ещё один пример.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Ebool TypeInfer::EnforceSmallerThan(TypeSetByHwMode &amp;Small,\n                                   TypeSetByHwMode &amp;Big) {\n  ....\n  if (Small.empty())\n    Changed |= EnforceAny(Small);\n  if (Big.empty())\n    Changed |= EnforceAny(Big);\n\n  assert(Small.hasDefault() &amp;&amp; Big.hasDefault());\n\n  SmallVector&lt;unsigned, 4\u003E Modes;\n  union_modes(Small, Big, Modes);\n\n  for (unsigned M : Modes) {\n    TypeSetByHwMode::SetType &amp;S = Small.get(M);\n    TypeSetByHwMode::SetType &amp;B = Big.get(M);\n\n    if (any_of(S, isIntegerOrPtr) &amp;&amp; any_of(S, isIntegerOrPtr)) {\n      auto NotInt = [](MVT VT) { return !isIntegerOrPtr(VT); };\n      Changed |= berase_if(S, NotInt);\n      Changed |= berase_if(B, NotInt);\n    } else if (any_of(S, isFloatingPoint) &amp;&amp; any_of(B, isFloatingPoint)) {\n      auto NotFP = [](MVT VT) { return !isFloatingPoint(VT); };\n      Changed |= berase_if(S, NotFP);\n      Changed |= berase_if(B, NotFP);\n    } else if (S.empty() || B.empty()) {\n      Changed = !S.empty() || !B.empty();\n      S.clear();\n      B.clear();\n    } else {\n      TP.error(\"Incompatible types\");\n      return Changed;\n    }\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПрежде чем я покажу, где ошибка, можете попробовать проверить свою внимательность и найти опечатку самостоятельно. Вставлю картинку, чтобы вы сразу не посмотрели ответ.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Найди ошибку в коде\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F2e0\u002Fce0\u002Fbe5\u002F2e0ce0be5675f1a7d0ab63003f077760.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПроблема здесь:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eif (any_of(S, isIntegerOrPtr) &amp;&amp; any_of(S, isIntegerOrPtr))\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv501\u002F\"\u003EV501\u003C\u002Fa\u003E [CWE-571] There are identical sub-expressions 'any_of(S, isIntegerOrPtr)' to the left and to the right of the '&amp;&amp;' operator. CodeGenDAGPatterns.cpp 479\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПравильно:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eif (any_of(S, isIntegerOrPtr) &amp;&amp; any_of(B, isIntegerOrPtr))\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n5-formatirovanie-tablicey-ne-vsegda-pomogaet\"\u003EБаг N5, форматирование таблицей не всегда помогает\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ELegalizerHelper::LegalizeResult LegalizerHelper::lowerRotate(MachineInstr &amp;MI) {\n  Register Dst = MI.getOperand(0).getReg();\n  Register Src = MI.getOperand(1).getReg();\n  Register Amt = MI.getOperand(2).getReg();\n  LLT DstTy = MRI.getType(Dst);\n  LLT SrcTy = MRI.getType(Dst);\n  LLT AmtTy = MRI.getType(Amt);\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv656\u002F\"\u003EV656\u003C\u002Fa\u003E [CWE-665] Variables 'DstTy', 'SrcTy' are initialized through the call to the same function. It's probably an error or un-optimized code. Consider inspecting the 'MRI.getType(Dst)' expression. Check lines: 5953, 5954. LegalizerHelper.cpp 5954\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРанее я писал, что от опечаток помогает защититься форматирование кода таблицей. Да, помогает, но гарантии не даёт. Перед нами красиво оформленный код, похожий на таблицу. Но ошибка всё равно там есть.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСкорее всего, код писался копированием. Скопировали строчку\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ELLT DstTy = MRI.getType(Dst);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНо только в одном месте заменили \u003Cem\u003EDst\u003C\u002Fem\u003E на \u003Cem\u003ESrc\u003C\u002Fem\u003E:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ELLT SrcTy = MRI.getType(Dst);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПравильный вариант кода:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ELLT DstTy = MRI.getType(Dst);\nLLT SrcTy = MRI.getType(Src);\nLLT AmtTy = MRI.getType(Amt);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"nulevye-ukazateli\"\u003EНулевые указатели\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПисать код на C или C++ и случайно не разыменовать где-то нулевой указатель – это научная фантастика :). Есть такие места и в LLVM. Изучать предупреждения про нулевые указатели скучно и утомительно. Я просмотрел такие предупреждения очень бегло и подозреваю, что при желании таких ошибок будет выявлено намного больше.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n6-razymenovanie-ukazatelya-kotoryy-mozhet-byt-nulevym\"\u003EБаг N6, разыменование указателя, который может быть нулевым\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid DwarfCompileUnit::addLabelAddress(DIE &amp;Die, dwarf::Attribute Attribute,\n                                       const MCSymbol *Label) {\n  ....\n  if (Label)\n    DD-\u003EaddArangeLabel(SymbolCU(this, Label));\n\n  bool UseAddrOffsetFormOrExpressions =\n      DD-\u003EuseAddrOffsetForm() || DD-\u003EuseAddrOffsetExpressions();\n\n  const MCSymbol *Base = nullptr;\n  if (Label-\u003EisInSection() &amp;&amp; UseAddrOffsetFormOrExpressions)\n    Base = DD-\u003EgetSectionLabel(&amp;Label-\u003EgetSection());\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv1004\u002F\"\u003EV1004\u003C\u002Fa\u003E [CWE-476, CERT-EXP34-C] The 'Label' pointer was used unsafely after it was verified against nullptr. Check lines: 74, 81. DwarfCompileUnit.cpp 81\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПроверка \"\u003Cem\u003Eif (Label)\u003C\u002Fem\u003E\" говорит нам и анализатору, что указатель \u003Cem\u003ELabel\u003C\u002Fem\u003E может быть нулевым. Но ниже этот указатель смело разыменовывается без всякой проверки:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eif (Label-\u003EisInSection() &amp;&amp; UseAddrOffsetFormOrExpressions)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТак явно не стоит делать.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n7-n9-razymenovanie-ukazatelya-kotoryy-mozhet-byt-nulevym\"\u003EБаг N7-N9, разыменование указателя, который может быть нулевым\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estatic bool HandleUse(....)\n{\n  ....\n  if (Pat-\u003EisLeaf()) {\n    DefInit *DI = dyn_cast&lt;DefInit\u003E(Pat-\u003EgetLeafValue());\n    if (!DI)\n      I.error(\"Input $\" + Pat-\u003EgetName() + \" must be an identifier!\");\n    Rec = DI-\u003EgetDef();\n  }\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv1004\u002F\"\u003EV1004\u003C\u002Fa\u003E [CWE-476, CERT-EXP34-C] The 'DI' pointer was used unsafely after it was verified against nullptr. Check lines: 3349, 3351. CodeGenDAGPatterns.cpp 3351\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУказатель \u003Cem\u003EDI\u003C\u002Fem\u003E проверятся, но далее сразу разыменовывается уже без проверки. Обосновано задаться вопросом, а является ли этой ошибкой? Ведь если указатель \u003Cem\u003EDI\u003C\u002Fem\u003E нулевой, то вызывается некая функция \u003Cem\u003Eerror\u003C\u002Fem\u003E, которая может генерировать исключение. Давайте заглянем в эту функцию:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid TreePattern::error(const Twine &amp;Msg) {\n  if (HasError)\n    return;\n  dump();\n  PrintError(TheRecord-\u003EgetLoc(), \"In \" + TheRecord-\u003EgetName() + \": \" + Msg);\n  HasError = true;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНет, эта функция не генерирует исключение и не останавливает выполнение программы каким-либо способом.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПолучается, что сразу после фиксации ошибочного состояния (записи в лог) произойдёт разыменование нулевого указателя.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКак минимум, есть ещё пара аналогичных ошибок, которые нет смысла рассматривать отдельно:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EV1004 [CWE-476, CERT-EXP34-C] The 'OpDef' pointer was used unsafely after it was verified against nullptr. Check lines: 2843, 2844. CodeGenDAGPatterns.cpp 2844\u003C\u002Fli\u003E\r\n\u003Cli\u003EV1004 [CWE-476, CERT-EXP34-C] The 'Val' pointer was used unsafely after it was verified against nullptr. Check lines: 3418, 3420. CodeGenDAGPatterns.cpp 3420\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n10-nedostatochnaya-zaschita-ot-nulevogo-ukazatelya\"\u003EБаг N10, недостаточная защита от нулевого указателя\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EError DWARFDebugLine::LineTable::parse(...., raw_ostream *OS, bool Verbose) {\n  assert((OS || !Verbose) &amp;&amp; \"cannot have verbose output without stream\");\n  ....\n  auto EmitRow = [&amp;] {\n    if (!TombstonedAddress) {\n      if (Verbose) {\n        *OS &lt;&lt; \"\\n\";\n        OS-\u003Eindent(12);\n      }\n      if (OS)\n        State.Row.dump(*OS);\n      State.appendRowToMatrix();\n    }\n  };\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv595\u002F\"\u003EV595\u003C\u002Fa\u003E [CWE-476, CERT-EXP12-C] The 'OS' pointer was utilized before it was verified against nullptr. Check lines: 791, 793. DWARFDebugLine.cpp 791\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУказатель OS может быть нулевым, о чём свидетельствует проверка \"\u003Cem\u003Eif (OS)\u003C\u002Fem\u003E\". Однако ранее этот указатель может быть разыменован без предварительной проверки.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ начале есть \u003Cem\u003Eassert\u003C\u002Fem\u003E, который защищает от нулевых указателей. Однако этого явно недостаточно, так как в релизной сборке макрос \u003Cem\u003Eassert\u003C\u002Fem\u003E раскрывается в ничто.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРационально сделать код более безопасным:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eauto EmitRow = [&amp;] {\n  if (!TombstonedAddress) {\n    if (OS)\n    {\n      if (Verbose) {\n        *OS &lt;&lt; \"\\n\";\n        OS-\u003Eindent(12);\n      }\n      State.Row.dump(*OS);\n    }\n    State.appendRowToMatrix();\n  }\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"problemy-s-perechisleniyami-enum\"\u003EПроблемы с перечислениями (enum)\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРазработчики LLVM иногда полагаются на то, что небольшие перечисления (\u003Cem\u003Eenum\u003C\u002Fem\u003E) будут представлены одним байтом. То есть \u003Cem\u003Esizeof(enum) == sizeof(char)\u003C\u002Fem\u003E. Такое предположение опасно. Например, компилятор Visual C++ предпочитает по умолчанию делать размер перечисления, равным размеру \u003Cem\u003Eint\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n11-opasnyy-indeks\"\u003EБаг N11, опасный индекс\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eenum class FunctionKinds { ENTRY, EXIT, TAIL, LOG_ARGS_ENTER, CUSTOM_EVENT };\n....\nstatic Error loadObj(....) {\n  ....\n  auto Kind = Extractor.getU8(&amp;OffsetPtr);\n  static constexpr SledEntry::FunctionKinds Kinds[] = {\n      SledEntry::FunctionKinds::ENTRY, SledEntry::FunctionKinds::EXIT,\n      SledEntry::FunctionKinds::TAIL,\n      SledEntry::FunctionKinds::LOG_ARGS_ENTER,\n      SledEntry::FunctionKinds::CUSTOM_EVENT};\n  if (Kind \u003E= sizeof(Kinds))\n    return errorCodeToError(\n        std::make_error_code(std::errc::executable_format_error));\n  Entry.Kind = Kinds[Kind];\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv557\u002F\"\u003EV557\u003C\u002Fa\u003E [CWE-125, CERT-ARR30-C] Array overrun is possible. The value of 'Kind' index could reach 19. InstrumentationMap.cpp 196\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТекст сообщения требует пояснения. Механизм анализа потока данных обрабатывает этот код:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eif (Kind \u003E= sizeof(Kinds))\n  return errorCodeToError(...);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИ приходит к выводу, что если условие не выполняется, то переменная \u003Cem\u003EKind\u003C\u002Fem\u003E имеет далее значение [0..19].\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПочему 19, а не 4? Я осуществлял проверку проекта с помощью плагина для Visual Studio 2019. Соответственно, анализатор знает, что использовался компилятор Visual C++ и что перечисление будет представлено четырьмя байтами. В этом можно убедиться, написав следующую тестовую программу:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eint main()\n{\n  enum class FunctionKinds { ENTRY, EXIT, TAIL, LOG_ARGS_ENTER, CUSTOM_EVENT };\n  static constexpr FunctionKinds Kinds[] = {\n    FunctionKinds::ENTRY, FunctionKinds::EXIT, FunctionKinds::TAIL,\n    FunctionKinds::LOG_ARGS_ENTER, FunctionKinds::CUSTOM_EVENT\n  };\n  std::cout &lt;&lt; sizeof(Kinds) &lt;&lt; std::endl;\n  return 0;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСобираем с помощью компилятора Visual C++, запускаем и видим число \"20\".\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПолучается, что защита от выхода за границу массива не работает. Чтобы исправить код, нужно сравнивать \u003Cem\u003EKind\u003C\u002Fem\u003E не с размером массива в байтах, а с количеством элементом массива.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКорректная проверка:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eif (Kind \u003E= sizeof(Kinds) \u002F sizeof(Kinds[0]))\n  return errorCodeToError(....);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n12-oshibka-inicializacii-massiva\"\u003EБаг N12, ошибка инициализации массива\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eenum CondCode {\n  \u002F\u002F Opcode       N U L G E       Intuitive operation\n  SETFALSE, \u002F\u002F      0 0 0 0       Always false (always folded)\n  SETOEQ,   \u002F\u002F      0 0 0 1       True if ordered and equal\n  ....\n  SETCC_INVALID \u002F\u002F Marker value.\n};\n\nstatic void InitCmpLibcallCCs(ISD::CondCode *CCs) {\n  memset(CCs, ISD::SETCC_INVALID, sizeof(ISD::CondCode)*RTLIB::UNKNOWN_LIBCALL);\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv575\u002F\"\u003EV575\u003C\u002Fa\u003E [CWE-628, CERT-EXP37-C] The 'memset' function processes the pointer to enum type. Inspect the first argument. TargetLoweringBase.cpp 662\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКод будет работать только в том случае, если повезёт и элементы перечисления \u003Cem\u003ECondCode\u003C\u002Fem\u003E будут представлены одним байтом.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EФункция \u003Cem\u003Ememset\u003C\u002Fem\u003E заполняет массив байт. В каждый байт записывается значение \u003Cem\u003ESETCC_INVALID\u003C\u002Fem\u003E. Если \u003Cem\u003Eenum\u003C\u002Fem\u003E представлен 4 байтами, как это происходит в случае сборки с помощью Visual C++, массив будет заполнен бессмысленными значениями. Эти значения будут равны результату повторения константы в каждом из 4 байт:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ESETCC_INVALID &lt;&lt; 24 | SETCC_INVALID &lt;&lt; 16 | SETCC_INVALID &lt;&lt; 8 | SETCC_INVALID\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПравильный вариант заполнения массива:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estd::fill(CCs, CCs + RTLIB::UNKNOWN_LIBCALL, ISD::SETCC_INVALID);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"oshibki-v-potoke-upravleniya\"\u003EОшибки в потоке управления\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n13-n14-neinicializirovannaya-peremennaya\"\u003EБаг N13-N14, неинициализированная переменная\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EExpected&lt;std::pair&lt;JITTargetAddress, Edge::Kind\u003E\u003E\nEHFrameEdgeFixer::readEncodedPointer(uint8_t PointerEncoding,\n                                     JITTargetAddress PointerFieldAddress,\n                                     BinaryStreamReader &amp;RecordReader) {\n  .....\n  Edge::Kind PointerEdgeKind;\n\n  switch (EffectiveType) {\n  case DW_EH_PE_udata4: {\n    ....\n    PointerEdgeKind = Delta32;\n    break;\n  }\n  case DW_EH_PE_udata8: {\n    ....\n    PointerEdgeKind = Delta64;\n    break;\n  }\n  case DW_EH_PE_sdata4: {\n    ....\n    PointerEdgeKind = Delta32;\n    break;\n  }\n  case DW_EH_PE_sdata8: {\n    ....\n    PointerEdgeKind = Delta64;\n    break;\n  }\n  }\n\n  if (PointerEdgeKind == Edge::Invalid)\n    return make_error&lt;JITLinkError\u003E(\n        \"Unspported edge kind for encoded pointer at \" +\n        formatv(\"{0:x}\", PointerFieldAddress));\n\n  return std::make_pair(Addr, Delta64);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv614\u002F\"\u003EV614\u003C\u002Fa\u003E [CWE-457, CERT-EXP53-CPP] Potentially uninitialized variable 'PointerEdgeKind' used. EHFrameSupport.cpp 704\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПеременная \u003Cem\u003EPointerEdgeKind\u003C\u002Fem\u003E может остаться неинициализированной после выполнения switch-блока. Однако если переменная ничем не инициализировалась, то ожидается, что она равна именованной константе \u003Cem\u003EEdge::Invalid\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСледует сразу при объявлении переменной инициализировать её этой константой:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EEdge::Kind PointerEdgeKind = Edge::Invalid;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕщё одна такая ошибка: V614 [CWE-457, CERT-EXP53-CPP] Potentially uninitialized variable 'Result' used. llvm-rtdyld.cpp 998\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n15-nedostizhimyy-kod\"\u003EБаг N15, недостижимый код\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ начале рассмотрим вспомогательную функцию \u003Cem\u003Ereport_fatal_error\u003C\u002Fem\u003E:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid llvm::report_fatal_error(const Twine &amp;Reason, bool GenCrashDiag) {\n  ....\n  abort();\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля нас важно то, что она прекращает выполнение программы с помощью вызова функции \u003Ca href=\"https:\u002F\u002Fen.cppreference.com\u002Fw\u002Fcpp\u002Futility\u002Fprogram\u002Fabort\"\u003Eabort\u003C\u002Fa\u003E. Т. е. функция \u003Cem\u003Ereport_fatal_error\u003C\u002Fem\u003E никогда не возвращает управление.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕщё есть вот такая промежуточная функция, вызов которой мы рассмотрим далее:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid llvm::report_fatal_error(const char *Reason, bool GenCrashDiag) {\n  report_fatal_error(Twine(Reason), GenCrashDiag);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПримечание. Аргумент \u003Cem\u003EGenCrashDiag\u003C\u002Fem\u003E является необязательным:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E__declspec(noreturn) void report_fatal_error(const char *reason, \n                                                bool gen_crash_diag = true);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКстати, сейчас подумал, что тело функции можно было и не рассматривать. Уже из аннотации функции \u003Cem\u003E__declspec(noreturn)\u003C\u002Fem\u003E понятно, что она не возвращает управление. Но решил оставить как есть, чтобы объяснить ситуацию максимально подробно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТеперь к сути. Рассмотрим вот этот фрагмент кода:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eint AMDGPUCFGStructurizer::improveSimpleJumpintoIf(....)\n{\n  ....\n  if (LandBlkHasOtherPred) {\n    report_fatal_error(\"Extra register needed to handle CFG\");\n    Register CmpResReg =\n        HeadMBB-\u003EgetParent()-\u003EgetRegInfo().createVirtualRegister(I32RC);\n    report_fatal_error(\"Extra compare instruction needed to handle CFG\");\n    insertCondBranchBefore(LandBlk, I, R600::IF_PREDICATE_SET,\n        CmpResReg, DebugLoc());\n  }\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv779\u002F\"\u003EV779\u003C\u002Fa\u003E [CWE-561, CERT-MSC12-C] Unreachable code detected. It is possible that an error is present. AMDILCFGStructurizer.cpp 1286\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОбратите внимание, что после вызова функции \u003Cem\u003Ereport_fatal_error\u003C\u002Fem\u003E программа ещё пытается что-то делать. Все эти действия уже не имеют смысла.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсть подозрение, что автор кода вовсе не планировал полностью прекратить выполнение программы, а просто хотел сообщить об ошибке. Возможно, нужно было использовать какую-то другую функцию для логирования информации о проблеме.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"bag-n16-n17-utechka-pamyati\"\u003EБаг N16-N17, утечка памяти\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Euint64_t WinCOFFObjectWriter::writeObject(MCAssembler &amp;Asm,\n                                          const MCAsmLayout &amp;Layout) {\n  ....\n  if (EmitAddrsigSection) {\n    auto Frag = new MCDataFragment(AddrsigSection);\n    Frag-\u003EsetLayoutOrder(0);\n    raw_svector_ostream OS(Frag-\u003EgetContents());\n    for (const MCSymbol *S : AddrsigSyms) {\n      if (!S-\u003EisTemporary()) {\n        encodeULEB128(S-\u003EgetIndex(), OS);\n        continue;\n      }\n\n      MCSection *TargetSection = &amp;S-\u003EgetSection();\n      assert(SectionMap.find(TargetSection) != SectionMap.end() &amp;&amp;\n             \"Section must already have been defined in \"\n             \"executePostLayoutBinding!\");\n      encodeULEB128(SectionMap[TargetSection]-\u003ESymbol-\u003EgetIndex(), OS);\n    }\n  }\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv773\u002F\"\u003EV773\u003C\u002Fa\u003E [CWE-401, CERT-MEM31-C, CERT-MEM51-CPP] Visibility scope of the 'Frag' pointer was exited without releasing the memory. A memory leak is possible. WinCOFFObjectWriter.cpp 1116\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВозможно, я чего-то не понимаю и это не ошибка. Но я не вижу, где и как может быть удалён объект, на который ссылается указатель \u003Cem\u003EFrag\u003C\u002Fem\u003E. Я согласен с анализатором: это очень похоже на утечку памяти.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EАналогичная ситуация: V773 [CWE-401, CERT-MEM31-C, CERT-MEM51-CPP] Visibility scope of the 'Frag' pointer was exited without releasing the memory. A memory leak is possible. WinCOFFObjectWriter.cpp 1130\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"kod-s-zapahom\"\u003EКод с запахом\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ данном разделе я собрал фрагменты кода, которые обратили на себя внимание, но которые я не спешу назвать багами. Скорее это избыточный и неудачный код. Сейчас сразу станет понятно, что я имею в виду.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"kod-s-zapahom-n1-dublikaty-strok\"\u003EКод с запахом N1, дубликаты строк\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estatic uint16_t toSecMapFlags(uint32_t Flags) {\n  uint16_t Ret = 0;\n  if (Flags &amp; COFF::IMAGE_SCN_MEM_READ)\n    Ret |= static_cast&lt;uint16_t\u003E(OMFSegDescFlags::Read);\n  if (Flags &amp; COFF::IMAGE_SCN_MEM_WRITE)\n    Ret |= static_cast&lt;uint16_t\u003E(OMFSegDescFlags::Write);\n  if (Flags &amp; COFF::IMAGE_SCN_MEM_EXECUTE)\n    Ret |= static_cast&lt;uint16_t\u003E(OMFSegDescFlags::Execute);\n  if (Flags &amp; COFF::IMAGE_SCN_MEM_EXECUTE)\n    Ret |= static_cast&lt;uint16_t\u003E(OMFSegDescFlags::Execute);\n  if (!(Flags &amp; COFF::IMAGE_SCN_MEM_16BIT))\n    Ret |= static_cast&lt;uint16_t\u003E(OMFSegDescFlags::AddressIs32Bit);\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv581\u002F\"\u003EV581\u003C\u002Fa\u003E [CWE-670] The conditional expressions of the 'if' statements situated alongside each other are identical. Check lines: 335, 337. DbiStreamBuilder.cpp 337\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВот этот фрагмент повторяется два раза:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eif (Flags &amp; COFF::IMAGE_SCN_MEM_EXECUTE)\n  Ret |= static_cast&lt;uint16_t\u003E(OMFSegDescFlags::Execute);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЯ склонен считать, что это случайный лишний код и его следует просто удалить. Впрочем, это может быть и настоящей ошибкой, если во втором блоке предполагалось выполнять другие проверки и действия.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"kod-s-zapahom-n2-atavizm\"\u003EКод с запахом N2, атавизм\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estd::string pathname_;\n....\nvoid FilePath::Normalize() {\n  if (pathname_.c_str() == nullptr) {\n    pathname_ = \"\";\n    return;\n  }\n....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv547\u002F\"\u003EV547\u003C\u002Fa\u003E [CWE-570] Expression 'pathname_.c_str() == nullptr' is always false. gtest-filepath.cc 349\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли удалить всё содержимое функции, то ничего не изменится. Она всё равно ничего не делает. Похоже на артефакт нескольких последовательных рефакторингов.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"kod-s-zapahom-n3-ne-tam-postavlena-skobka\"\u003EКод с запахом N3, не там поставлена скобка\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eraw_ostream &amp;raw_ostream::write_escaped(StringRef Str,\n                                        bool UseHexEscapes) {\n  ....\n  *this &lt;&lt; hexdigit((c \u003E\u003E 4 &amp; 0xF));\n  *this &lt;&lt; hexdigit((c \u003E\u003E 0) &amp; 0xF);\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv592\u002F\"\u003EV592\u003C\u002Fa\u003E The expression was enclosed by parentheses twice: '((c \u003E\u003E 4 &amp; 0xF))'. One pair of parentheses is unnecessary or misprint is present. raw_ostream.cpp 188\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ первой строчке используются двойные скобки. Эта избыточность скобок говорит, что хотели написать выражение как-то по-другому. И действительно, как хотели написать на самом деле видно в следующей строке. Становится понятно, что скобки хотели использовать для упрощения чтения выражения.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗадумывалось написать такой код:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E*this &lt;&lt; hexdigit((c \u003E\u003E 4) &amp; 0xF);\n*this &lt;&lt; hexdigit((c \u003E\u003E 0) &amp; 0xF);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EХотя скобка поставлена не там, это не ошибка. Всё равно приоритет сдвига (\u003E\u003E) выше, чем приоритет двоичного И (&amp;). Всё вычисляется корректно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"kod-s-zapahom-n4-n6-neudachnoe-sliyanie-koda\"\u003EКод с запахом N4-N6, неудачное слияние кода?\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class ELFT\u003E\nvoid ELFState&lt;ELFT\u003E::writeSectionContent(\n    Elf_Shdr &amp;SHeader, const ELFYAML::StackSizesSection &amp;Section,\n    ContiguousBlobAccumulator &amp;CBA) {\n  if (!Section.Entries)\n    return;\n\n  if (!Section.Entries)\n    return;\n  ....\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПредупреждение PVS-Studio: \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fw\u002Fv581\u002F\"\u003EV581\u003C\u002Fa\u003E [CWE-670] The conditional expressions of the 'if' statements situated alongside each other are identical. Check lines: 1380, 1383. ELFEmitter.cpp 1383\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЭто похоже на какое-то неудачное слияние двух веток кода, из-за которого возникли дублирующиеся строки. Не ошибка, но стоит удалить дубликат.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВот ещё схожие фрагменты с дубликатами кода:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EV581 [CWE-670] The conditional expressions of the 'if' statements situated alongside each other are identical. Check lines: 1488, 1491. ELFEmitter.cpp 1491\u003C\u002Fli\u003E\r\n\u003Cli\u003EV581 [CWE-670] The conditional expressions of the 'if' statements situated alongside each other are identical. Check lines: 1663, 1666. ELFEmitter.cpp 1666\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"zaklyuchenie\"\u003EЗаключение\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EPVS-Studio по прежнему занимает достойное место среди решений для разработчиков. Он производил и продолжает производить более глубокий и разнообразный анализ кода, чем компиляторы и бесплатные инструменты.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"PVS-Studio достоин!\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F0b6\u002F7b0\u002F3be\u002F0b67b03be8b5f603b32935e2aaec6de2.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРаз PVS-Studio способен находить ошибки даже в таких хорошо оттестированных приложениях, как компиляторы, то есть смысл посмотреть, что он сможет найти в ваших проектах :). Предлагаю, не откладывая \u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fpvs-studio\u002Ftry-free\u002F\"\u003Eпопробовать триальную версию\u003C\u002Fa\u003E анализатора. Спасибо за внимание.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"dopolnitelnye-ssylki\"\u003EДополнительные ссылки\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fposts\u002F0743\u002F\"\u003EКак внедрить статический анализатор кода в legacy проект и не демотивировать команду\u003C\u002Fa\u003E.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fdocs\u002Fmanual\u002F6521\u002F\"\u003EТехнология статического анализа кода PVS-Studio\u003C\u002Fa\u003E.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fposts\u002Fcpp\u002F0817\u002F\"\u003EКак PVS-Studio защищает от поспешных правок кода\u003C\u002Fa\u003E.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fpvs-studio.com\u002Fru\u002Fblog\u002Fposts\u002Fcpp\u002F0639\u002F\"\u003EОшибки, которые не находит статический анализ кода, потому что он не используется\u003C\u002Fa\u003E.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли хотите поделиться этой статьей с англоязычной аудиторией, то прошу использовать ссылку на перевод: Andrey Karpov. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fen\u002Fcompany\u002Fpvs-studio\u002Fblog\u002F582492\u002F\"\u003EDetecting errors in the LLVM release 13.0.0\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"си++"},{"titleHtml":"статический анализ кода"},{"titleHtml":"обзоры кода"},{"titleHtml":"pvs-studio"},{"titleHtml":"llvm"},{"titleHtml":"llvm 13"},{"titleHtml":"опечатки"},{"titleHtml":"clang"},{"titleHtml":"clang static analyzer"},{"titleHtml":"clang-tidy"},{"titleHtml":"открытый исходный код"},{"titleHtml":"баги"},{"titleHtml":"ошибки в коде"},{"titleHtml":"компиляторы"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ful\u002F9b\u002Fiq\u002Ful9biqsabvilnw-7un7gb65b23w.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ful\u002F9b\u002Fiq\u002Ful9biqsabvilnw-7un7gb65b23w.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fpvs-studio\\\u002Fblog\\\u002F582494\\\u002F\"},\"headline\":\"Выявляем ошибки в релизе LLVM 13.0.0\",\"datePublished\":\"2021-10-08T22:16:39+03:00\",\"dateModified\":\"2021-10-09T23:34:25+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Andrey Karpov\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fpvs-studio\\\u002Fblog\\\u002F582494\\\u002F#post-content-body\",\"about\":[\"c_pvs-studio\",\"h_infosecurity\",\"h_open_source\",\"h_cpp\",\"h_compilers\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582494\\\u002Fe137cb27f1cc98cedaf5a8f494580bd5\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002F55c\\\u002F8fd\\\u002Fcd5\\\u002F55c8fdcd54e43716b78c0a88732e93ea.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002Ff1c\\\u002F21d\\\u002Fc50\\\u002Ff1c21dc50713903f8555056632101a8f.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002F2e0\\\u002Fce0\\\u002Fbe5\\\u002F2e0ce0be5675f1a7d0ab63003f077760.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002F0b6\\\u002F7b0\\\u002F3be\\\u002F0b67b03be8b5f603b32935e2aaec6de2.png\"]}","metaDescription":"Задача коммерческих статических анализаторов выполнять более глубокий и полный анализ кода, чем компиляторы. Давайте посмотрим, что смог обнаружить PVS-Studio в исходном коде проекта LLVM...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"pvs-studio":{"alias":"pvs-studio","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F95a\u002F244\u002F327\u002F95a244327fc36477b6048c0f8b67df8b.png","titleHtml":"PVS-Studio","descriptionHtml":"Статический анализ кода для C, C++, C# и Java","relatedData":null,"statistics":{"postsCount":643,"newsCount":0,"vacanciesCount":0,"employeesCount":32,"careerRating":null,"subscribersCount":22917,"rating":263.5,"invest":null},"foundationDate":{"year":"2008","month":null,"day":null},"location":{"city":{"id":"448142","title":"Тула"},"region":{"id":"2013","title":"Тульская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fpvs-studio.com\u002F","staffNumber":"31–50 человек","registrationDate":"2013-05-06T12:33:02+00:00","representativeUser":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fpvs-studio.com\u002F"},{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002FStaticCodeAnalyzer"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002FCode_Analysis"},{"title":"Instagram","url":"https:\u002F\u002Finstagram.com\u002Fpvsstudio_rus"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002Fpvsstudio_rus"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-58546680-1"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"PVS-Studio, Тула - Статический анализ кода для C, C++, C# и Java с 2008 год","title":"PVS-Studio, Тула - Статический анализ кода для C, C++, C# и Java с 2008 год","keywords":["C++","C#",".NET","Информационная безопасность","C"],"descriptionHtml":"643 статьи от авторов компании PVS-Studio","description":"643 статьи от авторов компании PVS-Studio"},"aDeskSettings":null,"careerAlias":null,"maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

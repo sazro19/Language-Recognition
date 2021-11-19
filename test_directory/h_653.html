@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Django Admin с миллионами записей — 11 практик оптимизаций для начинающих / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/322114\/"},"headline":"Django Admin с миллионами записей — 11 практик оптимизаций для начинающих","datePublished":"2021-10-12T11:30:10+03:00","dateModified":"2021-10-12T14:10:16+03:00","author":{"@type":"Person","name":"Александр Сапронов"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Django &mdash; самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить &mdash; Django Admin &mdash; это готовый CRU...","url":"https:\/\/habr.com\/ru\/post\/322114\/#post-content-body","about":["h_webdev","h_python","f_develop"],"image":["https:\/\/habrastorage.org\/files\/60a\/09b\/587\/60a09b587b4d49e6a4cbe25c43f7c1ea.png","https:\/\/habrastorage.org\/files\/31a\/ea8\/5e2\/31aea85e20ed4797b82d2c02bac07077.png","https:\/\/habrastorage.org\/files\/f3e\/07e\/6e8\/f3e07e6e83164a2ebd1ad4295a28b789.png","https:\/\/habrastorage.org\/files\/e6d\/2ec\/d59\/e6d2ecd596a24ac8b56695e8df3dc358.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Django Admin с миллионами записей — 11 практик оптимизаций для начинающих" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Django Admin с миллионами записей — 11 практик оптимизаций для начинающих" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Django Admin с миллионами записей — 11 практик оптимизаций для начинающих" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Django — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Django — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Django — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Django — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Django — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/322114/245751bad34ed4daff3c20d2494c9fff/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/322114/245751bad34ed4daff3c20d2494c9fff/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/322114/245751bad34ed4daff3c20d2494c9fff/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/322114/245751bad34ed4daff3c20d2494c9fff/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/322114/245751bad34ed4daff3c20d2494c9fff/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="322114" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-12T08:30:10.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/322114/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/322114/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/322114/245751bad34ed4daff3c20d2494c9fff/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/WarmongeR/" title="WarmongeR" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/WarmongeR/" class="tm-user-info__username">
+      WarmongeR
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-12T08:30:10.000Z" title="2021-10-12, 11:30">12  октября   в 11:30</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Django Admin с миллионами записей — 11 практик оптимизаций для начинающих</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/webdev/" class="tm-article-snippet__hubs-item-link"><span>Разработка веб-сайтов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><p>Django — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и хитрыми настройками.</p><br/>
+<p>Каждый раз стартуя проект на Django, удивляюсь насколько круто иметь админку — web интерфейс просмотра данных. Да еще и бесплатно.</p><br/>
+<p>Каждый раз поддерживая проект на Django, удивляюсь, как же сложно поддерживать админку в рабочем состоянии.</p><br/>
+<p>В этой статье я постараюсь привести 11 практик, которые позволят избегать тормозов админки максимально долго. </p><a name="habracut"></a><br/>
+<blockquote>Дисклеймер: эта статья была написана в марте 2017 года, на тот момент она была слаба для хабра, но прошло 4 года и теперь может найти своего начинающего django разработчика. А в Django изменилось мало.</blockquote><p>Какие-то из практик оптимизации админки элементарные — добавить одну строчку, какие-то требуют перегрузить ряд методов, а оставшиеся — это что стоит поменять в разработке.</p><br/>
+<h3 id="praktika-1---raw_id_fields">Практика 1 — raw_id_fields</h3><br/>
+<p>В любом мало-мальском проекте мы встретим модели с ForeingKey/Many2Many полями, которые очень интересно отображаются в админке. Например, ForeingKey поля отображаются как select, в котором перечислены все элементы связей:</p><br/>
+<p><img src="/img/image-loader.svg" alt="Image of Yaktocat" data-src="https://habrastorage.org/files/60a/09b/587/60a09b587b4d49e6a4cbe25c43f7c1ea.png"/></p><br/>
+<blockquote>Стандартный select совсем не удобен при количество связей больше 20 — нет поиска.</blockquote><p>Изначально подход с select не практичен, и поиска нет, да и медленный он. Как это бывает — начало проекта, 10 связей, 100, 1000 иии вот страница редактирования элемента начинает грузиться не доли секунд, а уже секунды. Связей 10к, 100к и страница перестает грузиться и падает с Timeout Error.</p><br/>
+<p>Чтобы избежать этого и добавить поиск достаточно воспользоваться переменной <strong>raw_id_fields</strong><br/>
+Указав название поля в переменной <strong>raw_id_fields</strong> — мы перегружаем виджет отображения, который не делает лишних запросов в БД:</p><br/>
+<pre><code class="python">@admin.register(ModelA)
+class ModelAAdmin(admin.ModelAdmin):
+    list_display = [
+        'value',
+    ]
+
+    search_fields = ['value']
+
+@admin.register(ModelB)
+class ModelBAdmin(admin.ModelAdmin):
+    list_display = [
+        'name',
+        'data',
+    ]
+
+    raw_id_fields = ['data', ]</code></pre><br/>
+<p><img src="/img/image-loader.svg" alt="Image of Yaktocat" data-src="https://habrastorage.org/files/31a/ea8/5e2/31aea85e20ed4797b82d2c02bac07077.png"/></p><br/>
+<blockquote>В дополнение — используйте django-ajax-selects или django-autocomplete-light</blockquote><br/>
+<h3 id="praktika-2---vygruzhayte-vse-neobhodimoe-odnim-zaprosom">Практика 2 — выгружайте все необходимое одним запросом</h3><br/>
+<p>В документации к QuerySet можно найти два метода — <a href="https://docs.djangoproject.com/en/1.10/ref/models/querysets/#django.db.models.query.QuerySet.select_related" rel="nofollow noopener noreferrer">select_related</a> и <a href="https://docs.djangoproject.com/en/1.10/ref/models/querysets/#prefetch-related" rel="nofollow noopener noreferrer">prefetch_related</a>. Эти методы полезны, когда у вас есть ForeinKey/Many2Many поля и по ним что-то отображаете.</p><br/>
+<blockquote>select_related в один запрос выгружает элементы ForeinKey/Many2Many (делает JOIN таблиц)<br/>
+<br/>
+prefetch_related делает тоже самое, но не JOIN'ом, а дополнительными SELECT запросами.</blockquote><p>Вы можете использовать эти конструкции и в админке:</p><br/>
+<p>select_related:</p><br/>
+<pre><code class="python">class ModelBAdmin(admin.ModelAdmin):
+    list_display = [
+        'name',
+        'data',
+    ]
+    list_select_related = ['data', ]</code></pre><br/>
+<p>prefetch_related:</p><br/>
+<pre><code class="python">class ModelBAdmin(admin.ModelAdmin):
+    def get_queryset(self, request):
+        qs = super(ModelBAdmin, self).queryset(request)
+        return qs.prefetch_related('data')</code></pre><br/>
+<p>В первом и втором варианте мы подсказали админке, что нам потребуются дополнительные данные и Django ORM чуть-чуть сэкономит время.</p><br/>
+<blockquote>А на самом деле, лучше избегать JOIN запросов — они тяжелые для БД и это заметно в работе админки.</blockquote><br/>
+<h3 id="praktika-3">Практика 3</h3><br/>
+<p>Отходя от ForeingKey/Many2Many связей поговорим про количество элементов в таблице.<br/>
+Помните, что РСУБД не гарантирует порядок кортежей/строк? Так вот, всегда есть соблазн делать какую-то сортировку, например по времени или по ID. Если у вас мало элементов и сервер мощный, то он мгновенно делает ORDER BY по вашему полю, однако, когда записей становится много, то простой SQL запрос</p><br/>
+<pre><code class="sql">SELECT 
+    "app_modelb"."id", 
+    "app_modelb"."name",
+     "app_modelb"."data_id",
+     "app_modela"."id", 
+     "app_modela"."value"
+
+FROM "app_modelb" 
+
+INNER JOIN "app_modela"  ON ("app_modelb"."data_id" = "app_modela"."id") 
+
+ORDER BY 
+    "app_modelb"."name" ASC,
+    "app_modelb"."id" DESC</code></pre><br/>
+<p>Может занимать уже секунды или даже минуты. И здесь не поможет никакой хитрый индекс.</p><br/>
+<p>В Django Admin есть параметр ordering. Чтобы ваша база не пухла от странных запросов, стоит убедится что нигде не указываете этот порядок — обычно его устанавливают в самом AdminModel и в Meta у моделей.</p><br/>
+<pre><code class="python">
+@admin.register(ModelB)
+class ModelBAdmin(admin.ModelAdmin):
+    list_display = [
+        'name',
+        'data',
+    ]
+    ordering = []</code></pre><br/>
+<p>Если вам все же потребуется сортировка — вы можете сначала выбрать нужный набор фильтров, а потом по результатам выборки сделать сортировку.</p><br/>
+<h3 id="praktika-4">Практика 4</h3><br/>
+<p>Переходя от основных настроек админки перейдем к второстепенным.</p><br/>
+<p>Вам точно надо знать количество элементов в таблице?</p><br/>
+<p>В стандартной админке есть интересная штука — количество элементов в таблице.</p><br/>
+<p><img src="/img/image-loader.svg" alt="Image of Yaktocat" data-src="https://habrastorage.org/files/f3e/07e/6e8/f3e07e6e83164a2ebd1ad4295a28b789.png"/></p><br/>
+<p>Чтобы показать это число, Django генерирует запрос вида </p><br/>
+<pre><code class="sql">SELECT COUNT(*) AS "__count" FROM "app_modela"</code></pre><br/>
+<p>Когда у вас таблица маленькая, 1к, 10к, 100к — Count(*) работает быстро, а когда вы переходите за миллион и десятки миллионов, то безобидная операция подсчета элементов может занимать больше 30 секунд и в конечном итоге приводить к Time out error</p><br/>
+<p>Для РСУБД PostgreSQL и MySQL давно есть способы приблизительно подсчитать количество элементов в таблице не делая тяжелых запросов:</p><br/>
+<pre><code class="sql"># mysql
+SHOW TABLE STATUS LIKE table_name
+
+# postgresql
+SELECT reltuples::bigint FROM pg_class WHERE relname = table_name</code></pre><br/>
+<p>Оба запроса получают информацию о количестве элементов в <code>table_name</code> из системной таблицы. Это значительно быстрее, чем Count запрос.</p><br/>
+<p>Используя эту идею, можно переопределить ChangeList админ модели. К сожалению, там не две строчки кода, поэтому скину ссылку на github, где показан пример — <a href="https://github.com/WarmongeR1/django-admin-article/blob/master/app/admin_opt.py#L58" rel="nofollow noopener noreferrer">https://github.com/WarmongeR1/django-admin-article/blob/master/app/admin_opt.py#L58</a></p><br/>
+<p>В том же модуле есть код перегрузки пагинатора для Django Admin.</p><br/>
+<h3 id="praktika-5---25-raz-po-malo--odin-raz-po-mnogo">Практика 5 — 25 раз по мало &lt; один раз по много</h3><br/>
+<p>Рассмотрим типичный сценарий — есть таблица юзеров и данные пользователя, например, покупки. Таблицу юзеров спокойно выводим в админку:</p><br/>
+<pre><code class="python">@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = [
+        'email',
+        'field1'
+        'field2'
+    ]
+    search_fields = ['email', ]</code></pre><br/>
+<p>Все работает отлично, в БД отправляет простой SELECT. Теперь делаем вывод второй таблицы</p><br/>
+<pre><code class="python">@admin.register(UserData)
+class DataAdmin(admin.ModelAdmin):
+    list_display = [
+        'user',
+        'field3'
+        'field4'
+    ]</code></pre><br/>
+<p>Смотрим в django-debug-toolbar и видим интересный по неоптимальности запрос:</p><br/>
+<pre><code class="sql">SELECT ••• 
+FROM "table_userdata" 
+INNER JOIN "table_user" ON ("table_data"."user_id" = "table_user"."id") 
+ORDER BY "accounts_weightdata"."id" DESC 
+LIMIT 25</code></pre><br/>
+<p>INNER JOIN с таблицей пользователей. Для маленьких таблиц это не страшно, все летает, но чем больше таблицы, тем дороже этот JOIN.</p><br/>
+<p>Чтобы решить эту проблему можно зайти с другой стороны и заменить долгий запрос на несколько недолгих. А именно — сделать обычный SELECT по таблице с данными, а затем отдельными запросами сходить за информацией о пользователей. (Кстати, эти SELECT'ы можно еще и в кэш положить):</p><br/>
+<pre><code class="python">@admin.register(UserData)
+class DataAdmin(admin.ModelAdmin):
+    list_display = [
+        'user_email',
+        'field3'
+        'field4'
+     ]
+    raw_id_fields = ['user']
+
+    def user_email(self, instance):
+        CACHE_KEY = 'admin:{}:instance:{}'.format(
+            'user',
+            instance.user_id
+        )
+        result = cache.get(CACHE_KEY)
+        if not result:
+            result = instance.user.email
+            cache.set(CACHE_KEY, result)
+        return result
+</code></pre><br/>
+<h3 id="praktika-6---peregruzit-poisk">Практика 6 — перегрузить поиск</h3><br/>
+<p>Админка без поиска — время на ветер.<br/>
+Добавить поиск по полю — элементарно</p><br/>
+<pre><code class="plaintext">    search_fields = ['field', ]</code></pre><br/>
+<p>И как это бывает — есть модель с данными пользователя и мы добавляем поиск по email/имени:</p><br/>
+<pre><code class="plaintext">@admin.register(UserData)
+class UserDataModel(admin.ModelAdmin):
+    list_display = ['value', ]
+    search_fields = ['user__email', ]</code></pre><br/>
+<p>И начиаем пользоваться. Когда таблица пользователей и таблица с данными разростается, замечаем что любая попытка найти что-то приводит к Time out error.</p><br/>
+<p>Тут то и берем debug toolbar и смотрим нам запрос поиска:</p><br/>
+<pre><code class="sql">SELECT 
+    "user_data"."id",
+    "user_data"."user_id", 
+    "user_data"."field1",
+    "user_data"."field2" 
+FROM "user_data" 
+
+INNER JOIN "user_table" 
+ON ("user_data"."user_id" = "user_table"."id") 
+
+WHERE 
+    UPPER("user_table"."email"::text) LIKE UPPER('%email%') 
+
+ORDER 
+    BY "accounts_sleepdata"."id" DESC</code></pre><br/>
+<p>Обратите внимание на JOIN. Наверное вы уже запомнили, что JOIN это дорогая операция и их надо избегать. Почесав тыковку можно придти мысль — а что если как-то избежать использование таблицы пользователей или хотя бы убрать JOIN.</p><br/>
+<p>И у меня есть идея, как это сделать. А что если если пользователь ввел email в поисковую строку, то преобразовать его в id и уже по нему сделать поиск.</p><br/>
+<p>Изучая документацию Django, можно найти метод <a href="https://docs.djangoproject.com/en/1.10/ref/contrib/admin/#django.contrib.admin.ModelAdmin.get_search_results" rel="nofollow noopener noreferrer">get_search_results</a>, он дополняет QuerySet после фильтров поиском по полям. </p><br/>
+<p>Вот его и перегружаем</p><br/>
+<pre><code class="python">
+def get_user_by_email(email):
+    try:
+        return User.objects.get(email__iexact=email)
+    except User.DoestNotExist:
+        return None
+
+class UserEmailSearchAdmin(admin.ModelAdmin):
+    def get_search_results(self, request, queryset, search_term):
+        user = get_user_by_email(search_term)
+        if user is not None:
+            queryset = queryset.filter(user_id=user.id)
+            use_distinct = False
+        else:
+            queryset, use_distinct = super().get_search_results(request,
+                                                                queryset,
+                                                                search_term)
+        return queryset, use_distinct
+
+@admin.register(UserData)
+class UserDataModel(UserEmailSearchAdmin):
+    list_display = ['value', ]
+    search_fields = ['user__email', ]
+</code></pre><br/>
+<p>Вводим полноценный email — получаем оптимальный запрос.</p><br/>
+<pre><code class="sql">SELECT 
+    "user_data"."id",
+    "user_data"."user_id", 
+    "user_data"."field1",
+    "user_data"."field2" 
+FROM "user_data" 
+
+INNER JOIN "user_table" 
+ON ("user_data"."user_id" = "user_table"."id") 
+
+WHERE 
+    "accounts_sleepdata"."user_id" = &lt;user_id>
+ORDER 
+    BY "accounts_sleepdata"."id" DESC</code></pre><br/>
+<p>Если же вводим часть email или другую строку — то делается страшный JOIN</p><br/>
+<h3 id="praktika-7---produmay-zaranee-indeksy">Практика 7 — продумай заранее индексы</h3><br/>
+<p>При активной разработке постоянно есть недостаток времени и каждый раз хочется где-то схалявить. Так вот, технический долг, который находится на уровне моделей — очень дорогой.<br/>
+Разрабатывая фичу, продумайте несколько use case, и подумайте, как будете визуализировать результаты работы фичи, что вам понадобиться, что нет.</p><br/>
+<p>Лишний день при разработке структуры БД поможет сэкономить недели в будущем.</p><br/>
+<p>Индекс по текстовому полю ускорит поиск, вот только база (индекс) начнет расти молниеносно.</p><br/>
+<h3 id="praktika-8---ne-ispolzuy-slozhnye-filtry-v-adminke">Практика 8 — не используй сложные фильтры в админке</h3><br/>
+<p>У Django есть удобный инструмент фильтров в админке. Он позволяет получить нужные выборки. Для выборок аля "Пользователи со статусом A" подходит хорошо. Но если вы хотите получить сложную выборку "Пользователи со статусом А, возрастом Б и не в группе С", то легко получить неоптимальный запрос вида:</p><br/>
+<pre><code class="sql">SELECT * 
+FROM table 
+WHERE 
+    id not in [1, 2, 3, ....100000...]</code></pre><br/>
+<p>Научить Django ORM оптимизировать сложные запросы тяжело и не имеет смысла. Значительно проще писать голые SQL запросы. </p><br/>
+<p>Для этого дела для Django есть батарейка <a href="https://github.com/groveco/django-sql-explorer" rel="nofollow noopener noreferrer">https://github.com/groveco/django-sql-explorer</a>.</p><br/>
+<p>Этот инструмент предоставляет веб-интерфейс работы с SQL. Он не дотягивает до pg_admin и аналогов и умеет совсем мало — выполнять запросы, сохранять их для переиспользования и сохранять выборки в различные форматы файлов.</p><br/>
+<p>Чтобы внедрить — достаточно установить, определить кому будет доступ и написать готовые SQL запросы, которые ваша команда будет использовать.</p><br/>
+<h3 id="praktika-9---uprosti-zhizn-baze">Практика 9 — упрости жизнь базе</h3><br/>
+<p>Когда вы заходите на страницу модели в админке, вам точно надо select по всему? Может лучше вообще пустую страницу показать или за последний день?</p><br/>
+<p>Набор элементов для отображения определяется методом <code>get_queryset</code> и так его можно перегрузить:</p><br/>
+<pre><code class="python">@admin.register(ModelA)
+class ModelAAdmin(admin.ModelAdmin):
+
+    def get_queryset(self, request):
+        if len(request.GET) == 0:
+            return ModelA.objects.none()
+        else:
+            return super().get_queryset(request)</code></pre><br/>
+<p>В этом примере я перегрузил QuerySet по умолчанию — если открыть страницу таблицы, то увидим пустую страницу (без элементов), однако, если начнем искать — то результаты будут видны.</p><br/>
+<h3 id="praktika-10---ne-znaesh-zachem-tebe-dannye--ne-sobiray-ih--ne-pokazyvay-ih">Практика 10 — не знаешь зачем тебе данные → не собирай их → не показывай их.</h3><br/>
+<p>Всегда есть соблазн, начать собирать от пользователей какую-то мелоч, которая в далеком светлом будущем может помочь улучшить продукт. Так вот — если у вас нет мыслей как использовать эти данные — они вам не нужны сейчас. </p><br/>
+<p>Любая модель, которую вы создали в порыве за 2 минуты, будете в будущем выпиливать несколько месяцев.</p><br/>
+<h3 id="praktika-11---gruppiruy-modeli-v-gruppy-po-smyslu">Практика 11 — группируй модели в группы по смыслу.</h3><br/>
+<p>Развивая продукт как монолит, мы получаем огромное количество моделей, где даже найти нужную модель тяжело. Чтобы упростить поиск — группируйте модели с помощью батарейки <code>django-admin-tools</code>.</p><br/>
+<p>Батарейка умеет делать разные дашбоарды, на которых перечень и способ отображения моделей может быть разным. Такое разделение помогает, если данные используют разные отделы компании.</p><br/>
+<p><img src="/img/image-loader.svg" alt="Image of Yaktocat" data-src="https://habrastorage.org/files/e6d/2ec/d59/e6d2ecd596a24ac8b56695e8df3dc358.png"/></p><br/>
+<p>Управление группами идет из кода — <a href="https://github.com/WarmongeR1/django-admin-article/blob/master/project/dashboard.py" rel="nofollow noopener noreferrer">вот пример</a> такого конфига</p><br/>
+<h2 id="vyvody">Выводы</h2><br/>
+<p>Сколько бы Django Admin не ругали или восхваляли — это интересный инструмент со множеством подводных камней. Чтобы выжать максимум пользы придется покапаться в настройках, а иногда и перегрузить методы, шаблоны.</p><br/>
+<p>Что касается производительности — таблица со 100 миллионами записей прекрасно открывается в Django Admin.</p><br/>
+<p><strong>P.S.</strong> Разумеется, если нужны сложные выборки и таблицы, то инструменты типа Metabase или Redash, админка не заменит.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpython%5D" class="tm-tags-list__link">python</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdjango%5D" class="tm-tags-list__link">django</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdjango%20framework%5D" class="tm-tags-list__link">django framework</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdjango%20admin%5D" class="tm-tags-list__link">django admin</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/webdev/" class="tm-hubs-list__link">
+    Разработка веб-сайтов
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 18: ↑18 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 18: ↑18 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+18</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">5.3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    83
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/WarmongeR/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 18 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    14
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">18</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Александр Сапронов</span> <a href="/ru/users/WarmongeR/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @WarmongeR
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">CTO</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/322114/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 9 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/322114/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/322114/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"322114":{"id":"322114","timePublished":"2021-10-12T08:30:10+00:00","isCorporative":false,"lang":"ru","titleHtml":"Django Admin с миллионами записей — 11 практик оптимизаций для начинающих","leadData":{"textHtml":"\u003Cp\u003EDjango — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и хитрыми настройками.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EКаждый раз стартуя проект на Django, удивляюсь насколько круто иметь админку — web интерфейс просмотра данных. Да еще и бесплатно.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EКаждый раз поддерживая проект на Django, удивляюсь, как же сложно поддерживать админку в рабочем состоянии.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EВ этой статье я постараюсь привести 11 практик, которые позволят избегать тормозов админки максимально долго. \u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":14,"votesCount":18},"rating":18,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"206363","alias":"WarmongeR","fullname":"Александр Сапронов","avatarUrl":null,"speciality":"CTO"},"statistics":{"commentsCount":9,"favoritesCount":83,"readingCount":5292,"score":18,"votesCount":18},"hubs":[{"relatedData":null,"id":"91","alias":"webdev","type":"collective","title":"Разработка веб-сайтов","titleHtml":"Разработка веб-сайтов","isProfiled":true},{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EDjango — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и хитрыми настройками.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКаждый раз стартуя проект на Django, удивляюсь насколько круто иметь админку — web интерфейс просмотра данных. Да еще и бесплатно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКаждый раз поддерживая проект на Django, удивляюсь, как же сложно поддерживать админку в рабочем состоянии.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ этой статье я постараюсь привести 11 практик, которые позволят избегать тормозов админки максимально долго. \u003C\u002Fp\u003E\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EДисклеймер: эта статья была написана в марте 2017 года, на тот момент она была слаба для хабра, но прошло 4 года и теперь может найти своего начинающего django разработчика. А в Django изменилось мало.\u003C\u002Fblockquote\u003E\u003Cp\u003EКакие-то из практик оптимизации админки элементарные — добавить одну строчку, какие-то требуют перегрузить ряд методов, а оставшиеся — это что стоит поменять в разработке.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-1---raw_id_fields\"\u003EПрактика 1 — raw_id_fields\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ любом мало-мальском проекте мы встретим модели с ForeingKey\u002FMany2Many полями, которые очень интересно отображаются в админке. Например, ForeingKey поля отображаются как select, в котором перечислены все элементы связей:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Image of Yaktocat\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Ffiles\u002F60a\u002F09b\u002F587\u002F60a09b587b4d49e6a4cbe25c43f7c1ea.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EСтандартный select совсем не удобен при количество связей больше 20 — нет поиска.\u003C\u002Fblockquote\u003E\u003Cp\u003EИзначально подход с select не практичен, и поиска нет, да и медленный он. Как это бывает — начало проекта, 10 связей, 100, 1000 иии вот страница редактирования элемента начинает грузиться не доли секунд, а уже секунды. Связей 10к, 100к и страница перестает грузиться и падает с Timeout Error.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧтобы избежать этого и добавить поиск достаточно воспользоваться переменной \u003Cstrong\u003Eraw_id_fields\u003C\u002Fstrong\u003E\u003Cbr\u002F\u003E\r\nУказав название поля в переменной \u003Cstrong\u003Eraw_id_fields\u003C\u002Fstrong\u003E — мы перегружаем виджет отображения, который не делает лишних запросов в БД:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin.register(ModelA)\nclass ModelAAdmin(admin.ModelAdmin):\n    list_display = [\n        'value',\n    ]\n\n    search_fields = ['value']\n\n@admin.register(ModelB)\nclass ModelBAdmin(admin.ModelAdmin):\n    list_display = [\n        'name',\n        'data',\n    ]\n\n    raw_id_fields = ['data', ]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Image of Yaktocat\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Ffiles\u002F31a\u002Fea8\u002F5e2\u002F31aea85e20ed4797b82d2c02bac07077.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EВ дополнение — используйте django-ajax-selects или django-autocomplete-light\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-2---vygruzhayte-vse-neobhodimoe-odnim-zaprosom\"\u003EПрактика 2 — выгружайте все необходимое одним запросом\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ документации к QuerySet можно найти два метода — \u003Ca href=\"https:\u002F\u002Fdocs.djangoproject.com\u002Fen\u002F1.10\u002Fref\u002Fmodels\u002Fquerysets\u002F#django.db.models.query.QuerySet.select_related\" rel=\"nofollow noopener noreferrer\"\u003Eselect_related\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fdocs.djangoproject.com\u002Fen\u002F1.10\u002Fref\u002Fmodels\u002Fquerysets\u002F#prefetch-related\" rel=\"nofollow noopener noreferrer\"\u003Eprefetch_related\u003C\u002Fa\u003E. Эти методы полезны, когда у вас есть ForeinKey\u002FMany2Many поля и по ним что-то отображаете.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003Eselect_related в один запрос выгружает элементы ForeinKey\u002FMany2Many (делает JOIN таблиц)\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nprefetch_related делает тоже самое, но не JOIN'ом, а дополнительными SELECT запросами.\u003C\u002Fblockquote\u003E\u003Cp\u003EВы можете использовать эти конструкции и в админке:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003Eselect_related:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eclass ModelBAdmin(admin.ModelAdmin):\n    list_display = [\n        'name',\n        'data',\n    ]\n    list_select_related = ['data', ]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003Eprefetch_related:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eclass ModelBAdmin(admin.ModelAdmin):\n    def get_queryset(self, request):\n        qs = super(ModelBAdmin, self).queryset(request)\n        return qs.prefetch_related('data')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ первом и втором варианте мы подсказали админке, что нам потребуются дополнительные данные и Django ORM чуть-чуть сэкономит время.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EА на самом деле, лучше избегать JOIN запросов — они тяжелые для БД и это заметно в работе админки.\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-3\"\u003EПрактика 3\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОтходя от ForeingKey\u002FMany2Many связей поговорим про количество элементов в таблице.\u003Cbr\u002F\u003E\r\nПомните, что РСУБД не гарантирует порядок кортежей\u002Fстрок? Так вот, всегда есть соблазн делать какую-то сортировку, например по времени или по ID. Если у вас мало элементов и сервер мощный, то он мгновенно делает ORDER BY по вашему полю, однако, когда записей становится много, то простой SQL запрос\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT \n    \"app_modelb\".\"id\", \n    \"app_modelb\".\"name\",\n     \"app_modelb\".\"data_id\",\n     \"app_modela\".\"id\", \n     \"app_modela\".\"value\"\n\nFROM \"app_modelb\" \n\nINNER JOIN \"app_modela\"  ON (\"app_modelb\".\"data_id\" = \"app_modela\".\"id\") \n\nORDER BY \n    \"app_modelb\".\"name\" ASC,\n    \"app_modelb\".\"id\" DESC\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EМожет занимать уже секунды или даже минуты. И здесь не поможет никакой хитрый индекс.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ Django Admin есть параметр ordering. Чтобы ваша база не пухла от странных запросов, стоит убедится что нигде не указываете этот порядок — обычно его устанавливают в самом AdminModel и в Meta у моделей.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003E\n@admin.register(ModelB)\nclass ModelBAdmin(admin.ModelAdmin):\n    list_display = [\n        'name',\n        'data',\n    ]\n    ordering = []\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли вам все же потребуется сортировка — вы можете сначала выбрать нужный набор фильтров, а потом по результатам выборки сделать сортировку.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-4\"\u003EПрактика 4\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПереходя от основных настроек админки перейдем к второстепенным.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВам точно надо знать количество элементов в таблице?\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ стандартной админке есть интересная штука — количество элементов в таблице.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Image of Yaktocat\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Ffiles\u002Ff3e\u002F07e\u002F6e8\u002Ff3e07e6e83164a2ebd1ad4295a28b789.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧтобы показать это число, Django генерирует запрос вида \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT COUNT(*) AS \"__count\" FROM \"app_modela\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКогда у вас таблица маленькая, 1к, 10к, 100к — Count(*) работает быстро, а когда вы переходите за миллион и десятки миллионов, то безобидная операция подсчета элементов может занимать больше 30 секунд и в конечном итоге приводить к Time out error\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля РСУБД PostgreSQL и MySQL давно есть способы приблизительно подсчитать количество элементов в таблице не делая тяжелых запросов:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E# mysql\nSHOW TABLE STATUS LIKE table_name\n\n# postgresql\nSELECT reltuples::bigint FROM pg_class WHERE relname = table_name\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОба запроса получают информацию о количестве элементов в \u003Ccode\u003Etable_name\u003C\u002Fcode\u003E из системной таблицы. Это значительно быстрее, чем Count запрос.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИспользуя эту идею, можно переопределить ChangeList админ модели. К сожалению, там не две строчки кода, поэтому скину ссылку на github, где показан пример — \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWarmongeR1\u002Fdjango-admin-article\u002Fblob\u002Fmaster\u002Fapp\u002Fadmin_opt.py#L58\" rel=\"nofollow noopener noreferrer\"\u003Ehttps:\u002F\u002Fgithub.com\u002FWarmongeR1\u002Fdjango-admin-article\u002Fblob\u002Fmaster\u002Fapp\u002Fadmin_opt.py#L58\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ том же модуле есть код перегрузки пагинатора для Django Admin.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-5---25-raz-po-malo--odin-raz-po-mnogo\"\u003EПрактика 5 — 25 раз по мало &lt; один раз по много\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРассмотрим типичный сценарий — есть таблица юзеров и данные пользователя, например, покупки. Таблицу юзеров спокойно выводим в админку:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin.register(User)\nclass UserAdmin(admin.ModelAdmin):\n    list_display = [\n        'email',\n        'field1'\n        'field2'\n    ]\n    search_fields = ['email', ]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВсе работает отлично, в БД отправляет простой SELECT. Теперь делаем вывод второй таблицы\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin.register(UserData)\nclass DataAdmin(admin.ModelAdmin):\n    list_display = [\n        'user',\n        'field3'\n        'field4'\n    ]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСмотрим в django-debug-toolbar и видим интересный по неоптимальности запрос:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT ••• \nFROM \"table_userdata\" \nINNER JOIN \"table_user\" ON (\"table_data\".\"user_id\" = \"table_user\".\"id\") \nORDER BY \"accounts_weightdata\".\"id\" DESC \nLIMIT 25\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EINNER JOIN с таблицей пользователей. Для маленьких таблиц это не страшно, все летает, но чем больше таблицы, тем дороже этот JOIN.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧтобы решить эту проблему можно зайти с другой стороны и заменить долгий запрос на несколько недолгих. А именно — сделать обычный SELECT по таблице с данными, а затем отдельными запросами сходить за информацией о пользователей. (Кстати, эти SELECT'ы можно еще и в кэш положить):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin.register(UserData)\nclass DataAdmin(admin.ModelAdmin):\n    list_display = [\n        'user_email',\n        'field3'\n        'field4'\n     ]\n    raw_id_fields = ['user']\n\n    def user_email(self, instance):\n        CACHE_KEY = 'admin:{}:instance:{}'.format(\n            'user',\n            instance.user_id\n        )\n        result = cache.get(CACHE_KEY)\n        if not result:\n            result = instance.user.email\n            cache.set(CACHE_KEY, result)\n        return result\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-6---peregruzit-poisk\"\u003EПрактика 6 — перегрузить поиск\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EАдминка без поиска — время на ветер.\u003Cbr\u002F\u003E\r\nДобавить поиск по полю — элементарно\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E    search_fields = ['field', ]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИ как это бывает — есть модель с данными пользователя и мы добавляем поиск по email\u002Fимени:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003E@admin.register(UserData)\nclass UserDataModel(admin.ModelAdmin):\n    list_display = ['value', ]\n    search_fields = ['user__email', ]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИ начиаем пользоваться. Когда таблица пользователей и таблица с данными разростается, замечаем что любая попытка найти что-то приводит к Time out error.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТут то и берем debug toolbar и смотрим нам запрос поиска:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT \n    \"user_data\".\"id\",\n    \"user_data\".\"user_id\", \n    \"user_data\".\"field1\",\n    \"user_data\".\"field2\" \nFROM \"user_data\" \n\nINNER JOIN \"user_table\" \nON (\"user_data\".\"user_id\" = \"user_table\".\"id\") \n\nWHERE \n    UPPER(\"user_table\".\"email\"::text) LIKE UPPER('%email%') \n\nORDER \n    BY \"accounts_sleepdata\".\"id\" DESC\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОбратите внимание на JOIN. Наверное вы уже запомнили, что JOIN это дорогая операция и их надо избегать. Почесав тыковку можно придти мысль — а что если как-то избежать использование таблицы пользователей или хотя бы убрать JOIN.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИ у меня есть идея, как это сделать. А что если если пользователь ввел email в поисковую строку, то преобразовать его в id и уже по нему сделать поиск.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИзучая документацию Django, можно найти метод \u003Ca href=\"https:\u002F\u002Fdocs.djangoproject.com\u002Fen\u002F1.10\u002Fref\u002Fcontrib\u002Fadmin\u002F#django.contrib.admin.ModelAdmin.get_search_results\" rel=\"nofollow noopener noreferrer\"\u003Eget_search_results\u003C\u002Fa\u003E, он дополняет QuerySet после фильтров поиском по полям. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВот его и перегружаем\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003E\ndef get_user_by_email(email):\n    try:\n        return User.objects.get(email__iexact=email)\n    except User.DoestNotExist:\n        return None\n\nclass UserEmailSearchAdmin(admin.ModelAdmin):\n    def get_search_results(self, request, queryset, search_term):\n        user = get_user_by_email(search_term)\n        if user is not None:\n            queryset = queryset.filter(user_id=user.id)\n            use_distinct = False\n        else:\n            queryset, use_distinct = super().get_search_results(request,\n                                                                queryset,\n                                                                search_term)\n        return queryset, use_distinct\n\n@admin.register(UserData)\nclass UserDataModel(UserEmailSearchAdmin):\n    list_display = ['value', ]\n    search_fields = ['user__email', ]\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВводим полноценный email — получаем оптимальный запрос.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT \n    \"user_data\".\"id\",\n    \"user_data\".\"user_id\", \n    \"user_data\".\"field1\",\n    \"user_data\".\"field2\" \nFROM \"user_data\" \n\nINNER JOIN \"user_table\" \nON (\"user_data\".\"user_id\" = \"user_table\".\"id\") \n\nWHERE \n    \"accounts_sleepdata\".\"user_id\" = &lt;user_id\u003E\nORDER \n    BY \"accounts_sleepdata\".\"id\" DESC\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли же вводим часть email или другую строку — то делается страшный JOIN\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-7---produmay-zaranee-indeksy\"\u003EПрактика 7 — продумай заранее индексы\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПри активной разработке постоянно есть недостаток времени и каждый раз хочется где-то схалявить. Так вот, технический долг, который находится на уровне моделей — очень дорогой.\u003Cbr\u002F\u003E\r\nРазрабатывая фичу, продумайте несколько use case, и подумайте, как будете визуализировать результаты работы фичи, что вам понадобиться, что нет.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЛишний день при разработке структуры БД поможет сэкономить недели в будущем.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИндекс по текстовому полю ускорит поиск, вот только база (индекс) начнет расти молниеносно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-8---ne-ispolzuy-slozhnye-filtry-v-adminke\"\u003EПрактика 8 — не используй сложные фильтры в админке\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУ Django есть удобный инструмент фильтров в админке. Он позволяет получить нужные выборки. Для выборок аля \"Пользователи со статусом A\" подходит хорошо. Но если вы хотите получить сложную выборку \"Пользователи со статусом А, возрастом Б и не в группе С\", то легко получить неоптимальный запрос вида:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT * \nFROM table \nWHERE \n    id not in [1, 2, 3, ....100000...]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНаучить Django ORM оптимизировать сложные запросы тяжело и не имеет смысла. Значительно проще писать голые SQL запросы. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля этого дела для Django есть батарейка \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgroveco\u002Fdjango-sql-explorer\" rel=\"nofollow noopener noreferrer\"\u003Ehttps:\u002F\u002Fgithub.com\u002Fgroveco\u002Fdjango-sql-explorer\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЭтот инструмент предоставляет веб-интерфейс работы с SQL. Он не дотягивает до pg_admin и аналогов и умеет совсем мало — выполнять запросы, сохранять их для переиспользования и сохранять выборки в различные форматы файлов.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧтобы внедрить — достаточно установить, определить кому будет доступ и написать готовые SQL запросы, которые ваша команда будет использовать.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-9---uprosti-zhizn-baze\"\u003EПрактика 9 — упрости жизнь базе\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКогда вы заходите на страницу модели в админке, вам точно надо select по всему? Может лучше вообще пустую страницу показать или за последний день?\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНабор элементов для отображения определяется методом \u003Ccode\u003Eget_queryset\u003C\u002Fcode\u003E и так его можно перегрузить:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@admin.register(ModelA)\nclass ModelAAdmin(admin.ModelAdmin):\n\n    def get_queryset(self, request):\n        if len(request.GET) == 0:\n            return ModelA.objects.none()\n        else:\n            return super().get_queryset(request)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ этом примере я перегрузил QuerySet по умолчанию — если открыть страницу таблицы, то увидим пустую страницу (без элементов), однако, если начнем искать — то результаты будут видны.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-10---ne-znaesh-zachem-tebe-dannye--ne-sobiray-ih--ne-pokazyvay-ih\"\u003EПрактика 10 — не знаешь зачем тебе данные → не собирай их → не показывай их.\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВсегда есть соблазн, начать собирать от пользователей какую-то мелоч, которая в далеком светлом будущем может помочь улучшить продукт. Так вот — если у вас нет мыслей как использовать эти данные — они вам не нужны сейчас. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЛюбая модель, которую вы создали в порыве за 2 минуты, будете в будущем выпиливать несколько месяцев.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"praktika-11---gruppiruy-modeli-v-gruppy-po-smyslu\"\u003EПрактика 11 — группируй модели в группы по смыслу.\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРазвивая продукт как монолит, мы получаем огромное количество моделей, где даже найти нужную модель тяжело. Чтобы упростить поиск — группируйте модели с помощью батарейки \u003Ccode\u003Edjango-admin-tools\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EБатарейка умеет делать разные дашбоарды, на которых перечень и способ отображения моделей может быть разным. Такое разделение помогает, если данные используют разные отделы компании.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Image of Yaktocat\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Ffiles\u002Fe6d\u002F2ec\u002Fd59\u002Fe6d2ecd596a24ac8b56695e8df3dc358.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУправление группами идет из кода — \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWarmongeR1\u002Fdjango-admin-article\u002Fblob\u002Fmaster\u002Fproject\u002Fdashboard.py\" rel=\"nofollow noopener noreferrer\"\u003Eвот пример\u003C\u002Fa\u003E такого конфига\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"vyvody\"\u003EВыводы\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСколько бы Django Admin не ругали или восхваляли — это интересный инструмент со множеством подводных камней. Чтобы выжать максимум пользы придется покапаться в настройках, а иногда и перегрузить методы, шаблоны.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧто касается производительности — таблица со 100 миллионами записей прекрасно открывается в Django Admin.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EP.S.\u003C\u002Fstrong\u003E Разумеется, если нужны сложные выборки и таблицы, то инструменты типа Metabase или Redash, админка не заменит.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"python"},{"titleHtml":"django"},{"titleHtml":"django framework"},{"titleHtml":"django admin"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F322114\u002F245751bad34ed4daff3c20d2494c9fff\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F322114\u002F245751bad34ed4daff3c20d2494c9fff\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F322114\\\u002F\"},\"headline\":\"Django Admin с миллионами записей — 11 практик оптимизаций для начинающих\",\"datePublished\":\"2021-10-12T11:30:10+03:00\",\"dateModified\":\"2021-10-12T14:10:16+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Александр Сапронов\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Django &mdash; самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить &mdash; Django Admin &mdash; это готовый CRU...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F322114\\\u002F#post-content-body\",\"about\":[\"h_webdev\",\"h_python\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Ffiles\\\u002F60a\\\u002F09b\\\u002F587\\\u002F60a09b587b4d49e6a4cbe25c43f7c1ea.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Ffiles\\\u002F31a\\\u002Fea8\\\u002F5e2\\\u002F31aea85e20ed4797b82d2c02bac07077.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Ffiles\\\u002Ff3e\\\u002F07e\\\u002F6e8\\\u002Ff3e07e6e83164a2ebd1ad4295a28b789.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Ffiles\\\u002Fe6d\\\u002F2ec\\\u002Fd59\\\u002Fe6d2ecd596a24ac8b56695e8df3dc358.png\"]}","metaDescription":"Django — самый популярный Python web-framework. За больше чем 10 лет оброс огромным слоем возможностей. Среди них можно выделить — Django Admin — это готовый CRUDL интерфейс с поиском, фильтрами и...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"webdev,python"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

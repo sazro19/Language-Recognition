@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>RAD для софт-процессоров и немного «сферических коней в вакууме» / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582650\/"},"headline":"RAD для софт-процессоров и немного «сферических коней в вакууме»","datePublished":"2021-10-10T21:35:57+03:00","dateModified":"2021-10-11T11:18:06+03:00","author":{"@type":"Person","name":"Александр Калачев"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"&nbsp;Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС &ndash;актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкорас...","url":"https:\/\/habr.com\/ru\/post\/582650\/#post-content-body","about":["h_python","h_fpga","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582650\/42ba0c3c716ff3a6ae37be20290bf3b9\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/9fd\/2fa\/f1e\/9fd2faf1eec2debf02271fbc93f8394d.jpg"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="RAD для софт-процессоров и немного «сферических коней в вакууме»" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="RAD для софт-процессоров и немного «сферических коней в вакууме»" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="RAD для софт-процессоров и немного «сферических коней в вакууме»" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="&amp;nbsp;Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="&amp;nbsp;Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="&amp;nbsp;Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="&amp;nbsp;Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="&amp;nbsp;Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/9fd/2fa/f1e/9fd2faf1eec2debf02271fbc93f8394d.jpg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/9fd/2fa/f1e/9fd2faf1eec2debf02271fbc93f8394d.jpg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/9fd/2fa/f1e/9fd2faf1eec2debf02271fbc93f8394d.jpg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/9fd/2fa/f1e/9fd2faf1eec2debf02271fbc93f8394d.jpg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/9fd/2fa/f1e/9fd2faf1eec2debf02271fbc93f8394d.jpg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582650" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-10T18:35:57.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582650/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582650/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/9fd/2fa/f1e/9fd2faf1eec2debf02271fbc93f8394d.jpg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582650/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/forther/" title="forther" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/forther/" class="tm-user-info__username">
+      forther
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-10T18:35:57.000Z" title="2021-10-10, 21:35">10  октября   в 21:35</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>RAD для софт-процессоров и немного «сферических коней в вакууме»</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/fpga/" class="tm-article-snippet__hubs-item-link"><span>FPGA</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p> Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих развитой программно-аппаратной структурой – поддержка высокопроизводительных шин, периферийный устройств, прикладное программное обеспечение и, в ряде случаев, операционных систем (в основном Linux, Free-RTOS).  Одними из причин данного выбора являются желание обеспечить достаточную производительность и иметь под рукой готовый инструментарий для разработки программного обеспечения.</p><p>В том случае, если применяемая в проекте ПЛИС не содержит аппаратных процессорных ядер, реализация полноценного процессорного ядра может быть избыточной, или вести к усложнению программного его обеспечения, а следовательно приведет к увеличению затрат на его разработку. Кроме того, универсальное софт-ядро будет, так или иначе, занимать дефицитные ресурсы программируемой логики. Специализированный софт-процессор будет более оптимальным решением в свете экономии ресурсов логики – за счет адаптированной системы команд, небольшого количества регистров, разрядности данных (вплоть до некратной 8битам). Согласование с периферийными устройствами – проблема в основном согласования шин и протоколов. Заменой сложной системы обработки прерываний может служить многопоточная архитектура процессора.</p><h3>Стековые софт-процессоры и контекст потока</h3><p>Обычно многопоточные процессоры имеют одно АЛУ и несколько наборов регистров (иногда называемых «теневыми» регистрами) для хранения контекста потока, следовательно, чем больше требуется потоков, тем будут больше накладные расходы логики и памяти. Среди разнообразия архитектур софт-процессорных ядер следует выделить стековую архитектуру. Такие процессоры часто называют еще Форт-процессорами, так как чаще всего их ассемблер естественным образом поддерживает подмножество команд языка Форт.</p><p>У стековых процессоров есть интересное свойство –это небольшой размер контекста потока. Поскольку роль регистров выполняет стек, при переключении на другой поток необязательно иметь полный комплект регистров общего назначения - достаточно переключить указатель стека [1]. В простейшем случае контекст потока можно ограничить небольшим набором указателей - стека, стека возвратов и счетчик команд потока. При наличии нескольких  определяемых спецификой задач потоков вычислений компактность многопотоковой схемы будет важнее пиковой производительности, а задача реализации процессорной системы в ПЛИС минимального объема является актуальной в свете, например, нового семейства Spartan-7 число ячеек в устройствах которого невелико.</p><p>Идеи и методика реализации многопоточного софт-процессора изложены в работе [1]. Развитие работ в этом направлении привело к появлению свободного компилятора языка Python для процессоров стековой архитектуры [2]. Это решает проблему разработки системного программного обеспечения для софт-процессора. Более того, данный язык благодаря простому синтаксису и поддержке различных парадигм программирования является популярным и удобен для начинающих программистов.</p><h3>Инструментальные средства для упрощенного проектирования IP-ядер</h3><p>Известен также инструментарий MyHDL [3], позволяющий описывать аппаратные модули и узлы на языке Python. Синтаксис описания проще VHDL, сам инструментарий менее требователен к ресурсам системы, чем фирменные среды разработки. Помимо самого описания MyHDL позволяет описывать тестовые последовательности и логически симулировать работу модулей [4].</p><p>Потенциально, совместное применение инструментариев MyHDL  и Uzh позволит вести разработку софт-процессора и компилятора языка высокого уровня для него на одном языке, что позволит снизить уровень сложности задачи. В частности это будет полезно в проектах, связанных с начальным обучением программированию, разработки цифровой техники, систем управления. На данный момент предлагаемые подходы к начальному обучению работе с программируемой логикой находятся на стадии поиска эффективных решений и не всегда методически выдержаны [5-7]. Единый стиль описания может помочь сгладить сложные момент в процессе освоения ПЛИС, к тому же некоторые популярные конструкторы и наборы с программируемыми блоками используют Python для задания рабочей программы.</p><p>Комбинационные логические схемы и последовательные автоматы описываются и симулируются достаточно не сложно [8,9], откуда можно сделать вывод, что, придерживаясь определенной концепции описать прототип многопоточного софт-процессора на поведенческом уровне достаточно просто.</p><h3>Реализация простого многопоточного процессора на MyHDL</h3><p>Учитывая идеи и базовую архитектуру процессора, предложенные в [1], разрабатываемый процессор будет иметь следующие особенности: Гарвардская архитектура с раздельными памятями программ и данных, стеки физически отображаются на память данных, для хранения контекста потока предусмотрены наборы теневых регистров.</p><p>Однотактовые и конвейерные пути решения для начальной реализации не очевидны, и с учетом того, что для софт-процессора не требуется сверхвысокой производительности, командный цикл процессора можно сделать многотактным. В первом приближении достаточно четырех стадий выполнения: чтение контекста потока, выборка операндов в кеширующие регистры, выполнение команды, переключение на следующий поток.</p><p>Разрядность памяти программ, данных, размеры стеков и количество потоков задается параметрически при помощи ряда переменных:</p><pre><code class="python">bits=16 
+Nthread=8 
+RAMsize=256 
+ROMsize=2048 
+STACKsize=8 
+RS_BASE=64
+DS_BASE=8</code></pre><p>Вход процессора - тактовый сигнал и сигнал сброса, плюс шины данных и адреса для внешних устройств (дополнительные сигналы – опционально). В ядро процессора будут входить переключатель состояний процессора, счетчик текущего потока, наборы указателей стеков и счетчика команд для каждого из потоков, регистры текущего контекста, память данных и программ.</p><p>Сама микроархитектура ядра реализуется через ряд функций, отвечающих за генерацию последовательных схем.  Счетчик состояний процессора реализуется просто – установка в ноль при сигнале сброса, иначе – инкремент на каждый такт.</p><p>Логика работы узлов процессора на каждом из этапов выполнения описывается в отдельной функции:</p><pre><code class="python">def gor(reset, clk, dat, prt):
+	state=Signal(modbv(0, min=0, max=4))
+	thread=Signal(modbv(0, min=0, max=Nthread))
+	th_sp = [Signal(intbv(0)[bits:]) for i in range(Nthread)]
+	th_rp = [Signal(intbv(0)[bits:]) for i in range(Nthread)]
+	th_ip = [Signal(intbv(0)[bits:]) for i in range(Nthread)]
+	sp, rp, ipreg, rt = [Signal(intbv(0)[bits:]) for i in range(4)]
+	cmd = Signal(intbv(0)[9:])
+	tos, sos, tdata = [Signal(intbv(0)[bits:]) for i in range(3)]
+	D_RAM = [Signal(intbv(0)[bits:]) for i in range(RAMsize)]
+	C_ROM = [Signal(intbv(0)[9:]) for i in range(ROMsize)] </code></pre><p>Первый этап - переключение контекста - считываются нужные рабочие регистры из наборов для текущего потока:</p><pre><code class="python">@always_comb def st_sw():
+  if reset==1:
+    if state==task_sw:
+      sp.next=th_sp[thread]
+      rp.next=th_rp[thread]
+      ipreg.next=th_ip[thread] </code></pre><p>Чтение операндов – считываются из памяти верхние элементы стеков, текущая команда потока и текущий внешний вход:</p><pre><code class="python">@always(clk.posedge) def st_get():
+  if reset==1:
+    if state==get_data:
+      tos.next=D_RAM[sp]
+      sos.next=D_RAM[sp+1]
+      rt.next=D_RAM[rp]
+      cmd.next=C_ROM[ipreg]
+      tdata.next=dat </code></pre><p>Третий этап - выполнение команд. </p><pre><code class="python">@always(clk.posedge) def st_ex():
+  if reset==1:
+    if state==execute:
+      # unary                          
+      if cmd == nop:
+        D_RAM[sp].next= tos
+        th_ip[thread].next=ipreg+1
+      elif cmd == noti:
+        D_RAM[sp].next= ~tos
+        th_ip[thread].next=ipreg+1
+      #alu                         
+      elif cmd == add:
+        D_RAM[sp+1].next=tos+sos
+        th_sp[thread].next=sp+1
+        th_ip[thread].next=ipreg+1
+      elif cmd == andi:
+        D_RAM[sp+1].next=tos&amp;sos
+        th_sp[thread].next=sp+1
+        th_ip[thread].next=ipreg+1 и т.д.
+
+</code></pre><p>Состав команд может быть оптимизирован для каждой конкретной задачи, единственное требование – желательна поддержка команд абстрактной стековой машины [1] для построения более эффективного кода при компиляции с высокоуровнего языка. Некоторые идеи по реализации работы с константами взяты из работы [10].</p><p>Финальный этап - инкремент счетчика потоков:<br/><br/><code>@always(clk.posedge) <br/> def st_sv():            # task_sw = 3         <br/>    if reset==1:<br/>    # get_data = 1            <br/>        if state== save_task:<br/>             thread.next=thread+1     <br/>        else:<br/>             thread.next = 0 </code></p><p>Все описанные блоки возвращаются при завершении описании основной функции процессорного ядра:<br/><br/><code>return st_swt, st_sw, st_get, st_ex, st_sv </code></p><p>Полученное ядро можно логически протестировать - определяется тестовая функция, генеруется тактовая последовательность, подается сбросовый сигнал: <br/>def test():     reset = Signal(bool(0))     clk = Signal(bool(0))     #C_ROM = (noti, dup, drop, nop, nop, nop, nop, nop, nop)     #C_ROM = (lit0, 5|0x100, lit0, 2|0x100, add, nop, nop, nop, nop, nop, nop)     dat, prt = [Signal(intbv(0)[bits:]) for i in range(2)]     test = gor(reset, clk, dat, prt)</p><pre><code class="python">@always(delay(10))
+def gen():
+    clk.next = not clk
+
+@always(delay(50))
+def go():
+    reset.next = 1
+
+return test, gen, go
+
+def simulate(timesteps):
+    tb = traceSignals(test)
+    sim = Simulation(tb)
+    sim.run(timesteps)
+</code></pre><p>Результат симуляции автоматически выгружается в файл .vcd (в данном случае - test.vcd), который потом можно будет открыть в любом просмотрщике временных диаграмм. </p><p>На рисунке представлены временные диаграммы работы сгенерированного восьмипоточного 16-битного процессора. Все потоки начинают работу с одного адреса, но их стеки данных и возвратов находятся по разным адресам. Можно отследить изменения счетчиков команд потоков, загрузку констант, манипуляции с данными на стеках.</p><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/9fd/2fa/f1e/9fd2faf1eec2debf02271fbc93f8394d.jpg" width="1337" height="633" data-src="https://habrastorage.org/getpro/habr/upload_files/9fd/2fa/f1e/9fd2faf1eec2debf02271fbc93f8394d.jpg" data-blurred="true"/><figcaption></figcaption></figure><p>Рис. Результат симуляции работы софт-процессора.</p><p>При необходимости MyHDL код может быть транслирован в код налюбом из HDL языков – в Verilog или в VHDL. Полученные таким образом файлы в дальнейшем могут быть использованы в проектах сред разработки под выбранное семейство ПЛИС:</p><pre><code class="python">def convert():
+  reset = Signal(bool(0))
+  clk = Signal(bool(0))
+  dat, prt = [Signal(intbv(0)[bits:]) for i in range(2)]
+  toVHDL(gor, reset, clk, dat, prt)
+
+</code></pre><h3>Заключение</h3><p>Был продемонстрирован простой маршрут быстрого прототипирования софт-процессора, позволяющий при незначительных затратах времени и вычислительных ресурсов проверить концептуальную идею на работоспособность. Полученные результаты – транслированные HDL-файлы могут служить основой для дальнейшего развития и оптимизации проекта уже с учетом особенностей текущей серии ПЛИС. В частности, для представленного примера финальный VHDL код будет генерировать память на дефицитных для ПЛИС регистрах, а более предпочтительным является задействование ресурсов встроенных блоков памяти.</p><p><strong>Библиографический список</strong></p><p>1.        Советов П.Н., Тарасов И.Е. Разработка многопоточного софт-процессора со стековой архитектурой на основе совместной оптимизации программной модели и системной архитектуры. Многоядерные процессоры, параллельное программирование, плис, системы обработки сигналов, вып.7. 2017, стр.8-19.</p><p>2.        GitHub - true-grue_uzh_ Uzh compiler // <a href="https://github.com/true-grue/uzh" rel="noopener noreferrer nofollow"><em>https://github.com/true-grue/uzh</em></a>.</p><p>3.        MyHDL // <a href="http://www.myhdl.org" rel="noopener noreferrer nofollow"><em>http://www.myhdl.org</em></a>.</p><p>4.        Начинаем FPGA на Python _ Хабр // <a href="https://m.habr.com/ru/post/439638/" rel="noopener noreferrer nofollow"><em>https://m.habr.com/ru/post/439638/</em></a> </p><p>5.        Юрий Панчул. Следущие шаги в черной магии процессоростроения после того, как вы освоили Харрис &amp; Харрис // <a href="https://panchul.livejournal.com/578909.html" rel="noopener noreferrer nofollow"><em>https://panchul.livejournal.com/578909.html</em></a> .</p><p>6.        Жельнио Станислав. Школа по основам цифровой схемотехники_ Новосибирск — Ок, Красноярск — приготовиться _ Хабр // <a href="https://habr.com/ru/users/sparf/posts/" rel="noopener noreferrer nofollow"><em>https://habr.com/ru/users/sparf/posts/</em></a> .</p><p>7.        Жельнио Станислав. Процессорное ядро SchoolMIPS и его использование для обучения основам микроархитектуры процессора // <a href="http://www.silicon-russia.com/public_materials/2017_10_08_msu_rountable/20171007_Zhelnio_SchoolMIPS%20for%20Education.pdf" rel="noopener noreferrer nofollow"><em>http://www.silicon-russia.com/public_materials/2017_10_08_msu_rountable/20171007_Zhelnio_SchoolMIPS%20for%20Education.pdf</em></a> </p><p>8.        MyHDL examples // <a href="http://www.myhdl.org/docs/examples/" rel="noopener noreferrer nofollow"><em>http://www.myhdl.org/docs/examples/</em></a> </p><p>9.        Felton Christopher. Developing FPGA-DSP IP with Python // <a href="https://www.fpgarelated.com/showarticle/7.php" rel="noopener noreferrer nofollow"><em>https://www.fpgarelated.com/showarticle/7.php</em></a> </p><p>10.     Forth-процессор на VHDL // https://m.habr.com/ru/post/149686/</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%9F%D0%9B%D0%98%D0%A1%5D" class="tm-tags-list__link">ПЛИС</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%D0%B8%D1%80%D1%83%D0%B5%D0%BC%D0%B0%D1%8F%20%D0%BB%D0%BE%D0%B3%D0%B8%D0%BA%D0%B0%5D" class="tm-tags-list__link">программируемая логика</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D1%80%D1%85%D0%B8%D1%82%D0%B5%D0%BA%D1%82%D1%83%D1%80%D0%B0%20%D0%BC%D0%B8%D0%BA%D1%80%D0%BE%D0%BF%D1%80%D0%BE%D1%86%D0%B5%D1%81%D1%81%D0%BE%D1%80%D0%BE%D0%B2%5D" class="tm-tags-list__link">архитектура микропроцессоров</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%BD%D0%BE%D0%B3%D0%BE%D0%BF%D0%BE%D1%82%D0%BE%D1%87%D0%BD%D0%BE%D1%81%D1%82%D1%8C%5D" class="tm-tags-list__link">многопоточность</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%84%D0%BE%D1%80%D1%82-%D0%BF%D1%80%D0%BE%D1%86%D0%B5%D1%81%D1%81%D0%BE%D1%80%D1%8B.%5D" class="tm-tags-list__link">форт-процессоры.</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/fpga/" class="tm-hubs-list__link">
+    FPGA
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 17: ↑16 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 17: ↑16 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+15</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.8K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    25
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/forther/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 10 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    8
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">15</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Александр Калачев</span> <a href="/ru/users/forther/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @forther
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Разработчик встраиваемой и носимой электроники</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582650/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментировать 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582650/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582650/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582650":{"id":"582650","timePublished":"2021-10-10T18:35:57+00:00","isCorporative":false,"lang":"ru","titleHtml":"RAD для софт-процессоров и немного «сферических коней в вакууме»","leadData":{"textHtml":"\u003Cp\u003EРазработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих развитой программно-аппаратной структурой – поддержка высокопроизводительных шин, периферийный устройств, прикладное программное обеспечение и, в ряде случаев, операционных систем (в основном Linux, Free-RTOS). &nbsp;Одними из причин данного выбора являются желание обеспечить достаточную производительность и иметь под рукой готовый инструментарий для разработки программного обеспечения.\u003C\u002Fp\u003E\u003Cp\u003EВ том случае, если применяемая в проекте ПЛИС не содержит аппаратных процессорных ядер, реализация полноценного процессорного ядра может быть избыточной, или вести к усложнению программного его обеспечения, а следовательно приведет к увеличению затрат на его разработку. Кроме того, универсальное софт-ядро будет, так или иначе, занимать дефицитные ресурсы программируемой логики. Специализированный софт-процессор будет более оптимальным решением в свете экономии ресурсов логики – за счет адаптированной системы команд, небольшого количества регистров, разрядности данных (вплоть до некратной 8битам). Согласование с периферийными устройствами – проблема в основном согласования шин и протоколов. Заменой сложной системы обработки прерываний может служить многопоточная архитектура процессора.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EСтековые софт-процессоры и контекст потока\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EОбычно многопоточные процессоры имеют одно АЛУ и несколько наборов регистров (иногда называемых «теневыми» регистрами) для хранения контекста потока, следовательно, чем больше требуется потоков, тем будут больше накладные расходы логики и памяти. Среди разнообразия архитектур софт-процессорных ядер следует выделить стековую архитектуру. Такие процессоры часто называют еще Форт-процессорами, так как чаще всего их ассемблер естественным образом поддерживает подмножество команд языка Форт.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F9fd\u002F2fa\u002Ff1e\u002F9fd2faf1eec2debf02271fbc93f8394d.jpg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F9fd\u002F2fa\u002Ff1e\u002F9fd2faf1eec2debf02271fbc93f8394d.jpg","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":8,"votesCount":10},"rating":15,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"544572","alias":"forther","fullname":"Александр Калачев","avatarUrl":null,"speciality":"Разработчик встраиваемой и носимой электроники"},"statistics":{"commentsCount":0,"favoritesCount":25,"readingCount":1820,"score":15,"votesCount":17},"hubs":[{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true},{"relatedData":null,"id":"19733","alias":"fpga","type":"collective","title":"FPGA","titleHtml":"FPGA","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003E Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих развитой программно-аппаратной структурой – поддержка высокопроизводительных шин, периферийный устройств, прикладное программное обеспечение и, в ряде случаев, операционных систем (в основном Linux, Free-RTOS).  Одними из причин данного выбора являются желание обеспечить достаточную производительность и иметь под рукой готовый инструментарий для разработки программного обеспечения.\u003C\u002Fp\u003E\u003Cp\u003EВ том случае, если применяемая в проекте ПЛИС не содержит аппаратных процессорных ядер, реализация полноценного процессорного ядра может быть избыточной, или вести к усложнению программного его обеспечения, а следовательно приведет к увеличению затрат на его разработку. Кроме того, универсальное софт-ядро будет, так или иначе, занимать дефицитные ресурсы программируемой логики. Специализированный софт-процессор будет более оптимальным решением в свете экономии ресурсов логики – за счет адаптированной системы команд, небольшого количества регистров, разрядности данных (вплоть до некратной 8битам). Согласование с периферийными устройствами – проблема в основном согласования шин и протоколов. Заменой сложной системы обработки прерываний может служить многопоточная архитектура процессора.\u003C\u002Fp\u003E\u003Ch3\u003EСтековые софт-процессоры и контекст потока\u003C\u002Fh3\u003E\u003Cp\u003EОбычно многопоточные процессоры имеют одно АЛУ и несколько наборов регистров (иногда называемых «теневыми» регистрами) для хранения контекста потока, следовательно, чем больше требуется потоков, тем будут больше накладные расходы логики и памяти. Среди разнообразия архитектур софт-процессорных ядер следует выделить стековую архитектуру. Такие процессоры часто называют еще Форт-процессорами, так как чаще всего их ассемблер естественным образом поддерживает подмножество команд языка Форт.\u003C\u002Fp\u003E\u003Cp\u003EУ стековых процессоров есть интересное свойство –это небольшой размер контекста потока. Поскольку роль регистров выполняет стек, при переключении на другой поток необязательно иметь полный комплект регистров общего назначения - достаточно переключить указатель стека [1]. В простейшем случае контекст потока можно ограничить небольшим набором указателей - стека, стека возвратов и счетчик команд потока. При наличии нескольких  определяемых спецификой задач потоков вычислений компактность многопотоковой схемы будет важнее пиковой производительности, а задача реализации процессорной системы в ПЛИС минимального объема является актуальной в свете, например, нового семейства Spartan-7 число ячеек в устройствах которого невелико.\u003C\u002Fp\u003E\u003Cp\u003EИдеи и методика реализации многопоточного софт-процессора изложены в работе [1]. Развитие работ в этом направлении привело к появлению свободного компилятора языка Python для процессоров стековой архитектуры [2]. Это решает проблему разработки системного программного обеспечения для софт-процессора. Более того, данный язык благодаря простому синтаксису и поддержке различных парадигм программирования является популярным и удобен для начинающих программистов.\u003C\u002Fp\u003E\u003Ch3\u003EИнструментальные средства для упрощенного проектирования IP-ядер\u003C\u002Fh3\u003E\u003Cp\u003EИзвестен также инструментарий MyHDL [3], позволяющий описывать аппаратные модули и узлы на языке Python. Синтаксис описания проще VHDL, сам инструментарий менее требователен к ресурсам системы, чем фирменные среды разработки. Помимо самого описания MyHDL позволяет описывать тестовые последовательности и логически симулировать работу модулей [4].\u003C\u002Fp\u003E\u003Cp\u003EПотенциально, совместное применение инструментариев MyHDL  и Uzh позволит вести разработку софт-процессора и компилятора языка высокого уровня для него на одном языке, что позволит снизить уровень сложности задачи. В частности это будет полезно в проектах, связанных с начальным обучением программированию, разработки цифровой техники, систем управления. На данный момент предлагаемые подходы к начальному обучению работе с программируемой логикой находятся на стадии поиска эффективных решений и не всегда методически выдержаны [5-7]. Единый стиль описания может помочь сгладить сложные момент в процессе освоения ПЛИС, к тому же некоторые популярные конструкторы и наборы с программируемыми блоками используют Python для задания рабочей программы.\u003C\u002Fp\u003E\u003Cp\u003EКомбинационные логические схемы и последовательные автоматы описываются и симулируются достаточно не сложно [8,9], откуда можно сделать вывод, что, придерживаясь определенной концепции описать прототип многопоточного софт-процессора на поведенческом уровне достаточно просто.\u003C\u002Fp\u003E\u003Ch3\u003EРеализация простого многопоточного процессора на MyHDL\u003C\u002Fh3\u003E\u003Cp\u003EУчитывая идеи и базовую архитектуру процессора, предложенные в [1], разрабатываемый процессор будет иметь следующие особенности: Гарвардская архитектура с раздельными памятями программ и данных, стеки физически отображаются на память данных, для хранения контекста потока предусмотрены наборы теневых регистров.\u003C\u002Fp\u003E\u003Cp\u003EОднотактовые и конвейерные пути решения для начальной реализации не очевидны, и с учетом того, что для софт-процессора не требуется сверхвысокой производительности, командный цикл процессора можно сделать многотактным. В первом приближении достаточно четырех стадий выполнения: чтение контекста потока, выборка операндов в кеширующие регистры, выполнение команды, переключение на следующий поток.\u003C\u002Fp\u003E\u003Cp\u003EРазрядность памяти программ, данных, размеры стеков и количество потоков задается параметрически при помощи ряда переменных:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Ebits=16 \nNthread=8 \nRAMsize=256 \nROMsize=2048 \nSTACKsize=8 \nRS_BASE=64\nDS_BASE=8\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВход процессора - тактовый сигнал и сигнал сброса, плюс шины данных и адреса для внешних устройств (дополнительные сигналы – опционально). В ядро процессора будут входить переключатель состояний процессора, счетчик текущего потока, наборы указателей стеков и счетчика команд для каждого из потоков, регистры текущего контекста, память данных и программ.\u003C\u002Fp\u003E\u003Cp\u003EСама микроархитектура ядра реализуется через ряд функций, отвечающих за генерацию последовательных схем.  Счетчик состояний процессора реализуется просто – установка в ноль при сигнале сброса, иначе – инкремент на каждый такт.\u003C\u002Fp\u003E\u003Cp\u003EЛогика работы узлов процессора на каждом из этапов выполнения описывается в отдельной функции:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Edef gor(reset, clk, dat, prt):\n\tstate=Signal(modbv(0, min=0, max=4))\n\tthread=Signal(modbv(0, min=0, max=Nthread))\n\tth_sp = [Signal(intbv(0)[bits:]) for i in range(Nthread)]\n\tth_rp = [Signal(intbv(0)[bits:]) for i in range(Nthread)]\n\tth_ip = [Signal(intbv(0)[bits:]) for i in range(Nthread)]\n\tsp, rp, ipreg, rt = [Signal(intbv(0)[bits:]) for i in range(4)]\n\tcmd = Signal(intbv(0)[9:])\n\ttos, sos, tdata = [Signal(intbv(0)[bits:]) for i in range(3)]\n\tD_RAM = [Signal(intbv(0)[bits:]) for i in range(RAMsize)]\n\tC_ROM = [Signal(intbv(0)[9:]) for i in range(ROMsize)] \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПервый этап - переключение контекста - считываются нужные рабочие регистры из наборов для текущего потока:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@always_comb def st_sw():\n  if reset==1:\n    if state==task_sw:\n      sp.next=th_sp[thread]\n      rp.next=th_rp[thread]\n      ipreg.next=th_ip[thread] \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЧтение операндов – считываются из памяти верхние элементы стеков, текущая команда потока и текущий внешний вход:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@always(clk.posedge) def st_get():\n  if reset==1:\n    if state==get_data:\n      tos.next=D_RAM[sp]\n      sos.next=D_RAM[sp+1]\n      rt.next=D_RAM[rp]\n      cmd.next=C_ROM[ipreg]\n      tdata.next=dat \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТретий этап - выполнение команд. \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@always(clk.posedge) def st_ex():\n  if reset==1:\n    if state==execute:\n      # unary                          \n      if cmd == nop:\n        D_RAM[sp].next= tos\n        th_ip[thread].next=ipreg+1\n      elif cmd == noti:\n        D_RAM[sp].next= ~tos\n        th_ip[thread].next=ipreg+1\n      #alu                         \n      elif cmd == add:\n        D_RAM[sp+1].next=tos+sos\n        th_sp[thread].next=sp+1\n        th_ip[thread].next=ipreg+1\n      elif cmd == andi:\n        D_RAM[sp+1].next=tos&amp;sos\n        th_sp[thread].next=sp+1\n        th_ip[thread].next=ipreg+1 и т.д.\n\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСостав команд может быть оптимизирован для каждой конкретной задачи, единственное требование – желательна поддержка команд абстрактной стековой машины [1] для построения более эффективного кода при компиляции с высокоуровнего языка. Некоторые идеи по реализации работы с константами взяты из работы [10].\u003C\u002Fp\u003E\u003Cp\u003EФинальный этап - инкремент счетчика потоков:\u003Cbr\u002F\u003E\u003Cbr\u002F\u003E\u003Ccode\u003E@always(clk.posedge) \u003Cbr\u002F\u003E def st_sv():            # task_sw = 3         \u003Cbr\u002F\u003E    if reset==1:\u003Cbr\u002F\u003E    # get_data = 1            \u003Cbr\u002F\u003E        if state== save_task:\u003Cbr\u002F\u003E             thread.next=thread+1     \u003Cbr\u002F\u003E        else:\u003Cbr\u002F\u003E             thread.next = 0 \u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cp\u003EВсе описанные блоки возвращаются при завершении описании основной функции процессорного ядра:\u003Cbr\u002F\u003E\u003Cbr\u002F\u003E\u003Ccode\u003Ereturn st_swt, st_sw, st_get, st_ex, st_sv \u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cp\u003EПолученное ядро можно логически протестировать - определяется тестовая функция, генеруется тактовая последовательность, подается сбросовый сигнал: \u003Cbr\u002F\u003Edef test():     reset = Signal(bool(0))     clk = Signal(bool(0))     #C_ROM = (noti, dup, drop, nop, nop, nop, nop, nop, nop)     #C_ROM = (lit0, 5|0x100, lit0, 2|0x100, add, nop, nop, nop, nop, nop, nop)     dat, prt = [Signal(intbv(0)[bits:]) for i in range(2)]     test = gor(reset, clk, dat, prt)\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E@always(delay(10))\ndef gen():\n    clk.next = not clk\n\n@always(delay(50))\ndef go():\n    reset.next = 1\n\nreturn test, gen, go\n\ndef simulate(timesteps):\n    tb = traceSignals(test)\n    sim = Simulation(tb)\n    sim.run(timesteps)\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EРезультат симуляции автоматически выгружается в файл .vcd (в данном случае - test.vcd), который потом можно будет открыть в любом просмотрщике временных диаграмм. \u003C\u002Fp\u003E\u003Cp\u003EНа рисунке представлены временные диаграммы работы сгенерированного восьмипоточного 16-битного процессора. Все потоки начинают работу с одного адреса, но их стеки данных и возвратов находятся по разным адресам. Можно отследить изменения счетчиков команд потоков, загрузку констант, манипуляции с данными на стеках.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F9fd\u002F2fa\u002Ff1e\u002F9fd2faf1eec2debf02271fbc93f8394d.jpg\" width=\"1337\" height=\"633\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F9fd\u002F2fa\u002Ff1e\u002F9fd2faf1eec2debf02271fbc93f8394d.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EРис. Результат симуляции работы софт-процессора.\u003C\u002Fp\u003E\u003Cp\u003EПри необходимости MyHDL код может быть транслирован в код налюбом из HDL языков – в Verilog или в VHDL. Полученные таким образом файлы в дальнейшем могут быть использованы в проектах сред разработки под выбранное семейство ПЛИС:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Edef convert():\n  reset = Signal(bool(0))\n  clk = Signal(bool(0))\n  dat, prt = [Signal(intbv(0)[bits:]) for i in range(2)]\n  toVHDL(gor, reset, clk, dat, prt)\n\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EЗаключение\u003C\u002Fh3\u003E\u003Cp\u003EБыл продемонстрирован простой маршрут быстрого прототипирования софт-процессора, позволяющий при незначительных затратах времени и вычислительных ресурсов проверить концептуальную идею на работоспособность. Полученные результаты – транслированные HDL-файлы могут служить основой для дальнейшего развития и оптимизации проекта уже с учетом особенностей текущей серии ПЛИС. В частности, для представленного примера финальный VHDL код будет генерировать память на дефицитных для ПЛИС регистрах, а более предпочтительным является задействование ресурсов встроенных блоков памяти.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EБиблиографический список\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003E1.        Советов П.Н., Тарасов И.Е. Разработка многопоточного софт-процессора со стековой архитектурой на основе совместной оптимизации программной модели и системной архитектуры. Многоядерные процессоры, параллельное программирование, плис, системы обработки сигналов, вып.7. 2017, стр.8-19.\u003C\u002Fp\u003E\u003Cp\u003E2.        GitHub - true-grue_uzh_ Uzh compiler \u002F\u002F \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftrue-grue\u002Fuzh\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003Ehttps:\u002F\u002Fgithub.com\u002Ftrue-grue\u002Fuzh\u003C\u002Fem\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003E3.        MyHDL \u002F\u002F \u003Ca href=\"http:\u002F\u002Fwww.myhdl.org\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003Ehttp:\u002F\u002Fwww.myhdl.org\u003C\u002Fem\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003E4.        Начинаем FPGA на Python _ Хабр \u002F\u002F \u003Ca href=\"https:\u002F\u002Fm.habr.com\u002Fru\u002Fpost\u002F439638\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003Ehttps:\u002F\u002Fm.habr.com\u002Fru\u002Fpost\u002F439638\u002F\u003C\u002Fem\u003E\u003C\u002Fa\u003E \u003C\u002Fp\u003E\u003Cp\u003E5.        Юрий Панчул. Следущие шаги в черной магии процессоростроения после того, как вы освоили Харрис &amp; Харрис \u002F\u002F \u003Ca href=\"https:\u002F\u002Fpanchul.livejournal.com\u002F578909.html\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003Ehttps:\u002F\u002Fpanchul.livejournal.com\u002F578909.html\u003C\u002Fem\u003E\u003C\u002Fa\u003E .\u003C\u002Fp\u003E\u003Cp\u003E6.        Жельнио Станислав. Школа по основам цифровой схемотехники_ Новосибирск — Ок, Красноярск — приготовиться _ Хабр \u002F\u002F \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fusers\u002Fsparf\u002Fposts\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003Ehttps:\u002F\u002Fhabr.com\u002Fru\u002Fusers\u002Fsparf\u002Fposts\u002F\u003C\u002Fem\u003E\u003C\u002Fa\u003E .\u003C\u002Fp\u003E\u003Cp\u003E7.        Жельнио Станислав. Процессорное ядро SchoolMIPS и его использование для обучения основам микроархитектуры процессора \u002F\u002F \u003Ca href=\"http:\u002F\u002Fwww.silicon-russia.com\u002Fpublic_materials\u002F2017_10_08_msu_rountable\u002F20171007_Zhelnio_SchoolMIPS%20for%20Education.pdf\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003Ehttp:\u002F\u002Fwww.silicon-russia.com\u002Fpublic_materials\u002F2017_10_08_msu_rountable\u002F20171007_Zhelnio_SchoolMIPS%20for%20Education.pdf\u003C\u002Fem\u003E\u003C\u002Fa\u003E \u003C\u002Fp\u003E\u003Cp\u003E8.        MyHDL examples \u002F\u002F \u003Ca href=\"http:\u002F\u002Fwww.myhdl.org\u002Fdocs\u002Fexamples\u002F\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003Ehttp:\u002F\u002Fwww.myhdl.org\u002Fdocs\u002Fexamples\u002F\u003C\u002Fem\u003E\u003C\u002Fa\u003E \u003C\u002Fp\u003E\u003Cp\u003E9.        Felton Christopher. Developing FPGA-DSP IP with Python \u002F\u002F \u003Ca href=\"https:\u002F\u002Fwww.fpgarelated.com\u002Fshowarticle\u002F7.php\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cem\u003Ehttps:\u002F\u002Fwww.fpgarelated.com\u002Fshowarticle\u002F7.php\u003C\u002Fem\u003E\u003C\u002Fa\u003E \u003C\u002Fp\u003E\u003Cp\u003E10.     Forth-процессор на VHDL \u002F\u002F https:\u002F\u002Fm.habr.com\u002Fru\u002Fpost\u002F149686\u002F\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"ПЛИС"},{"titleHtml":"программируемая логика"},{"titleHtml":"архитектура микропроцессоров"},{"titleHtml":"многопоточность"},{"titleHtml":"форт-процессоры."}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F9fd\u002F2fa\u002Ff1e\u002F9fd2faf1eec2debf02271fbc93f8394d.jpg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F9fd\u002F2fa\u002Ff1e\u002F9fd2faf1eec2debf02271fbc93f8394d.jpg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582650\\\u002F\"},\"headline\":\"RAD для софт-процессоров и немного «сферических коней в вакууме»\",\"datePublished\":\"2021-10-10T21:35:57+03:00\",\"dateModified\":\"2021-10-11T11:18:06+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Александр Калачев\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"&nbsp;Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС &ndash;актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкорас...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582650\\\u002F#post-content-body\",\"about\":[\"h_python\",\"h_fpga\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582650\\\u002F42ba0c3c716ff3a6ae37be20290bf3b9\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F9fd\\\u002F2fa\\\u002Ff1e\\\u002F9fd2faf1eec2debf02271fbc93f8394d.jpg\"]}","metaDescription":"&nbsp;Разработка или выбор управляющего контроллера для встраиваемой системы на ПЛИС –актуальная и не всегда тривиальная задача. Часто выбор падает в пользу широкораспространенных IP-ядер, обладающих...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"python,fpga"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

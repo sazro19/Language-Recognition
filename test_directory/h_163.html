@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Docker: по ту сторону Hello World / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/584820\/"},"headline":"Docker: по ту сторону Hello World","datePublished":"2021-10-22T10:13:32+03:00","dateModified":"2021-10-23T00:42:47+03:00","author":{"@type":"Person","name":"Станислав Маслов"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как табли...","url":"https:\/\/habr.com\/ru\/post\/584820\/#post-content-body","about":["h_programming","h_it-infrastructure","h_dev_management","h_pm","h_devops","f_develop","f_management","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/584820\/89ae6381f10b3e8bd213f5929f0a5363\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/c3f\/06c\/193\/c3f06c193dcd00d330a64db8f07aa18e.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/aab\/459\/a4b\/aab459a4b535a8ebcd456abc4fdba8ee.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/461\/45e\/3b7\/46145e3b7125681262ac8a2a76189a97.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/6f1\/dcf\/989\/6f1dcf98907296014887a420f07d0047.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/46d\/f5e\/327\/46df5e327439bb3f3e55c42b6f53e36a.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/c92\/bc6\/644\/c92bc66440ad3ce5570c8e214b07e3e6.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e5e\/20a\/bb3\/e5e20abb31e4ef897d8f3ec65bfa5613.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Docker: по ту сторону Hello World" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Docker: по ту сторону Hello World" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Docker: по ту сторону Hello World" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том,..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том,..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том,..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том,..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том,..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/461/45e/3b7/46145e3b7125681262ac8a2a76189a97.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/461/45e/3b7/46145e3b7125681262ac8a2a76189a97.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/461/45e/3b7/46145e3b7125681262ac8a2a76189a97.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/461/45e/3b7/46145e3b7125681262ac8a2a76189a97.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/461/45e/3b7/46145e3b7125681262ac8a2a76189a97.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="584820" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-22T07:13:32.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/584820/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/584820/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/461/45e/3b7/46145e3b7125681262ac8a2a76189a97.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/584820/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/ZeBrains_team/" title="ZeBrains_team" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/ae3/3ee/4f1/ae33ee4f1a117aeeab42ec5a9e2eba25.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/ZeBrains_team/" class="tm-user-info__username">
+      ZeBrains_team
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-22T07:13:32.000Z" title="2021-10-22, 10:13">22  октября   в 10:13</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Docker: по ту сторону Hello World</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/it-infrastructure/" class="tm-article-snippet__hubs-item-link"><span>IT-инфраструктура</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/dev_management/" class="tm-article-snippet__hubs-item-link"><span>Управление разработкой</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/pm/" class="tm-article-snippet__hubs-item-link"><span>Управление проектами</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/devops/" class="tm-article-snippet__hubs-item-link"><span>DevOps</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том, зачем в 2021 году в 100500й раз заводить разговор про докер — статья Сергея Кушнарева, руководителя отдела разработки ZeBrains.</p><p>С одной стороны — про него все знают. С другой — если тебя устраивают небольшие веб-проекты, особенно на какой-то конкретной CMS, то докер очень часто оказывается тем самым «первым лишним», и все сводится к инструкции «возьми готовый докер-файл, запусти в терминале docker run и будет тебе счастье». А когда понимаешь, что этого уже недостаточно — натыкаешься на статьи, написанные по тому же принципу «скачайте-запустите-получите». Кому этого мало — читайте дальше. </p><h2>Зачем программисту холодильник</h2><p>Кто сказал: «Не люблю пить теплое»? Убираем емкость подальше и смотрим на принципиальную схему девайса:</p><figure class="full-width "><img src="/img/image-loader.svg" height="852" data-src="https://habrastorage.org/getpro/habr/upload_files/c3f/06c/193/c3f06c193dcd00d330a64db8f07aa18e.png" data-width="1289"/><figcaption></figcaption></figure><p>Холодильник — это блок питания, компрессор, хладагент, конденсатор и камера, в одну из стенок которой спрятаны капиллярные трубки. Все это хозяйство утрамбовано в большой, в меру красивый шкаф с дверцей наружу, за которой и прячется то, что требуется пить охлажденным.</p><p>А теперь представим, что в доме программиста появилось существо противоположного пола, считающее, что в холодильнике можно хранить мясо. Что характерно — замороженное. Но при этом, как несложно догадаться, замерзнут до непотребного состояния и напитки, что нас в некотором смысле не совсем устраивает.</p><p>У нас два пути: купить второй холодильник или разделить тот, что у нас есть, на две камеры с датчиками температуры на входе, чтобы управлять клапаном подачи хладагента внутрь. Ура, мы только что изобрели двухкамерный холодильник. А заодно — разобрались с тем, для чего программистам понадобились виртуальные машины и докер. </p><p>Проекты, которые мы делаем, не сильно отличаются от продуктов в холодильнике — каждому нужны свои условия. Для одного — PHP 7.4, база MySQL 7.6, Sphinx и мейлер на Golang. Для другого — нода 12 версии, Angular 7 и база MySQL 8.0. Проектов может быть не один десяток. Установить это все на одну машину — все равно, что запихнуть все продукты в одну камеру холодильника. </p><p>Нужно как-то изолировать один проект (продукт) от другого. На помощь приходит или виртуальная машина (еще один холодильник), или докер (вторая камера со своими настройками). Давайте немного изменим схему нашего устройства:</p><figure class="full-width "><img src="/img/image-loader.svg" height="1025" data-src="https://habrastorage.org/getpro/habr/upload_files/aab/459/a4b/aab459a4b535a8ebcd456abc4fdba8ee.png" data-width="1582"/><figcaption></figcaption></figure><p>Включаем воображение и смекалку, поехали!</p><p>Итак, у нас есть квартира (компьютер) со своей инфраструктурой, от которой нам требуется электричество (жесткий диск, сетевая плата, процессор, etc). Для установки второго холодильника (виртуальной машины) нам нужен разветвитель розеток (hypervisor). Довольно просто, но мы видим, что для изоляции мяса от напитков нам потребовалось два комплекта оборудования (Guest OS), хотя по факту условия хранения определяет только датчик, управляющий клапаном к капиллярной системе (bins/lib). </p><p>В случае, когда мы физически разделяем холодильную и морозильную камеры (container engine), нам не нужна вторая розетка (hypervisor) и место для второго холодильника (полноценная Guest OS). Мы получили два независимых контейнера — каждый со своими условиями (bins/lib), которые подходят нужному продукту (app).</p><h2>Что ты, черт возьми, такое, Докер?</h2><figure class="full-width "><img src="/img/image-loader.svg" height="432" data-src="https://habrastorage.org/getpro/habr/upload_files/461/45e/3b7/46145e3b7125681262ac8a2a76189a97.png" data-width="762"/><figcaption></figcaption></figure><p>Разделим вопрос на две части: «как с этим работать» и «как это работает». Эта статья посвящена ответу на первую часть. Если интересно углубиться в детали, пишите в комментариях — поговорим про изоляцию процессов, пространства имен и прочее. А может быть, напишу еще одну статью.</p><p>Из схемы выше очевидно, что ответ на вопрос «что такое докер» спрятан в блоке «Container/Docker engine», иначе говоря — движок контейнеризации. Давайте посмотрим на него внимательней:</p><figure class="full-width "><img src="/img/image-loader.svg" height="835" data-src="https://habrastorage.org/getpro/habr/upload_files/6f1/dcf/989/6f1dcf98907296014887a420f07d0047.png" data-width="1262"/><figcaption></figcaption></figure><p>Первым делом нам потребуется некий сервис (Docker daemon), который будет управлять всем процессом — набор инструкций, как создавать изолированные пространства. Поселим его на своем компьютере!</p><p>Сам процесс <a href="https://www.docker.com/products/docker-desktop" rel="noopener noreferrer nofollow"><u>установки</u></a> прост и у вас не должно возникнуть трудностей.</p><p>Неважно, какую операционную систему вы выберете — все равно выполнение произойдет на Linux. В Windows и Mac будет запускаться виртуализированное ядро Линукса для докера.  </p><p>Для того, чтобы мы могли как-то управлять этим сервисом, воспользуемся REST API, а команды будем выдавать посредством CLI, назовем его для удобства клиентом (Docker client). </p><p>Сами приложения и нужные для их работы библиотеки мы будем хранить в виде файлов-образов (Docker-images). Можете воспринимать их по аналогии с ISO-образами DVD-дисков или как специфический вид архива с данными.</p><p>Чтобы все заработало, мы должны с помощью клиента попросить Docker daemon взять конкретный образ и развернуть его в работающий контейнер. Но откуда он его возьмет? Добавим немного логики и инфраструктуры — пусть Docker daemon создаст на нашем компьютере реестр образов и при запросе находит нужный. А если не нашел — отправляется в сеть, находит Docker Hub (сетевой реестр), находит там нужный образ и копирует к нам на локальный компьютер. </p><p>Указать, какой конкретно образ нам нужен, мы можем или при запуске контейнера из готового образа (docker run), или при создании нового образа (docker build), или просто запросив скачивание (docker pull).</p><figure class="full-width "><img src="/img/image-loader.svg" height="768" data-src="https://habrastorage.org/getpro/habr/upload_files/46d/f5e/327/46df5e327439bb3f3e55c42b6f53e36a.png" data-width="1454"/><figcaption></figcaption></figure><p>Получив нужный образ, докер-демон запустит на его основе контейнер, и мы получим работающее приложение. Заодно докер пробросит внутрь изолированного контейнера сеть (network), чтобы мы смогли увидеть результаты работы приложения, и при необходимости «прикрутит» к нему хранилище для сохранения данных (data volumes).</p><h2>Повторение — мать учения</h2><p>Теперь все вышеизложенное — но на примере демонстрационного приложения Hello World. Считаем, что демона мы на своем компе уже поселили, ссылка на установку — чуть выше по тексту.</p><p>Выполняем команду <strong>docker run hello-world</strong> и видим следующий результат:</p><pre><code>Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+b8dfde127a29: Pull complete 
+Digest: sha256:308866a43596e83578c7dfa15e27a73011bdd402185a84c5cd7f32a88b501a24
+Status: Downloaded newer image for hello-world:latest
+
+Hello from Docker!
+This message shows that your installation appears to be working
+correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker
+ Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image
+ which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which
+ sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/</code></pre><p>Давайте разбираться.</p><p>Первое что произошло после команды «докер, запусти образ с именем hello-world», это попытка найти его локально и запустить.</p><pre><code>Unable to find image 'hello-world:latest' locally</code></pre><p>Попытка не увенчалась успехом (у меня была чистая установка докера), причем, обратите внимание, искался образ не hello-world, а hello-world:latest.<br/>Через двоеточие указывается тег — что-то вроде версии или модификации образа. Если его не указать, будет искаться самая свежая версия с общепринятым тегом latest.</p><pre><code>latest: Pulling from library/hello-world</code></pre><p>Тогда докер решает поискать этот образ на docker hub`е и скачать его оттуда.<br/><a href="https://hub.docker.com/_/hello-world" rel="noopener noreferrer nofollow"><u>https://hub.docker.com/_/hello-world</u></a></p><pre><code>b8dfde127a29: Pulling fs layer
+b8dfde127a29: Downloading 488B/977B
+b8dfde127a29: Extracting 977B/977B
+b8dfde127a29: Pull complete</code></pre><p>Примерно такие строки будут друг друга заменять, но это может произойти очень быстро, так как образ очень мал. Вы будете их чаще видеть при загрузке больших и многослойных (про слои чуть позже) образов.</p><p>А далее видим следующие строки:</p><pre><code>b8dfde127a29: Pull complete 
+Digest: sha256:308866a43596e83578c7dfa15e27a73011bdd402185a84c5cd7f32a88b501a24
+Status: Downloaded newer image for hello-world:latest</code></pre><p>Тут нам сообщают хэш образа и статус, говорящий, что загружен новый образ. Также в этот момент выводится и приветствие с сообщением. Но перед этим происходит еще кое-что.</p><p>А именно — из только что скачанного образа был создан контейнер. Если перевести на язык ООП, создался объект sleepy_antonelli (контейнер) экземпляр класса hello-world (образа). Sleepy_antonelli — это рандомно сгенерированное имя контейнера, поскольку мы не указали его явно.</p><p>Ну и, наконец, сам текст появляется на экране. Он, кстати, и есть результат работы приложения в контейнере.</p><pre><code>Hello from Docker!
+This message shows that your installation appears to be working
+correctly.
+
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker
+ Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which
+ runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which
+ sent it
+    to your terminal.
+
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/</code></pre><p>Собственно, это тут и написано (вместе с призывом не останавливаться на достигнутом и ссылкой на документацию). Но давайте проверим сами.</p><p>Если выполнить команду <strong>docker images</strong>, мы увидим скачанный образ.</p><pre><code>REPOSITORY    TAG       IMAGE ID       CREATED       SIZE
+hello-world   latest    d1165f221234   3 weeks ago   13.3kB</code></pre><p>А если выполнить команду <strong>docker ps -a </strong>—<strong> </strong>флаг «a» показывает все образы, даже те, что остановлены в данный момент — то увидим и сам контейнер, как раз с именем  sleepy_antonelli.</p><pre><code>CONTAINER ID   IMAGE         COMMAND    CREATED          STATUS          PORTS     NAMES
+01d1bc18db71   hello-world   "/hello"  18 seconds ago   Exited (0) 17    seconds ago             sleepy_antonelli</code></pre><p>Имена можно задавать и самим, но нам пока это не нужно, поэтому докер сам генерирует для имени два рандомных слова. Также тут видны его ID, образ, с которого он был сделан, команду, ради которой был запущен (в данном случае — написать приветствие), когда был создан, код завершения работы (0 — это штатное завершение) со временем, порты (в данном случае они никак не пробрасывались, потому и пусто) и, наконец, имя.</p><p>Из одного образа можно создать много контейнеров. Также их можно останавливать, запускать и удалять. Но важно помнить, что образ — это шаблон. Он создается один раз и не меняется, а контейнеры можно модифицировать индивидуально. Это то же самое, что получить с завода (образа) 10 одинаковых контейнеров для перевозок грузов, но перекрасить каждый в разный цвет, повесить разные замки, и по-разному назвать.</p><h2>«Людоеды — как лук, многослойные!»</h2><figure class="full-width "><img src="/img/image-loader.svg" height="315" data-src="https://habrastorage.org/getpro/habr/upload_files/c92/bc6/644/c92bc66440ad3ce5570c8e214b07e3e6.png" data-width="600"/><figcaption></figcaption></figure><p>Осталась еще одна тонкость, которую следует рассказать. Если образ неизменен, а контейнеры смертны, то тогда придется под каждую задачу создавать свой образ? </p><p>Нет, для этого придуманы слои. Каждое изменение образа можно выносить в отдельный слой. Это позволяет комбинировать их в разные итоговые образы. И вдобавок, уже готовый образ можно взять за основу и «наслоить» что-то свое.</p><p>Это можно представить в виде стопки блинов — тех, что железные. Мы надеваем на гриф блины, чтобы получить нужную нам конфигурацию (вес). Но при этом мы не можем вынуть или заменить какой-то блин в середине — придется пересобрать конфигурацию или довесить новые поверх имеющихся.</p><figure class="full-width "><img src="/img/image-loader.svg" height="497" data-src="https://habrastorage.org/getpro/habr/upload_files/e5e/20a/bb3/e5e20abb31e4ef897d8f3ec65bfa5613.png" data-width="1222"/><figcaption></figcaption></figure><p>Если выполнить предложенную команду из hello world:</p><pre><code>To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash</code></pre><p>То мы увидим, что там несколько слоев:</p><pre><code>Unable to find image 'ubuntu:latest' locally
+latest: Pulling from library/ubuntu
+04a5f4cda3ee: Pull complete 
+ff496a88c8ed: Pull complete 
+0ce83f459fe7: Pull complete 
+Digest: sha256:a15789d24a386e7487a407274b80095c329f89b1f830e8ac6a9323aa61803964
+Status: Downloaded newer image for ubuntu:latest
+root@61f60707bdbe:/#</code></pre><h2>Подведем итоги</h2><p>Что же дает нам докер? Во-первых, это <strong>изоляция </strong>— мы можем запускать что угодно на своем компьютере, не опасаясь за целостность как системы, так и приложения. Они просто не пересекаются. </p><p>Во-вторых — <strong>чистота</strong>. Образ на диске — это самые обычные «инертные» файлы, которые «оживают» только при создании контейнера. Контейнеры же изолированы от внешнего мира.  </p><p>В-третьих — <strong>скорость</strong>. Благодаря тому, что мы пользуемся операционной системой хоста, не требуется тратить время на полноценную инициализацию гостевой OS, как это происходит в виртуальной машине. Кроме того, можно удалить из сборки образа весь функционал, не относящийся к конкретному приложению, что тоже уменьшает и размер сборки, и время запуска.</p><p>Наконец, это <strong>предсказуемость</strong>. Контейнеру все равно, что находится снаружи. Поэтому если ваше приложение работало в контейнере на вашем локальном компьютере, оно заработает на любом другом. Забудьте про dependencies hell — эта фраза дорогого стоит! </p><p>Можно, конечно, вспомнить еще и  о том, что тот же Kubernetes является развитием идеи контейнеров, перенесенной на уровень DevOps, но достаточно и того, что изложено выше.  </p><p>Вопросы, уточнения и комментарии можно оставлять прямо под текстом — буду рад пообщаться.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdocker%5D" class="tm-tags-list__link">docker</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bhello%20world%5D" class="tm-tags-list__link">hello world</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">программирование</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdevops%5D" class="tm-tags-list__link">devops</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bkubernetes%5D" class="tm-tags-list__link">kubernetes</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bvm%5D" class="tm-tags-list__link">vm</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BA%D0%BE%D0%BD%D1%82%D0%B5%D0%B9%D0%BD%D0%B5%D1%80%D1%8B%5D" class="tm-tags-list__link">контейнеры</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B2%D0%B8%D1%80%D1%82%D1%83%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%5D" class="tm-tags-list__link">виртуализация</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/it-infrastructure/" class="tm-hubs-list__link">
+    IT-инфраструктура
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/dev_management/" class="tm-hubs-list__link">
+    Управление разработкой
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/pm/" class="tm-hubs-list__link">
+    Управление проектами
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/devops/" class="tm-hubs-list__link">
+    DevOps
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 14: ↑11 и ↓3</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 14: ↑11 и ↓3" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+8</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">7.7K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    78
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/ZeBrains_team/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/ae3/3ee/4f1/ae33ee4f1a117aeeab42ec5a9e2eba25.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 10 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    6
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">22</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Станислав Маслов</span> <a href="/ru/users/ZeBrains_team/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @ZeBrains_team
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">директор продакшна в IT-компании</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/584820/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 8 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/584820/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/584820/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"584820":{"id":"584820","timePublished":"2021-10-22T07:13:32+00:00","isCorporative":false,"lang":"ru","titleHtml":"Docker: по ту сторону Hello World","leadData":{"textHtml":"\u003Cp\u003EВ мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том, зачем в 2021 году в 100500й раз заводить разговор про докер — статья Сергея Кушнарева, руководителя отдела разработки ZeBrains.\u003C\u002Fp\u003E\u003Cp\u003EС одной стороны — про него все знают. С другой — если тебя устраивают небольшие веб-проекты, особенно на какой-то конкретной CMS, то докер очень часто оказывается тем самым «первым лишним», и все сводится к инструкции «возьми готовый докер-файл, запусти в терминале docker run и будет тебе счастье». А когда понимаешь, что этого уже недостаточно — натыкаешься на статьи, написанные по тому же принципу «скачайте-запустите-получите». Кому этого мало — читайте дальше. \u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F461\u002F45e\u002F3b7\u002F46145e3b7125681262ac8a2a76189a97.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F461\u002F45e\u002F3b7\u002F46145e3b7125681262ac8a2a76189a97.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":6,"votesCount":10},"rating":22,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2787821","alias":"ZeBrains_team","fullname":"Станислав Маслов","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Fae3\u002F3ee\u002F4f1\u002Fae33ee4f1a117aeeab42ec5a9e2eba25.jpg","speciality":"директор продакшна в IT-компании"},"statistics":{"commentsCount":8,"favoritesCount":78,"readingCount":7748,"score":8,"votesCount":14},"hubs":[{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"6398","alias":"it-infrastructure","type":"collective","title":"IT-инфраструктура","titleHtml":"IT-инфраструктура","isProfiled":true},{"relatedData":null,"id":"19583","alias":"dev_management","type":"collective","title":"Управление разработкой","titleHtml":"Управление разработкой","isProfiled":true},{"relatedData":null,"id":"20682","alias":"pm","type":"collective","title":"Управление проектами","titleHtml":"Управление проектами","isProfiled":true},{"relatedData":null,"id":"20788","alias":"devops","type":"collective","title":"DevOps","titleHtml":"DevOps","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"3","alias":"management","title":"Менеджмент"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EВ мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том, зачем в 2021 году в 100500й раз заводить разговор про докер — статья Сергея Кушнарева, руководителя отдела разработки ZeBrains.\u003C\u002Fp\u003E\u003Cp\u003EС одной стороны — про него все знают. С другой — если тебя устраивают небольшие веб-проекты, особенно на какой-то конкретной CMS, то докер очень часто оказывается тем самым «первым лишним», и все сводится к инструкции «возьми готовый докер-файл, запусти в терминале docker run и будет тебе счастье». А когда понимаешь, что этого уже недостаточно — натыкаешься на статьи, написанные по тому же принципу «скачайте-запустите-получите». Кому этого мало — читайте дальше. \u003C\u002Fp\u003E\u003Ch2\u003EЗачем программисту холодильник\u003C\u002Fh2\u003E\u003Cp\u003EКто сказал: «Не люблю пить теплое»? Убираем емкость подальше и смотрим на принципиальную схему девайса:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"852\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3f\u002F06c\u002F193\u002Fc3f06c193dcd00d330a64db8f07aa18e.png\" data-width=\"1289\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EХолодильник — это блок питания, компрессор, хладагент, конденсатор и камера, в одну из стенок которой спрятаны капиллярные трубки. Все это хозяйство утрамбовано в большой, в меру красивый шкаф с дверцей наружу, за которой и прячется то, что требуется пить охлажденным.\u003C\u002Fp\u003E\u003Cp\u003EА теперь представим, что в доме программиста появилось существо противоположного пола, считающее, что в холодильнике можно хранить мясо. Что характерно — замороженное. Но при этом, как несложно догадаться, замерзнут до непотребного состояния и напитки, что нас в некотором смысле не совсем устраивает.\u003C\u002Fp\u003E\u003Cp\u003EУ нас два пути: купить второй холодильник или разделить тот, что у нас есть, на две камеры с датчиками температуры на входе, чтобы управлять клапаном подачи хладагента внутрь. Ура, мы только что изобрели двухкамерный холодильник. А заодно — разобрались с тем, для чего программистам понадобились виртуальные машины и докер. \u003C\u002Fp\u003E\u003Cp\u003EПроекты, которые мы делаем, не сильно отличаются от продуктов в холодильнике — каждому нужны свои условия. Для одного — PHP 7.4, база MySQL 7.6, Sphinx и мейлер на Golang. Для другого — нода 12 версии, Angular 7 и база MySQL 8.0. Проектов может быть не один десяток. Установить это все на одну машину — все равно, что запихнуть все продукты в одну камеру холодильника. \u003C\u002Fp\u003E\u003Cp\u003EНужно как-то изолировать один проект (продукт) от другого. На помощь приходит или виртуальная машина (еще один холодильник), или докер (вторая камера со своими настройками). Давайте немного изменим схему нашего устройства:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"1025\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Faab\u002F459\u002Fa4b\u002Faab459a4b535a8ebcd456abc4fdba8ee.png\" data-width=\"1582\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВключаем воображение и смекалку, поехали!\u003C\u002Fp\u003E\u003Cp\u003EИтак, у нас есть квартира (компьютер) со своей инфраструктурой, от которой нам требуется электричество (жесткий диск, сетевая плата, процессор, etc). Для установки второго холодильника (виртуальной машины) нам нужен разветвитель розеток (hypervisor). Довольно просто, но мы видим, что для изоляции мяса от напитков нам потребовалось два комплекта оборудования (Guest OS), хотя по факту условия хранения определяет только датчик, управляющий клапаном к капиллярной системе (bins\u002Flib). \u003C\u002Fp\u003E\u003Cp\u003EВ случае, когда мы физически разделяем холодильную и морозильную камеры (container engine), нам не нужна вторая розетка (hypervisor) и место для второго холодильника (полноценная Guest OS). Мы получили два независимых контейнера — каждый со своими условиями (bins\u002Flib), которые подходят нужному продукту (app).\u003C\u002Fp\u003E\u003Ch2\u003EЧто ты, черт возьми, такое, Докер?\u003C\u002Fh2\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"432\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F461\u002F45e\u002F3b7\u002F46145e3b7125681262ac8a2a76189a97.png\" data-width=\"762\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EРазделим вопрос на две части: «как с этим работать» и «как это работает». Эта статья посвящена ответу на первую часть. Если интересно углубиться в детали, пишите в комментариях — поговорим про изоляцию процессов, пространства имен и прочее. А может быть, напишу еще одну статью.\u003C\u002Fp\u003E\u003Cp\u003EИз схемы выше очевидно, что ответ на вопрос «что такое докер» спрятан в блоке «Container\u002FDocker engine», иначе говоря — движок контейнеризации. Давайте посмотрим на него внимательней:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"835\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F6f1\u002Fdcf\u002F989\u002F6f1dcf98907296014887a420f07d0047.png\" data-width=\"1262\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПервым делом нам потребуется некий сервис (Docker daemon), который будет управлять всем процессом — набор инструкций, как создавать изолированные пространства. Поселим его на своем компьютере!\u003C\u002Fp\u003E\u003Cp\u003EСам процесс \u003Ca href=\"https:\u002F\u002Fwww.docker.com\u002Fproducts\u002Fdocker-desktop\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Eустановки\u003C\u002Fu\u003E\u003C\u002Fa\u003E прост и у вас не должно возникнуть трудностей.\u003C\u002Fp\u003E\u003Cp\u003EНеважно, какую операционную систему вы выберете — все равно выполнение произойдет на Linux. В Windows и Mac будет запускаться виртуализированное ядро Линукса для докера.  \u003C\u002Fp\u003E\u003Cp\u003EДля того, чтобы мы могли как-то управлять этим сервисом, воспользуемся REST API, а команды будем выдавать посредством CLI, назовем его для удобства клиентом (Docker client). \u003C\u002Fp\u003E\u003Cp\u003EСами приложения и нужные для их работы библиотеки мы будем хранить в виде файлов-образов (Docker-images). Можете воспринимать их по аналогии с ISO-образами DVD-дисков или как специфический вид архива с данными.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы все заработало, мы должны с помощью клиента попросить Docker daemon взять конкретный образ и развернуть его в работающий контейнер. Но откуда он его возьмет? Добавим немного логики и инфраструктуры — пусть Docker daemon создаст на нашем компьютере реестр образов и при запросе находит нужный. А если не нашел — отправляется в сеть, находит Docker Hub (сетевой реестр), находит там нужный образ и копирует к нам на локальный компьютер. \u003C\u002Fp\u003E\u003Cp\u003EУказать, какой конкретно образ нам нужен, мы можем или при запуске контейнера из готового образа (docker run), или при создании нового образа (docker build), или просто запросив скачивание (docker pull).\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"768\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F46d\u002Ff5e\u002F327\u002F46df5e327439bb3f3e55c42b6f53e36a.png\" data-width=\"1454\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПолучив нужный образ, докер-демон запустит на его основе контейнер, и мы получим работающее приложение. Заодно докер пробросит внутрь изолированного контейнера сеть (network), чтобы мы смогли увидеть результаты работы приложения, и при необходимости «прикрутит» к нему хранилище для сохранения данных (data volumes).\u003C\u002Fp\u003E\u003Ch2\u003EПовторение — мать учения\u003C\u002Fh2\u003E\u003Cp\u003EТеперь все вышеизложенное — но на примере демонстрационного приложения Hello World. Считаем, что демона мы на своем компе уже поселили, ссылка на установку — чуть выше по тексту.\u003C\u002Fp\u003E\u003Cp\u003EВыполняем команду \u003Cstrong\u003Edocker run hello-world\u003C\u002Fstrong\u003E и видим следующий результат:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003EUnable to find image 'hello-world:latest' locally\nlatest: Pulling from library\u002Fhello-world\nb8dfde127a29: Pull complete \nDigest: sha256:308866a43596e83578c7dfa15e27a73011bdd402185a84c5cd7f32a88b501a24\nStatus: Downloaded newer image for hello-world:latest\n\nHello from Docker!\nThis message shows that your installation appears to be working\ncorrectly.\n\nTo generate this message, Docker took the following steps:\n 1. The Docker client contacted the Docker daemon.\n 2. The Docker daemon pulled the \"hello-world\" image from the Docker\n Hub.\n    (amd64)\n 3. The Docker daemon created a new container from that image\n which runs the\n    executable that produces the output you are currently reading.\n 4. The Docker daemon streamed that output to the Docker client, which\n sent it\n    to your terminal.\n\nTo try something more ambitious, you can run an Ubuntu container with:\n $ docker run -it ubuntu bash\n\nShare images, automate workflows, and more with a free Docker ID:\n https:\u002F\u002Fhub.docker.com\u002F\n\nFor more examples and ideas, visit:\n https:\u002F\u002Fdocs.docker.com\u002Fget-started\u002F\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДавайте разбираться.\u003C\u002Fp\u003E\u003Cp\u003EПервое что произошло после команды «докер, запусти образ с именем hello-world», это попытка найти его локально и запустить.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003EUnable to find image 'hello-world:latest' locally\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПопытка не увенчалась успехом (у меня была чистая установка докера), причем, обратите внимание, искался образ не hello-world, а hello-world:latest.\u003Cbr\u002F\u003EЧерез двоеточие указывается тег — что-то вроде версии или модификации образа. Если его не указать, будет искаться самая свежая версия с общепринятым тегом latest.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Elatest: Pulling from library\u002Fhello-world\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТогда докер решает поискать этот образ на docker hub`е и скачать его оттуда.\u003Cbr\u002F\u003E\u003Ca href=\"https:\u002F\u002Fhub.docker.com\u002F_\u002Fhello-world\" rel=\"noopener noreferrer nofollow\"\u003E\u003Cu\u003Ehttps:\u002F\u002Fhub.docker.com\u002F_\u002Fhello-world\u003C\u002Fu\u003E\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Eb8dfde127a29: Pulling fs layer\nb8dfde127a29: Downloading 488B\u002F977B\nb8dfde127a29: Extracting 977B\u002F977B\nb8dfde127a29: Pull complete\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПримерно такие строки будут друг друга заменять, но это может произойти очень быстро, так как образ очень мал. Вы будете их чаще видеть при загрузке больших и многослойных (про слои чуть позже) образов.\u003C\u002Fp\u003E\u003Cp\u003EА далее видим следующие строки:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Eb8dfde127a29: Pull complete \nDigest: sha256:308866a43596e83578c7dfa15e27a73011bdd402185a84c5cd7f32a88b501a24\nStatus: Downloaded newer image for hello-world:latest\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТут нам сообщают хэш образа и статус, говорящий, что загружен новый образ. Также в этот момент выводится и приветствие с сообщением. Но перед этим происходит еще кое-что.\u003C\u002Fp\u003E\u003Cp\u003EА именно — из только что скачанного образа был создан контейнер. Если перевести на язык ООП, создался объект sleepy_antonelli (контейнер) экземпляр класса hello-world (образа). Sleepy_antonelli — это рандомно сгенерированное имя контейнера, поскольку мы не указали его явно.\u003C\u002Fp\u003E\u003Cp\u003EНу и, наконец, сам текст появляется на экране. Он, кстати, и есть результат работы приложения в контейнере.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003EHello from Docker!\nThis message shows that your installation appears to be working\ncorrectly.\n\nTo generate this message, Docker took the following steps:\n 1. The Docker client contacted the Docker daemon.\n 2. The Docker daemon pulled the \"hello-world\" image from the Docker\n Hub.\n    (amd64)\n 3. The Docker daemon created a new container from that image which\n runs the\n    executable that produces the output you are currently reading.\n 4. The Docker daemon streamed that output to the Docker client, which\n sent it\n    to your terminal.\n\nTo try something more ambitious, you can run an Ubuntu container with:\n $ docker run -it ubuntu bash\n\nShare images, automate workflows, and more with a free Docker ID:\n https:\u002F\u002Fhub.docker.com\u002F\n\nFor more examples and ideas, visit:\n https:\u002F\u002Fdocs.docker.com\u002Fget-started\u002F\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСобственно, это тут и написано (вместе с призывом не останавливаться на достигнутом и ссылкой на документацию). Но давайте проверим сами.\u003C\u002Fp\u003E\u003Cp\u003EЕсли выполнить команду \u003Cstrong\u003Edocker images\u003C\u002Fstrong\u003E, мы увидим скачанный образ.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003EREPOSITORY    TAG       IMAGE ID       CREATED       SIZE\nhello-world   latest    d1165f221234   3 weeks ago   13.3kB\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА если выполнить команду \u003Cstrong\u003Edocker ps -a \u003C\u002Fstrong\u003E—\u003Cstrong\u003E \u003C\u002Fstrong\u003Eфлаг «a» показывает все образы, даже те, что остановлены в данный момент — то увидим и сам контейнер, как раз с именем  sleepy_antonelli.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003ECONTAINER ID   IMAGE         COMMAND    CREATED          STATUS          PORTS     NAMES\n01d1bc18db71   hello-world   \"\u002Fhello\"  18 seconds ago   Exited (0) 17    seconds ago             sleepy_antonelli\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИмена можно задавать и самим, но нам пока это не нужно, поэтому докер сам генерирует для имени два рандомных слова. Также тут видны его ID, образ, с которого он был сделан, команду, ради которой был запущен (в данном случае — написать приветствие), когда был создан, код завершения работы (0 — это штатное завершение) со временем, порты (в данном случае они никак не пробрасывались, потому и пусто) и, наконец, имя.\u003C\u002Fp\u003E\u003Cp\u003EИз одного образа можно создать много контейнеров. Также их можно останавливать, запускать и удалять. Но важно помнить, что образ — это шаблон. Он создается один раз и не меняется, а контейнеры можно модифицировать индивидуально. Это то же самое, что получить с завода (образа) 10 одинаковых контейнеров для перевозок грузов, но перекрасить каждый в разный цвет, повесить разные замки, и по-разному назвать.\u003C\u002Fp\u003E\u003Ch2\u003E«Людоеды — как лук, многослойные!»\u003C\u002Fh2\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"315\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc92\u002Fbc6\u002F644\u002Fc92bc66440ad3ce5570c8e214b07e3e6.png\" data-width=\"600\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EОсталась еще одна тонкость, которую следует рассказать. Если образ неизменен, а контейнеры смертны, то тогда придется под каждую задачу создавать свой образ? \u003C\u002Fp\u003E\u003Cp\u003EНет, для этого придуманы слои. Каждое изменение образа можно выносить в отдельный слой. Это позволяет комбинировать их в разные итоговые образы. И вдобавок, уже готовый образ можно взять за основу и «наслоить» что-то свое.\u003C\u002Fp\u003E\u003Cp\u003EЭто можно представить в виде стопки блинов — тех, что железные. Мы надеваем на гриф блины, чтобы получить нужную нам конфигурацию (вес). Но при этом мы не можем вынуть или заменить какой-то блин в середине — придется пересобрать конфигурацию или довесить новые поверх имеющихся.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"497\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe5e\u002F20a\u002Fbb3\u002Fe5e20abb31e4ef897d8f3ec65bfa5613.png\" data-width=\"1222\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЕсли выполнить предложенную команду из hello world:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003ETo try something more ambitious, you can run an Ubuntu container with:\n $ docker run -it ubuntu bash\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТо мы увидим, что там несколько слоев:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003EUnable to find image 'ubuntu:latest' locally\nlatest: Pulling from library\u002Fubuntu\n04a5f4cda3ee: Pull complete \nff496a88c8ed: Pull complete \n0ce83f459fe7: Pull complete \nDigest: sha256:a15789d24a386e7487a407274b80095c329f89b1f830e8ac6a9323aa61803964\nStatus: Downloaded newer image for ubuntu:latest\nroot@61f60707bdbe:\u002F#\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EПодведем итоги\u003C\u002Fh2\u003E\u003Cp\u003EЧто же дает нам докер? Во-первых, это \u003Cstrong\u003Eизоляция \u003C\u002Fstrong\u003E— мы можем запускать что угодно на своем компьютере, не опасаясь за целостность как системы, так и приложения. Они просто не пересекаются. \u003C\u002Fp\u003E\u003Cp\u003EВо-вторых — \u003Cstrong\u003Eчистота\u003C\u002Fstrong\u003E. Образ на диске — это самые обычные «инертные» файлы, которые «оживают» только при создании контейнера. Контейнеры же изолированы от внешнего мира.  \u003C\u002Fp\u003E\u003Cp\u003EВ-третьих — \u003Cstrong\u003Eскорость\u003C\u002Fstrong\u003E. Благодаря тому, что мы пользуемся операционной системой хоста, не требуется тратить время на полноценную инициализацию гостевой OS, как это происходит в виртуальной машине. Кроме того, можно удалить из сборки образа весь функционал, не относящийся к конкретному приложению, что тоже уменьшает и размер сборки, и время запуска.\u003C\u002Fp\u003E\u003Cp\u003EНаконец, это \u003Cstrong\u003Eпредсказуемость\u003C\u002Fstrong\u003E. Контейнеру все равно, что находится снаружи. Поэтому если ваше приложение работало в контейнере на вашем локальном компьютере, оно заработает на любом другом. Забудьте про dependencies hell — эта фраза дорогого стоит! \u003C\u002Fp\u003E\u003Cp\u003EМожно, конечно, вспомнить еще и  о том, что тот же Kubernetes является развитием идеи контейнеров, перенесенной на уровень DevOps, но достаточно и того, что изложено выше.  \u003C\u002Fp\u003E\u003Cp\u003EВопросы, уточнения и комментарии можно оставлять прямо под текстом — буду рад пообщаться.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"docker"},{"titleHtml":"hello world"},{"titleHtml":"программирование"},{"titleHtml":"devops"},{"titleHtml":"kubernetes"},{"titleHtml":"vm"},{"titleHtml":"контейнеры"},{"titleHtml":"виртуализация"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F461\u002F45e\u002F3b7\u002F46145e3b7125681262ac8a2a76189a97.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F461\u002F45e\u002F3b7\u002F46145e3b7125681262ac8a2a76189a97.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584820\\\u002F\"},\"headline\":\"Docker: по ту сторону Hello World\",\"datePublished\":\"2021-10-22T10:13:32+03:00\",\"dateModified\":\"2021-10-23T00:42:47+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Станислав Маслов\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как табли...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584820\\\u002F#post-content-body\",\"about\":[\"h_programming\",\"h_it-infrastructure\",\"h_dev_management\",\"h_pm\",\"h_devops\",\"f_develop\",\"f_management\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F584820\\\u002F89ae6381f10b3e8bd213f5929f0a5363\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fc3f\\\u002F06c\\\u002F193\\\u002Fc3f06c193dcd00d330a64db8f07aa18e.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Faab\\\u002F459\\\u002Fa4b\\\u002Faab459a4b535a8ebcd456abc4fdba8ee.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F461\\\u002F45e\\\u002F3b7\\\u002F46145e3b7125681262ac8a2a76189a97.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F6f1\\\u002Fdcf\\\u002F989\\\u002F6f1dcf98907296014887a420f07d0047.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F46d\\\u002Ff5e\\\u002F327\\\u002F46df5e327439bb3f3e55c42b6f53e36a.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fc92\\\u002Fbc6\\\u002F644\\\u002Fc92bc66440ad3ce5570c8e214b07e3e6.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe5e\\\u002F20a\\\u002Fbb3\\\u002Fe5e20abb31e4ef897d8f3ec65bfa5613.png\"]}","metaDescription":"В мире программирования существуют технологии, must have для каждого разработчика, к числу которых относится и Docker. Подразумевается, что это просто, как таблица умножения, и известно всем. О том,...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"programming,it-infrastructure,dev_management,pm,devops"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

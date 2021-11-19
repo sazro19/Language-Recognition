@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Поиск и обработка информации на файловых ресурсах / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583344\/"},"headline":"Поиск и обработка информации на файловых ресурсах","datePublished":"2021-10-14T05:43:21+03:00","dateModified":"2021-10-15T00:58:07+03:00","author":{"@type":"Person","name":"NTA"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Начнем с точки входа в приложение.&nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит созда...","url":"https:\/\/habr.com\/ru\/post\/583344\/#post-content-body","about":["h_python","h_programming","h_nix","h_machine_learning","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/583344\/ac5219aa0a2da9e019b2db5f61ced3bc\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/58d\/c7e\/e3f\/58dc7ee3f5af5e8d639098a39ca8ad6b.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/22e\/7de\/cec\/22e7decec46b0278a52154dfa7b24aaa.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Поиск и обработка информации на файловых ресурсах" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Поиск и обработка информации на файловых ресурсах" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Поиск и обработка информации на файловых ресурсах" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Начнем с точки входа в приложение.&amp;nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Начнем с точки входа в приложение.&amp;nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Начнем с точки входа в приложение.&amp;nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Начнем с точки входа в приложение.&amp;nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Начнем с точки входа в приложение.&amp;nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/58d/c7e/e3f/58dc7ee3f5af5e8d639098a39ca8ad6b.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/58d/c7e/e3f/58dc7ee3f5af5e8d639098a39ca8ad6b.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/58d/c7e/e3f/58dc7ee3f5af5e8d639098a39ca8ad6b.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/58d/c7e/e3f/58dc7ee3f5af5e8d639098a39ca8ad6b.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/58d/c7e/e3f/58dc7ee3f5af5e8d639098a39ca8ad6b.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583344" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-14T02:43:21.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583344/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583344/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/58d/c7e/e3f/58dc7ee3f5af5e8d639098a39ca8ad6b.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583344/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/NewTechAudit/" title="NewTechAudit" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/62e/cf1/3f1/62ecf13f1b5e83c0cced637ff786d5a1.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/NewTechAudit/" class="tm-user-info__username">
+      NewTechAudit
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-14T02:43:21.000Z" title="2021-10-14, 05:43">14  октября   в 05:43</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Поиск и обработка информации на файловых ресурсах</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/nix/" class="tm-article-snippet__hubs-item-link"><span>*nix</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/machine_learning/" class="tm-article-snippet__hubs-item-link"><span>Машинное обучение</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="720" data-src="https://habrastorage.org/getpro/habr/upload_files/58d/c7e/e3f/58dc7ee3f5af5e8d639098a39ca8ad6b.png" data-width="1280"/><figcaption></figcaption></figure><p>Начнем с точки входа в приложение.  Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и активировать его.</p><p>Для обработки параметров командной строки в Python есть удобный модуль click (установка pip install click). Обработка аргументов командной строки происходит при помощи добавления к функции декораторов. Определим обязательные параметры: search_path — путь по которому будем искать, либо файл с путями и дополнительные: режим исполнения программы (многопоточный или без), имя файла с результатами, формат записи результата (excel, csv, sqlite) и другие параметры по вашему желанию.</p><pre><code>@click.command()
+@click.argument('search_path',
+                type=click.Path(resolve_path=True,
+                                dir_okay=True,
+                                file_okay=True),
+                required=True)
+@click.option('--concurrent_mode', '-cm',
+              type=click.STRING,
+              required=False,
+              default="None",
+              help="Concurrent search execution(multi or single)."
+                   " Multi allows multiprocessing and threading")
+@click.option('--output_path', '-o',
+              type=click.STRING,
+              required=False,
+              default='results',
+              help="Output filename(without extension)")
+@click.option('--output_type', '-ot', '-out',
+              type=click.STRING,
+              required=False,
+              default='sqlite',
+              help="Format for output data((excel, csv, sqlite, mssql)")
+...
+def main(search_path, output_path, concurrent_mode, output_type):
+    """
+    Starts search info(cards numbers) in files in path
+
+    search_path: path to search or json file with paths
+    """
+    ...
+
+if __name__ == "__main__":
+    main()</code></pre><p>Функцию поиска содержимого будем вызывать из функции <em>main().</em> В данном случае вызов выглядит следующим образом:</p><pre><code>multi_mode = True if not concurrent_mode.lower() == "single" else False
+search_in_files(search_path, file_types, output_path, maxsize,
+                buffer_size, clear_results, clear_log, continue_option,
+                multi_mode, output_type, debug, include)</code></pre><p>Совершим настройку логирования для сохранения информации о произошедших при исполнении скрипта ошибок. Для этого прекрасно подходит встроенный модуль <em>logging.</em> Информация будет записываться в файл лога.</p><pre><code>LOGGING_FORMAT = ('%(asctime)s %(levelname)s %(filename)s - '
+                  '%(funcName)s %(message)s')
+logging.basicConfig(filename="program_log.log", filemode='a',
+                    level=logging.INFO, format=LOGGING_FORMAT)</code></pre><p>В качестве аргументов командной строки может поступать одиночный путь, либо файл с путями. Для проверки файл это или каталог прекрасно подходит класс <em>Path</em> модуля <em>pathlib.</em> Выбор одного из двух вариантов реализуем следующим образом.</p><pre><code>searching_path_obj = Path(search_path)
+if searching_path_obj.is_dir():
+    search_type = 'one'
+else:
+    search_type = searching_path_obj.suffix
+    search_type = search_type[1:]</code></pre><p>Варианты заполнения списка с путями для проверки опишем с помощью словаря с ключами, представляющими тип входного пути (отдельный путь, файл формата csv или json) и значениями – функции для обработки.</p><pre><code>PATH_FILLER = {
+    'one': add_search_dict,
+    'json': add_search_from_json,
+    'csv': add_searches_from_csv
+}</code></pre><p>Функции для обработки считывают данные из файлов и записывают в список словарей с ключами идентификатор, имя ресурса, путь. Словари очень хорошо подходят для написания красивого кода и возможности избавиться от множественных проверок условий.<br/>Каждая функция принимает два параметра список для хранения результатов и путь к файлу с данными.<br/>Также не стоит забывать обрабатывать параметры командной строки – пользователь может ввести их неправильно. Посмотрим обработку на примере аргумента search_type:</p><pre><code>SEARCH_TYPES = ["one", "json", "csv"]
+
+if search_type not in SEARCH_TYPES:
+    types = ",".join(SEARCH_TYPES)
+    message = (f"Неправильный тип поиска!" 
+               f" Должен быть один из вариантов: {types}")
+    print(message)
+    logging.error(message)
+    return</code></pre><p>Теперь, когда имеется словарь с функциями для заполнения списка входных данных из файлов с разными форматами заполнение списка будет выглядеть довольно просто:</p><pre><code># Для хранения списка файлов
+search_paths = []
+
+# Заполнение списка
+PATH_FILLER[search_type](search_paths, search_path)</code></pre><p><strong>Многопоточность и обработка частями</strong></p><p>Чтобы наше приложение могло использовать как можно больше вычислительных ресурсов добавим многопоточность при помощи <em>ThreadPoolExecutor </em>из стандартной библиотеки. Для отображения прогресса работы программы используем <em>tqdm</em> (pip install tqdm).</p><pre><code>futures = []
+with ThreadPoolExecutor(max_workers=max_threads) as executor:
+    for proc_id, search_dict in enumerate(paths_list):
+        source = SearchSource(search_dict['name'],
+                              search_dict['id'],
+                              search_dict['path'])
+        futures.append(executor.submit(find_in_path,
+                                       source,
+                                       allowed_types,
+                                       max_filesize=max_filesize,
+                                       max_buffer_size=max_buffer_size,
+                                       continue_state=continue_state,
+                                       debug_mode=debug_mode))
+
+    progress_bar = tqdm(as_completed(futures),
+                        total=len(paths_list),
+                        desc="Проверка ФИРов",
+                        bar_format='{desc:&lt;15} '
+                                   '{percentage:3.0f}%|{bar:20}{r_bar}')
+    for _ in progress_bar:
+        pass</code></pre><p>Результаты поиска будем записывать в датафрейм модуля <em>pandas</em> (pip install pandas). В процессе поиска будем сохранять промежуточные результаты, на случай если что-то пойдёт не так и скрипт завершит работу.</p><pre><code>interim_result = []
+common_uid = generate_uid()
+for result in files_gen:
+
+    current_num += 1
+    result.save_to_dataframe(interim_result, source_search.path)
+    total_fs_size += result.size
+    if current_num % batch_size == 0:
+        batch_num += 1
+        progress_state = batch_num * batch_size
+        info_message = (f"Поток {process_thread_id}.{subprocess_postfix} "
+                        f"Обработано: {progress_state} файлов.")
+        print(info_message)
+
+    if current_num > 0 and current_num % FILES_IN_POOL == 0:
+        stat = SearchStat(current_num, total_fs_size)
+        search_result = pd.DataFrame(interim_result,
+                                     columns=REPORT_COLUMNS)
+
+        save_interim(search_result, source_search, stat,
+                     part_num, common_uid)
+        interim_result = []
+        part_num += 1
+
+if interim_result:
+    stat = SearchStat(current_num, total_fs_size)
+    search_result = pd.DataFrame(interim_result,
+                                 columns=REPORT_COLUMNS)
+    save_interim(search_result, source_search, stat,
+                 part_num, common_uid)
+else:
+    uid = generate_uid()
+    save_dir_progress(source_search, SearchStat(0, 0),
+                      uid, "Нет доступа")</code></pre><p>Количество обрабатываемых файлов для записи промежуточных результатов определим в FILES_IN_POOL, а колонки для отчёта опишем в переменной REPORT_COLUMNS (список строк).</p><p><strong>Обработка файлов и архивов</strong></p><p>Для обработки результатов напишем функцию-генератор, возвращающий результаты обработки и использующую функцию <em>os.walk </em>для рекурсивного обхода по файлам:</p><pre><code>for root, dirs, files in os.walk(path):
+    for file in files:
+        file_path = os.path.join(root, file)
+        try:
+            file_obj = File(file_path,
+                            thread_id,
+                            None,
+                            max_buffer_size)
+            file_suffix = file_obj.extension
+        except Exception as ex:
+            error_message = (f"{str(ex)}. Не удалось получить "
+                             f"доступ к файлу {os.path.join(root, file)}")
+            logging.error(error_message)
+            file_suffix = '!NONE!'
+
+        proc_res, res_info = file_obj.process(max_filesize)
+        result = SearchResult(file_obj.path, proc_res, res_info,
+                                  file_obj.size, file_suffix)
+        yield result</code></pre><p>Для работы с файлами и поиска по ним используется отдельный класс:</p><pre><code>class File:
+    """
+    File class with file info.
+
+    Method file processing calling processing functions
+     for each filetype (document, pdf, xlxs, image)
+
+    """
+    # Максимальный объём файла для обработки по умолчанию
+    PROCESSING_MAX_SIZE = 100
+
+
+    def __init__(self, file_path, process_thread_id=1,
+                 subprocess_id=None, buffer_size=314_572_800):
+        path_obj = Path(file_path)
+        self.name = path_obj.name
+        self.extension = path_obj.suffix
+        self.flat_name = path_obj.stem
+        self.parent_directory = str(path_obj.parent)
+        self.path = file_path
+        self.process_thread_id = process_thread_id
+        self.buffer_size = buffer_size
+        self.subprocess_id = subprocess_id
+        self.size = os.path.getsize(self.path)</code></pre><p>Обработку файла реализуем при помощи метода <em>process()</em> класса <em>File.</em></p><pre><code>def process(self, limit_size: int = 100):
+    """
+    Process file and starts search inside
+
+    :param limit_size: max file size in MB
+    :return:
+    """
+    if limit_size is None:
+        limit_size = File.PROCESSING_MAX_SIZE
+    file_size_in_mb = self.size / (1024 * 1024)  # размер в мегабайтах
+
+    if self.extension in CRITICAL_FILE_EXT:
+        return self.find_cards(critical=True)
+
+    if file_size_in_mb > limit_size:
+        return self.get_max_size_exceed()
+
+    if self.extension in USUAL_SUFFIXES:
+        return self.find_in_file()
+    elif self.extension in ARCHIVES_SUFFIXES:
+        result = self.find_in_zip()
+        remove_dir(self.form_tempdir_name(TEMP_ARCHIVES_PATH))
+        return result
+    elif self.extension in OLD_SUFFIXES:
+        temp_dir = self.form_tempdir_name(TEMP_PATH)
+        recreate_tempdir(temp_dir)
+        result = self.find_in_olddoc()
+        remove_dir(temp_dir)
+        return result
+
+    return self.get_unsupported_result()</code></pre><p>Отдельно стоит упомянуть, что при обработке архивов разных форматов их прийдётся извлекать во временные папки и обрабатывать. Конечно, как вариант, можно использовать отдельные модули для обработки архивов разного формата (есть стандартные модули <em>zip, tarfile </em>остальные нужно устанавливать), но для задач, в каких целях применялся разработанный инструмент, требовалась обработка <em>rar</em> формата. В данном случае будет использоваться модуль <em>patoolib </em>(pip install patool).</p><p>Также при обработке архивов стоит учесть, что внутри могут находиться другие архивы. Поэтому извлекать архивы стоит рекурсивно. Класс для обработки архивов представлен ниже:</p><pre><code>class Archive(File):
+    def __init__(self, path, temp_dir=None):
+        super().__init__(path, 1, subprocess_id=None,
+                         buffer_size=314_572_800)
+        self.temp_dir = TEMP_ARCHIVES_PATH if temp_dir is None else temp_dir
+
+    def extract(self, out_path: str = TEMP_PATH, recursive=True,
+                changed_path=None, extract_level=1):
+        """
+        Extracts all data from archive
+        :param extract_level: current extraction depth
+        :param recursive: True for recursive extract(by default)
+        :param out_path: Path to extract archive
+        :param changed_path: Path for second and more extract
+        :return:
+        """
+        source_path = self.path if changed_path is None else changed_path
+        try:
+            patoolib.extract_archive(source_path, verbosity=-1,
+                                     outdir=out_path,
+                                     interactive=False)
+            if changed_path is not None:
+                os.remove(source_path)
+        except Exception as ex:
+            logging.error(f"Ошибка при извлечении архива {self.path}: {ex}")
+            return
+        if recursive:
+            for root, dirs, files in os.walk(out_path):
+                for file in files:
+                    pth = Path(root) / file
+                    suffix = pth.suffix
+                    if suffix in ARCHIVES_SUFFIXES:
+                        try:
+                            extract_dir = str(pth.parent)
+                            if extract_level > 999:
+                                # В случае большого вложенного
+                                # архива останавливаем процесс
+                                return
+                            self.extract(extract_dir, recursive=True,
+                                         changed_path=f"{pth}",
+                                         extract_level=extract_level + 1)
+                        except Exception as ex:
+                            logging.error(f" Проход по архиву."
+                                          f"Файл {pth} Ошибка - {ex}")</code></pre><p>Для хранения результатов поиска удобно организовать отдельный класс.</p><pre><code>class SearchResult:
+    """
+    Represents search results
+
+    Attributes:
+        result(bool) : True if success, else False
+        info(str):  additional string description
+        size(int): file size
+        ext(str): file extension
+    """
+    def __init__(self, file_path: str, result: bool = None,
+                 info: str = None, size=0, ext=None):
+        """
+
+        :param result: result : True if success, else False
+        :param info:  additional string description
+        :param size: file size
+        :param ext: file extension
+        """
+        self.__result = result
+        self.__info = info
+        self.__size = size
+        self.__ext = ext
+        self.__path = file_path</code></pre><p>Для обработки файлов с различными расширениями напишем отдельные функции. Для их вызова также используем словарь.</p><pre><code>process_functions = {
+    '.docx': docx2txt.process,
+    '.txt': process_txt,
+    '.xls': extract_text_xls,
+    '.xlsx': extract_text_xlsx,
+    '.xlsm': extract_text_xlsx,
+    '.xlsb': extract_text_xlsb,
+    '.rtf': extract_text_rtf,
+    '.csv': extract_csv,
+    '.pdf': extract_text_from_pdf,
+}
+
+try:
+    text = process_functions[self.extension](self.path)
+except Exception as ex:
+    logging.error(f"Ошибка при обработке файла {self.path}: {ex}")</code></pre><p>При обработке текстовых файлов нам помогут средства стандартной библиотеки Python, табличных – модули <em>pandas</em>, <em>pyexcel</em>, <em>xlrd</em> ; файлов Word – модули <em>docx2txt</em>, <em>win32com</em>/пакет LibreOffice; rtf –модуль <em>striprtf</em><strong>; </strong>pdf файлов – модуль <em>pdfminer</em>.</p><p><strong>Поиск по содержимому</strong></p><p>Для поиска информации воспользуемся модулем <em>re.</em> Если нужно искать данные по каким-то конкретным шаблонам, как в случае с задачей для которых использовался инструмент, определим их отдельно в переменной SEARCH_REGEXPS.</p><pre><code>def search_info(text):
+    """
+    Search info
+    :param text: text in str format
+    :return: results count and info
+    """
+    results = []
+    for pattern in SEARCH_REGEXPS:
+        finds = re.findall(pattern, text)
+        for res in finds:            
+           results.append(res)
+    return len(results), ",".join(results)</code></pre><p><strong>Обработка результатов</strong></p><p>Промежуточные результаты сохраняются в файлы на локальном компьютере. Для записи результатов Обработка полученных результатов выглядит следующим образом.</p><pre><code>RESULT_SAVERS = {
+    'sqlite': sqlite_save,
+    'mssql': mssql_save,
+    'csv': save_csv,
+    'excel': save_excel,
+    'xlsx': save_excel,
+
+}
+
+
+def process_results(result_type, output_tablename='results'):
+    """
+    Unite all results from RESULTS_PATH directory
+
+    :param result_type: result format for save (sqlite, mssql, csv)
+    :param output_tablename: out table postfix for name
+    """
+    result_dirs = load_setting("RESULT_DIRS")
+    for result_dir in result_dirs:
+        print(f'Чтение результатов {result_dir}..')
+        # Имя таблицы/файла для сохранения
+        outname = f"{output_tablename}-{result_dir}"
+        path_to_process = Path(result_dir)
+        dataframes = []
+        result_paths = []
+        if path_to_process.exists():
+            result_paths = [p for p in path_to_process.iterdir()]
+        for path in tqdm(result_paths, desc="Чтение файлов",
+                         bar_format='{desc:&lt;15} {percentage:3.0f}%|'
+                                    '{bar:20}{r_bar}'):
+            try:
+                if path.suffix == '.xlsx':
+                    dataframes.append(pd.read_excel(str(path),
+                                                    sheet_name=0))
+                elif path.suffix == '.csv':
+                    dataframes.append(pd.read_csv(str(path),
+                                                  encoding='cp1251',
+                                                  sep=';'))
+            except Exception as ex:
+                print(F"Ошибка при обработке файла {path}. Ошибка: {ex}")
+
+        print('Объединение данных...')
+        if dataframes:
+            result_frame = pd.concat(dataframes)
+            # Убираем лишний столбец со внутренними id
+            remove_first = load_setting("REMOVE_FIRST")
+            if remove_first:
+                result_frame.drop(result_frame.columns[[0]], axis=1,
+                                  inplace=True)
+            print('Запись результатов..')
+            if result_type not in RESULT_SAVERS:
+                print(f"Неверный формат данных {result_type}!!!")
+            try:
+                RESULT_SAVERS[result_type](outname, result_frame)
+            except Exception as ex:
+                print(f"Ошибка сохранения в {result_type}: {ex}")
+            print('Сохранение результов завершено!')
+        else:
+            print('Данные отсутствуют!')</code></pre><p>Для записи в базу данных воспользуемся модулями <em>sqlalchemy, pymssql, pandas. </em>Настройки для подключения будем хранить в отдельном файле или переменных среды. Код для записи в БД выглядит следующим образом.</p><pre><code>def get_connection_settings():
+    global DATABASE_NAME, DOMAIN, DB_SERVER
+    DATABASE_NAME = load_setting('DATABASE')
+    DOMAIN = load_setting('DOMAIN')
+    DB_SERVER = load_setting('DB_SERVER')
+
+
+get_connection_settings()
+
+
+def sqlite_save(table_name: str, data: pd.DataFrame):
+    """
+    Saves pd dataframe in sqlite db
+
+    :param db_name: database name
+    :param table_name:  table name in database
+    :param data: dataFrame to save
+
+    """
+    engine = create_engine(f'sqlite:///{DATABASE_NAME}.db')
+    data.to_sql(f'{table_name}', con=engine, if_exists='append',
+                method='multi')
+
+
+def mssql_save(table_name: str, data: pd.DataFrame):
+    """
+    Saves pd dataframe in sqlite db
+
+    :param table_name:  table name in database
+    :param data: dataFrame to save
+
+    """
+    with pymssql.connect(server=DB_SERVER, database=DATABASE_NAME) as con:
+        engine = create_engine('mssql+pymssql://', creator=lambda: con)
+        data.to_sql(f'SearchDpk_{table_name}', con=engine,    if_exists='append',
+                    method='multi', chunksize=500)</code></pre><p>Вот так будет выглядеть результат:</p><figure class="full-width "><img src="/img/image-loader.svg" height="266" data-src="https://habrastorage.org/getpro/habr/upload_files/22e/7de/cec/22e7decec46b0278a52154dfa7b24aaa.png" data-width="974"/><figcaption></figcaption></figure><p>Таким образом, получим инструмент, позволяющий обрабатывать файлы в указанных каталогах.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%B1%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0%20%D0%B8%D0%BD%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%86%D0%B8%D0%B8%5D" class="tm-tags-list__link">обработка информации</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%BE%D0%B8%D1%81%D0%BA%20%D0%B8%D0%BD%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%86%D0%B8%D0%B8%5D" class="tm-tags-list__link">поиск информации</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%B5%5D" class="tm-tags-list__link">данные</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%82%D0%B5%D1%85%D0%BD%D0%BE%D0%BB%D0%BE%D0%B3%D0%B8%D0%B8%5D" class="tm-tags-list__link">технологии</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BDS%5D" class="tm-tags-list__link">DS</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/nix/" class="tm-hubs-list__link">
+    *nix
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/machine_learning/" class="tm-hubs-list__link">
+    Машинное обучение
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 2: ↑2 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 2: ↑2 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+2</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">2.1K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    37
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/NewTechAudit/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/62e/cf1/3f1/62ecf13f1b5e83c0cced637ff786d5a1.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 64 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    24
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">19</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">NTA</span> <a href="/ru/users/NewTechAudit/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @NewTechAudit
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь, Профессиональное сообщество</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583344/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 1 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583344/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583344/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583344":{"id":"583344","timePublished":"2021-10-14T02:43:21+00:00","isCorporative":false,"lang":"ru","titleHtml":"Поиск и обработка информации на файловых ресурсах","leadData":{"textHtml":"\u003Cp\u003EНачнем с точки входа в приложение.&nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и активировать его.\u003C\u002Fp\u003E\u003Cp\u003EДля обработки параметров командной строки в Python есть удобный модуль click (установка pip install click). Обработка аргументов командной строки происходит при помощи добавления к функции декораторов. Определим обязательные параметры: search_path — путь по которому будем искать, либо файл с путями и дополнительные: режим исполнения программы (многопоточный или без), имя файла с результатами, формат записи результата (excel, csv, sqlite) и другие параметры по вашему желанию.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F58d\u002Fc7e\u002Fe3f\u002F58dc7ee3f5af5e8d639098a39ca8ad6b.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F58d\u002Fc7e\u002Fe3f\u002F58dc7ee3f5af5e8d639098a39ca8ad6b.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":24,"votesCount":64},"rating":19,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2343413","alias":"NewTechAudit","fullname":"NTA","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F62e\u002Fcf1\u002F3f1\u002F62ecf13f1b5e83c0cced637ff786d5a1.png","speciality":"Пользователь, Профессиональное сообщество"},"statistics":{"commentsCount":1,"favoritesCount":37,"readingCount":2149,"score":2,"votesCount":2},"hubs":[{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true},{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"7289","alias":"nix","type":"collective","title":"*nix","titleHtml":"*nix","isProfiled":true},{"relatedData":null,"id":"19439","alias":"machine_learning","type":"collective","title":"Машинное обучение","titleHtml":"Машинное обучение","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"720\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F58d\u002Fc7e\u002Fe3f\u002F58dc7ee3f5af5e8d639098a39ca8ad6b.png\" data-width=\"1280\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EНачнем с точки входа в приложение.  Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и активировать его.\u003C\u002Fp\u003E\u003Cp\u003EДля обработки параметров командной строки в Python есть удобный модуль click (установка pip install click). Обработка аргументов командной строки происходит при помощи добавления к функции декораторов. Определим обязательные параметры: search_path — путь по которому будем искать, либо файл с путями и дополнительные: режим исполнения программы (многопоточный или без), имя файла с результатами, формат записи результата (excel, csv, sqlite) и другие параметры по вашему желанию.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E@click.command()\n@click.argument('search_path',\n                type=click.Path(resolve_path=True,\n                                dir_okay=True,\n                                file_okay=True),\n                required=True)\n@click.option('--concurrent_mode', '-cm',\n              type=click.STRING,\n              required=False,\n              default=\"None\",\n              help=\"Concurrent search execution(multi or single).\"\n                   \" Multi allows multiprocessing and threading\")\n@click.option('--output_path', '-o',\n              type=click.STRING,\n              required=False,\n              default='results',\n              help=\"Output filename(without extension)\")\n@click.option('--output_type', '-ot', '-out',\n              type=click.STRING,\n              required=False,\n              default='sqlite',\n              help=\"Format for output data((excel, csv, sqlite, mssql)\")\n...\ndef main(search_path, output_path, concurrent_mode, output_type):\n    \"\"\"\n    Starts search info(cards numbers) in files in path\n\n    search_path: path to search or json file with paths\n    \"\"\"\n    ...\n\nif __name__ == \"__main__\":\n    main()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФункцию поиска содержимого будем вызывать из функции \u003Cem\u003Emain().\u003C\u002Fem\u003E В данном случае вызов выглядит следующим образом:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Emulti_mode = True if not concurrent_mode.lower() == \"single\" else False\nsearch_in_files(search_path, file_types, output_path, maxsize,\n                buffer_size, clear_results, clear_log, continue_option,\n                multi_mode, output_type, debug, include)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСовершим настройку логирования для сохранения информации о произошедших при исполнении скрипта ошибок. Для этого прекрасно подходит встроенный модуль \u003Cem\u003Elogging.\u003C\u002Fem\u003E Информация будет записываться в файл лога.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003ELOGGING_FORMAT = ('%(asctime)s %(levelname)s %(filename)s - '\n                  '%(funcName)s %(message)s')\nlogging.basicConfig(filename=\"program_log.log\", filemode='a',\n                    level=logging.INFO, format=LOGGING_FORMAT)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ качестве аргументов командной строки может поступать одиночный путь, либо файл с путями. Для проверки файл это или каталог прекрасно подходит класс \u003Cem\u003EPath\u003C\u002Fem\u003E модуля \u003Cem\u003Epathlib.\u003C\u002Fem\u003E Выбор одного из двух вариантов реализуем следующим образом.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Esearching_path_obj = Path(search_path)\nif searching_path_obj.is_dir():\n    search_type = 'one'\nelse:\n    search_type = searching_path_obj.suffix\n    search_type = search_type[1:]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВарианты заполнения списка с путями для проверки опишем с помощью словаря с ключами, представляющими тип входного пути (отдельный путь, файл формата csv или json) и значениями – функции для обработки.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003EPATH_FILLER = {\n    'one': add_search_dict,\n    'json': add_search_from_json,\n    'csv': add_searches_from_csv\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФункции для обработки считывают данные из файлов и записывают в список словарей с ключами идентификатор, имя ресурса, путь. Словари очень хорошо подходят для написания красивого кода и возможности избавиться от множественных проверок условий.\u003Cbr\u002F\u003EКаждая функция принимает два параметра список для хранения результатов и путь к файлу с данными.\u003Cbr\u002F\u003EТакже не стоит забывать обрабатывать параметры командной строки – пользователь может ввести их неправильно. Посмотрим обработку на примере аргумента search_type:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003ESEARCH_TYPES = [\"one\", \"json\", \"csv\"]\n\nif search_type not in SEARCH_TYPES:\n    types = \",\".join(SEARCH_TYPES)\n    message = (f\"Неправильный тип поиска!\" \n               f\" Должен быть один из вариантов: {types}\")\n    print(message)\n    logging.error(message)\n    return\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь, когда имеется словарь с функциями для заполнения списка входных данных из файлов с разными форматами заполнение списка будет выглядеть довольно просто:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E# Для хранения списка файлов\nsearch_paths = []\n\n# Заполнение списка\nPATH_FILLER[search_type](search_paths, search_path)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EМногопоточность и обработка частями\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EЧтобы наше приложение могло использовать как можно больше вычислительных ресурсов добавим многопоточность при помощи \u003Cem\u003EThreadPoolExecutor \u003C\u002Fem\u003Eиз стандартной библиотеки. Для отображения прогресса работы программы используем \u003Cem\u003Etqdm\u003C\u002Fem\u003E (pip install tqdm).\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Efutures = []\nwith ThreadPoolExecutor(max_workers=max_threads) as executor:\n    for proc_id, search_dict in enumerate(paths_list):\n        source = SearchSource(search_dict['name'],\n                              search_dict['id'],\n                              search_dict['path'])\n        futures.append(executor.submit(find_in_path,\n                                       source,\n                                       allowed_types,\n                                       max_filesize=max_filesize,\n                                       max_buffer_size=max_buffer_size,\n                                       continue_state=continue_state,\n                                       debug_mode=debug_mode))\n\n    progress_bar = tqdm(as_completed(futures),\n                        total=len(paths_list),\n                        desc=\"Проверка ФИРов\",\n                        bar_format='{desc:&lt;15} '\n                                   '{percentage:3.0f}%|{bar:20}{r_bar}')\n    for _ in progress_bar:\n        pass\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EРезультаты поиска будем записывать в датафрейм модуля \u003Cem\u003Epandas\u003C\u002Fem\u003E (pip install pandas). В процессе поиска будем сохранять промежуточные результаты, на случай если что-то пойдёт не так и скрипт завершит работу.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Einterim_result = []\ncommon_uid = generate_uid()\nfor result in files_gen:\n\n    current_num += 1\n    result.save_to_dataframe(interim_result, source_search.path)\n    total_fs_size += result.size\n    if current_num % batch_size == 0:\n        batch_num += 1\n        progress_state = batch_num * batch_size\n        info_message = (f\"Поток {process_thread_id}.{subprocess_postfix} \"\n                        f\"Обработано: {progress_state} файлов.\")\n        print(info_message)\n\n    if current_num \u003E 0 and current_num % FILES_IN_POOL == 0:\n        stat = SearchStat(current_num, total_fs_size)\n        search_result = pd.DataFrame(interim_result,\n                                     columns=REPORT_COLUMNS)\n\n        save_interim(search_result, source_search, stat,\n                     part_num, common_uid)\n        interim_result = []\n        part_num += 1\n\nif interim_result:\n    stat = SearchStat(current_num, total_fs_size)\n    search_result = pd.DataFrame(interim_result,\n                                 columns=REPORT_COLUMNS)\n    save_interim(search_result, source_search, stat,\n                 part_num, common_uid)\nelse:\n    uid = generate_uid()\n    save_dir_progress(source_search, SearchStat(0, 0),\n                      uid, \"Нет доступа\")\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКоличество обрабатываемых файлов для записи промежуточных результатов определим в FILES_IN_POOL, а колонки для отчёта опишем в переменной REPORT_COLUMNS (список строк).\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EОбработка файлов и архивов\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EДля обработки результатов напишем функцию-генератор, возвращающий результаты обработки и использующую функцию \u003Cem\u003Eos.walk \u003C\u002Fem\u003Eдля рекурсивного обхода по файлам:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Efor root, dirs, files in os.walk(path):\n    for file in files:\n        file_path = os.path.join(root, file)\n        try:\n            file_obj = File(file_path,\n                            thread_id,\n                            None,\n                            max_buffer_size)\n            file_suffix = file_obj.extension\n        except Exception as ex:\n            error_message = (f\"{str(ex)}. Не удалось получить \"\n                             f\"доступ к файлу {os.path.join(root, file)}\")\n            logging.error(error_message)\n            file_suffix = '!NONE!'\n\n        proc_res, res_info = file_obj.process(max_filesize)\n        result = SearchResult(file_obj.path, proc_res, res_info,\n                                  file_obj.size, file_suffix)\n        yield result\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля работы с файлами и поиска по ним используется отдельный класс:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Eclass File:\n    \"\"\"\n    File class with file info.\n\n    Method file processing calling processing functions\n     for each filetype (document, pdf, xlxs, image)\n\n    \"\"\"\n    # Максимальный объём файла для обработки по умолчанию\n    PROCESSING_MAX_SIZE = 100\n\n\n    def __init__(self, file_path, process_thread_id=1,\n                 subprocess_id=None, buffer_size=314_572_800):\n        path_obj = Path(file_path)\n        self.name = path_obj.name\n        self.extension = path_obj.suffix\n        self.flat_name = path_obj.stem\n        self.parent_directory = str(path_obj.parent)\n        self.path = file_path\n        self.process_thread_id = process_thread_id\n        self.buffer_size = buffer_size\n        self.subprocess_id = subprocess_id\n        self.size = os.path.getsize(self.path)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОбработку файла реализуем при помощи метода \u003Cem\u003Eprocess()\u003C\u002Fem\u003E класса \u003Cem\u003EFile.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Edef process(self, limit_size: int = 100):\n    \"\"\"\n    Process file and starts search inside\n\n    :param limit_size: max file size in MB\n    :return:\n    \"\"\"\n    if limit_size is None:\n        limit_size = File.PROCESSING_MAX_SIZE\n    file_size_in_mb = self.size \u002F (1024 * 1024)  # размер в мегабайтах\n\n    if self.extension in CRITICAL_FILE_EXT:\n        return self.find_cards(critical=True)\n\n    if file_size_in_mb \u003E limit_size:\n        return self.get_max_size_exceed()\n\n    if self.extension in USUAL_SUFFIXES:\n        return self.find_in_file()\n    elif self.extension in ARCHIVES_SUFFIXES:\n        result = self.find_in_zip()\n        remove_dir(self.form_tempdir_name(TEMP_ARCHIVES_PATH))\n        return result\n    elif self.extension in OLD_SUFFIXES:\n        temp_dir = self.form_tempdir_name(TEMP_PATH)\n        recreate_tempdir(temp_dir)\n        result = self.find_in_olddoc()\n        remove_dir(temp_dir)\n        return result\n\n    return self.get_unsupported_result()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОтдельно стоит упомянуть, что при обработке архивов разных форматов их прийдётся извлекать во временные папки и обрабатывать. Конечно, как вариант, можно использовать отдельные модули для обработки архивов разного формата (есть стандартные модули \u003Cem\u003Ezip, tarfile \u003C\u002Fem\u003Eостальные нужно устанавливать), но для задач, в каких целях применялся разработанный инструмент, требовалась обработка \u003Cem\u003Erar\u003C\u002Fem\u003E формата. В данном случае будет использоваться модуль \u003Cem\u003Epatoolib \u003C\u002Fem\u003E(pip install patool).\u003C\u002Fp\u003E\u003Cp\u003EТакже при обработке архивов стоит учесть, что внутри могут находиться другие архивы. Поэтому извлекать архивы стоит рекурсивно. Класс для обработки архивов представлен ниже:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Eclass Archive(File):\n    def __init__(self, path, temp_dir=None):\n        super().__init__(path, 1, subprocess_id=None,\n                         buffer_size=314_572_800)\n        self.temp_dir = TEMP_ARCHIVES_PATH if temp_dir is None else temp_dir\n\n    def extract(self, out_path: str = TEMP_PATH, recursive=True,\n                changed_path=None, extract_level=1):\n        \"\"\"\n        Extracts all data from archive\n        :param extract_level: current extraction depth\n        :param recursive: True for recursive extract(by default)\n        :param out_path: Path to extract archive\n        :param changed_path: Path for second and more extract\n        :return:\n        \"\"\"\n        source_path = self.path if changed_path is None else changed_path\n        try:\n            patoolib.extract_archive(source_path, verbosity=-1,\n                                     outdir=out_path,\n                                     interactive=False)\n            if changed_path is not None:\n                os.remove(source_path)\n        except Exception as ex:\n            logging.error(f\"Ошибка при извлечении архива {self.path}: {ex}\")\n            return\n        if recursive:\n            for root, dirs, files in os.walk(out_path):\n                for file in files:\n                    pth = Path(root) \u002F file\n                    suffix = pth.suffix\n                    if suffix in ARCHIVES_SUFFIXES:\n                        try:\n                            extract_dir = str(pth.parent)\n                            if extract_level \u003E 999:\n                                # В случае большого вложенного\n                                # архива останавливаем процесс\n                                return\n                            self.extract(extract_dir, recursive=True,\n                                         changed_path=f\"{pth}\",\n                                         extract_level=extract_level + 1)\n                        except Exception as ex:\n                            logging.error(f\" Проход по архиву.\"\n                                          f\"Файл {pth} Ошибка - {ex}\")\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля хранения результатов поиска удобно организовать отдельный класс.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Eclass SearchResult:\n    \"\"\"\n    Represents search results\n\n    Attributes:\n        result(bool) : True if success, else False\n        info(str):  additional string description\n        size(int): file size\n        ext(str): file extension\n    \"\"\"\n    def __init__(self, file_path: str, result: bool = None,\n                 info: str = None, size=0, ext=None):\n        \"\"\"\n\n        :param result: result : True if success, else False\n        :param info:  additional string description\n        :param size: file size\n        :param ext: file extension\n        \"\"\"\n        self.__result = result\n        self.__info = info\n        self.__size = size\n        self.__ext = ext\n        self.__path = file_path\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля обработки файлов с различными расширениями напишем отдельные функции. Для их вызова также используем словарь.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Eprocess_functions = {\n    '.docx': docx2txt.process,\n    '.txt': process_txt,\n    '.xls': extract_text_xls,\n    '.xlsx': extract_text_xlsx,\n    '.xlsm': extract_text_xlsx,\n    '.xlsb': extract_text_xlsb,\n    '.rtf': extract_text_rtf,\n    '.csv': extract_csv,\n    '.pdf': extract_text_from_pdf,\n}\n\ntry:\n    text = process_functions[self.extension](self.path)\nexcept Exception as ex:\n    logging.error(f\"Ошибка при обработке файла {self.path}: {ex}\")\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПри обработке текстовых файлов нам помогут средства стандартной библиотеки Python, табличных – модули \u003Cem\u003Epandas\u003C\u002Fem\u003E, \u003Cem\u003Epyexcel\u003C\u002Fem\u003E, \u003Cem\u003Exlrd\u003C\u002Fem\u003E ; файлов Word – модули \u003Cem\u003Edocx2txt\u003C\u002Fem\u003E, \u003Cem\u003Ewin32com\u003C\u002Fem\u003E\u002Fпакет LibreOffice; rtf –модуль \u003Cem\u003Estriprtf\u003C\u002Fem\u003E\u003Cstrong\u003E; \u003C\u002Fstrong\u003Epdf файлов – модуль \u003Cem\u003Epdfminer\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EПоиск по содержимому\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EДля поиска информации воспользуемся модулем \u003Cem\u003Ere.\u003C\u002Fem\u003E Если нужно искать данные по каким-то конкретным шаблонам, как в случае с задачей для которых использовался инструмент, определим их отдельно в переменной SEARCH_REGEXPS.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Edef search_info(text):\n    \"\"\"\n    Search info\n    :param text: text in str format\n    :return: results count and info\n    \"\"\"\n    results = []\n    for pattern in SEARCH_REGEXPS:\n        finds = re.findall(pattern, text)\n        for res in finds:            \n           results.append(res)\n    return len(results), \",\".join(results)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EОбработка результатов\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EПромежуточные результаты сохраняются в файлы на локальном компьютере. Для записи результатов Обработка полученных результатов выглядит следующим образом.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003ERESULT_SAVERS = {\n    'sqlite': sqlite_save,\n    'mssql': mssql_save,\n    'csv': save_csv,\n    'excel': save_excel,\n    'xlsx': save_excel,\n\n}\n\n\ndef process_results(result_type, output_tablename='results'):\n    \"\"\"\n    Unite all results from RESULTS_PATH directory\n\n    :param result_type: result format for save (sqlite, mssql, csv)\n    :param output_tablename: out table postfix for name\n    \"\"\"\n    result_dirs = load_setting(\"RESULT_DIRS\")\n    for result_dir in result_dirs:\n        print(f'Чтение результатов {result_dir}..')\n        # Имя таблицы\u002Fфайла для сохранения\n        outname = f\"{output_tablename}-{result_dir}\"\n        path_to_process = Path(result_dir)\n        dataframes = []\n        result_paths = []\n        if path_to_process.exists():\n            result_paths = [p for p in path_to_process.iterdir()]\n        for path in tqdm(result_paths, desc=\"Чтение файлов\",\n                         bar_format='{desc:&lt;15} {percentage:3.0f}%|'\n                                    '{bar:20}{r_bar}'):\n            try:\n                if path.suffix == '.xlsx':\n                    dataframes.append(pd.read_excel(str(path),\n                                                    sheet_name=0))\n                elif path.suffix == '.csv':\n                    dataframes.append(pd.read_csv(str(path),\n                                                  encoding='cp1251',\n                                                  sep=';'))\n            except Exception as ex:\n                print(F\"Ошибка при обработке файла {path}. Ошибка: {ex}\")\n\n        print('Объединение данных...')\n        if dataframes:\n            result_frame = pd.concat(dataframes)\n            # Убираем лишний столбец со внутренними id\n            remove_first = load_setting(\"REMOVE_FIRST\")\n            if remove_first:\n                result_frame.drop(result_frame.columns[[0]], axis=1,\n                                  inplace=True)\n            print('Запись результатов..')\n            if result_type not in RESULT_SAVERS:\n                print(f\"Неверный формат данных {result_type}!!!\")\n            try:\n                RESULT_SAVERS[result_type](outname, result_frame)\n            except Exception as ex:\n                print(f\"Ошибка сохранения в {result_type}: {ex}\")\n            print('Сохранение результов завершено!')\n        else:\n            print('Данные отсутствуют!')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля записи в базу данных воспользуемся модулями \u003Cem\u003Esqlalchemy, pymssql, pandas. \u003C\u002Fem\u003EНастройки для подключения будем хранить в отдельном файле или переменных среды. Код для записи в БД выглядит следующим образом.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Edef get_connection_settings():\n    global DATABASE_NAME, DOMAIN, DB_SERVER\n    DATABASE_NAME = load_setting('DATABASE')\n    DOMAIN = load_setting('DOMAIN')\n    DB_SERVER = load_setting('DB_SERVER')\n\n\nget_connection_settings()\n\n\ndef sqlite_save(table_name: str, data: pd.DataFrame):\n    \"\"\"\n    Saves pd dataframe in sqlite db\n\n    :param db_name: database name\n    :param table_name:  table name in database\n    :param data: dataFrame to save\n\n    \"\"\"\n    engine = create_engine(f'sqlite:\u002F\u002F\u002F{DATABASE_NAME}.db')\n    data.to_sql(f'{table_name}', con=engine, if_exists='append',\n                method='multi')\n\n\ndef mssql_save(table_name: str, data: pd.DataFrame):\n    \"\"\"\n    Saves pd dataframe in sqlite db\n\n    :param table_name:  table name in database\n    :param data: dataFrame to save\n\n    \"\"\"\n    with pymssql.connect(server=DB_SERVER, database=DATABASE_NAME) as con:\n        engine = create_engine('mssql+pymssql:\u002F\u002F', creator=lambda: con)\n        data.to_sql(f'SearchDpk_{table_name}', con=engine,    if_exists='append',\n                    method='multi', chunksize=500)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВот так будет выглядеть результат:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"266\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F22e\u002F7de\u002Fcec\u002F22e7decec46b0278a52154dfa7b24aaa.png\" data-width=\"974\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EТаким образом, получим инструмент, позволяющий обрабатывать файлы в указанных каталогах.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"обработка информации"},{"titleHtml":"поиск информации"},{"titleHtml":"данные"},{"titleHtml":"технологии"},{"titleHtml":"DS"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F58d\u002Fc7e\u002Fe3f\u002F58dc7ee3f5af5e8d639098a39ca8ad6b.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F58d\u002Fc7e\u002Fe3f\u002F58dc7ee3f5af5e8d639098a39ca8ad6b.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583344\\\u002F\"},\"headline\":\"Поиск и обработка информации на файловых ресурсах\",\"datePublished\":\"2021-10-14T05:43:21+03:00\",\"dateModified\":\"2021-10-15T00:58:07+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"NTA\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Начнем с точки входа в приложение.&nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит созда...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583344\\\u002F#post-content-body\",\"about\":[\"h_python\",\"h_programming\",\"h_nix\",\"h_machine_learning\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583344\\\u002Fac5219aa0a2da9e019b2db5f61ced3bc\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F58d\\\u002Fc7e\\\u002Fe3f\\\u002F58dc7ee3f5af5e8d639098a39ca8ad6b.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F22e\\\u002F7de\\\u002Fcec\\\u002F22e7decec46b0278a52154dfa7b24aaa.png\"]}","metaDescription":"Начнем с точки входа в приложение.&nbsp; Чтобы инструмент удобно было использовать, напишем приложение с командным интерфейсом. Перед началом работы также стоит создать переменное окружение и...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"python,programming,nix,machine_learning"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>SQL в SQLAlchemy / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/domclick\/blog\/581304\/"},"headline":"SQL в SQLAlchemy","datePublished":"2021-10-12T11:00:02+03:00","dateModified":"2021-10-12T11:41:48+03:00","author":{"@type":"Person","name":"alexey_and_kazakov"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Меня зовут Алексей Казаков, я техлид команды &laquo;Клиентские коммуникации&raquo; в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой да...","url":"https:\/\/habr.com\/ru\/company\/domclick\/blog\/581304\/#post-content-body","about":["c_domclick","h_python","h_postgresql","h_sql","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/581304\/f7da5c62afc19bdbe89149709501f7f5\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/433\/2bf\/981\/4332bf981d4fe5ca56ad3e026347911d.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/2d6\/754\/6f2\/2d67546f2bfc7b1aff3405ff83cd5e63.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="SQL в SQLAlchemy" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="SQL в SQLAlchemy" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="SQL в SQLAlchemy" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Меня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Меня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Меня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Меня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Меня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/433/2bf/981/4332bf981d4fe5ca56ad3e026347911d.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/433/2bf/981/4332bf981d4fe5ca56ad3e026347911d.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/433/2bf/981/4332bf981d4fe5ca56ad3e026347911d.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/433/2bf/981/4332bf981d4fe5ca56ad3e026347911d.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/433/2bf/981/4332bf981d4fe5ca56ad3e026347911d.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="581304" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-12T08:00:02.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/581304/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/domclick/blog/581304/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/433/2bf/981/4332bf981d4fe5ca56ad3e026347911d.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/581304/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="domclick" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/domclick/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/d28/115/f55/d28115f5503229d4f9018292fabd1840.jpg" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">571.71</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/domclick/profile/" class="tm-company-card__name">
+        Домклик
+      </a> <div class="tm-company-card__description">Место силы</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/alexey_and_kazakov/" title="alexey_and_kazakov" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/alexey_and_kazakov/" class="tm-user-info__username">
+      alexey_and_kazakov
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-12T08:00:02.000Z" title="2021-10-12, 11:00">12  октября   в 11:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>SQL в SQLAlchemy</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/domclick/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании ДомКлик</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/postgresql/" class="tm-article-snippet__hubs-item-link"><span>PostgreSQL</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/sql/" class="tm-article-snippet__hubs-item-link"><span>SQL</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Меня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object Relational Mapper. В этой статье я продолжу знакомить вас с популярными ORM, которые встречались мне в продовых проектах. В <a href="https://habr.com/ru/company/domclick/blog/552930/">прошлый раз</a> мы рассматривали Django ORM , а сегодня на очереди всемогущий <a href="https://www.sqlalchemy.org/">SQLAlchemy</a>.</p><figure class="full-width "><img src="/img/image-loader.svg" height="1502" data-src="https://habrastorage.org/getpro/habr/upload_files/433/2bf/981/4332bf981d4fe5ca56ad3e026347911d.png" data-width="2310"/><figcaption></figcaption></figure><p>Будем придерживаться привычного плана:</p><ul><li><p>посмотрим на схему данных (сырой SQL);</p></li><li><p>опишем эту схему с помощью alchemy-моделей;</p></li><li><p>познакомимся с несколькими хитростями для удобной отладки;</p></li><li><p>а в основной части изучим примеры запросов.</p></li></ul><p>Особое внимание уделим сырому SQL, который будет генерировать библиотека. Ведь именно от него зависит производительность и количество запросов, которые зачастую определяют эффективность работы всего приложения.</p><h2>Схема</h2><p>Схему мы оставляем неизменной на протяжении всех статей. Пусть у нас есть приложение, в котором пользователи (User) могут задавать вопросы (Question) внутри разных тем (Topic). У топика есть картинка (Image). Доступ пользователя к топику определяется через many-to-many отношение TopicUser, которое кроме ForeignKey (FK) для пользователя и FK для топика содержит дополнительную информацию — роль пользователя в топике.</p><figure class="full-width "><img src="/img/image-loader.svg" height="1600" data-src="https://habrastorage.org/getpro/habr/upload_files/2d6/754/6f2/2d67546f2bfc7b1aff3405ff83cd5e63.png" data-width="1409"/><figcaption></figcaption></figure><p>Создать базу данных можно таким SQL-ем:</p><pre><code class="sql">CREATE TABLE "image"
+(
+    "id"   serial NOT NULL PRIMARY KEY,
+    "name" text   NOT NULL
+);
+
+CREATE TABLE "topic"
+(
+    "id"       serial  NOT NULL PRIMARY KEY,
+    "title"    text    NOT NULL,
+    "image_id" integer REFERENCES "image" ("id") NOT NULL
+);
+
+CREATE TABLE "user"
+(
+    "id"   serial NOT NULL PRIMARY KEY,
+    "name" text   NOT NULL
+);
+
+CREATE TABLE "topic_user"
+(
+    "id"       serial  NOT NULL PRIMARY KEY,
+    "role"     text    NOT NULL,
+    "topic_id" integer REFERENCES "topic" ("id") NOT NULL,
+    "user_id"  integer REFERENCES "user" ("id") NOT NULL
+);
+
+CREATE TABLE "question"
+(
+    "id"       serial  NOT NULL PRIMARY KEY,
+    "text"     text    NOT NULL,
+    "topic_id" integer REFERENCES "topic" ("id") NOT NULL 
+);</code></pre><h2>Alchemy models</h2><p>Чтобы создать модели, которые будут представлять SQL-таблицы в нашем Python-коде, предварительно необходимо создать базовый класс для всех моделей. Обычно его называют <code>Base</code>, и все модели приложения наследуют от этого класса. Этот declarative base class содержит справочник всех «своих» таблиц и соответствующих ему классов. Обычно <code>Base</code> один на приложение, его заводят в общем модуле. С помощью разных базовых классов можно организовать подключение к разным базам данных.</p><details class="spoiler"><summary>Код</summary><div class="spoiler__content"><pre><code class="python">from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+
+class Image(Base):
+    __tablename__ = 'image'
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    name = sa.Column(sa.Text, nullable=False)
+
+
+class Topic(Base):
+    __tablename__ = 'topic'
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    title = sa.Column(sa.Text, nullable=False)
+    image_id = sa.Column(sa.Integer, sa.ForeignKey('image.id'), nullable=False)
+    image = sa.orm.relationship(Image)  # innerjoin=True для JOIN
+    questions = sa.orm.relationship('Question')
+
+    users = sa.orm.relationship('User', secondary='topic_user')
+    # association
+    # users = sa.orm.relationship('TopicUser', back_populates='topic')
+
+
+class User(Base):
+    __tablename__ = 'user'
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    name = sa.Column(sa.Text, nullable=False)
+
+    # association
+    # topics = sa.orm.relationship('TopicUser', back_populates='user')
+
+
+class TopicUser(Base):
+    __tablename__ = 'topic_user'
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    topic_id = sa.Column(sa.Integer, sa.ForeignKey('topic.id'))
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))
+    role = sa.Column(sa.Text)
+
+    # association
+    # user = sa.orm.relationship(User, back_populates='topics')
+    # topic = sa.orm.relationship(Topic, back_populates='users')
+
+
+class Question(Base):
+    __tablename__ = 'question'
+
+    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)
+    text = sa.Column(sa.Text)
+    topic_id = sa.Column(sa.Integer, sa.ForeignKey('topic.id'), nullable=False)
+    topic = sa.orm.relationship(Topic)  # innerjoin=True для использования JOIN вместо LEFT JOIN
+</code></pre></div></details><h2>Подготовка</h2><p>Подключение к базе выполняется с помощью движка, при создании которого необходимо указать строку подключения. Также мы указываем параметр <code>echo=True</code>, который позволит нам видеть все те запросы, которые алхимия будет формировать из нашего Python-кода и выполнять в БД.</p><p>Примеры будем запускать в контексте сессий. Благодаря контекстному менеджеру все выполненные в ней операции сессия будет:</p><ul><li><p>коммитить, если не было ошибок при исполнении запросов;</p></li><li><p>откатывать, если возникло исключение.</p></li></ul><p>Подробнее про сессии и рекомендации по их использованию можно прочитать <a href="https://docs.sqlalchemy.org/en/14/orm/session_basics.html#session-faq-whentocreate">здесь</a>.</p><details class="spoiler"><summary>Код</summary><div class="spoiler__content"><pre><code class="python">from contextlib import contextmanager
+
+import sqlalchemy as sa
+from sqlalchemy.orm import sessionmaker
+
+main_engine = sa.create_engine(
+    'postgres://localhost:5432/habr_sql?sslmode=disable',
+    echo=True,
+)
+
+DBSession = sessionmaker(
+    binds={
+        Base: main_engine,
+    },
+    expire_on_commit=False,
+)
+
+
+@contextmanager
+def session_scope():
+    """Provides a transactional scope around a series of operations."""
+    session = DBSession()
+    try:
+        yield session
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        session.close()
+
+if __name__ == '__main__':
+    with session_scope() as s:
+        &lt;actual_code></code></pre></div></details><p>Приведенных фрагментов кода достаточно для запуска всех следующих примеров. Напомню, что примеры в статьях сквозные, то есть «Пример n» в любой статье будет про одно и то же.</p><h4>Пример 1</h4><p>Хотим получить десять последних вопросов из определенного топика.</p><pre><code class="sql">SELECT *
+FROM question
+WHERE topic_id = 1
+ORDER BY id DESC
+LIMIT 10;</code></pre><p>Чтобы добиться такого запроса в алхимии:</p><pre><code class="python">questions = s.query(Question).filter(
+    Question.topic_id == t1_id,
+).order_by(Question.id.desc()).limit(10).all()</code></pre><p>Сразу учимся стандартному паттерну фильтрации через обращение к полям класса. В Django иной подход: в <code>filter</code> мы передавали значение для фильтрации по именованному аргументу, совпадающему с названием колонки в базе. Здесь же в результате <code>Question.topic_id == t1_id</code> в функцию передастся экземпляр класса <code>BinaryExpression</code>.</p><h4>Пример 2</h4><p>Теперь мы хотим найти такие вопросы из первого топика, в тексте которых либо содержится подстрока <code>fart</code>, либо не содержится упоминания <code>dog</code>, независимо от их регистра. Мы легко изобразим это на SQL:</p><pre><code class="sql">SELECT *
+FROM question
+WHERE (
+  topic_id = 1 AND (
+      text ILIKE '%fart%' OR
+      NOT (text ILIKE '%dog%')
+  )
+);</code></pre><p>В алхимии существенное отличие от Django-запроса я вижу лишь в использовании условия «или»:</p><pre><code class="python">questions = s.query(Question).filter(
+    Question.topic_id == 1,
+    sa.or_(Question.text.ilike('%fart%'), ~Question.text.ilike('%dog%'))
+)
+
+for q in questions:
+    print(q.id)</code></pre><p>В консоли увидим следующий SQL-запрос:</p><pre><code class="sql">SELECT question.id AS question_id, question.text AS question_text, question.topic_id AS question_topic_id 
+FROM question 
+WHERE question.topic_id = %(topic_id_1)s AND (
+  question.text ILIKE %(text_1)s OR question.text NOT ILIKE %(text_2)s
+)</code></pre><p>Обратите внимание, что запрос исполнится в тот момент, когда мы начнем итерироваться по <code>questions</code>. До этого запросов в базу не уходило, а в <code>questions</code> лежал объект <code>Query</code>, который можно ещё как-то модифицировать, добавив, например, лимит. Похожее мы видели и в Django. Это называется ленивой загрузкой (lazy loading).</p><p>Альтернативное написание Python-кода:</p><pre><code class="python">questions = s.query(Question).filter(
+  (Question.topic_id == 1) &amp;
+  (Question.text.ilike('%fart%') | ~Question.text.ilike('%dog%'))
+)</code></pre><p>...приведет к исполнению идентичного запроса.</p><h4>Пример 3</h4><p>Этот пример подводит нас к теме оптимизации запросов. Допустим, мы хотим получить данные не только самого вопроса, но и связанного с ним топика. В алхимии действует схожий принцип. Работа «в лоб»:</p><pre><code class="python">q = s.query(Question).filter(Question.id == 1).first()  # sa.3.1
+print(q.topic.title)  # sa.3.2</code></pre><p>...приведет к тому что, <code>sa.3.1</code> отправит запрос за вопросом, а <code>sa.3.2</code> — за топиком. Чтобы отправить в базу только один запрос, нужно воспользоваться опциями:</p><pre><code class="python">q = s.query(Question).filter(
+    Question.id == 1,
+).options(joinedload(Question.topic)).first()
+print(q.topic.title)</code></pre><p>В алхимии этот подход носит название Eager Loading, вот <a href="https://docs.sqlalchemy.org/en/13/orm/tutorial.html#eager-loading">ссылка</a> на примеры. Опции загрузки можно указывать не только при формировании запроса, но и при <a href="https://docs.sqlalchemy.org/en/13/orm/loading_relationships.html">описании модели</a>. Но мне больше нравится явно указывать опции загрузки именно при формировании запроса.</p><p>Давайте убедимся, что сгенерированный SQL соответствует нашим ожиданиям. Советую делать так при любом запросе, который вы добавляете в приложение. Времени это займёт пару минут, зато придаст вам уверенности и спасёт от большого количества проблем с производительностью.</p><pre><code class="sql">SELECT question.id       AS question_id,
+       question.text     AS quetion_text,
+       question.topic_id AS question_topic_id,
+       topic_1.id        AS topic_1_id,
+       topic_1.title     AS topic_1_title,
+       topic_1.image_id  AS topic_1_image_id
+FROM question
+         LEFT OUTER JOIN topic AS topic_1 ON topic_1.id = question.topic_id
+WHERE question.id = %(id_1)s
+LIMIT %(param_1)s;</code></pre><p>Всё неплохо, ведь мы получим данные топика и не придется повторно ходить в базу. Но <code>LEFT JOIN</code> в нашей схеме данных излишен, потому что не может быть вопроса, не привязанного к топику. Мы можем подсказать алхимии при определении relation-а использовать именно <code>INNER JOIN</code>, который более производителен, чем <code>OUTER</code>:</p><pre><code class="python">topic = sa.orm.relationship(Topic, innerjoin=True)</code></pre><p>С таким параметром мы получим честный <code>INNER JOIN</code>.</p><p>Есть еще одна особенность алхимии. Как я упоминал в разделе «Подготовка», в примерах мы работаем внутри контекста сессии. Но если объект будет вынесен за сессию, то для связанного объекта мы потеряем возможность «подгрузки на лету». Например:</p><pre><code class="python">with session_scope() as s:
+    q = s.query(Question).filter(Question.id == 1).first()
+print(q.topic.title)
+# sqlalchemy.orm.exc.DetachedInstanceError: Parent instance &lt;Question at 0x109dde470> is not bound to a Session; lazy load operation of attribute 'topic' cannot proceed</code></pre><h4>Пример 4</h4><p>Этот пример углубит наши знания по технике нетерпеливой подгрузки. Допустим, нам нужен не только связанный с вопросом топик, но ещё и изображение этого топика. В алхимии (если говорить о работе внутри сессии) «магия» библиотеки позволяет получить доступ к связанным объектам без дополнительных действий со стороны разработчика. Напомню, что похожую ситуацию мы наблюдали и в Django.</p><pre><code class="python">with session_scope() as s:
+    for q in s.query(Question).filter(Question.topic_id == 1).all():  # sa.4.1
+        print(q.topic.title)  # sa.4.2
+        print(q.topic.image.name)  # sa.4.3</code></pre><p>Ожидаемо получаем запрос за вопросами в <code>sa.4.1</code>. При итерировании ситуация лучше, чем в Django, потому что объекты после получения из базы кешируются в сессии. Поэтому на первом проходе цикла мы получим два запроса:</p><ul><li><p><code>sa.4.2</code> — за топиком;</p></li><li><p><code>sa.4.3</code> — за изображением. </p></li></ul><p>Но на втором проходе дополнительных запросов не будет, потому что топик и картинка закешировались в сессии. Однако это не спасёт, если вопросы будут относиться к разным топикам.</p><p>Чтобы явно попросить алхимию заняться нетерпеливой подгрузкой, снова используем опции. На этот раз две:</p><pre><code class="python">with session_scope() as s:
+    for q in s.query(Question).options(
+        joinedload('topic'),
+        joinedload('topic.image'),
+    ).filter(Question.topic_id == 1).all():  # sa.4.4
+        print(q.topic.title)  # sa.4.5
+        print(q.topic.image.name)  # sa.4.6</code></pre><p>В этом случае только <code>sa.3.4</code> спровоцирует запрос в базу.</p><pre><code class="sql">SELECT question.id       AS question_id,
+       question.text     AS question_text,
+       question.topic_id AS question_topic_id,
+       image_1.id        AS image_1_id,
+       image_1.name      AS image_1_name,
+       topic_1.id        AS topic_1_id,
+       topic_1.title     AS topic_1_title,
+       topic_1.image_id  AS topic_1_image_id
+FROM question
+         JOIN topic AS topic_1 ON topic_1.id = question.topic_id
+         LEFT OUTER JOIN image AS image_1 ON image_1.id = topic_1.image_id
+WHERE question.topic_id = %(topic_id_1)s</code></pre><p>Второй join — <code>LEFT OUTER JOIN</code>. Если нам нужен <code>INNER JOIN</code>, то мы уже знаем, как нужно действовать: <code>image = sa.orm.relationship(Image, innerjoin=True)</code>.</p><h4>Пример 5</h4><p>Допустим, теперь мы хотим обработать все вопросы у каждого топика. Как и в Django, для решения этой задачи можно написать обычный запрос с фильтрацией. Так мы получим простое, но не оптимизированное решение:</p><pre><code class="python">for t in s.query(Topic).filter(Topic.id.in_([1, 2])).all():  # sa.5.1
+    print([q.text for q in t.questions])  # sa.5.2</code></pre><ul><li><p><code>sa.5.1</code> — запрос за списком топиков;</p></li><li><p><code>sa.5.2</code> — N запросов за вопросами на каждом шаге цикла по топикам.</p></li></ul><p>Улучшение снова заключается в использовании опций.</p><pre><code class="python">for t in s.query(Topic).options(joinedload('questions')).filter(Topic.id.in_([1, 2])).all():
+    print([q.text for q in t.questions])</code></pre><p>И получаем только один итоговый запрос, в отличие от Django, где их было два. В чём разница? Здесь один более сложный запрос с <code>LEFT OUTER JOIN</code>, который в итоге приводит к тому же самому.</p><pre><code>SELECT topic.id            AS topic_id,
+       topic.title         AS topic_title,
+       topic.image_id      AS topic_image_id,
+       question_1.id       AS question_1_id,
+       question_1.text     AS question_1_text,
+       question_1.topic_id AS question_1_topic_id
+FROM topic
+         LEFT OUTER JOIN question AS question_1 ON topic.id = question_1.topic_id
+WHERE topic.id IN (%(id_1)s, %(id_2)s)
+</code></pre><p>Контролировать поведение можно с помощью другой опции: <code>subqueryload</code>. Но второй запрос в этом случае будет отличаться от аналогичного запроса в Django. Для определения идентификаторов топиков будет использован первый запрос вместо простого аргумента с этими идентификаторами.</p><h4>Пример 6</h4><p>Допустим, теперь нам нужно подгрузить к топику не все вопросы, а только те, которые отвечают определенному условию. При этом у некоторых топиков может оказаться пустой список вопросов.</p><p>В алхимии фильтровать массив вопросов можно с помощью новой опции и алиаса, что в совокупности выглядит не самым тривиальным способом.</p><pre><code class="python">q_stmt = s.query(Question).filter(Question.text.ilike('%fart%')).subquery()  # sa.6.1
+alias = aliased(Question, q_stmt)  # sa.6.2
+
+filtered_topics = s.query(Topic).outerjoin(  # sa.6.3
+    Topic.questions.of_type(alias),  # sa.6.4    
+).options(
+    contains_eager(Topic.questions.of_type(alias)),  # sa.6.5
+)
+
+for t in filtered_topics:
+    print(f'{t.title}')
+    for q in t.questions:
+        print(f' --- {q.text}')</code></pre><ul><li><p><code>sa.6.1</code>: создаем подзапрос, выбирающий интересующие нас вопросы. В базу запрос на этом этапе еще не уходит.</p></li><li><p><code>sa.6.2</code>: создаем алиас. Они обычно используются для <code>SELF JOIN</code>-а или для замены оригинальной таблицы представляющим её запросом.</p></li><li><p><code>sa.6.3</code>: явно указываем, что нужно использовать <code>LEFT OUTER JOIN</code>.</p></li><li><p><code>sa.6.4</code>: за счет <code>of_type</code> мы джойним не с целой таблицей, а с тем подзапросом, который нам нужен.</p></li><li><p><code>sa.6.5</code>: просим в <code>Topic.questions</code> подгрузить сущности не отдельным запросом, а уже из сформированных нами колонок. Подробнее см. <a href="https://docs.sqlalchemy.org/en/13/orm/loading_relationships.html#sqlalchemy.orm.contains_eager">здесь</a>.</p></li></ul><p>Вот подходящий <a href="https://docs.sqlalchemy.org/en/13/orm/loading_relationships.html#routing-explicit-joins-statements-into-eagerly-loaded-collections">пример из документации</a>:</p><pre><code class="sql">SELECT anon_1.id       AS anon_1_id,
+       anon_1.text     AS anon_1_text,
+       anon_1.topic_id AS anon_1_topic_id,
+       topic.id        AS topic_id,
+       topic.title     AS topic_title,
+       topic.image_id  AS topic_image_id
+FROM topic
+         LEFT OUTER JOIN (
+    SELECT question.id AS id, question.text AS text, question.topic_id AS topic_id
+    FROM question
+    WHERE question.text ILIKE %(text_1)s
+) AS anon_1 ON topic.id = anon_1.topic_id</code></pre><h4>Пример 7</h4><p>В этом примере мы познакомимся с группировкой и подзапросами. Для этого найдем топики, у которых больше десяти вопросов.</p><p>В алхимии применяется схожий с Django подход: сначала формируем подзапрос, а потом используем его в основном селекте:</p><pre><code class="python">topic_ids = s.query(
+    Question.topic_id.label('topic_id'),
+).group_by(Question.topic_id).having(
+    sa.func.count(Question.id) > 1,
+)
+
+topics = s.query(Topic).filter(Topic.id.in_(topic_ids))
+
+for t in topics:
+    print(f'{t.title}')</code></pre><p>В базу уходит такой же запрос, как в Django:</p><pre><code class="sql">SELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id 
+FROM topic 
+WHERE topic.id IN (
+  SELECT question.topic_id AS topic_id 
+  FROM question GROUP BY question.topic_id 
+  HAVING count(question.id) > %(count_1)s
+)</code></pre><p>Будьте внимательны: при написании этого примера я автоматически добавил <code>.subquery()</code> к формированию <code>topic_ids</code>, а это приводит к лишнему подзапросу:</p><pre><code class="sql">SELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id
+FROM topic
+WHERE topic.id IN (
+    SELECT anon_1.topic_id
+    FROM (
+             SELECT question.topic_id AS topic_id
+             FROM question
+             GROUP BY question.topic_id
+             HAVING count(question.id) > %(count_1)s
+         ) AS anon_1
+)</code></pre><p>Не критично, но зачем оставлять ненужный код? Да и вопросов от придирчивого DBA сможете избежать.</p><h4>Пример 8</h4><p>Этот пример посвящен обзору common table expression (CTE), которыми частенько пользуешься при написании сырых запросов к PostgreSQL ради читаемости и удобства.</p><p>Допустим, мы хотим достать из базы топики, у которых определенных вопросов больше десяти. Сначала формируем CTE, в котором найдем идентификаторы нужных топиков:</p><pre><code class="python">topic_ids = s.query(Question.topic_id.label('topic_id')).filter(
+    Question.text.ilike('%best%'),
+).group_by(Question.topic_id).having(
+    sa.func.count(Question.id) > 10,
+).cte(name='topic_ids')</code></pre><p>Далее используем CTE в основном запросе, чтобы достать соответствующие топики:</p><pre><code class="python">topics = s.query(Topic).filter(Topic.id.in_(sa.select([topic_ids.c.topic_id])))
+print(', '.join(t.title for t in topics))</code></pre><p>Запрос получается такой:</p><pre><code class="sql">WITH topic_ids AS (
+  SELECT question.topic_id AS topic_id 
+  FROM question 
+  WHERE question.text ILIKE %(text_1)s
+  GROUP BY question.topic_id 
+  HAVING count(question.id) > %(count_1)s
+)
+SELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id 
+FROM topic 
+WHERE topic.id IN (
+  SELECT topic_ids.topic_id 
+  FROM topic_ids
+)</code></pre><h4>Пример 9</h4><p>Здесь рассмотрим запросы к many-to-many отношениям. Допустим, мы хотим для каждого топика получить список пользователей, которые имеют к нему доступ.</p><p>И снова можно сгенерировать запрос без дополнительных усилий с нашей стороны, библиотека всё делает за нас. Однако за такую помощь приходится расплачиваться. Если не указать опции, то для каждого топика будет отдельный запрос за списком пользователей:</p><pre><code class="python">for t in s.query(Topic).all():  # sa.9.1
+    names = ', '.join(u.name for u in t.users)   # sa.9.2
+    print(f'Topic[{t.title}]: {names}')</code></pre><pre><code class="sql">-- sa.9.1
+SELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id
+FROM topic;
+
+-- sa.9.2
+SELECT "user".id AS user_id, "user".name AS user_name 
+FROM "user", topic_user 
+WHERE %(param_1)s = topic_user.topic_id AND "user".id = topic_user.user_id
+
+-- sa.9.2
+SELECT "user".id AS user_id, "user".name AS user_name 
+FROM "user", topic_user 
+WHERE %(param_1)s = topic_user.topic_id AND "user".id = topic_user.user_id
+</code></pre><p>Только вот запрос, порождаемый <code>sa.9.2</code>, будет без <code>INNER JOIN</code>. Там декартово произведение таблиц, из которого условием выбираются нужные строки, и так оставлять нельзя. На помощь снова приходят опции:</p><pre><code class="python">for t in s.query(Topic).options(
+        joinedload('users'),
+).all():
+    names = ', '.join(u.name for u in t.users)
+    print(f'Topic[{t.title}]: {names}')</code></pre><pre><code class="sql">SELECT topic.id       AS topic_id,
+       topic.title    AS topic_title,
+       topic.image_id AS topic_image_id,
+       user_1.id      AS user_1_id,
+       user_1.name    AS user_1_name
+FROM topic
+         LEFT OUTER JOIN (topic_user AS topic_user_1 JOIN "user" AS user_1 ON user_1.id = topic_user_1.user_id)
+                         ON topic.id = topic_user_1.topic_id</code></pre><p>Если в промежуточной таблице содержатся дополнительные данные, к которым мы хотим получать доступ (у нас это поле <code>TopicUser.role</code>), то нужно описывать модели согласно <a href="https://docs.sqlalchemy.org/en/13/orm/basic_relationships.html#association-object">паттерну Association Object</a>. В наших схемах смотри закомментированные строки под комментарием <code># association.</code> Там же есть пример «обратных» зависимостей: когда мы получаем не коллекцию пользователей топика, а набор топиков, доступных пользователю.</p><pre><code class="python">with session_scope() as s:
+    u = s.query(User).filter(User.id == 1).first()  # sa.9.3
+    for t in u.topics:  # sa.9.4
+        print(f'{u.name} is {t.role} in topic "{t.topic.title}"')  # sa.9.5</code></pre><pre><code class="sql">-- sa.9.3
+SELECT "user".id AS user_id, "user".name AS user_name 
+FROM "user" 
+WHERE "user".id = %(id_1)s
+
+-- sa.9.4
+SELECT topic_user.id AS topic_user_id, topic_user.topic_id AS topic_user_topic_id, topic_user.user_id AS topic_user_user_id, topic_user.role AS topic_user_role 
+FROM topic_user 
+WHERE %(param_1)s = topic_user.user_id
+
+-- sa.9.5
+SELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id 
+FROM topic 
+WHERE topic.id = %(param_1)s
+
+-- sa.9.5
+SELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id 
+FROM topic 
+WHERE topic.id = %(param_1)s</code></pre><p>И снова предыдущий запрос и последующий цикл не отличаются оптимальностью, потому что провоцирует лишние запросы к базе. Чтобы их избежать, давайте укажем, что мы заранее знаем, что нам потребуются данные о топиках пользователя.</p><pre><code class="python">u = s.query(User).filter(User.id == 1).options(
+    joinedload('topics'),
+    selectinload('topics.topic'),
+).first()
+
+for t in u.topics:
+    print(f'{u.name} is {t.role} in topic "{t.topic.title}"')
+</code></pre><pre><code class="sql">SELECT anon_1.user_id        AS anon_1_user_id,
+       anon_1.user_name      AS anon_1_user_name,
+       topic_user_1.id       AS topic_user_1_id,
+       topic_user_1.topic_id AS topic_user_1_topic_id,
+       topic_user_1.user_id  AS topic_user_1_user_id,
+       topic_user_1.role     AS topic_user_1_role
+FROM (
+         SELECT "user".id AS user_id, "user".name AS user_name
+         FROM "user"
+         WHERE "user".id = %(id_1)s
+         LIMIT %(param_1)s
+     ) AS anon_1
+         LEFT OUTER JOIN topic_user AS topic_user_1 ON anon_1.user_id = topic_user_1.user_id
+
+SELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id 
+FROM topic 
+WHERE topic.id IN (%(primary_keys_1)s, %(primary_keys_2)s)</code></pre><p>Первый запрос здесь вытягивает пользователя с соответствующими ему строками <code>topic_user</code>, а второй ищет нужные топики. Коллекции же формируются скрытым от нас образом в коде алхимии.</p><h4>Пример 10</h4><p>Приступим к другой стороне оптимизации. При вставке большого количества новых записей для улучшения производительности рекомендуется пользоваться bulk-операциями. Они позволяют за один запрос вставить много строк.</p><pre><code class="python">s.bulk_save_objects([
+    Topic(title=f'topic {i}', image_id=1)
+    for i in range(3)
+])</code></pre><p>В алхимии Python-код очень похож на Django. Но вот SQL выглядит необычно:</p><pre><code class="sql">INSERT INTO topic (title, image_id) VALUES (%(title)s, %(image_id)s)
+({'title': 'topic 0', 'image_id': 1}, {'title': 'topic 1', 'image_id': 1}, {'title': 'topic 2', 'image_id': 1})</code></pre><p>Запрос не похож на множественную вставку. Так же и с обновлением, о котором поговорим ниже.</p><h4>Пример 11.</h4><p>Другая сторона bulk-операций — это массовое обновление. В алхимии можно не создавать экземпляры моделей, а ограничиться словарями с PK и полями для обновления.</p><pre><code class="python">s.bulk_update_mappings(
+    User,
+    [dict(id=1, name='new 1 name'), dict(id=2, name='new 2 name')]
+)</code></pre><pre><code class="sql">UPDATE "user" SET name=%(name)s WHERE "user".id = %(user_id)s
+({'name': 'new 1 name', 'user_id': 1}, {'name': 'new 2 name', 'user_id': 2})</code></pre><p>Здесь мы видим в логе совсем другой запрос, и он не похож на множественное обновление. Я не исследовал этот вопрос подробно, но в <a href="https://docs.sqlalchemy.org/en/14/orm/session_api.html#sqlalchemy.orm.Session.bulk_update_mappings">документации</a> сказано, что используется executemany. Если речь об <a href="https://www.psycopg.org/docs/cursor.html#cursor.executemany">этом</a>, то большого выигрыша в производительности мы не получим. Но повторюсь, это догадки. Оставим это сведущему комментатору или для следующей статьи.</p><h2>Заключение</h2><p>Алхимия мне кажется более сложным в освоении инструментом, чем Django ORM, но и более гибким. Также алхимию можно применять в любой проекте, в то время как ORM от Django недоступен в отрыве от основного фреймворка. Очень хочется пощупать алхимию 2.0 с полноценной поддержкой асинхронщины, но пока не дошли руки.</p><p>Надеюсь, вы узнали что-нибудь полезное из этой статьи. В следующий раз окунемся в прекрасную библиотеку go-pg, которую мы используем в каждом проекте на Go, где есть взаимодействие с PostgreSQL. Спасибо за внимание, и не забывайте, что библиотеки могут быть коварны, поэтому всегда проверяйте, что скрывается за красивым кодом в пару строк.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpython%5D" class="tm-tags-list__link">python</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%BF%D1%82%D0%B8%D0%BC%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%5D" class="tm-tags-list__link">оптимизация</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B7%D0%B0%D0%BF%D1%80%D0%BE%D1%81%D1%8B%5D" class="tm-tags-list__link">запросы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bsql%5D" class="tm-tags-list__link">sql</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpostgresql%5D" class="tm-tags-list__link">postgresql</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/domclick/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании ДомКлик
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/postgresql/" class="tm-hubs-list__link">
+    PostgreSQL
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/sql/" class="tm-hubs-list__link">
+    SQL
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 32: ↑29 и ↓3</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 32: ↑29 и ↓3" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+26</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">6.1K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    54
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/domclick/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/d28/115/f55/d28115f5503229d4f9018292fabd1840.jpg" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/domclick/profile/" class="tm-company-snippet__title">Домклик</a> <div class="tm-company-snippet__description">Место силы</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://domclick.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://team.domclick.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/alexey_and_kazakov/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 38 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    34
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">26</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/alexey_and_kazakov/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @alexey_and_kazakov
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/domclick/blog/581304/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 4 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-07-18T21:00:00.000Z" title="2015-07-19, 00:00">19  июля  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://domclick.ru/" target="_blank" class="tm-company-basic-info__link">
+      domclick.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    501–1 000 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2020-03-17T09:21:32.000Z" title="2020-03-17, 12:21">17  марта  2020</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/malanshakova/" class="tm-company-basic-info__link">
+      Мария Ланшакова
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/domclick/blog/581304/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/domclick/blog/581304/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"581304":{"id":"581304","timePublished":"2021-10-12T08:00:02+00:00","isCorporative":true,"lang":"ru","titleHtml":"SQL в SQLAlchemy","leadData":{"textHtml":"\u003Cp\u003EМеня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object Relational Mapper. В этой статье я продолжу знакомить вас с популярными ORM, которые встречались мне в продовых проектах. На очереди всемогущий \u003Ca href=\"https:\u002F\u002Fwww.sqlalchemy.org\u002F\"\u003ESQLAlchemy\u003C\u002Fa\u003E.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F433\u002F2bf\u002F981\u002F4332bf981d4fe5ca56ad3e026347911d.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F433\u002F2bf\u002F981\u002F4332bf981d4fe5ca56ad3e026347911d.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":34,"votesCount":38},"rating":26,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2356013","alias":"alexey_and_kazakov","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":4,"favoritesCount":54,"readingCount":6130,"score":26,"votesCount":32},"hubs":[{"relatedData":null,"id":"22422","alias":"domclick","type":"corporative","title":"Блог компании ДомКлик","titleHtml":"Блог компании ДомКлик","isProfiled":false},{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true},{"relatedData":null,"id":"358","alias":"postgresql","type":"collective","title":"PostgreSQL","titleHtml":"PostgreSQL","isProfiled":true},{"relatedData":null,"id":"594","alias":"sql","type":"collective","title":"SQL","titleHtml":"SQL","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EМеня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object Relational Mapper. В этой статье я продолжу знакомить вас с популярными ORM, которые встречались мне в продовых проектах. В \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fdomclick\u002Fblog\u002F552930\u002F\"\u003Eпрошлый раз\u003C\u002Fa\u003E мы рассматривали Django ORM , а сегодня на очереди всемогущий \u003Ca href=\"https:\u002F\u002Fwww.sqlalchemy.org\u002F\"\u003ESQLAlchemy\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"1502\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F433\u002F2bf\u002F981\u002F4332bf981d4fe5ca56ad3e026347911d.png\" data-width=\"2310\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EБудем придерживаться привычного плана:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eпосмотрим на схему данных (сырой SQL);\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eопишем эту схему с помощью alchemy-моделей;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eпознакомимся с несколькими хитростями для удобной отладки;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eа в основной части изучим примеры запросов.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EОсобое внимание уделим сырому SQL, который будет генерировать библиотека. Ведь именно от него зависит производительность и количество запросов, которые зачастую определяют эффективность работы всего приложения.\u003C\u002Fp\u003E\u003Ch2\u003EСхема\u003C\u002Fh2\u003E\u003Cp\u003EСхему мы оставляем неизменной на протяжении всех статей. Пусть у нас есть приложение, в котором пользователи (User) могут задавать вопросы (Question) внутри разных тем (Topic). У топика есть картинка (Image). Доступ пользователя к топику определяется через many-to-many отношение TopicUser, которое кроме ForeignKey (FK) для пользователя и FK для топика содержит дополнительную информацию — роль пользователя в топике.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"1600\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F2d6\u002F754\u002F6f2\u002F2d67546f2bfc7b1aff3405ff83cd5e63.png\" data-width=\"1409\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EСоздать базу данных можно таким SQL-ем:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ECREATE TABLE \"image\"\n(\n    \"id\"   serial NOT NULL PRIMARY KEY,\n    \"name\" text   NOT NULL\n);\n\nCREATE TABLE \"topic\"\n(\n    \"id\"       serial  NOT NULL PRIMARY KEY,\n    \"title\"    text    NOT NULL,\n    \"image_id\" integer REFERENCES \"image\" (\"id\") NOT NULL\n);\n\nCREATE TABLE \"user\"\n(\n    \"id\"   serial NOT NULL PRIMARY KEY,\n    \"name\" text   NOT NULL\n);\n\nCREATE TABLE \"topic_user\"\n(\n    \"id\"       serial  NOT NULL PRIMARY KEY,\n    \"role\"     text    NOT NULL,\n    \"topic_id\" integer REFERENCES \"topic\" (\"id\") NOT NULL,\n    \"user_id\"  integer REFERENCES \"user\" (\"id\") NOT NULL\n);\n\nCREATE TABLE \"question\"\n(\n    \"id\"       serial  NOT NULL PRIMARY KEY,\n    \"text\"     text    NOT NULL,\n    \"topic_id\" integer REFERENCES \"topic\" (\"id\") NOT NULL \n);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EAlchemy models\u003C\u002Fh2\u003E\u003Cp\u003EЧтобы создать модели, которые будут представлять SQL-таблицы в нашем Python-коде, предварительно необходимо создать базовый класс для всех моделей. Обычно его называют \u003Ccode\u003EBase\u003C\u002Fcode\u003E, и все модели приложения наследуют от этого класса. Этот declarative base class содержит справочник всех «своих» таблиц и соответствующих ему классов. Обычно \u003Ccode\u003EBase\u003C\u002Fcode\u003E один на приложение, его заводят в общем модуле. С помощью разных базовых классов можно организовать подключение к разным базам данных.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EКод\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom sqlalchemy.ext.declarative import declarative_base\n\nBase = declarative_base()\n\n\nclass Image(Base):\n    __tablename__ = 'image'\n\n    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)\n    name = sa.Column(sa.Text, nullable=False)\n\n\nclass Topic(Base):\n    __tablename__ = 'topic'\n\n    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)\n    title = sa.Column(sa.Text, nullable=False)\n    image_id = sa.Column(sa.Integer, sa.ForeignKey('image.id'), nullable=False)\n    image = sa.orm.relationship(Image)  # innerjoin=True для JOIN\n    questions = sa.orm.relationship('Question')\n\n    users = sa.orm.relationship('User', secondary='topic_user')\n    # association\n    # users = sa.orm.relationship('TopicUser', back_populates='topic')\n\n\nclass User(Base):\n    __tablename__ = 'user'\n\n    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)\n    name = sa.Column(sa.Text, nullable=False)\n\n    # association\n    # topics = sa.orm.relationship('TopicUser', back_populates='user')\n\n\nclass TopicUser(Base):\n    __tablename__ = 'topic_user'\n\n    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)\n    topic_id = sa.Column(sa.Integer, sa.ForeignKey('topic.id'))\n    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))\n    role = sa.Column(sa.Text)\n\n    # association\n    # user = sa.orm.relationship(User, back_populates='topics')\n    # topic = sa.orm.relationship(Topic, back_populates='users')\n\n\nclass Question(Base):\n    __tablename__ = 'question'\n\n    id = sa.Column(sa.Integer, primary_key=True, autoincrement=True)\n    text = sa.Column(sa.Text)\n    topic_id = sa.Column(sa.Integer, sa.ForeignKey('topic.id'), nullable=False)\n    topic = sa.orm.relationship(Topic)  # innerjoin=True для использования JOIN вместо LEFT JOIN\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Ch2\u003EПодготовка\u003C\u002Fh2\u003E\u003Cp\u003EПодключение к базе выполняется с помощью движка, при создании которого необходимо указать строку подключения. Также мы указываем параметр \u003Ccode\u003Eecho=True\u003C\u002Fcode\u003E, который позволит нам видеть все те запросы, которые алхимия будет формировать из нашего Python-кода и выполнять в БД.\u003C\u002Fp\u003E\u003Cp\u003EПримеры будем запускать в контексте сессий. Благодаря контекстному менеджеру все выполненные в ней операции сессия будет:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eкоммитить, если не было ошибок при исполнении запросов;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eоткатывать, если возникло исключение.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EПодробнее про сессии и рекомендации по их использованию можно прочитать \u003Ca href=\"https:\u002F\u002Fdocs.sqlalchemy.org\u002Fen\u002F14\u002Form\u002Fsession_basics.html#session-faq-whentocreate\"\u003Eздесь\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EКод\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom contextlib import contextmanager\n\nimport sqlalchemy as sa\nfrom sqlalchemy.orm import sessionmaker\n\nmain_engine = sa.create_engine(\n    'postgres:\u002F\u002Flocalhost:5432\u002Fhabr_sql?sslmode=disable',\n    echo=True,\n)\n\nDBSession = sessionmaker(\n    binds={\n        Base: main_engine,\n    },\n    expire_on_commit=False,\n)\n\n\n@contextmanager\ndef session_scope():\n    \"\"\"Provides a transactional scope around a series of operations.\"\"\"\n    session = DBSession()\n    try:\n        yield session\n        session.commit()\n    except Exception as e:\n        session.rollback()\n        raise e\n    finally:\n        session.close()\n\nif __name__ == '__main__':\n    with session_scope() as s:\n        &lt;actual_code\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EПриведенных фрагментов кода достаточно для запуска всех следующих примеров. Напомню, что примеры в статьях сквозные, то есть «Пример n» в любой статье будет про одно и то же.\u003C\u002Fp\u003E\u003Ch4\u003EПример 1\u003C\u002Fh4\u003E\u003Cp\u003EХотим получить десять последних вопросов из определенного топика.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT *\nFROM question\nWHERE topic_id = 1\nORDER BY id DESC\nLIMIT 10;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЧтобы добиться такого запроса в алхимии:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Equestions = s.query(Question).filter(\n    Question.topic_id == t1_id,\n).order_by(Question.id.desc()).limit(10).all()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСразу учимся стандартному паттерну фильтрации через обращение к полям класса. В Django иной подход: в \u003Ccode\u003Efilter\u003C\u002Fcode\u003E мы передавали значение для фильтрации по именованному аргументу, совпадающему с названием колонки в базе. Здесь же в результате \u003Ccode\u003EQuestion.topic_id == t1_id\u003C\u002Fcode\u003E в функцию передастся экземпляр класса \u003Ccode\u003EBinaryExpression\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Ch4\u003EПример 2\u003C\u002Fh4\u003E\u003Cp\u003EТеперь мы хотим найти такие вопросы из первого топика, в тексте которых либо содержится подстрока \u003Ccode\u003Efart\u003C\u002Fcode\u003E, либо не содержится упоминания \u003Ccode\u003Edog\u003C\u002Fcode\u003E, независимо от их регистра. Мы легко изобразим это на SQL:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT *\nFROM question\nWHERE (\n  topic_id = 1 AND (\n      text ILIKE '%fart%' OR\n      NOT (text ILIKE '%dog%')\n  )\n);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ алхимии существенное отличие от Django-запроса я вижу лишь в использовании условия «или»:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Equestions = s.query(Question).filter(\n    Question.topic_id == 1,\n    sa.or_(Question.text.ilike('%fart%'), ~Question.text.ilike('%dog%'))\n)\n\nfor q in questions:\n    print(q.id)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ консоли увидим следующий SQL-запрос:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT question.id AS question_id, question.text AS question_text, question.topic_id AS question_topic_id \nFROM question \nWHERE question.topic_id = %(topic_id_1)s AND (\n  question.text ILIKE %(text_1)s OR question.text NOT ILIKE %(text_2)s\n)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОбратите внимание, что запрос исполнится в тот момент, когда мы начнем итерироваться по \u003Ccode\u003Equestions\u003C\u002Fcode\u003E. До этого запросов в базу не уходило, а в \u003Ccode\u003Equestions\u003C\u002Fcode\u003E лежал объект \u003Ccode\u003EQuery\u003C\u002Fcode\u003E, который можно ещё как-то модифицировать, добавив, например, лимит. Похожее мы видели и в Django. Это называется ленивой загрузкой (lazy loading).\u003C\u002Fp\u003E\u003Cp\u003EАльтернативное написание Python-кода:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Equestions = s.query(Question).filter(\n  (Question.topic_id == 1) &amp;\n  (Question.text.ilike('%fart%') | ~Question.text.ilike('%dog%'))\n)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E...приведет к исполнению идентичного запроса.\u003C\u002Fp\u003E\u003Ch4\u003EПример 3\u003C\u002Fh4\u003E\u003Cp\u003EЭтот пример подводит нас к теме оптимизации запросов. Допустим, мы хотим получить данные не только самого вопроса, но и связанного с ним топика. В алхимии действует схожий принцип. Работа «в лоб»:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eq = s.query(Question).filter(Question.id == 1).first()  # sa.3.1\nprint(q.topic.title)  # sa.3.2\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E...приведет к тому что, \u003Ccode\u003Esa.3.1\u003C\u002Fcode\u003E отправит запрос за вопросом, а \u003Ccode\u003Esa.3.2\u003C\u002Fcode\u003E — за топиком. Чтобы отправить в базу только один запрос, нужно воспользоваться опциями:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eq = s.query(Question).filter(\n    Question.id == 1,\n).options(joinedload(Question.topic)).first()\nprint(q.topic.title)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ алхимии этот подход носит название Eager Loading, вот \u003Ca href=\"https:\u002F\u002Fdocs.sqlalchemy.org\u002Fen\u002F13\u002Form\u002Ftutorial.html#eager-loading\"\u003Eссылка\u003C\u002Fa\u003E на примеры. Опции загрузки можно указывать не только при формировании запроса, но и при \u003Ca href=\"https:\u002F\u002Fdocs.sqlalchemy.org\u002Fen\u002F13\u002Form\u002Floading_relationships.html\"\u003Eописании модели\u003C\u002Fa\u003E. Но мне больше нравится явно указывать опции загрузки именно при формировании запроса.\u003C\u002Fp\u003E\u003Cp\u003EДавайте убедимся, что сгенерированный SQL соответствует нашим ожиданиям. Советую делать так при любом запросе, который вы добавляете в приложение. Времени это займёт пару минут, зато придаст вам уверенности и спасёт от большого количества проблем с производительностью.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT question.id       AS question_id,\n       question.text     AS quetion_text,\n       question.topic_id AS question_topic_id,\n       topic_1.id        AS topic_1_id,\n       topic_1.title     AS topic_1_title,\n       topic_1.image_id  AS topic_1_image_id\nFROM question\n         LEFT OUTER JOIN topic AS topic_1 ON topic_1.id = question.topic_id\nWHERE question.id = %(id_1)s\nLIMIT %(param_1)s;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВсё неплохо, ведь мы получим данные топика и не придется повторно ходить в базу. Но \u003Ccode\u003ELEFT JOIN\u003C\u002Fcode\u003E в нашей схеме данных излишен, потому что не может быть вопроса, не привязанного к топику. Мы можем подсказать алхимии при определении relation-а использовать именно \u003Ccode\u003EINNER JOIN\u003C\u002Fcode\u003E, который более производителен, чем \u003Ccode\u003EOUTER\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Etopic = sa.orm.relationship(Topic, innerjoin=True)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EС таким параметром мы получим честный \u003Ccode\u003EINNER JOIN\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EЕсть еще одна особенность алхимии. Как я упоминал в разделе «Подготовка», в примерах мы работаем внутри контекста сессии. Но если объект будет вынесен за сессию, то для связанного объекта мы потеряем возможность «подгрузки на лету». Например:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Ewith session_scope() as s:\n    q = s.query(Question).filter(Question.id == 1).first()\nprint(q.topic.title)\n# sqlalchemy.orm.exc.DetachedInstanceError: Parent instance &lt;Question at 0x109dde470\u003E is not bound to a Session; lazy load operation of attribute 'topic' cannot proceed\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch4\u003EПример 4\u003C\u002Fh4\u003E\u003Cp\u003EЭтот пример углубит наши знания по технике нетерпеливой подгрузки. Допустим, нам нужен не только связанный с вопросом топик, но ещё и изображение этого топика. В алхимии (если говорить о работе внутри сессии) «магия» библиотеки позволяет получить доступ к связанным объектам без дополнительных действий со стороны разработчика. Напомню, что похожую ситуацию мы наблюдали и в Django.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Ewith session_scope() as s:\n    for q in s.query(Question).filter(Question.topic_id == 1).all():  # sa.4.1\n        print(q.topic.title)  # sa.4.2\n        print(q.topic.image.name)  # sa.4.3\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОжидаемо получаем запрос за вопросами в \u003Ccode\u003Esa.4.1\u003C\u002Fcode\u003E. При итерировании ситуация лучше, чем в Django, потому что объекты после получения из базы кешируются в сессии. Поэтому на первом проходе цикла мы получим два запроса:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.4.2\u003C\u002Fcode\u003E — за топиком;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.4.3\u003C\u002Fcode\u003E — за изображением. \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EНо на втором проходе дополнительных запросов не будет, потому что топик и картинка закешировались в сессии. Однако это не спасёт, если вопросы будут относиться к разным топикам.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы явно попросить алхимию заняться нетерпеливой подгрузкой, снова используем опции. На этот раз две:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Ewith session_scope() as s:\n    for q in s.query(Question).options(\n        joinedload('topic'),\n        joinedload('topic.image'),\n    ).filter(Question.topic_id == 1).all():  # sa.4.4\n        print(q.topic.title)  # sa.4.5\n        print(q.topic.image.name)  # sa.4.6\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ этом случае только \u003Ccode\u003Esa.3.4\u003C\u002Fcode\u003E спровоцирует запрос в базу.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT question.id       AS question_id,\n       question.text     AS question_text,\n       question.topic_id AS question_topic_id,\n       image_1.id        AS image_1_id,\n       image_1.name      AS image_1_name,\n       topic_1.id        AS topic_1_id,\n       topic_1.title     AS topic_1_title,\n       topic_1.image_id  AS topic_1_image_id\nFROM question\n         JOIN topic AS topic_1 ON topic_1.id = question.topic_id\n         LEFT OUTER JOIN image AS image_1 ON image_1.id = topic_1.image_id\nWHERE question.topic_id = %(topic_id_1)s\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВторой join — \u003Ccode\u003ELEFT OUTER JOIN\u003C\u002Fcode\u003E. Если нам нужен \u003Ccode\u003EINNER JOIN\u003C\u002Fcode\u003E, то мы уже знаем, как нужно действовать: \u003Ccode\u003Eimage = sa.orm.relationship(Image, innerjoin=True)\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Ch4\u003EПример 5\u003C\u002Fh4\u003E\u003Cp\u003EДопустим, теперь мы хотим обработать все вопросы у каждого топика. Как и в Django, для решения этой задачи можно написать обычный запрос с фильтрацией. Так мы получим простое, но не оптимизированное решение:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efor t in s.query(Topic).filter(Topic.id.in_([1, 2])).all():  # sa.5.1\n    print([q.text for q in t.questions])  # sa.5.2\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.5.1\u003C\u002Fcode\u003E — запрос за списком топиков;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.5.2\u003C\u002Fcode\u003E — N запросов за вопросами на каждом шаге цикла по топикам.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EУлучшение снова заключается в использовании опций.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efor t in s.query(Topic).options(joinedload('questions')).filter(Topic.id.in_([1, 2])).all():\n    print([q.text for q in t.questions])\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ получаем только один итоговый запрос, в отличие от Django, где их было два. В чём разница? Здесь один более сложный запрос с \u003Ccode\u003ELEFT OUTER JOIN\u003C\u002Fcode\u003E, который в итоге приводит к тому же самому.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003ESELECT topic.id            AS topic_id,\n       topic.title         AS topic_title,\n       topic.image_id      AS topic_image_id,\n       question_1.id       AS question_1_id,\n       question_1.text     AS question_1_text,\n       question_1.topic_id AS question_1_topic_id\nFROM topic\n         LEFT OUTER JOIN question AS question_1 ON topic.id = question_1.topic_id\nWHERE topic.id IN (%(id_1)s, %(id_2)s)\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКонтролировать поведение можно с помощью другой опции: \u003Ccode\u003Esubqueryload\u003C\u002Fcode\u003E. Но второй запрос в этом случае будет отличаться от аналогичного запроса в Django. Для определения идентификаторов топиков будет использован первый запрос вместо простого аргумента с этими идентификаторами.\u003C\u002Fp\u003E\u003Ch4\u003EПример 6\u003C\u002Fh4\u003E\u003Cp\u003EДопустим, теперь нам нужно подгрузить к топику не все вопросы, а только те, которые отвечают определенному условию. При этом у некоторых топиков может оказаться пустой список вопросов.\u003C\u002Fp\u003E\u003Cp\u003EВ алхимии фильтровать массив вопросов можно с помощью новой опции и алиаса, что в совокупности выглядит не самым тривиальным способом.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eq_stmt = s.query(Question).filter(Question.text.ilike('%fart%')).subquery()  # sa.6.1\nalias = aliased(Question, q_stmt)  # sa.6.2\n\nfiltered_topics = s.query(Topic).outerjoin(  # sa.6.3\n    Topic.questions.of_type(alias),  # sa.6.4    \n).options(\n    contains_eager(Topic.questions.of_type(alias)),  # sa.6.5\n)\n\nfor t in filtered_topics:\n    print(f'{t.title}')\n    for q in t.questions:\n        print(f' --- {q.text}')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.6.1\u003C\u002Fcode\u003E: создаем подзапрос, выбирающий интересующие нас вопросы. В базу запрос на этом этапе еще не уходит.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.6.2\u003C\u002Fcode\u003E: создаем алиас. Они обычно используются для \u003Ccode\u003ESELF JOIN\u003C\u002Fcode\u003E-а или для замены оригинальной таблицы представляющим её запросом.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.6.3\u003C\u002Fcode\u003E: явно указываем, что нужно использовать \u003Ccode\u003ELEFT OUTER JOIN\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.6.4\u003C\u002Fcode\u003E: за счет \u003Ccode\u003Eof_type\u003C\u002Fcode\u003E мы джойним не с целой таблицей, а с тем подзапросом, который нам нужен.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Esa.6.5\u003C\u002Fcode\u003E: просим в \u003Ccode\u003ETopic.questions\u003C\u002Fcode\u003E подгрузить сущности не отдельным запросом, а уже из сформированных нами колонок. Подробнее см. \u003Ca href=\"https:\u002F\u002Fdocs.sqlalchemy.org\u002Fen\u002F13\u002Form\u002Floading_relationships.html#sqlalchemy.orm.contains_eager\"\u003Eздесь\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EВот подходящий \u003Ca href=\"https:\u002F\u002Fdocs.sqlalchemy.org\u002Fen\u002F13\u002Form\u002Floading_relationships.html#routing-explicit-joins-statements-into-eagerly-loaded-collections\"\u003Eпример из документации\u003C\u002Fa\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT anon_1.id       AS anon_1_id,\n       anon_1.text     AS anon_1_text,\n       anon_1.topic_id AS anon_1_topic_id,\n       topic.id        AS topic_id,\n       topic.title     AS topic_title,\n       topic.image_id  AS topic_image_id\nFROM topic\n         LEFT OUTER JOIN (\n    SELECT question.id AS id, question.text AS text, question.topic_id AS topic_id\n    FROM question\n    WHERE question.text ILIKE %(text_1)s\n) AS anon_1 ON topic.id = anon_1.topic_id\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch4\u003EПример 7\u003C\u002Fh4\u003E\u003Cp\u003EВ этом примере мы познакомимся с группировкой и подзапросами. Для этого найдем топики, у которых больше десяти вопросов.\u003C\u002Fp\u003E\u003Cp\u003EВ алхимии применяется схожий с Django подход: сначала формируем подзапрос, а потом используем его в основном селекте:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Etopic_ids = s.query(\n    Question.topic_id.label('topic_id'),\n).group_by(Question.topic_id).having(\n    sa.func.count(Question.id) \u003E 1,\n)\n\ntopics = s.query(Topic).filter(Topic.id.in_(topic_ids))\n\nfor t in topics:\n    print(f'{t.title}')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ базу уходит такой же запрос, как в Django:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id \nFROM topic \nWHERE topic.id IN (\n  SELECT question.topic_id AS topic_id \n  FROM question GROUP BY question.topic_id \n  HAVING count(question.id) \u003E %(count_1)s\n)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EБудьте внимательны: при написании этого примера я автоматически добавил \u003Ccode\u003E.subquery()\u003C\u002Fcode\u003E к формированию \u003Ccode\u003Etopic_ids\u003C\u002Fcode\u003E, а это приводит к лишнему подзапросу:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id\nFROM topic\nWHERE topic.id IN (\n    SELECT anon_1.topic_id\n    FROM (\n             SELECT question.topic_id AS topic_id\n             FROM question\n             GROUP BY question.topic_id\n             HAVING count(question.id) \u003E %(count_1)s\n         ) AS anon_1\n)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНе критично, но зачем оставлять ненужный код? Да и вопросов от придирчивого DBA сможете избежать.\u003C\u002Fp\u003E\u003Ch4\u003EПример 8\u003C\u002Fh4\u003E\u003Cp\u003EЭтот пример посвящен обзору common table expression (CTE), которыми частенько пользуешься при написании сырых запросов к PostgreSQL ради читаемости и удобства.\u003C\u002Fp\u003E\u003Cp\u003EДопустим, мы хотим достать из базы топики, у которых определенных вопросов больше десяти. Сначала формируем CTE, в котором найдем идентификаторы нужных топиков:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Etopic_ids = s.query(Question.topic_id.label('topic_id')).filter(\n    Question.text.ilike('%best%'),\n).group_by(Question.topic_id).having(\n    sa.func.count(Question.id) \u003E 10,\n).cte(name='topic_ids')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее используем CTE в основном запросе, чтобы достать соответствующие топики:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Etopics = s.query(Topic).filter(Topic.id.in_(sa.select([topic_ids.c.topic_id])))\nprint(', '.join(t.title for t in topics))\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗапрос получается такой:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003EWITH topic_ids AS (\n  SELECT question.topic_id AS topic_id \n  FROM question \n  WHERE question.text ILIKE %(text_1)s\n  GROUP BY question.topic_id \n  HAVING count(question.id) \u003E %(count_1)s\n)\nSELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id \nFROM topic \nWHERE topic.id IN (\n  SELECT topic_ids.topic_id \n  FROM topic_ids\n)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch4\u003EПример 9\u003C\u002Fh4\u003E\u003Cp\u003EЗдесь рассмотрим запросы к many-to-many отношениям. Допустим, мы хотим для каждого топика получить список пользователей, которые имеют к нему доступ.\u003C\u002Fp\u003E\u003Cp\u003EИ снова можно сгенерировать запрос без дополнительных усилий с нашей стороны, библиотека всё делает за нас. Однако за такую помощь приходится расплачиваться. Если не указать опции, то для каждого топика будет отдельный запрос за списком пользователей:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efor t in s.query(Topic).all():  # sa.9.1\n    names = ', '.join(u.name for u in t.users)   # sa.9.2\n    print(f'Topic[{t.title}]: {names}')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E-- sa.9.1\nSELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id\nFROM topic;\n\n-- sa.9.2\nSELECT \"user\".id AS user_id, \"user\".name AS user_name \nFROM \"user\", topic_user \nWHERE %(param_1)s = topic_user.topic_id AND \"user\".id = topic_user.user_id\n\n-- sa.9.2\nSELECT \"user\".id AS user_id, \"user\".name AS user_name \nFROM \"user\", topic_user \nWHERE %(param_1)s = topic_user.topic_id AND \"user\".id = topic_user.user_id\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТолько вот запрос, порождаемый \u003Ccode\u003Esa.9.2\u003C\u002Fcode\u003E, будет без \u003Ccode\u003EINNER JOIN\u003C\u002Fcode\u003E. Там декартово произведение таблиц, из которого условием выбираются нужные строки, и так оставлять нельзя. На помощь снова приходят опции:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efor t in s.query(Topic).options(\n        joinedload('users'),\n).all():\n    names = ', '.join(u.name for u in t.users)\n    print(f'Topic[{t.title}]: {names}')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT topic.id       AS topic_id,\n       topic.title    AS topic_title,\n       topic.image_id AS topic_image_id,\n       user_1.id      AS user_1_id,\n       user_1.name    AS user_1_name\nFROM topic\n         LEFT OUTER JOIN (topic_user AS topic_user_1 JOIN \"user\" AS user_1 ON user_1.id = topic_user_1.user_id)\n                         ON topic.id = topic_user_1.topic_id\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЕсли в промежуточной таблице содержатся дополнительные данные, к которым мы хотим получать доступ (у нас это поле \u003Ccode\u003ETopicUser.role\u003C\u002Fcode\u003E), то нужно описывать модели согласно \u003Ca href=\"https:\u002F\u002Fdocs.sqlalchemy.org\u002Fen\u002F13\u002Form\u002Fbasic_relationships.html#association-object\"\u003Eпаттерну Association Object\u003C\u002Fa\u003E. В наших схемах смотри закомментированные строки под комментарием \u003Ccode\u003E# association.\u003C\u002Fcode\u003E Там же есть пример «обратных» зависимостей: когда мы получаем не коллекцию пользователей топика, а набор топиков, доступных пользователю.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Ewith session_scope() as s:\n    u = s.query(User).filter(User.id == 1).first()  # sa.9.3\n    for t in u.topics:  # sa.9.4\n        print(f'{u.name} is {t.role} in topic \"{t.topic.title}\"')  # sa.9.5\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E-- sa.9.3\nSELECT \"user\".id AS user_id, \"user\".name AS user_name \nFROM \"user\" \nWHERE \"user\".id = %(id_1)s\n\n-- sa.9.4\nSELECT topic_user.id AS topic_user_id, topic_user.topic_id AS topic_user_topic_id, topic_user.user_id AS topic_user_user_id, topic_user.role AS topic_user_role \nFROM topic_user \nWHERE %(param_1)s = topic_user.user_id\n\n-- sa.9.5\nSELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id \nFROM topic \nWHERE topic.id = %(param_1)s\n\n-- sa.9.5\nSELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id \nFROM topic \nWHERE topic.id = %(param_1)s\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ снова предыдущий запрос и последующий цикл не отличаются оптимальностью, потому что провоцирует лишние запросы к базе. Чтобы их избежать, давайте укажем, что мы заранее знаем, что нам потребуются данные о топиках пользователя.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eu = s.query(User).filter(User.id == 1).options(\n    joinedload('topics'),\n    selectinload('topics.topic'),\n).first()\n\nfor t in u.topics:\n    print(f'{u.name} is {t.role} in topic \"{t.topic.title}\"')\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ESELECT anon_1.user_id        AS anon_1_user_id,\n       anon_1.user_name      AS anon_1_user_name,\n       topic_user_1.id       AS topic_user_1_id,\n       topic_user_1.topic_id AS topic_user_1_topic_id,\n       topic_user_1.user_id  AS topic_user_1_user_id,\n       topic_user_1.role     AS topic_user_1_role\nFROM (\n         SELECT \"user\".id AS user_id, \"user\".name AS user_name\n         FROM \"user\"\n         WHERE \"user\".id = %(id_1)s\n         LIMIT %(param_1)s\n     ) AS anon_1\n         LEFT OUTER JOIN topic_user AS topic_user_1 ON anon_1.user_id = topic_user_1.user_id\n\nSELECT topic.id AS topic_id, topic.title AS topic_title, topic.image_id AS topic_image_id \nFROM topic \nWHERE topic.id IN (%(primary_keys_1)s, %(primary_keys_2)s)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПервый запрос здесь вытягивает пользователя с соответствующими ему строками \u003Ccode\u003Etopic_user\u003C\u002Fcode\u003E, а второй ищет нужные топики. Коллекции же формируются скрытым от нас образом в коде алхимии.\u003C\u002Fp\u003E\u003Ch4\u003EПример 10\u003C\u002Fh4\u003E\u003Cp\u003EПриступим к другой стороне оптимизации. При вставке большого количества новых записей для улучшения производительности рекомендуется пользоваться bulk-операциями. Они позволяют за один запрос вставить много строк.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Es.bulk_save_objects([\n    Topic(title=f'topic {i}', image_id=1)\n    for i in range(3)\n])\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ алхимии Python-код очень похож на Django. Но вот SQL выглядит необычно:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003EINSERT INTO topic (title, image_id) VALUES (%(title)s, %(image_id)s)\n({'title': 'topic 0', 'image_id': 1}, {'title': 'topic 1', 'image_id': 1}, {'title': 'topic 2', 'image_id': 1})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗапрос не похож на множественную вставку. Так же и с обновлением, о котором поговорим ниже.\u003C\u002Fp\u003E\u003Ch4\u003EПример 11.\u003C\u002Fh4\u003E\u003Cp\u003EДругая сторона bulk-операций — это массовое обновление. В алхимии можно не создавать экземпляры моделей, а ограничиться словарями с PK и полями для обновления.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Es.bulk_update_mappings(\n    User,\n    [dict(id=1, name='new 1 name'), dict(id=2, name='new 2 name')]\n)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003EUPDATE \"user\" SET name=%(name)s WHERE \"user\".id = %(user_id)s\n({'name': 'new 1 name', 'user_id': 1}, {'name': 'new 2 name', 'user_id': 2})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗдесь мы видим в логе совсем другой запрос, и он не похож на множественное обновление. Я не исследовал этот вопрос подробно, но в \u003Ca href=\"https:\u002F\u002Fdocs.sqlalchemy.org\u002Fen\u002F14\u002Form\u002Fsession_api.html#sqlalchemy.orm.Session.bulk_update_mappings\"\u003Eдокументации\u003C\u002Fa\u003E сказано, что используется executemany. Если речь об \u003Ca href=\"https:\u002F\u002Fwww.psycopg.org\u002Fdocs\u002Fcursor.html#cursor.executemany\"\u003Eэтом\u003C\u002Fa\u003E, то большого выигрыша в производительности мы не получим. Но повторюсь, это догадки. Оставим это сведущему комментатору или для следующей статьи.\u003C\u002Fp\u003E\u003Ch2\u003EЗаключение\u003C\u002Fh2\u003E\u003Cp\u003EАлхимия мне кажется более сложным в освоении инструментом, чем Django ORM, но и более гибким. Также алхимию можно применять в любой проекте, в то время как ORM от Django недоступен в отрыве от основного фреймворка. Очень хочется пощупать алхимию 2.0 с полноценной поддержкой асинхронщины, но пока не дошли руки.\u003C\u002Fp\u003E\u003Cp\u003EНадеюсь, вы узнали что-нибудь полезное из этой статьи. В следующий раз окунемся в прекрасную библиотеку go-pg, которую мы используем в каждом проекте на Go, где есть взаимодействие с PostgreSQL. Спасибо за внимание, и не забывайте, что библиотеки могут быть коварны, поэтому всегда проверяйте, что скрывается за красивым кодом в пару строк.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"python"},{"titleHtml":"оптимизация"},{"titleHtml":"запросы"},{"titleHtml":"sql"},{"titleHtml":"postgresql"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F433\u002F2bf\u002F981\u002F4332bf981d4fe5ca56ad3e026347911d.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F433\u002F2bf\u002F981\u002F4332bf981d4fe5ca56ad3e026347911d.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fdomclick\\\u002Fblog\\\u002F581304\\\u002F\"},\"headline\":\"SQL в SQLAlchemy\",\"datePublished\":\"2021-10-12T11:00:02+03:00\",\"dateModified\":\"2021-10-12T11:41:48+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"alexey_and_kazakov\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Меня зовут Алексей Казаков, я техлид команды &laquo;Клиентские коммуникации&raquo; в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой да...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fdomclick\\\u002Fblog\\\u002F581304\\\u002F#post-content-body\",\"about\":[\"c_domclick\",\"h_python\",\"h_postgresql\",\"h_sql\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F581304\\\u002Ff7da5c62afc19bdbe89149709501f7f5\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F433\\\u002F2bf\\\u002F981\\\u002F4332bf981d4fe5ca56ad3e026347911d.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F2d6\\\u002F754\\\u002F6f2\\\u002F2d67546f2bfc7b1aff3405ff83cd5e63.png\"]}","metaDescription":"Меня зовут Алексей Казаков, я техлид команды «Клиентские коммуникации» в Домклик. По моему опыту подавляющее большинство приложений, взаимодействующих с базой данных, использовали для этого Object...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"domclick":{"alias":"domclick","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Fd28\u002F115\u002Ff55\u002Fd28115f5503229d4f9018292fabd1840.jpg","titleHtml":"Домклик","descriptionHtml":"Место силы","relatedData":null,"statistics":{"postsCount":136,"newsCount":0,"vacanciesCount":5,"employeesCount":83,"careerRating":null,"subscribersCount":613,"rating":571.71,"invest":null},"foundationDate":{"year":"2015","month":"07","day":"19"},"location":{"city":null,"region":null,"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fdomclick.ru\u002F","staffNumber":"501–1 000 человек","registrationDate":"2020-03-17T09:21:32+00:00","representativeUser":{"alias":"malanshakova","fullname":"Мария Ланшакова"},"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fdomclick.ru\u002F"},{"title":"Сайт","url":"https:\u002F\u002Fteam.domclick.ru\u002F"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-70398634-1"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"Домклик, Россия - Место силы с 19 июля 2015 г.","title":"Домклик, Россия - Место силы с 19 июля 2015 г.","keywords":["Программирование","Python","JavaScript","Разработка веб-сайтов","DevOps"],"descriptionHtml":"136 статей от авторов компании Домклик","description":"136 статей от авторов компании Домклик"},"aDeskSettings":null,"careerAlias":"domclick","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Факапы миграции: разбираем частые ошибки при переезде инфраструктуры на реальных примерах / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/selectel\/blog\/582430\/"},"headline":"Факапы миграции: разбираем частые ошибки при переезде инфраструктуры на реальных примерах","datePublished":"2021-10-15T14:49:27+03:00","dateModified":"2021-10-15T14:53:56+03:00","author":{"@type":"Person","name":"Виталий Прокофьев"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"&laquo;При переезде оборудования было принято парадоксально глупое решение &mdash; перенести сервер между зданиями без выключения, на ИБП. Не добежали&hellip; &raquo;, &mdash; неизвестный гер...","url":"https:\/\/habr.com\/ru\/company\/selectel\/blog\/582430\/#post-content-body","about":["c_selectel","h_it-infrastructure","h_s_admin","h_itcompanies","f_management","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/582430\/aa3a575fafd9f775b7d4d98a2d64a747\/","https:\/\/habrastorage.org\/webt\/nt\/7r\/w7\/nt7rw791jmqil-yuyeu2h7heg-a.jpeg","https:\/\/habrastorage.org\/webt\/qe\/2o\/us\/qe2ousbjxdlreebww_2cgm1x-wy.png","https:\/\/habrastorage.org\/webt\/hy\/8a\/ay\/hy8aaybn15ozhwf3ixpnovtuc2y.png","https:\/\/habrastorage.org\/webt\/jb\/i6\/yu\/jbi6yuluq-yzrx6kvtr9xogx-we.png","https:\/\/habrastorage.org\/webt\/rb\/ln\/bn\/rblnbnxl-9wneh6mwelf33ucnou.png","https:\/\/habrastorage.org\/webt\/km\/po\/l5\/kmpol5wk15ejet_sksfxvhmahv4.png","https:\/\/habrastorage.org\/webt\/wz\/5p\/l5\/wz5pl5tf0ih9vmzjmdh5ex-ptfe.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Факапы миграции: разбираем частые ошибки при переезде инфраструктуры на реальных примерах" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Факапы миграции: разбираем частые ошибки при переезде инфраструктуры на реальных примерах" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Факапы миграции: разбираем частые ошибки при переезде инфраструктуры на реальных примерах" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… », — неизвестный герой.
+Привет! Я Виталий Прокофьев, на..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… », — неизвестный герой.
+Привет! Я Виталий Прокофьев, на..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… », — неизвестный герой.
+Привет! Я Виталий Прокофьев, на..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… », — неизвестный герой.
+Привет! Я Виталий Прокофьев, на..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… », — неизвестный герой.
+Привет! Я Виталий Прокофьев, на..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/nt/7r/w7/nt7rw791jmqil-yuyeu2h7heg-a.jpeg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/nt/7r/w7/nt7rw791jmqil-yuyeu2h7heg-a.jpeg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/nt/7r/w7/nt7rw791jmqil-yuyeu2h7heg-a.jpeg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/nt/7r/w7/nt7rw791jmqil-yuyeu2h7heg-a.jpeg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/nt/7r/w7/nt7rw791jmqil-yuyeu2h7heg-a.jpeg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582430" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-15T11:49:27.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582430/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/selectel/blog/582430/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/nt/7r/w7/nt7rw791jmqil-yuyeu2h7heg-a.jpeg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582430/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="selectel" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/selectel/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/66a/f7d/039/66af7d03979b6d18654293d8f1e72837.png" width="48" class="tm-entity-image__pic"></div></a> <a href="https://career.habr.com/companies/selectel" rel="noopener" target="_blank" class="tm-grade tm-company-card__rating"><div class="tm-rating"><div class="tm-rating__header"><svg height="24" width="24" class="tm-svg-img tm-svg-grade__icon"><title>Оценка компании на Хабр Карьере</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#grade"></use></svg> <div class="tm-rating__counter tm-rating__counter_variant-grade">4.73</div></div> <div class="tm-rating__text tm-rating__text_variant-grade">
+    Оценка
+  </div></div></a> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">1480.89</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/selectel/profile/" class="tm-company-card__name">
+        Selectel
+      </a> <div class="tm-company-card__description">IT-инфраструктура для бизнеса</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/ereinion/" title="ereinion" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/53d/8ec/1fb/53d8ec1fb1d65d37bb85b94c51b17167.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/ereinion/" class="tm-user-info__username">
+      ereinion
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-15T11:49:27.000Z" title="2021-10-15, 14:49">15  октября   в 14:49</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Факапы миграции: разбираем частые ошибки при переезде инфраструктуры на реальных примерах</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/selectel/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Selectel</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/it-infrastructure/" class="tm-article-snippet__hubs-item-link"><span>IT-инфраструктура</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/s_admin/" class="tm-article-snippet__hubs-item-link"><span>Серверное администрирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/itcompanies/" class="tm-article-snippet__hubs-item-link"><span>IT-компании</span> <!----></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><div style="text-align:center;"><img src="https://habrastorage.org/r/w780q1/webt/nt/7r/w7/nt7rw791jmqil-yuyeu2h7heg-a.jpeg" data-src="https://habrastorage.org/webt/nt/7r/w7/nt7rw791jmqil-yuyeu2h7heg-a.jpeg" data-blurred="true"/></div><br/>
+<blockquote><i>«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… »</i>, — неизвестный герой.</blockquote><br/>
+Привет! Я Виталий Прокофьев, на Хабре меня знают как исследователя истории техники, но сегодня я пишу в другой роли. В «обычной» жизни я не коллекционер старого железа, а руководитель отдела услуг администрирования (Managed Services) в Selectel. Среди прочего мы помогаем клиентам переехать в наши дата-центры или перейти с выделенных серверов в облако. <br/>
+<br/>
+Недавно мы провели <a href="https://www.youtube.com/watch?v=A2_jmer2g48">митап</a>, посвященный миграции инфраструктуры. Участники поделились опытом переезда и прислали анонимные факапы к нам на почту. Я решил разобрать самые частые, ведь лучше учиться на чужих ошибках, чем на своих.<br/>
+<br/>
+Кстати, делитесь своими историями успешных (и не очень) миграций в комментариях! Будет интересно почитать.<br/>
+<a name="habracut"></a><br/>
+<h2>Отнеситесь к миграции как к полноценному проекту — со стратегией и дедлайнами</h2><br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/qe/2o/us/qe2ousbjxdlreebww_2cgm1x-wy.png"/></div><br/>
+Здесь совершили две распространенные ошибки: всю работу взвалили на одного человека (самого себя) и не продумали до старта четкий план миграции с этапами и дедлайнами. Как это исправить?<br/>
+<br/>
+Во-первых, разделите обязанности. Миграцией должны заниматься минимум двое — проджект-менеджер и исполнитель. Если в вашей команде нет менеджера, доверьте эту роль одному из сисадминов, пусть он контролирует исполнителя, подсказывает ему, не дает растягивать сроки. <br/>
+<br/>
+Мне нравится сравнивать миграцию инфраструктуры с гражданской авиацией. В самолетах всегда два пилота: они дублируют и подстраховывают друг друга. То, что может упустить один, заметит другой. <br/>
+<br/>
+Во вторых, проджект-менеджер должен составить календарный план и предложить критерии оценки результата на каждом этапе. Разделять миграцию на этапы обязательно — неважно, куда и как вы переносите инфраструктуру, бесшовно это происходит или с небольшим даунтаймом. Перенос по частям, в спокойном темпе позволит избежать ошибок и жесткого отката к началу работ. <br/>
+<br/>
+Что следует отразить в вашем плане: <br/>
+<br/>
+<ol>
+<li>Нынешнее состояние инфраструктуры. </li>
+<li>Требования к новой площадке, ее технические характеристики.</li>
+<li>Последовательность миграции: на какие этапы разбить переезд, с чего начать.</li>
+<li>Дедлайны по проекту в целом и по каждому этапу в отдельности.</li>
+<li>План «Б» — что делать, если все пойдет не так.</li>
+</ol><br/>
+<blockquote>Совет: даже если вы уверены в успехе миграции без даунтаймов, лучше предупредить пользователей о возможных сбоях.</blockquote><br/>
+<h2>Выбирайте мягкие дедлайны</h2><br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/hy/8a/ay/hy8aaybn15ozhwf3ixpnovtuc2y.png"/></div><br/>
+Избегайте экстремальных дедлайнов. Если переезжаете от одного провайдера к другому, не планируйте его близко к отключению хостинга. Идеально, если в запасе остается хотя бы семь оплаченных дней. Так вы сможете остаться на старой площадке, если миграция не состоится, и спокойно продлить оплаченный период.<br/>
+<br/>
+<h2>Используйте проверенный программный стек</h2><br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/jb/i6/yu/jbi6yuluq-yzrx6kvtr9xogx-we.png"/></div><br/>
+Похоже, здесь у исполнителя были контейнеры в Docker, которые он хотел реплицировать на новую площадку. И выбрал для этого Docker Swarm. Что ж могу лишь посочувствовать, это трудно управляемый и мало стабильный инструмент, да и в интернете немногие делятся опытом работы с ним.<br/>
+<br/>
+Чтобы избежать подобных проблем, протестируйте выбранный инструмент перед использованием. Рекомендую создать точную копию инфраструктуры и перенести ее с помощью выбранного ПО, проверить в «бою». Главное — обеспечить условия, максимально приближенные к реальным. Если переезжаете «далеко», разворачивайте тестовую среду в том же дата-центре или в приближенной по свойствам среде, чтобы увидеть те же задержки сети. <br/>
+<br/>
+Миграция — не время для экспериментов. Если вы привыкли делать бэкапы через rsync, но для миграции выбрали решение от Veeam, досконально изучите и протестируйте его. <br/>
+<br/>
+Выбирайте ПО, с которым работаете каждый день. Хорошо знаете Ansible? Используйте его для развертывания копии площадки. <br/>
+<br/>
+Ну и помните: главный ваш инструмент — это голова.<br/>
+<br/>
+<blockquote>Пользуясь случаем, приглашаю вас почитать и мои «исторические очерки» о старом железе: <br/>
+<br/>
+→ <a href="https://habr.com/ru/company/selectel/blog/570246/">Обзор рабочей станции Digital Celebris GL 6200</a><br/>
+→ <a href="https://habr.com/ru/company/selectel/blog/574528/">Первая часть истории о процессорной архитектуре Alpha</a><br/>
+→ <a href="https://habr.com/ru/company/selectel/blog/568862/">История процессоров компании Transmeta</a></blockquote><br/>
+<h2>Проверьте актуальность сертификатов и сроки регламентных работ</h2><br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/rb/ln/bn/rblnbnxl-9wneh6mwelf33ucnou.png"/></div><br/>
+У опытных водителей есть такое правило — перед долгой поездкой сделать полное техосбслуживание и убедиться, что все работает исправно, неполадок в пути не предвидится. Это актуально и для миграции. <br/>
+<br/>
+В обязательную проверку инфраструктуры входит чекап сертификатов. Обновите их досрочно, если они скоро истекают. Загляните в график регламентных работ — когда последний раз был бэкап или автоматический сброс кэша. Не начнутся ли они во время миграции? Если этого не сделать, можно потерять часть данных или уронить производительность, которая нужна при переносе. <br/>
+<br/>
+<h2>Делайте бэкапы на всех этапах миграции</h2><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/km/po/l5/kmpol5wk15ejet_sksfxvhmahv4.png"/><br/>
+Переезжать с неполным бэкапом или, еще хуже, без него — это как вложить одну-две пули в барабан револьвера и приставить к виску. Если вы не любитель «русской рулетки», составьте расписание бэкапов. <br/>
+<br/>
+Во-первых, создайте резервную копию системы до начала переезда. Затем желательно делать бэкапы настроек после каждого успешно выполненного этапа миграции. <br/>
+<br/>
+В упомянутом случае я бы просто отложил миграцию, пока не решатся проблемы с бэкапами. Последствия могли быть плачевными. <br/>
+<br/>
+<h2>Изучите слабые места архитектуры </h2><br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/wz/5p/l5/wz5pl5tf0ih9vmzjmdh5ex-ptfe.png"/></div><br/>
+Плохо, когда несколько сервисов пишут в одну базу. Обычно их разводят по разным таблицам, а лучше — в разные базы данных. Здесь очевидна проблема архитектуры (а именно — в администрировании баз данных), которую проигнорировали. По-хорошему это работа проджект-менеджера — изучить перевозимые сервисы, найти слабые места и учитывать их в плане миграции. Проблемы могут таиться в каналах связи, настройках сети и самом коде — некоторые части приложения могут захардкодить. Все это вылезет в самый ненужный момент. <br/>
+<br/>
+<h2>Обязательно ли самим заниматься переездом инфраструктуры? </h2><br/>
+Миграцию можно провести самостоятельно, но в некоторых случаях лучше обратиться к специалистам. Это стоит сделать, если:<br/>
+ <br/>
+<ol>
+<li>Цена ошибки слишком высока — даунтайм серьезно навредит бизнесу. Иногда дорогая миграция обходится дешевле простоя. </li>
+<li>Недостаточно сотрудников для переезда. Если у вас один сисадмин, который будет перерабатывать и не спать ночами, скорее всего, он ошибется. </li>
+<li>Вам нужен сторонний взгляд на инфраструктуру.<br/>
+<br/>
+Когда вы давно работаете с системой, сложно абстрагироваться. У сторонних специалистов больше шансов увидеть проблемы, которые вылезут при переезде. В Selectel мы любую работу начинаем с аудита инфраструктуры (этим занимается команда Managed Services), даже если клиент ее подробно описал. </li>
+<li>Сотрудникам не хватает компетенций или опыта для самостоятельного переноса инфраструктуры.<br/>
+<br/>
+Тут оговорюсь, что некоторые рассматривают миграцию как свою зону роста. Это действительно важный опыт для сисадмина, но нужно учесть все риски. Возможно, стоит сначала поучиться на тестовых площадках или под руководством специалистов — наблюдателей или эдвайзеров. За этим тоже можно к нам.</li>
+</ol><br/>
+<blockquote>Обратиться в наш Managed Services проще простого: достаточно оставить заявку со словами «мы хотим мигрировать» <a href="https://slc.tl/lXr-S">по ссылке</a>. Описание инфраструктуры на данном этапе не нужно. Мы свяжемся с вами.</blockquote></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bselectel%5D" class="tm-tags-list__link">selectel</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdevops%5D" class="tm-tags-list__link">devops</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%B8%D0%B3%D1%80%D0%B0%D1%86%D0%B8%D1%8F%5D" class="tm-tags-list__link">миграция</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%84%D0%B0%D0%BA%D0%B0%D0%BF%D1%8B%5D" class="tm-tags-list__link">факапы</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/selectel/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Selectel
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/it-infrastructure/" class="tm-hubs-list__link">
+    IT-инфраструктура
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/s_admin/" class="tm-hubs-list__link">
+    Серверное администрирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/itcompanies/" class="tm-hubs-list__link">
+    IT-компании
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 56: ↑56 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 56: ↑56 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+56</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">8.3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    32
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/selectel/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/66a/f7d/039/66af7d03979b6d18654293d8f1e72837.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/selectel/profile/" class="tm-company-snippet__title">Selectel</a> <div class="tm-company-snippet__description">IT-инфраструктура для бизнеса</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/selectel" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://vk.com/selectel" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://telegram.me/SelectelNews" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/ereinion/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/53d/8ec/1fb/53d8ec1fb1d65d37bb85b94c51b17167.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 120 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    106.5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">167.1</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Виталий Прокофьев</span> <a href="/ru/users/ereinion/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @ereinion
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">DevOps-aaS Head / Technical History Researcher</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="http://www.digitalvintage.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://instagram.com/digitalvintage.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Instagram
+    </a><a href="https://telegram.me/laureldo" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/selectel/blog/582430/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 3 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2007-09-10T20:00:00.000Z" title="2007-09-11, 00:00">11  сентября  2007</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://selectel.ru/" target="_blank" class="tm-company-basic-info__link">
+      selectel.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    501–1 000 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2010-03-15T19:29:17.000Z" title="2010-03-15, 22:29">15  марта  2010</time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/selectel/blog/582430/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/selectel/blog/582430/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582430":{"id":"582430","timePublished":"2021-10-15T11:49:27+00:00","isCorporative":true,"lang":"ru","titleHtml":"Факапы миграции: разбираем частые ошибки при переезде инфраструктуры на реальных примерах","leadData":{"textHtml":"\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fnt\u002F7r\u002Fw7\u002Fnt7rw791jmqil-yuyeu2h7heg-a.jpeg\"\u003E\u003C\u002Fdiv\u003E\u003Cbr\u003E\r\n\u003Cblockquote\u003E\u003Ci\u003E«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… »\u003C\u002Fi\u003E, — неизвестный герой.\u003C\u002Fblockquote\u003E\u003Cbr\u003E\r\nПривет! Я Виталий Прокофьев, на Хабре меня знают как исследователя истории техники, но сегодня я пишу в другой роли. В «обычной» жизни я не коллекционер старого железа, а руководитель отдела услуг администрирования (Managed Services) в Selectel. Среди прочего мы помогаем клиентам переехать в наши дата-центры или перейти с выделенных серверов в облако. \u003Cbr\u003E\r\n\u003Cbr\u003E\r\nНедавно мы провели \u003Ca href=\"https:\u002F\u002Fwww.youtube.com\u002Fwatch?v=A2_jmer2g48\" rel=\"nofollow noopener noreferrer\"\u003Eмитап\u003C\u002Fa\u003E, посвященный миграции инфраструктуры. Участники поделились опытом переезда и прислали анонимные факапы к нам на почту. Я решил разобрать самые частые, ведь лучше учиться на чужих ошибках, чем на своих.\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nКстати, делитесь своими историями успешных (и не очень) миграций в комментариях! Будет интересно почитать.\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":106.5,"votesCount":120},"rating":167.1,"relatedData":null,"contacts":[{"title":"Сайт","url":"http:\u002F\u002Fwww.digitalvintage.ru","value":"http:\u002F\u002Fwww.digitalvintage.ru"},{"title":"Instagram","url":"https:\u002F\u002Finstagram.com\u002Fdigitalvintage.ru\u002F","value":"digitalvintage.ru"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002Flaureldo","value":"laureldo"}],"authorContacts":[{"title":"Сайт","url":"http:\u002F\u002Fwww.digitalvintage.ru","value":"http:\u002F\u002Fwww.digitalvintage.ru"},{"title":"Instagram","url":"https:\u002F\u002Finstagram.com\u002Fdigitalvintage.ru\u002F","value":"digitalvintage.ru"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002Flaureldo","value":"laureldo"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"154372","alias":"ereinion","fullname":"Виталий Прокофьев","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F53d\u002F8ec\u002F1fb\u002F53d8ec1fb1d65d37bb85b94c51b17167.jpg","speciality":"DevOps-aaS Head \u002F Technical History Researcher"},"statistics":{"commentsCount":3,"favoritesCount":32,"readingCount":8263,"score":56,"votesCount":56},"hubs":[{"relatedData":null,"id":"14740","alias":"selectel","type":"corporative","title":"Блог компании Selectel","titleHtml":"Блог компании Selectel","isProfiled":false},{"relatedData":null,"id":"6398","alias":"it-infrastructure","type":"collective","title":"IT-инфраструктура","titleHtml":"IT-инфраструктура","isProfiled":true},{"relatedData":null,"id":"17350","alias":"s_admin","type":"collective","title":"Серверное администрирование","titleHtml":"Серверное администрирование","isProfiled":true},{"relatedData":null,"id":"22026","alias":"itcompanies","type":"collective","title":"IT-компании","titleHtml":"IT-компании","isProfiled":false}],"flows":[{"id":"3","alias":"management","title":"Менеджмент"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fnt\u002F7r\u002Fw7\u002Fnt7rw791jmqil-yuyeu2h7heg-a.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fnt\u002F7r\u002Fw7\u002Fnt7rw791jmqil-yuyeu2h7heg-a.jpeg\" data-blurred=\"true\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003E\u003Ci\u003E«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… »\u003C\u002Fi\u003E, — неизвестный герой.\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\nПривет! Я Виталий Прокофьев, на Хабре меня знают как исследователя истории техники, но сегодня я пишу в другой роли. В «обычной» жизни я не коллекционер старого железа, а руководитель отдела услуг администрирования (Managed Services) в Selectel. Среди прочего мы помогаем клиентам переехать в наши дата-центры или перейти с выделенных серверов в облако. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНедавно мы провели \u003Ca href=\"https:\u002F\u002Fwww.youtube.com\u002Fwatch?v=A2_jmer2g48\"\u003Eмитап\u003C\u002Fa\u003E, посвященный миграции инфраструктуры. Участники поделились опытом переезда и прислали анонимные факапы к нам на почту. Я решил разобрать самые частые, ведь лучше учиться на чужих ошибках, чем на своих.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКстати, делитесь своими историями успешных (и не очень) миграций в комментариях! Будет интересно почитать.\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EОтнеситесь к миграции как к полноценному проекту — со стратегией и дедлайнами\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fqe\u002F2o\u002Fus\u002Fqe2ousbjxdlreebww_2cgm1x-wy.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nЗдесь совершили две распространенные ошибки: всю работу взвалили на одного человека (самого себя) и не продумали до старта четкий план миграции с этапами и дедлайнами. Как это исправить?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВо-первых, разделите обязанности. Миграцией должны заниматься минимум двое — проджект-менеджер и исполнитель. Если в вашей команде нет менеджера, доверьте эту роль одному из сисадминов, пусть он контролирует исполнителя, подсказывает ему, не дает растягивать сроки. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМне нравится сравнивать миграцию инфраструктуры с гражданской авиацией. В самолетах всегда два пилота: они дублируют и подстраховывают друг друга. То, что может упустить один, заметит другой. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВо вторых, проджект-менеджер должен составить календарный план и предложить критерии оценки результата на каждом этапе. Разделять миграцию на этапы обязательно — неважно, куда и как вы переносите инфраструктуру, бесшовно это происходит или с небольшим даунтаймом. Перенос по частям, в спокойном темпе позволит избежать ошибок и жесткого отката к началу работ. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧто следует отразить в вашем плане: \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EНынешнее состояние инфраструктуры. \u003C\u002Fli\u003E\r\n\u003Cli\u003EТребования к новой площадке, ее технические характеристики.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПоследовательность миграции: на какие этапы разбить переезд, с чего начать.\u003C\u002Fli\u003E\r\n\u003Cli\u003EДедлайны по проекту в целом и по каждому этапу в отдельности.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПлан «Б» — что делать, если все пойдет не так.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EСовет: даже если вы уверены в успехе миграции без даунтаймов, лучше предупредить пользователей о возможных сбоях.\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EВыбирайте мягкие дедлайны\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fhy\u002F8a\u002Fay\u002Fhy8aaybn15ozhwf3ixpnovtuc2y.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nИзбегайте экстремальных дедлайнов. Если переезжаете от одного провайдера к другому, не планируйте его близко к отключению хостинга. Идеально, если в запасе остается хотя бы семь оплаченных дней. Так вы сможете остаться на старой площадке, если миграция не состоится, и спокойно продлить оплаченный период.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EИспользуйте проверенный программный стек\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fjb\u002Fi6\u002Fyu\u002Fjbi6yuluq-yzrx6kvtr9xogx-we.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nПохоже, здесь у исполнителя были контейнеры в Docker, которые он хотел реплицировать на новую площадку. И выбрал для этого Docker Swarm. Что ж могу лишь посочувствовать, это трудно управляемый и мало стабильный инструмент, да и в интернете немногие делятся опытом работы с ним.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧтобы избежать подобных проблем, протестируйте выбранный инструмент перед использованием. Рекомендую создать точную копию инфраструктуры и перенести ее с помощью выбранного ПО, проверить в «бою». Главное — обеспечить условия, максимально приближенные к реальным. Если переезжаете «далеко», разворачивайте тестовую среду в том же дата-центре или в приближенной по свойствам среде, чтобы увидеть те же задержки сети. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМиграция — не время для экспериментов. Если вы привыкли делать бэкапы через rsync, но для миграции выбрали решение от Veeam, досконально изучите и протестируйте его. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВыбирайте ПО, с которым работаете каждый день. Хорошо знаете Ansible? Используйте его для развертывания копии площадки. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНу и помните: главный ваш инструмент — это голова.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EПользуясь случаем, приглашаю вас почитать и мои «исторические очерки» о старом железе: \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n→ \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fselectel\u002Fblog\u002F570246\u002F\"\u003EОбзор рабочей станции Digital Celebris GL 6200\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n→ \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fselectel\u002Fblog\u002F574528\u002F\"\u003EПервая часть истории о процессорной архитектуре Alpha\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n→ \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fselectel\u002Fblog\u002F568862\u002F\"\u003EИстория процессоров компании Transmeta\u003C\u002Fa\u003E\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EПроверьте актуальность сертификатов и сроки регламентных работ\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Frb\u002Fln\u002Fbn\u002Frblnbnxl-9wneh6mwelf33ucnou.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nУ опытных водителей есть такое правило — перед долгой поездкой сделать полное техосбслуживание и убедиться, что все работает исправно, неполадок в пути не предвидится. Это актуально и для миграции. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ обязательную проверку инфраструктуры входит чекап сертификатов. Обновите их досрочно, если они скоро истекают. Загляните в график регламентных работ — когда последний раз был бэкап или автоматический сброс кэша. Не начнутся ли они во время миграции? Если этого не сделать, можно потерять часть данных или уронить производительность, которая нужна при переносе. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EДелайте бэкапы на всех этапах миграции\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fkm\u002Fpo\u002Fl5\u002Fkmpol5wk15ejet_sksfxvhmahv4.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\nПереезжать с неполным бэкапом или, еще хуже, без него — это как вложить одну-две пули в барабан револьвера и приставить к виску. Если вы не любитель «русской рулетки», составьте расписание бэкапов. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВо-первых, создайте резервную копию системы до начала переезда. Затем желательно делать бэкапы настроек после каждого успешно выполненного этапа миграции. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ упомянутом случае я бы просто отложил миграцию, пока не решатся проблемы с бэкапами. Последствия могли быть плачевными. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EИзучите слабые места архитектуры \u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fwz\u002F5p\u002Fl5\u002Fwz5pl5tf0ih9vmzjmdh5ex-ptfe.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nПлохо, когда несколько сервисов пишут в одну базу. Обычно их разводят по разным таблицам, а лучше — в разные базы данных. Здесь очевидна проблема архитектуры (а именно — в администрировании баз данных), которую проигнорировали. По-хорошему это работа проджект-менеджера — изучить перевозимые сервисы, найти слабые места и учитывать их в плане миграции. Проблемы могут таиться в каналах связи, настройках сети и самом коде — некоторые части приложения могут захардкодить. Все это вылезет в самый ненужный момент. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EОбязательно ли самим заниматься переездом инфраструктуры? \u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nМиграцию можно провести самостоятельно, но в некоторых случаях лучше обратиться к специалистам. Это стоит сделать, если:\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EЦена ошибки слишком высока — даунтайм серьезно навредит бизнесу. Иногда дорогая миграция обходится дешевле простоя. \u003C\u002Fli\u003E\r\n\u003Cli\u003EНедостаточно сотрудников для переезда. Если у вас один сисадмин, который будет перерабатывать и не спать ночами, скорее всего, он ошибется. \u003C\u002Fli\u003E\r\n\u003Cli\u003EВам нужен сторонний взгляд на инфраструктуру.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКогда вы давно работаете с системой, сложно абстрагироваться. У сторонних специалистов больше шансов увидеть проблемы, которые вылезут при переезде. В Selectel мы любую работу начинаем с аудита инфраструктуры (этим занимается команда Managed Services), даже если клиент ее подробно описал. \u003C\u002Fli\u003E\r\n\u003Cli\u003EСотрудникам не хватает компетенций или опыта для самостоятельного переноса инфраструктуры.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТут оговорюсь, что некоторые рассматривают миграцию как свою зону роста. Это действительно важный опыт для сисадмина, но нужно учесть все риски. Возможно, стоит сначала поучиться на тестовых площадках или под руководством специалистов — наблюдателей или эдвайзеров. За этим тоже можно к нам.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EОбратиться в наш Managed Services проще простого: достаточно оставить заявку со словами «мы хотим мигрировать» \u003Ca href=\"https:\u002F\u002Fslc.tl\u002FlXr-S\"\u003Eпо ссылке\u003C\u002Fa\u003E. Описание инфраструктуры на данном этапе не нужно. Мы свяжемся с вами.\u003C\u002Fblockquote\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"selectel"},{"titleHtml":"devops"},{"titleHtml":"миграция"},{"titleHtml":"факапы"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fnt\u002F7r\u002Fw7\u002Fnt7rw791jmqil-yuyeu2h7heg-a.jpeg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fnt\u002F7r\u002Fw7\u002Fnt7rw791jmqil-yuyeu2h7heg-a.jpeg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fselectel\\\u002Fblog\\\u002F582430\\\u002F\"},\"headline\":\"Факапы миграции: разбираем частые ошибки при переезде инфраструктуры на реальных примерах\",\"datePublished\":\"2021-10-15T14:49:27+03:00\",\"dateModified\":\"2021-10-15T14:53:56+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Виталий Прокофьев\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"&laquo;При переезде оборудования было принято парадоксально глупое решение &mdash; перенести сервер между зданиями без выключения, на ИБП. Не добежали&hellip; &raquo;, &mdash; неизвестный гер...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fselectel\\\u002Fblog\\\u002F582430\\\u002F#post-content-body\",\"about\":[\"c_selectel\",\"h_it-infrastructure\",\"h_s_admin\",\"h_itcompanies\",\"f_management\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582430\\\u002Faa3a575fafd9f775b7d4d98a2d64a747\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fnt\\\u002F7r\\\u002Fw7\\\u002Fnt7rw791jmqil-yuyeu2h7heg-a.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fqe\\\u002F2o\\\u002Fus\\\u002Fqe2ousbjxdlreebww_2cgm1x-wy.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fhy\\\u002F8a\\\u002Fay\\\u002Fhy8aaybn15ozhwf3ixpnovtuc2y.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fjb\\\u002Fi6\\\u002Fyu\\\u002Fjbi6yuluq-yzrx6kvtr9xogx-we.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Frb\\\u002Fln\\\u002Fbn\\\u002Frblnbnxl-9wneh6mwelf33ucnou.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fkm\\\u002Fpo\\\u002Fl5\\\u002Fkmpol5wk15ejet_sksfxvhmahv4.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fwz\\\u002F5p\\\u002Fl5\\\u002Fwz5pl5tf0ih9vmzjmdh5ex-ptfe.png\"]}","metaDescription":"«При переезде оборудования было принято парадоксально глупое решение — перенести сервер между зданиями без выключения, на ИБП. Не добежали… », — неизвестный герой.\r\nПривет! Я Виталий Прокофьев, на...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"selectel":{"alias":"selectel","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F66a\u002Ff7d\u002F039\u002F66af7d03979b6d18654293d8f1e72837.png","titleHtml":"Selectel","descriptionHtml":"IT-инфраструктура для бизнеса","relatedData":null,"statistics":{"postsCount":941,"newsCount":37,"vacanciesCount":7,"employeesCount":113,"careerRating":4.73,"subscribersCount":27336,"rating":1480.89,"invest":null},"foundationDate":{"year":"2007","month":"09","day":"11"},"location":{"city":{"id":"447733","title":"Санкт-Петербург"},"region":{"id":"1948","title":"Санкт-Петербург и область"},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fselectel.ru\u002F","staffNumber":"501–1 000 человек","registrationDate":"2010-03-15T19:29:17+00:00","representativeUser":null,"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fselectel"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fselectel"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002FSelectelNews"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-8163992-13"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"Selectel, Санкт-Петербург - IT-инфраструктура для бизнеса с 11 сентября 2007 г.","title":"Selectel, Санкт-Петербург - IT-инфраструктура для бизнеса с 11 сентября 2007 г.","keywords":["Компьютерное железо","Будущее здесь","Научно-популярное","Гаджеты","История IT"],"descriptionHtml":"941 статья от авторов компании Selectel","description":"941 статья от авторов компании Selectel"},"aDeskSettings":null,"careerAlias":"selectel","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

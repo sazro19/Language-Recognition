@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Raspberry Pi в роли роутера с единственным сетевым интерфейсом / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/582486\/"},"headline":"Raspberry Pi в роли роутера с единственным сетевым интерфейсом","datePublished":"2021-10-18T16:00:02+03:00","dateModified":"2021-10-19T12:54:34+03:00","author":{"@type":"Person","name":"ru_vds"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии &mdash; это хобби.    Если вам нужен собственный домашний ро...","url":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/582486\/#post-content-body","about":["c_ruvds","h_raspberrypi","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582486\/c155f027af4aa4a8208b4197784bba21\/","https:\/\/habrastorage.org\/webt\/iw\/jj\/sx\/iwjjsxb5uleirvtsxdoobb2dt68.jpeg","https:\/\/lh6.googleusercontent.com\/0Od3liS5MLe9khAZCdi7vN58_Zqx1ZZgeIRnr5mt1UYyKWKVmMDUkqizK6YMht68wFCmPZJV_8uoMa29JENhPEMTH3KcRzgxbnUlaX-WFz8XmbqBfAs9yaB83Bd75_1Wd3TYfyo=s0","https:\/\/lh6.googleusercontent.com\/Ap0sLjWa8c7sezQ1jnCTEjA1sFGy2ITmLc7I_Iq8jmIe94xfRk_hd2C8nLbUJ9PlejE7oyeg24ADPE1f_SYWy6bc0EjwSbK29ioLmGYL1pI9kuiz_XsM-P4dSWTwfv10GXgOqt0=s0","https:\/\/lh3.googleusercontent.com\/xrWQEEjMdk38xvBSz4t3WsxIhS1gaNJv1NhTVy-UDKnx17yWtRD5yn65w3p7T4d5Q4esc-Wh5xRVSIftflG9vjgjS-YeklhTkHp6jflGH6BtIGBXT2NE5YveFEvurlVRYwVYC_I=s0","https:\/\/habrastorage.org\/webt\/ou\/g5\/kh\/oug5kh6sjydt9llengsiebnp40w.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Raspberry Pi в роли роутера с единственным сетевым интерфейсом" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Raspberry Pi в роли роутера с единственным сетевым интерфейсом" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Raspberry Pi в роли роутера с единственным сетевым интерфейсом" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.
+
+
+
+Если вам нужен собственный домашний роутер — отличной аппаратной..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.
+
+
+
+Если вам нужен собственный домашний роутер — отличной аппаратной..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.
+
+
+
+Если вам нужен собственный домашний роутер — отличной аппаратной..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.
+
+
+
+Если вам нужен собственный домашний роутер — отличной аппаратной..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.
+
+
+
+Если вам нужен собственный домашний роутер — отличной аппаратной..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/iw/jj/sx/iwjjsxb5uleirvtsxdoobb2dt68.jpeg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/iw/jj/sx/iwjjsxb5uleirvtsxdoobb2dt68.jpeg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/iw/jj/sx/iwjjsxb5uleirvtsxdoobb2dt68.jpeg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/iw/jj/sx/iwjjsxb5uleirvtsxdoobb2dt68.jpeg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/iw/jj/sx/iwjjsxb5uleirvtsxdoobb2dt68.jpeg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582486" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-18T13:00:02.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582486/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/ruvds/blog/582486/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/iw/jj/sx/iwjjsxb5uleirvtsxdoobb2dt68.jpeg" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="ruvds" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://ruvds.com/ru-rub"><img src="//habrastorage.org/getpro/habr/branding/b77/8d5/a41/b778d5a41f83016379c6630262c3294c.png" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/ruvds/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">2824.34</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/ruvds/profile/" class="tm-company-card__name">
+        RUVDS.com
+      </a> <div class="tm-company-card__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/ru_vds/" title="ru_vds" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/e36/812/d3d/e36812d3de38eb3d479d7a13228717ef.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/ru_vds/" class="tm-user-info__username">
+      ru_vds
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-18T13:00:02.000Z" title="2021-10-18, 16:00">18  октября   в 16:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Raspberry Pi в роли роутера с единственным сетевым интерфейсом</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/ruvds/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании RUVDS.com</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/raspberrypi/" class="tm-article-snippet__hubs-item-link"><span>Разработка на Raspberry Pi</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://louwrentius.com/raspberry-pi-as-a-router-using-a-single-network-interface.html" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Louwrentius
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml">Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.<br/>
+<br/>
+<a href="https://habr.com/ru/company/ruvds/blog/582486/"><img src="https://habrastorage.org/r/w780q1/webt/iw/jj/sx/iwjjsxb5uleirvtsxdoobb2dt68.jpeg" data-src="https://habrastorage.org/webt/iw/jj/sx/iwjjsxb5uleirvtsxdoobb2dt68.jpeg" data-blurred="true"/></a><br/>
+<br/>
+Если вам нужен собственный домашний роутер — отличной аппаратной платформой для него может стать Raspberry Pi 4 Model B. Более старые модели Raspberry Pi отличаются значительными ограничениями в плане поддерживаемой ими скорости передачи данных по сети. Эти ограничения столь велики, что они не подойдут для создания интернет-роутеров в том случае, если скорость доступа к интернету превышает 100 Мбит/с.<br/>
+<a name="habracut"></a><br/>
+Итак, одноплатный компьютер Raspberry Pi 4 Model B устроит нас по следующим причинам:<br/>
+<br/>
+<ol>
+<li>Он относительно недорог.</li>
+<li>Он достаточно быстр.</li>
+<li>Он может хорошо нагрузить работой свой гигабитный сетевой интерфейс.</li>
+<li>Он энергоэффективен.</li>
+</ol><br/>
+Главной его проблемой, похоже, является тот факт, что у него есть только один сетевой интерфейс. А если создают роутер, то таких интерфейсов нужно как минимум два:<br/>
+<br/>
+<ol>
+<li>Первый интерфейс подключают к модему или роутеру, дающему доступ в интернет (идеально — в режиме моста).</li>
+<li>Второй интерфейс подключают к домашней сети (возможно — к коммутатору).</li>
+</ol><br/>
+В результате, если роутер создают на базе Raspberry Pi, то, вероятнее всего, докупят к нему USB3-сетевую карту за примерно $20, после чего проект будет завершён.<br/>
+<br/>
+<div style="text-align:center;"><img src="https://lh6.googleusercontent.com/0Od3liS5MLe9khAZCdi7vN58_Zqx1ZZgeIRnr5mt1UYyKWKVmMDUkqizK6YMht68wFCmPZJV_8uoMa29JENhPEMTH3KcRzgxbnUlaX-WFz8XmbqBfAs9yaB83Bd75_1Wd3TYfyo=s0"/></div><br/>
+<i><font color="#999999">Raspberry Pi в роли коммутатора с двумя сетевыми интерфейсами</font></i><br/>
+<br/>
+А что если я скажу вам, что то же самое можно сделать, воспользовавшись единственным встроенным сетевым интерфейсом Raspberry Pi 4?<br/>
+<br/>
+Как это возможно?<br/>
+<br/>
+<h2><font color="#3AC1EF">Знакомство с VLAN</font></h2><br/>
+Я, как видите, знакомлю читателей с технологией, которая <a href="https://en.wikipedia.org/wiki/Virtual_LAN">существует с 1990-х годов</a>. Она широко используется в корпоративной среде.<br/>
+<br/>
+И, так как у меня есть такое ощущение, что эта технология не особенно широко известно в кругах людей, далёких от администрирования корпоративных сетей, я думаю, что тему VLAN вполне можно тут обсудить.<br/>
+<br/>
+<h2><font color="#3AC1EF">Что такое VLAN?</font></h2><br/>
+Технология VLAN (Virtual Local Area Network, виртуальная локальная компьютерная сеть) позволяет создавать различные, отделённые друг от друга сети, используя одну и ту же физическую линию связи и один и тот же коммутатор. Это помогает сильно сократить количество проводных соединений и количество физических коммутаторов, необходимых в том случае, если в одном и том же месте нужно развернуть несколько отделённых друг от друга сетей.<br/>
+<br/>
+Если вы хотите пропустить трафик разных сетей по одному и тому же кабелю или через один и тот же коммутатор — как идентифицировать разные потоки трафика?<br/>
+<br/>
+При использовании технологии VLAN сетевые «пакеты» помечают с использованием тегов. Так как эта технология работает на уровне Ethernet, правильнее будет говорить не о «пакетах», а об «Ethernet-кадрах». Но я полагаю, что детали терминологии не особенно важны для понимания сути рассматриваемой технологии.<br/>
+<br/>
+Тут достаточно понимать, что имеются теги, находящиеся перед Ethernet-кадрами. Эти теги сообщают устройствам, поддерживающим VLAN, о том, к какой именно сети принадлежит кадр, и, в результате, пакет, передаваемый по сети.<br/>
+<br/>
+При таком подходе потоки трафика разных сетей можно легко отличить друг от друга. А в вышеупомянутых тегах нет ничего особенно интересного. Они называются VLAN ID и представляют собой всего лишь числа в диапазоне от 1 до 4096. Отмечу, что большинство недорогих коммутаторов могут поддерживать, самое большее, что-то в районе 32-64 VLAN. Лишь более дорогое, корпоративное оборудование, может похвастаться одновременной поддержкой 4096 VLAN. Но в нашем случае это, вероятно, значения не имеет.<br/>
+<br/>
+<h2><font color="#3AC1EF">Управляемый коммутатор</font></h2><br/>
+Теперь, когда мы разобрались с тем, что такое VLAN, подумаем о том, как нам воспользоваться этой технологией.<br/>
+<br/>
+Для начала нам понадобится управляемый сетевой коммутатор, который поддерживает VLAN.<br/>
+<br/>
+Самый дешёвый коммутатор с поддержкой VLAN, который мне удалось найти — это TP-LINK TL-SG105E, который стоит что-то около $25. Это — 5-портовый коммутатор, но, например, его 8-портовая версия, обычно, всего лишь на несколько долларов дороже этой.<br/>
+<br/>
+Один из читателей отметил в комментариях к этому материалу, что этот коммутатор TP-LINK, возможно, не сможет обработать большое количество ARP-запросов, которые могут приходить на порт, подключённый к интернет-модему. В <a href="https://news.ycombinator.com/item?id=28696845">дискуссии на Hacker News</a> этому роутеру тоже досталось немало негатива. Но я не знаю, будут ли коммутаторы Netgear, которые стоят почти столько же, значительно лучше того коммутатора, что выбрал я.<br/>
+<br/>
+У подобных коммутаторов имеется веб-интерфейс, который позволяет настраивать VLAN прямо на устройстве.<br/>
+<br/>
+<h2><font color="#3AC1EF">Тегированный и нетегированный трафик</font></h2><br/>
+Если говорить о VLAN, то сетевой порт коммутатора может пребывать в двух состояниях:<br/>
+<br/>
+<ol>
+<li>Он может являться членом какой-то конкретной сети (VLAN) (нетегированный порт).</li>
+<li>Он может отвечать за передачу трафика нескольких сетей (VLANs) (тегированный порт).</li>
+</ol><br/>
+Если порт является членом VLAN — он ведёт себя как любой другой порт коммутатора. В этом режиме он, очевидно, может являться членом лишь одной сети/VLAN. Теги VLAN убирают из всего трафика, который исходит из этого порта.<br/>
+<br/>
+Но порт, который предназначен для передачи «тегированного» VLAN-трафика, просто занимается перенаправлением этого трафика в том виде, в котором он его получает, в том числе — ничего не происходит и с VLAN-тегами.<br/>
+<br/>
+Это — та самая хитрость, которую мы используем для передачи сетевых пакетов из разных сетей (VLANs) нашему Raspberry Pi-роутеру через единственный порт по единственному кабелю.<br/>
+<br/>
+<div style="text-align:center;"><img src="https://lh6.googleusercontent.com/Ap0sLjWa8c7sezQ1jnCTEjA1sFGy2ITmLc7I_Iq8jmIe94xfRk_hd2C8nLbUJ9PlejE7oyeg24ADPE1f_SYWy6bc0EjwSbK29ioLmGYL1pI9kuiz_XsM-P4dSWTwfv10GXgOqt0=s0"/></div><br/>
+<i><font color="#999999">Raspberry Pi в роли коммутатора с одним сетевым интерфейсом</font></i><br/>
+<br/>
+Давайте разберём эту схему.<br/>
+<br/>
+Представим, что (возвращающийся) пакет из интернета прибывает на модем и передаётся на порт коммутатора 1.<br/>
+<br/>
+Коммутатор знает о том, что любой трафик на этом порту принадлежит VLAN 10. Так как этот трафик надо отправить Raspberry Pi-роутеру, коммутатор добавит в пакет тег и перенаправит пакет (с тегом) Raspberry Pi — на порт коммутатора 2.<br/>
+<br/>
+А Raspberry Pi-роутер, в свою очередь, тоже, как и коммутатор, настроен на работу с VLAN. Тег пакета сообщит роутеру о том, на какой виртуальный интерфейс нужно отправить этот пакет.<br/>
+<br/>
+Вот пример конфигурации утилиты netplan, иллюстрирующий вышеописанную схему:<br/>
+<br/>
+<pre><code class="plaintext">network:
+  version: 2
+  ethernets:
+    enp2s0f0:
+      dhcp4: no
+  vlans:
+    enp2s0f0.10:
+       id: 10
+       link: enp2s0f0
+       addresses:
+         - 68.69.70.71/24 (ненастоящий интернет-адрес)
+       gateway4: 68.69.70.1 (ненастоящий роутер провайдера)
+    enp2s0f0.20:
+       id: 20
+       link: enp2s0f0
+       addresses:
+         - 192.168.0.1/24 (внутренний сетевой адрес, работающий как шлюз)
+</code></pre><br/>
+Как видите — VLAN-пакеты, которые прибывают в виде тегированных пакетов, отправляются (без тегов) на виртуальный сетевой интерфейс, принадлежащий этой конкретной сети. Все эти виртуальные сетевые интерфейсы пользуются единым физическим интерфейсом (enp2s0f0). Виртуальные сетевые интерфейсы — это всего лишь имя физического интерфейса, к которому добавлена конструкция вида «.(VLAN ID)».<br/>
+<br/>
+С этого момента вы, вероятно, уже поняли, к чему я клоню: эти два виртуальных сетевых интерфейса, в общем-то, очень похожи на роутер с двумя физическими сетевыми интерфейсами. В результате все необходимые операции по маршрутизации и по трансляции сетевых адресов, которые должны быть выполнены, выполняются не с применением физических интерфейсов, а с применением интерфейсов виртуальных.<br/>
+<br/>
+<h2><font color="#3AC1EF">Как работать с VLAN</font></h2><br/>
+Для того чтобы работать с VLAN нужен управляемый коммутатор, поддерживающий VLAN. У такого коммутатора имеется интерфейс управления, часто это — веб-интерфейс.<br/>
+<br/>
+В данном примере я использую коммутатор TP-LINK TL-SG105E. Для того чтобы добраться до нужной мне страницы, я, в веб-интерфейсе устройства, прошёл по пути VLAN --> 802.1Q VLAN<br/>
+<br/>
+<div style="text-align:center;"><img src="https://lh3.googleusercontent.com/xrWQEEjMdk38xvBSz4t3WsxIhS1gaNJv1NhTVy-UDKnx17yWtRD5yn65w3p7T4d5Q4esc-Wh5xRVSIftflG9vjgjS-YeklhTkHp6jflGH6BtIGBXT2NE5YveFEvurlVRYwVYC_I=s0"/></div><br/>
+Из этой таблицы мы можем извлечь следующие сведения:<br/>
+<br/>
+<ul>
+<li>Порт 1 — это нетегированный член VLAN 10.</li>
+<li>Порт 2 — это тегированный член VLAN 10 и VLAN 20.</li>
+<li>Порт 3 — это нетегированный член VLAN 20.</li>
+</ul><br/>
+Обратите внимание на то, что рекомендуется удалять порты из VLAN, которые их не используют. В результате я убрал порты 1, 2 и 3 из стандартной сети VLAN 1.<br/>
+<br/>
+Теперь, если к внутренней LAN через этот же коммутатор будет подключено больше устройств, нужно будет сделать соответствующие порты нетегированными членами VLAN 20.<br/>
+<br/>
+<h2><font color="#3AC1EF">Возможные проблемы</font></h2><br/>
+<h3><font color="#3AC1EF">▍Ограничение полосы пропускания сети</font></h3><br/>
+Очевидно, что если используется единственный интерфейс, то в нашем распоряжении оказывается лишь пропускная способность этого интерфейса. В большинстве случаев это — не проблема, так как гигабитный Ethernet работает в полнодуплексном режиме. Имеются физические соединения и для исходящего, и для входящего трафика.<br/>
+<br/>
+В результате можно сказать, что полнодуплексное гигабитное Ethernet-соединение имеет непосредственную пропускную способность, равную 2 Гбит/с. Но мы, в основном, не рассматриваем подобные соединения с такой точки зрения.<br/>
+<br/>
+Например, если мы, с компьютера, загружаем что-то на скорости в 200 Мбит/с, то этот трафик поступает к нам через VLAN 10 по пути входящего трафика. Затем он переправляется через VLAN 20 к компьютеру с использованием пути исходящего трафика. В результате тут никаких проблем не возникает.<br/>
+<br/>
+Если планируется использовать Raspberry Pi ещё и как сервер резервного копирования данных (с подключённым к плате внешним жёстким диском), то трафик резервного копирования и интернет-трафик могут «бороться» за полосу пропускания одного и того же гигабитного интерфейса.<br/>
+<br/>
+<h3><font color="#3AC1EF">▍Воздействие на гигабитное интернет-подключение</font></h3><br/>
+Если вы сделаете себе такой маршрутизатор, о котором я тут рассказал, вы никогда не получите на нём полную скорость, характерную для гигабитного интернет-канала. Максимум, на который можно рассчитывать, вероятно, находится в районе 900 Мбит/с. (Тут я исхожу из предположения о том, что вы будете использовать x86-устройство, так как Raspberry Pi, в любом случае, не сможет, например, работать с таким трафиком в режиме файрвола).<br/>
+<br/>
+Дело в том, что основной объём трафика связан с TCP-соединениями. Когда осуществляется загрузка каких-то материалов, данные передаются в обе стороны! Загружаемые данные — это основной трафик, но есть ещё и заметный постоянный поток данных, состоящий из пакетов, возвращающихся в интернет и сообщающих передающей стороне о том, что некие данные получены принимающей стороной (если принимающая сторона не получит подтверждения — данные будут отправлены повторно).<br/>
+<br/>
+Помните о том, что, в нашей однопортовой системе, Raspberry Pi использует один и тот же гигабитный порт и для отправки данных в интернет через VLAN 10, и для приёма данных из интернета через VLAN 20. В результате поток трафика, идущего от вас в интернет, будет ограничивать максимально возможную скорость загрузки данных.<br/>
+<br/>
+<h3><font color="#3AC1EF">▍Raspberry Pi 4 Model B в роли роутера</font></h3><br/>
+Главное ограничение Raspberry Pi 4 Model B, которое становится проблемой для всё большего и большего количества людей — это производительность. Если вы используете IPTABLES в Linux для организации файрвола, то, по опыту знаю, пропускная способность сети падает, и составляет, максимум, 650 Мбит/с.<br/>
+<br/>
+Но это можно счесть проблемой только в том случае, если используется гигабитный доступ в интернет, или если скорость обмена данными с интернетом превышает ту, с которой может справиться Raspberry Pi.<br/>
+<br/>
+Если же ваша скорость подключения к интернету и близко не подходит к гигабитной — то вас эта проблема не коснётся.<br/>
+<br/>
+Возможно, для создания маршрутизаторов, подобных вышеописанному, лучше подойдёт Raspberry Pi 400 или платформы, представленные вычислительными модулями, так как их процессоры быстрее, чем у Raspberry Pi 4 Model B.<br/>
+<br/>
+Да, из дискуссии на Hacker News я узнал о том, что роутер с одним сетевым интерфейсом называют «<a href="https://en.wikipedia.org/wiki/Router_on_a_stick">router on a stick</a>».<br/>
+<br/>
+<h2><font color="#3AC1EF">Итоги</font></h2><br/>
+Стоит ли вам собирать описанный здесь Raspberry Pi-роутер — зависит только от вас. Я пользуюсь чем-то подобным (применяя x86-сервер) уже лет 10, так как не могу провести второй кабель от модема до комнаты, где находится роутер. <a href="https://louwrentius.com/my-home-network-setup-based-on-managed-switches-and-vlans.html">Вот</a> как устроена моя домашняя сеть.<br/>
+<br/>
+Пользуетесь ли вы домашними роутерами?<br/>
+<br/>
+<a href="http://ruvds.com/ru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=perevod&amp;utm_content=raspberry_pi_v_roli_routera_s_edinstvennym_setevym_interfejsom"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ou/g5/kh/oug5kh6sjydt9llengsiebnp40w.png"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BRaspberry%20Pi%5D" class="tm-tags-list__link">Raspberry Pi</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%D0%BD%D1%8B%D0%B5%20%D1%81%D0%B5%D1%82%D0%B8%5D" class="tm-tags-list__link">компьютерные сети</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bruvds_%D0%BF%D0%B5%D1%80%D0%B5%D0%B2%D0%BE%D0%B4%5D" class="tm-tags-list__link">ruvds_перевод</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/ruvds/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании RUVDS.com
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/raspberrypi/" class="tm-hubs-list__link">
+    Разработка на Raspberry Pi
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 40: ↑38 и ↓2</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 40: ↑38 и ↓2" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+36</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">12K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    85
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__title">RUVDS.com</a> <div class="tm-company-snippet__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/ruvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/ru_vds/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/e36/812/d3d/e36812d3de38eb3d479d7a13228717ef.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 970 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    215.5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">155.2</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/ru_vds/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @ru_vds
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/ruvds/blog/582486/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 32 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-07-26T21:00:00.000Z" title="2015-07-27, 00:00">27  июля  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://ruvds.com" target="_blank" class="tm-company-basic-info__link">
+      ruvds.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    11–30 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2016-03-18T05:43:01.000Z" title="2016-03-18, 08:43">18  марта  2016</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/ruvds/" class="tm-company-basic-info__link">
+      ruvds
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/ruvds/blog/582486/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/ruvds/blog/582486/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582486":{"id":"582486","timePublished":"2021-10-18T13:00:02+00:00","isCorporative":true,"lang":"ru","titleHtml":"Raspberry Pi в роли роутера с единственным сетевым интерфейсом","leadData":{"textHtml":"Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F582486\u002F\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fiw\u002Fjj\u002Fsx\u002Fiwjjsxb5uleirvtsxdoobb2dt68.jpeg\"\u003E\u003C\u002Fa\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nЕсли вам нужен собственный домашний роутер — отличной аппаратной платформой для него может стать Raspberry Pi 4 Model B. Более старые модели Raspberry Pi отличаются значительными ограничениями в плане поддерживаемой ими скорости передачи данных по сети. Эти ограничения столь велики, что они не подойдут для создания интернет-роутеров в том случае, если скорость доступа к интернету превышает 100 Мбит\u002Fс.\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Louwrentius","originalUrl":"https:\u002F\u002Flouwrentius.com\u002Fraspberry-pi-as-a-router-using-a-single-network-interface.html"}}],"author":{"scoreStats":{"score":215.5,"votesCount":970},"rating":155.2,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1220775","alias":"ru_vds","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Fe36\u002F812\u002Fd3d\u002Fe36812d3de38eb3d479d7a13228717ef.png","speciality":"Пользователь"},"statistics":{"commentsCount":32,"favoritesCount":85,"readingCount":12341,"score":36,"votesCount":40},"hubs":[{"relatedData":null,"id":"19791","alias":"ruvds","type":"corporative","title":"Блог компании RUVDS.com","titleHtml":"Блог компании RUVDS.com","isProfiled":false},{"relatedData":null,"id":"21476","alias":"raspberrypi","type":"collective","title":"Разработка на Raspberry Pi","titleHtml":"Разработка на Raspberry Pi","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003EСразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F582486\u002F\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fiw\u002Fjj\u002Fsx\u002Fiwjjsxb5uleirvtsxdoobb2dt68.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fiw\u002Fjj\u002Fsx\u002Fiwjjsxb5uleirvtsxdoobb2dt68.jpeg\" data-blurred=\"true\"\u002F\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли вам нужен собственный домашний роутер — отличной аппаратной платформой для него может стать Raspberry Pi 4 Model B. Более старые модели Raspberry Pi отличаются значительными ограничениями в плане поддерживаемой ими скорости передачи данных по сети. Эти ограничения столь велики, что они не подойдут для создания интернет-роутеров в том случае, если скорость доступа к интернету превышает 100 Мбит\u002Fс.\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nИтак, одноплатный компьютер Raspberry Pi 4 Model B устроит нас по следующим причинам:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EОн относительно недорог.\u003C\u002Fli\u003E\r\n\u003Cli\u003EОн достаточно быстр.\u003C\u002Fli\u003E\r\n\u003Cli\u003EОн может хорошо нагрузить работой свой гигабитный сетевой интерфейс.\u003C\u002Fli\u003E\r\n\u003Cli\u003EОн энергоэффективен.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nГлавной его проблемой, похоже, является тот факт, что у него есть только один сетевой интерфейс. А если создают роутер, то таких интерфейсов нужно как минимум два:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EПервый интерфейс подключают к модему или роутеру, дающему доступ в интернет (идеально — в режиме моста).\u003C\u002Fli\u003E\r\n\u003Cli\u003EВторой интерфейс подключают к домашней сети (возможно — к коммутатору).\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nВ результате, если роутер создают на базе Raspberry Pi, то, вероятнее всего, докупят к нему USB3-сетевую карту за примерно $20, после чего проект будет завершён.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Flh6.googleusercontent.com\u002F0Od3liS5MLe9khAZCdi7vN58_Zqx1ZZgeIRnr5mt1UYyKWKVmMDUkqizK6YMht68wFCmPZJV_8uoMa29JENhPEMTH3KcRzgxbnUlaX-WFz8XmbqBfAs9yaB83Bd75_1Wd3TYfyo=s0\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003ERaspberry Pi в роли коммутатора с двумя сетевыми интерфейсами\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nА что если я скажу вам, что то же самое можно сделать, воспользовавшись единственным встроенным сетевым интерфейсом Raspberry Pi 4?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКак это возможно?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EЗнакомство с VLAN\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nЯ, как видите, знакомлю читателей с технологией, которая \u003Ca href=\"https:\u002F\u002Fen.wikipedia.org\u002Fwiki\u002FVirtual_LAN\"\u003Eсуществует с 1990-х годов\u003C\u002Fa\u003E. Она широко используется в корпоративной среде.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИ, так как у меня есть такое ощущение, что эта технология не особенно широко известно в кругах людей, далёких от администрирования корпоративных сетей, я думаю, что тему VLAN вполне можно тут обсудить.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EЧто такое VLAN?\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nТехнология VLAN (Virtual Local Area Network, виртуальная локальная компьютерная сеть) позволяет создавать различные, отделённые друг от друга сети, используя одну и ту же физическую линию связи и один и тот же коммутатор. Это помогает сильно сократить количество проводных соединений и количество физических коммутаторов, необходимых в том случае, если в одном и том же месте нужно развернуть несколько отделённых друг от друга сетей.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли вы хотите пропустить трафик разных сетей по одному и тому же кабелю или через один и тот же коммутатор — как идентифицировать разные потоки трафика?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри использовании технологии VLAN сетевые «пакеты» помечают с использованием тегов. Так как эта технология работает на уровне Ethernet, правильнее будет говорить не о «пакетах», а об «Ethernet-кадрах». Но я полагаю, что детали терминологии не особенно важны для понимания сути рассматриваемой технологии.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТут достаточно понимать, что имеются теги, находящиеся перед Ethernet-кадрами. Эти теги сообщают устройствам, поддерживающим VLAN, о том, к какой именно сети принадлежит кадр, и, в результате, пакет, передаваемый по сети.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри таком подходе потоки трафика разных сетей можно легко отличить друг от друга. А в вышеупомянутых тегах нет ничего особенно интересного. Они называются VLAN ID и представляют собой всего лишь числа в диапазоне от 1 до 4096. Отмечу, что большинство недорогих коммутаторов могут поддерживать, самое большее, что-то в районе 32-64 VLAN. Лишь более дорогое, корпоративное оборудование, может похвастаться одновременной поддержкой 4096 VLAN. Но в нашем случае это, вероятно, значения не имеет.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EУправляемый коммутатор\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nТеперь, когда мы разобрались с тем, что такое VLAN, подумаем о том, как нам воспользоваться этой технологией.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля начала нам понадобится управляемый сетевой коммутатор, который поддерживает VLAN.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСамый дешёвый коммутатор с поддержкой VLAN, который мне удалось найти — это TP-LINK TL-SG105E, который стоит что-то около $25. Это — 5-портовый коммутатор, но, например, его 8-портовая версия, обычно, всего лишь на несколько долларов дороже этой.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОдин из читателей отметил в комментариях к этому материалу, что этот коммутатор TP-LINK, возможно, не сможет обработать большое количество ARP-запросов, которые могут приходить на порт, подключённый к интернет-модему. В \u003Ca href=\"https:\u002F\u002Fnews.ycombinator.com\u002Fitem?id=28696845\"\u003Eдискуссии на Hacker News\u003C\u002Fa\u003E этому роутеру тоже досталось немало негатива. Но я не знаю, будут ли коммутаторы Netgear, которые стоят почти столько же, значительно лучше того коммутатора, что выбрал я.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nУ подобных коммутаторов имеется веб-интерфейс, который позволяет настраивать VLAN прямо на устройстве.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EТегированный и нетегированный трафик\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nЕсли говорить о VLAN, то сетевой порт коммутатора может пребывать в двух состояниях:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EОн может являться членом какой-то конкретной сети (VLAN) (нетегированный порт).\u003C\u002Fli\u003E\r\n\u003Cli\u003EОн может отвечать за передачу трафика нескольких сетей (VLANs) (тегированный порт).\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nЕсли порт является членом VLAN — он ведёт себя как любой другой порт коммутатора. В этом режиме он, очевидно, может являться членом лишь одной сети\u002FVLAN. Теги VLAN убирают из всего трафика, который исходит из этого порта.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо порт, который предназначен для передачи «тегированного» VLAN-трафика, просто занимается перенаправлением этого трафика в том виде, в котором он его получает, в том числе — ничего не происходит и с VLAN-тегами.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭто — та самая хитрость, которую мы используем для передачи сетевых пакетов из разных сетей (VLANs) нашему Raspberry Pi-роутеру через единственный порт по единственному кабелю.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Flh6.googleusercontent.com\u002FAp0sLjWa8c7sezQ1jnCTEjA1sFGy2ITmLc7I_Iq8jmIe94xfRk_hd2C8nLbUJ9PlejE7oyeg24ADPE1f_SYWy6bc0EjwSbK29ioLmGYL1pI9kuiz_XsM-P4dSWTwfv10GXgOqt0=s0\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003ERaspberry Pi в роли коммутатора с одним сетевым интерфейсом\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДавайте разберём эту схему.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПредставим, что (возвращающийся) пакет из интернета прибывает на модем и передаётся на порт коммутатора 1.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКоммутатор знает о том, что любой трафик на этом порту принадлежит VLAN 10. Так как этот трафик надо отправить Raspberry Pi-роутеру, коммутатор добавит в пакет тег и перенаправит пакет (с тегом) Raspberry Pi — на порт коммутатора 2.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nА Raspberry Pi-роутер, в свою очередь, тоже, как и коммутатор, настроен на работу с VLAN. Тег пакета сообщит роутеру о том, на какой виртуальный интерфейс нужно отправить этот пакет.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВот пример конфигурации утилиты netplan, иллюстрирующий вышеописанную схему:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Enetwork:\n  version: 2\n  ethernets:\n    enp2s0f0:\n      dhcp4: no\n  vlans:\n    enp2s0f0.10:\n       id: 10\n       link: enp2s0f0\n       addresses:\n         - 68.69.70.71\u002F24 (ненастоящий интернет-адрес)\n       gateway4: 68.69.70.1 (ненастоящий роутер провайдера)\n    enp2s0f0.20:\n       id: 20\n       link: enp2s0f0\n       addresses:\n         - 192.168.0.1\u002F24 (внутренний сетевой адрес, работающий как шлюз)\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nКак видите — VLAN-пакеты, которые прибывают в виде тегированных пакетов, отправляются (без тегов) на виртуальный сетевой интерфейс, принадлежащий этой конкретной сети. Все эти виртуальные сетевые интерфейсы пользуются единым физическим интерфейсом (enp2s0f0). Виртуальные сетевые интерфейсы — это всего лишь имя физического интерфейса, к которому добавлена конструкция вида «.(VLAN ID)».\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nС этого момента вы, вероятно, уже поняли, к чему я клоню: эти два виртуальных сетевых интерфейса, в общем-то, очень похожи на роутер с двумя физическими сетевыми интерфейсами. В результате все необходимые операции по маршрутизации и по трансляции сетевых адресов, которые должны быть выполнены, выполняются не с применением физических интерфейсов, а с применением интерфейсов виртуальных.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EКак работать с VLAN\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nДля того чтобы работать с VLAN нужен управляемый коммутатор, поддерживающий VLAN. У такого коммутатора имеется интерфейс управления, часто это — веб-интерфейс.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ данном примере я использую коммутатор TP-LINK TL-SG105E. Для того чтобы добраться до нужной мне страницы, я, в веб-интерфейсе устройства, прошёл по пути VLAN --\u003E 802.1Q VLAN\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Flh3.googleusercontent.com\u002FxrWQEEjMdk38xvBSz4t3WsxIhS1gaNJv1NhTVy-UDKnx17yWtRD5yn65w3p7T4d5Q4esc-Wh5xRVSIftflG9vjgjS-YeklhTkHp6jflGH6BtIGBXT2NE5YveFEvurlVRYwVYC_I=s0\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nИз этой таблицы мы можем извлечь следующие сведения:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EПорт 1 — это нетегированный член VLAN 10.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПорт 2 — это тегированный член VLAN 10 и VLAN 20.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПорт 3 — это нетегированный член VLAN 20.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nОбратите внимание на то, что рекомендуется удалять порты из VLAN, которые их не используют. В результате я убрал порты 1, 2 и 3 из стандартной сети VLAN 1.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТеперь, если к внутренней LAN через этот же коммутатор будет подключено больше устройств, нужно будет сделать соответствующие порты нетегированными членами VLAN 20.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EВозможные проблемы\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍Ограничение полосы пропускания сети\u003C\u002Ffont\u003E\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nОчевидно, что если используется единственный интерфейс, то в нашем распоряжении оказывается лишь пропускная способность этого интерфейса. В большинстве случаев это — не проблема, так как гигабитный Ethernet работает в полнодуплексном режиме. Имеются физические соединения и для исходящего, и для входящего трафика.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ результате можно сказать, что полнодуплексное гигабитное Ethernet-соединение имеет непосредственную пропускную способность, равную 2 Гбит\u002Fс. Но мы, в основном, не рассматриваем подобные соединения с такой точки зрения.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНапример, если мы, с компьютера, загружаем что-то на скорости в 200 Мбит\u002Fс, то этот трафик поступает к нам через VLAN 10 по пути входящего трафика. Затем он переправляется через VLAN 20 к компьютеру с использованием пути исходящего трафика. В результате тут никаких проблем не возникает.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли планируется использовать Raspberry Pi ещё и как сервер резервного копирования данных (с подключённым к плате внешним жёстким диском), то трафик резервного копирования и интернет-трафик могут «бороться» за полосу пропускания одного и того же гигабитного интерфейса.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍Воздействие на гигабитное интернет-подключение\u003C\u002Ffont\u003E\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nЕсли вы сделаете себе такой маршрутизатор, о котором я тут рассказал, вы никогда не получите на нём полную скорость, характерную для гигабитного интернет-канала. Максимум, на который можно рассчитывать, вероятно, находится в районе 900 Мбит\u002Fс. (Тут я исхожу из предположения о том, что вы будете использовать x86-устройство, так как Raspberry Pi, в любом случае, не сможет, например, работать с таким трафиком в режиме файрвола).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДело в том, что основной объём трафика связан с TCP-соединениями. Когда осуществляется загрузка каких-то материалов, данные передаются в обе стороны! Загружаемые данные — это основной трафик, но есть ещё и заметный постоянный поток данных, состоящий из пакетов, возвращающихся в интернет и сообщающих передающей стороне о том, что некие данные получены принимающей стороной (если принимающая сторона не получит подтверждения — данные будут отправлены повторно).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПомните о том, что, в нашей однопортовой системе, Raspberry Pi использует один и тот же гигабитный порт и для отправки данных в интернет через VLAN 10, и для приёма данных из интернета через VLAN 20. В результате поток трафика, идущего от вас в интернет, будет ограничивать максимально возможную скорость загрузки данных.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍Raspberry Pi 4 Model B в роли роутера\u003C\u002Ffont\u003E\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nГлавное ограничение Raspberry Pi 4 Model B, которое становится проблемой для всё большего и большего количества людей — это производительность. Если вы используете IPTABLES в Linux для организации файрвола, то, по опыту знаю, пропускная способность сети падает, и составляет, максимум, 650 Мбит\u002Fс.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо это можно счесть проблемой только в том случае, если используется гигабитный доступ в интернет, или если скорость обмена данными с интернетом превышает ту, с которой может справиться Raspberry Pi.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли же ваша скорость подключения к интернету и близко не подходит к гигабитной — то вас эта проблема не коснётся.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВозможно, для создания маршрутизаторов, подобных вышеописанному, лучше подойдёт Raspberry Pi 400 или платформы, представленные вычислительными модулями, так как их процессоры быстрее, чем у Raspberry Pi 4 Model B.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДа, из дискуссии на Hacker News я узнал о том, что роутер с одним сетевым интерфейсом называют «\u003Ca href=\"https:\u002F\u002Fen.wikipedia.org\u002Fwiki\u002FRouter_on_a_stick\"\u003Erouter on a stick\u003C\u002Fa\u003E».\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EИтоги\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nСтоит ли вам собирать описанный здесь Raspberry Pi-роутер — зависит только от вас. Я пользуюсь чем-то подобным (применяя x86-сервер) уже лет 10, так как не могу провести второй кабель от модема до комнаты, где находится роутер. \u003Ca href=\"https:\u002F\u002Flouwrentius.com\u002Fmy-home-network-setup-based-on-managed-switches-and-vlans.html\"\u003EВот\u003C\u002Fa\u003E как устроена моя домашняя сеть.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПользуетесь ли вы домашними роутерами?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"http:\u002F\u002Fruvds.com\u002Fru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=perevod&amp;utm_content=raspberry_pi_v_roli_routera_s_edinstvennym_setevym_interfejsom\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fou\u002Fg5\u002Fkh\u002Foug5kh6sjydt9llengsiebnp40w.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"Raspberry Pi"},{"titleHtml":"компьютерные сети"},{"titleHtml":"ruvds_перевод"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fiw\u002Fjj\u002Fsx\u002Fiwjjsxb5uleirvtsxdoobb2dt68.jpeg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fiw\u002Fjj\u002Fsx\u002Fiwjjsxb5uleirvtsxdoobb2dt68.jpeg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F582486\\\u002F\"},\"headline\":\"Raspberry Pi в роли роутера с единственным сетевым интерфейсом\",\"datePublished\":\"2021-10-18T16:00:02+03:00\",\"dateModified\":\"2021-10-19T12:54:34+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"ru_vds\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии &mdash; это хобби.    Если вам нужен собственный домашний ро...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F582486\\\u002F#post-content-body\",\"about\":[\"c_ruvds\",\"h_raspberrypi\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582486\\\u002Fc155f027af4aa4a8208b4197784bba21\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fiw\\\u002Fjj\\\u002Fsx\\\u002Fiwjjsxb5uleirvtsxdoobb2dt68.jpeg\",\"https:\\\u002F\\\u002Flh6.googleusercontent.com\\\u002F0Od3liS5MLe9khAZCdi7vN58_Zqx1ZZgeIRnr5mt1UYyKWKVmMDUkqizK6YMht68wFCmPZJV_8uoMa29JENhPEMTH3KcRzgxbnUlaX-WFz8XmbqBfAs9yaB83Bd75_1Wd3TYfyo=s0\",\"https:\\\u002F\\\u002Flh6.googleusercontent.com\\\u002FAp0sLjWa8c7sezQ1jnCTEjA1sFGy2ITmLc7I_Iq8jmIe94xfRk_hd2C8nLbUJ9PlejE7oyeg24ADPE1f_SYWy6bc0EjwSbK29ioLmGYL1pI9kuiz_XsM-P4dSWTwfv10GXgOqt0=s0\",\"https:\\\u002F\\\u002Flh3.googleusercontent.com\\\u002FxrWQEEjMdk38xvBSz4t3WsxIhS1gaNJv1NhTVy-UDKnx17yWtRD5yn65w3p7T4d5Q4esc-Wh5xRVSIftflG9vjgjS-YeklhTkHp6jflGH6BtIGBXT2NE5YveFEvurlVRYwVYC_I=s0\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fou\\\u002Fg5\\\u002Fkh\\\u002Foug5kh6sjydt9llengsiebnp40w.png\"]}","metaDescription":"Сразу скажу, что эта статья предназначена для обычных пользователей и для тех, для кого сетевые технологии — это хобби.\r\n\r\n\r\n\r\nЕсли вам нужен собственный домашний роутер — отличной аппаратной...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"ruvds":{"alias":"ruvds","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff27\u002Fea8\u002F5bd\u002Ff27ea85bd62fbd985c308110885af7e0.png","titleHtml":"RUVDS.com","descriptionHtml":"VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E","relatedData":null,"statistics":{"postsCount":2029,"newsCount":62,"vacanciesCount":0,"employeesCount":57,"careerRating":null,"subscribersCount":36796,"rating":2824.34,"invest":null},"foundationDate":{"year":"2015","month":"07","day":"27"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fruvds.com","staffNumber":"11–30 человек","registrationDate":"2016-03-18T05:43:01+00:00","representativeUser":{"alias":"ruvds","fullname":null},"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fruvds"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fru_vds"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fru_vds"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"33905479"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002Fb77\u002F8d5\u002Fa41\u002Fb778d5a41f83016379c6630262c3294c.png","linkUrl":"https:\u002F\u002Fruvds.com\u002Fru-rub","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E с 27 июля 2015 г.","title":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду HABR10 с 27 июля 2015 г.","keywords":["Научно-популярное","DIY или Сделай сам","Системное администрирование","Разработка веб-сайтов","Читальный зал"],"descriptionHtml":"2 029 статей от авторов компании RUVDS.com","description":"2 029 статей от авторов компании RUVDS.com"},"aDeskSettings":null,"careerAlias":"ruvds","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Оптимизируем физику Shadow Fight Arena — мобильного файтинга с синхронным PvP / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/584550\/"},"headline":"Оптимизируем физику Shadow Fight Arena — мобильного файтинга с синхронным PvP","datePublished":"2021-10-20T15:06:05+03:00","dateModified":"2021-10-22T16:12:55+03:00","author":{"@type":"Person","name":"BanzaiGames"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Ведущий технический художник Banzai.Games Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопольз...","url":"https:\/\/habr.com\/ru\/post\/584550\/#post-content-body","about":["h_gamedev","h_unity","h_animation","h_physics","f_develop","f_design","f_popsci"],"image":["https:\/\/habr.com\/share\/publication\/584550\/4c981f0bca5ae21b065b5ad0d15ddc80\/","https:\/\/habrastorage.org\/webt\/a8\/ou\/jj\/a8oujjm51fnktyghmu1bpd6h6qo.jpeg","https:\/\/habrastorage.org\/webt\/yh\/yy\/vj\/yhyyvjmeguavxsz13y27dkxqojk.gif","https:\/\/habrastorage.org\/webt\/of\/t4\/kp\/oft4kp1utyfcgw6qrsf7n5znemy.gif","https:\/\/habrastorage.org\/webt\/hm\/fc\/_n\/hmfc_nqdc5usf0ge6ztg01nrwmi.png","https:\/\/habrastorage.org\/webt\/c-\/zz\/2w\/c-zz2w_tz4ivlrqcwihofotgiqu.gif","https:\/\/habrastorage.org\/webt\/n8\/jc\/_5\/n8jc_592lip7qdy3ql7rhovdm9s.gif","https:\/\/habrastorage.org\/webt\/uw\/6l\/l7\/uw6ll7eq78ahumsjfauwtvxuwik.gif","https:\/\/habrastorage.org\/webt\/eb\/s2\/ox\/ebs2oxjezdklpunhe3jy1jxagji.png","https:\/\/habrastorage.org\/webt\/28\/f5\/8o\/28f58oyxngr6sclouxdos-3gbh0.png","https:\/\/habrastorage.org\/webt\/sv\/4i\/sq\/sv4isqy6se5syvdsgmpptjdzodu.gif","https:\/\/habrastorage.org\/webt\/xk\/er\/zz\/xkerzzkyjgr-iayz_92yf-2xnz4.png","https:\/\/habrastorage.org\/webt\/nt\/ui\/yj\/ntuiyjqt-chfc-n3qmmvpzwbu6e.png","https:\/\/habrastorage.org\/webt\/k9\/_y\/t0\/k9_yt0rfifw7ehwqbtpwhztuv2c.gif","https:\/\/habrastorage.org\/webt\/xw\/rh\/rf\/xwrhrflypdywlf2vbjpjuqzi0f4.gif","https:\/\/habrastorage.org\/webt\/e9\/cw\/ze\/e9cwze6h0qusen4ksvf53sfwa3s.gif","https:\/\/i.ibb.co\/4dSn4Lm\/image15.gif"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Оптимизируем физику Shadow Fight Arena — мобильного файтинга с синхронным PvP" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Оптимизируем физику Shadow Fight Arena — мобильного файтинга с синхронным PvP" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Оптимизируем физику Shadow Fight Arena — мобильного файтинга с синхронным PvP" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Ведущий технический художник Banzai.Games Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга Shadow Fight..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Ведущий технический художник Banzai.Games Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга Shadow Fight..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Ведущий технический художник Banzai.Games Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга Shadow Fight..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Ведущий технический художник Banzai.Games Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга Shadow Fight..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Ведущий технический художник Banzai.Games Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга Shadow Fight..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/a8/ou/jj/a8oujjm51fnktyghmu1bpd6h6qo.jpeg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/a8/ou/jj/a8oujjm51fnktyghmu1bpd6h6qo.jpeg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/a8/ou/jj/a8oujjm51fnktyghmu1bpd6h6qo.jpeg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/a8/ou/jj/a8oujjm51fnktyghmu1bpd6h6qo.jpeg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/a8/ou/jj/a8oujjm51fnktyghmu1bpd6h6qo.jpeg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="584550" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-20T12:06:05.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/584550/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/584550/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/a8/ou/jj/a8oujjm51fnktyghmu1bpd6h6qo.jpeg" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/BanzaiGames/" title="BanzaiGames" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/8f1/042/064/8f104206479a1cda45284c1167e45592.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/BanzaiGames/" class="tm-user-info__username">
+      BanzaiGames
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-20T12:06:05.000Z" title="2021-10-20, 15:06">20  октября   в 15:06</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Оптимизируем физику Shadow Fight Arena — мобильного файтинга с синхронным PvP</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/gamedev/" class="tm-article-snippet__hubs-item-link"><span>Разработка игр</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/unity/" class="tm-article-snippet__hubs-item-link"><span>Unity</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/animation/" class="tm-article-snippet__hubs-item-link"><span>Компьютерная анимация</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/physics/" class="tm-article-snippet__hubs-item-link"><span>Физика</span> <!----></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><img src="https://habrastorage.org/r/w780q1/webt/a8/ou/jj/a8oujjm51fnktyghmu1bpd6h6qo.jpeg" data-src="https://habrastorage.org/webt/a8/ou/jj/a8oujjm51fnktyghmu1bpd6h6qo.jpeg" data-blurred="true"/><br/>
+<br/>
+Ведущий технический художник <a href="https://banzai.games/" rel="nofollow noopener noreferrer"><i>Banzai.Games</i></a> Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга <i>Shadow Fight Arena</i>. Главным нововведением игры является <b>синхронный PvP</b>, появления которого ждали 400 миллионов игроков по всему миру в течение 9 лет. И для команды было важно не только сохранить реалистичность анимаций, но и согласовать движения двух персонажей на двух разных устройствах.<br/>
+<a name="habracut"></a><br/>
+Визуально <i>Shadow Fight Arena</i> (SFA) выгодно выделяется среди других игр серии благодаря переходу на Physically Based Rendering (PBR). Мы значительно улучшили графику, повысив качество текстур, изменив освещение и добавив постэффекты. Чтобы соответствовать установленной планке, мы так же переработали физику в игре, улучшив ее как визуально, так и в плане оптимизации. <br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/yh/yy/vj/yhyyvjmeguavxsz13y27dkxqojk.gif"/><br/>
+<br/>
+В <b><a href="https://habr.com/ru/company/banzai/blog/480108/">предыдущей статье</a></b> я рассказывал о технических решениях, которые мы применили при настройке реалистичной и оптимизированной физики в игре Shadow Fight 3 (SF3). Часть этих решений перекочевали в SFA, поэтому я буду периодически ссылаться на старую статью. Однако большинство этих решений были изменены или улучшены. В данной статье я расскажу, как и почему мы перешли на плоскую иерархию в сцене, как избежали артефактов при просадке fps и зачем снова переписали физику для персонажей с нуля, построив ее на твердых телах и добившись ее полной детерминированности.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/of/t4/kp/oft4kp1utyfcgw6qrsf7n5znemy.gif"/><br/>
+<br/>
+<h3>Плоская иерархия</h3><br/>
+В стандартном скелете персонажей в SFA присутствует много иерархических цепочек: руки, ноги, голова, являющиеся дочерними от груди, которая, в свою очередь, имеет «родителя» в виде таза. В таком виде при изменении трансформов любой кости просчитывается изменение трансформов всех костей, присутствующих в иерархической цепочке, даже если никаких изменений для них не произошло.<br/>
+<br/>
+Это значит, что чем больше костей в скелете персонажа, чем длиннее иерархические цепочки, тем сильнее нагрузка при просчёте их изменений во время анимаций. Для оптимизации этого процесса мы решили перейти на плоскую иерархию в сцене. Каждый раз после инициализации моделей на сцене мы разбиваем все иерархии, вытаскивая компоненты префабов так, чтобы каждый из них стал отдельным game object.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/hm/fc/_n/hmfc_nqdc5usf0ge6ztg01nrwmi.png"/><br/>
+<br/>
+Это позволило нам просчитывать изменения трансформов каждой кости только один раз в кадр, тогда как раньше запись каждой кости вызывала авто-пересчёт всех дочерних костей. С такой системой мы можем практически не ограничивать себя в количестве костей в скелете персонажей, конечно же, в рамках разумного.<br/>
+<br/>
+Как же переход на плоскую иерархию сказался на физике?<br/>
+<br/>
+<b>Во-первых,</b> это позволило отказаться от физического клона, который мы использовали для разных типов оружия. Подробно об этом решении я писал в предыдущей статье, здесь лишь кратко напомню.<br/>
+<br/>
+Для достижения наиболее реалистичного поведения во время симуляции нам требовалось вынимать оружие из иерархии персонажа и создавать для него физический клон. Во время анимации rigidbody-костей клон оставался неактивным, а на трансформацию основного скелета влиял только анимационный трек.<br/>
+<br/>
+Во время последнего кадра анимации происходила синхронизация трансформов костей двух скелетов. Физический клон считывал положение и ротацию костей основного скелета и задавал своим точно такие же параметры.<br/>
+<br/>
+Затем активировался rigidbody, и кости физического клона подвергались симуляции. Далее, вплоть до начала следующей атакующей анимации, уже основной скелет каждый кадр считывал трансформы костей физического клона, которые в этот момент двигались по физике, и задавал эти параметры своим костям.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/c-/zz/2w/c-zz2w_tz4ivlrqcwihofotgiqu.gif"/><br/>
+<br/>
+Физический клон отлично показал себя в плане реалистичности поведения во время симуляции, но, к сожалению, такое решение является не самым оптимизированным, так как кости в иерархии в связке с джоинтами требуют лишних вычислений. <br/>
+<br/>
+Гораздо дешевле связывать джоинтами кости, являющиеся отдельными game object. После перехода на плоскую иерархию мы получили такой же результат, только без необходимости в лишних вычислениях. Однако нам потребовалось переработать физику для многих объектов, т.к. старые настройки были актуальны для иерархической системы и не подходили для симуляции отдельных game object.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/n8/jc/_5/n8jc_592lip7qdy3ql7rhovdm9s.gif"/><br/>
+<br/>
+<b>Во-вторых,</b> мы отказались от фейкового импульса, который применялся в SF3 для исправления визуальных артефактов при симуляции физики твёрдых тел. В SFA использование этого решения невозможно, так как оно подразумевает нахождение симулируемых костей внутри иерархии. Однако фейковый импульс — скорее временная мера и не даёт достаточного физически реалистичного результата, и для SFA мы применили другой метод.<br/>
+<br/>
+Для начала о проблеме. При стабильных 60 FPS все идёт гладко, но во время просадок, которые возможны на слабых устройствах, мы наблюдаем следующее: симулируемые кости начинают с задержкой «догонять» анимируемые кости, с которыми они связаны джоинтами.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/uw/6l/l7/uw6ll7eq78ahumsjfauwtvxuwik.gif"/><br/>
+<br/>
+Связано это с тем, что физика в Unity обновляется перед вызовом Update, где мы изменяем позиции трансформов, с которыми, в свою очередь, связаны джоинтами физически активные объекты. Из-за этого во время рендера кадра объекты, трансформируемые с помощью физики, всегда были в небольшом рассинхроне с объектами, с которыми они связаны.<br/>
+<br/>
+И если при стабильном фреймрейте эта разница практически незаметна, то при резкой просадке рассинхрон становится более явным, поскольку в Update мы запускаем симуляцию несколько раз, чтобы компенсировать потерянное на пролаг время. Соответственно, дистанция между объектом, движущимся по физике, и ведущим трансформом становится больше.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/eb/s2/ox/ebs2oxjezdklpunhe3jy1jxagji.png"/><br/>
+<br/>
+В качестве решения мы отключили автоматическое обновление физики в Unity. Теперь мы самостоятельно обновляем физическое состояние объектов после основного апдейта и перед рендером. Это решение было бы невозможным, если бы мы использовали дефолтную физику Unity для персонажей. В таком случае симуляция для них развивалась бы по-разному в момент просадки FPS на одном из устройств, что непозволительно при синхронном PvP. <br/>
+<br/>
+Однако поскольку для персонажей мы написали свою физику, мы можем позволить себе не привязываться к автообновлению Unity-физики и обновлять ее самостоятельно в нужный нам момент. Оставшиеся же физически активные объекты несут исключительно визуальную функцию, и их симуляция не требует детерминированности.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/28/f5/8o/28f58oyxngr6sclouxdos-3gbh0.png"/><br/>
+<br/>
+Таким образом, становится не важно, сколько симуляций было в текущем кадре — физика перед рендером в любом случае обновится исходя из конечных данных.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/sv/4i/sq/sv4isqy6se5syvdsgmpptjdzodu.gif"/><br/>
+<br/>
+<h3>XPBD детерминированная физика, построенная на твердых телах. </h3><br/>
+Персонажи в серии игр Shadow Fight подвергались нескольким итерациям настройки физики. В SF3 мы использовали дефолтную физику Unity до тех пор, пока в игру не был введён режим синхронного PvP, для которого потребовалась одинаковая симуляция на двух клиентах. Из-за вычислений с плавающей запятой, которые используются внутри физики в Unity, от неё пришлось отказаться в пользу собственной физики, построенной на узлах, мышцах и ребрах и использующей целочисленные вычисления.<br/>
+<br/>
+В Shadow Fight Arena мы пошли дальше и, основываясь на предыдущем опыте, создали новый ragdoll для персонажей, основанный на подходе Extended position-based dynamics (XPBD). Новая физика также использует целочисленные вычисления и полностью детерминированна, однако имеет ряд преимуществ перед предыдущем решением, построенным на узлах.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/xk/er/zz/xkerzzkyjgr-iayz_92yf-2xnz4.png"/><br/>
+<br/>
+С технической точки зрения традиционная Unity-физика имеет constraint solver, а XPBD-физика — iterative solver. То есть вместо того, чтобы решать каждый тик систему уравнений для выяснения того, какое положение тел удовлетворит всем ограничениям, мы итерационно выводим систему из состояния с нарушенными ограничениями в состояние, соответствующее им.<br/>
+<br/>
+Рассмотрим на примере обнаружения проникновения двух тел друг в друга при столкновении. Если используется традиционный метод, сначала рассчитывается сила столкновения, вызванная проникновением объекта, а затем на основе силы вычисляется информация о скорости и местоположении. Прежде чем окончательно обновить положение объекта, этот метод должен рассчитать силу, скорость и текущее положение, что требует значительных вычислений.<br/>
+<br/>
+В методе PBD, когда обнаруживается проникновение двух объектов, положение объекта напрямую корректируется в соответствии с заданными ограничениями, а затем обновляется информация о скорости. Итеративный метод PBD обеспечивает сравнимое с PhysX качество удовлетворения ограничений за счёт большего количества итераций. Благодаря этому PBD даёт больше детализации без потери очень быстрых движений и контактов, однако существенно хуже масштабируется по сравнению с PhysX. Поскольку в нашей игре одновременно могут быть активны только два ragdoll, нас это полностью устроило.<br/>
+<br/>
+Наш ragdoll состоит из box-коллайдеров, соединённых между собой джоинтами двух типов: Spherical и Hinge. Первый тип ограничивает поворот коллайдеров по заданным осям, а во втором указывается конус вращения по определенной оси. Для этих box-коллайдеров рассчитываются столкновения только с бесконечным горизонтальным полом, соответственно они не имеют коллизий между собой и с внешними динамическими коллайдерами. Таким образом, на результат симуляции влияет только стартовая позиция.<br/>
+<br/>
+Избежать вероятности проникновения тел друг в друга нам удалось за счёт точечной настройки каждого джоинта. Также для каждого тела настраивается масса, а для соединений — степень затухания (damping) и другие стандартные для подобной системы параметры.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/nt/ui/yj/ntuiyjqt-chfc-n3qmmvpzwbu6e.png"/><br/>
+<br/>
+После инициализации персонажа на сцене его скелет синхронизируется с нашим ragdoll. На старте симуляции каждое тело принимает начальную позицию кости, с которой оно было связано при настройке. Далее уже кости скелета каждый кадр перезаписывают свои позиции в соответствии с телами, исходя из результатов симуляции. Незадействованные кости, в свою очередь, на всё время симуляции сохраняют локальную позицию без изменений.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/k9/_y/t0/k9_yt0rfifw7ehwqbtpwhztuv2c.gif"/><br/>
+<br/>
+Еще при разработке физики, построенной на узлах, мы обнаружили, что использование большого количества итераций корректировки за один шаг (Substep) даёт намного более мягкий результат симуляции, чем много шагов по одной итерации. Автор метода XPBD так же сделал подобное наблюдение и положил этот принцип в основу своего подхода.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/xw/rh/rf/xwrhrflypdywlf2vbjpjuqzi0f4.gif"/><br/>
+<br/>
+Настроив ragdoll и интегрировав новую физику в проект, мы заметили, что во время симуляции тело персонажа ведет себя абсолютно безвольно, так, как если бы персонаж был «в отключке» или мёртв. Это выглядело достаточно реалистично, но в нашей игре чаще всего после перехода в физику персонажи быстро встают и продолжают бой.<br/>
+<br/>
+Нам хотелось добиться эффекта сгруппированности, как если бы персонаж был просто сбит с ног, но сохранял сознание. Для этого мы добавили ещё одно ограничение для box-коллайдеров — стремление к определённой позе. В результате мы получили сгруппированное, но очень жёсткое тело, поведение персонажа стало слишком «деревянным».<br/>
+<br/>
+Для достижения более мягкой симуляции мы добавили регулируемый параметр податливости (Compliance) и сделали его динамическим. Первые 20 кадров симуляции мы повышаем значение Compliance, делая тело более мягким в момент получения удара и перехода в физику.<br/>
+<br/>
+Это нужно для того, чтобы мягко выводить персонажа из стартовой позы к целевой, так как эти позы могут быть далеки друг от друга, и без Compliance этот переход может вызвать нежелательные импульсы в конечности. Затем мы обнуляем Compliance, оставляя ragdoll жёстким и сгруппированным вплоть до момента приземления, когда мы снова смягчаем тело, чтобы оно выглядело более расслабленным.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/e9/cw/ze/e9cwze6h0qusen4ksvf53sfwa3s.gif"/><br/>
+<i>Original — Pose — Pose + Compliance</i><br/>
+<br/>
+Преимущество любой самописной физики по отношению к традиционной заключается в том, что мы можем вносить практически любые изменения или ограничения в поведение ragdoll. Одним из таких изменений стала система распределения импульса. Чтобы симуляция сохраняла кинематографичность, мы всегда передаем часть полученного телами импульса в торс персонажа.<br/>
+<br/>
+Также у нас есть возможность точечно регулировать входящий в любую конечность импульс, меняя его силу или отдавая его часть в соседние либо другие тела. Так, например, чтобы ноги не разлетались слишком сильно, при получении удара в одну из ступней часть импульса передается в другую.<br/>
+<br/>
+Помимо этого мы всегда придаем дополнительный импульс в размере 20% от основного по оси Z, слегка подкидывая ragdoll. А в случае если во время симуляции персонаж получит новый удар, мы сохраняем изначальный вектор движения, добавляя к нему только 30% от нового импульса. Все эти манипуляции позволили добиться достаточно реалистичного и кинематографичного результата.<br/>
+<br/>
+<img src="/img/image-loader.svg" alt="image" data-src="https://i.ibb.co/4dSn4Lm/image15.gif"/><br/>
+<br/>
+В итоге мы получили более контролируемую, предсказуемую и производительную физику, относительно предыдущей, построенной на узлах. Визуально главное отличие — это отсутствие вероятности неестественной деформации персонажа и более реалистичное поведение за счёт наличия полноценных твёрдых тел.<br/>
+<br/>
+Используемый итерационный подход весьма дешёвый по математике и оперирует очень маленькими шагами по времени, что даёт хорошую временную детализацию — не теряются очень быстрые движения и контакты. Детерминированность достигается за счёт целочисленных вычислений и строгой замкнутости физики в себе: отсутствие коллизий с внешними динамическими коллайдерами, только наш ragdoll, бесконечный пол и начальный импульс. На результат симуляции влияет только стартовая позиция.<br/>
+<br/>
+Подробнее ознакомиться с методом Position based dynamics <a href="https://matthias-research.github.io/pages/publications/publications.html" rel="nofollow noopener noreferrer">можно по ссылке</a>.<br/>
+<a href="https://matthias-research.github.io/pages/challenges/challenges.html" rel="nofollow noopener noreferrer">А скачать демо и сорсы по этой ссылке</a>.</div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BBanzai%20Games%5D" class="tm-tags-list__link">Banzai Games</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%A4%D0%B8%D0%B7%D0%B8%D0%BA%D0%B0%5D" class="tm-tags-list__link">Физика</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BUnity%5D" class="tm-tags-list__link">Unity</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BUnity%203d%5D" class="tm-tags-list__link">Unity 3d</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BShadow%20Fight%5D" class="tm-tags-list__link">Shadow Fight</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BShadow%20Fight%20Arena%5D" class="tm-tags-list__link">Shadow Fight Arena</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%A0%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0%20%D0%B8%D0%B3%D1%80%5D" class="tm-tags-list__link">Разработка игр</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BPvP%5D" class="tm-tags-list__link">PvP</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D0%BD%D0%B8%D0%BC%D0%B0%D1%86%D0%B8%D1%8F%20%D0%B8%203d%20%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D0%BA%D0%B0%5D" class="tm-tags-list__link">анимация и 3d графика</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/gamedev/" class="tm-hubs-list__link">
+    Разработка игр
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/unity/" class="tm-hubs-list__link">
+    Unity
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/animation/" class="tm-hubs-list__link">
+    Компьютерная анимация
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/physics/" class="tm-hubs-list__link">
+    Физика
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 13: ↑13 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 13: ↑13 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+13</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.4K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    15
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/BanzaiGames/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/8f1/042/064/8f104206479a1cda45284c1167e45592.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 52 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    36
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">13</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/BanzaiGames/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @BanzaiGames
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/584550/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 4 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/584550/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/584550/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"584550":{"id":"584550","timePublished":"2021-10-20T12:06:05+00:00","isCorporative":false,"lang":"ru","titleHtml":"Оптимизируем физику Shadow Fight Arena — мобильного файтинга с синхронным PvP","leadData":{"textHtml":"\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fa8\u002Fou\u002Fjj\u002Fa8oujjm51fnktyghmu1bpd6h6qo.jpeg\"\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nВедущий технический художник \u003Ca href=\"https:\u002F\u002Fbanzai.games\u002F\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ci\u003EBanzai.Games\u003C\u002Fi\u003E\u003C\u002Fa\u003E Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга \u003Ci\u003EShadow Fight Arena\u003C\u002Fi\u003E. Главным нововведением игры является \u003Cb\u003Eсинхронный PvP\u003C\u002Fb\u003E, появления которого ждали 400 миллионов игроков по всему миру в течение 9 лет. И для команды было важно не только сохранить реалистичность анимаций, но и согласовать движения двух персонажей на двух разных устройствах.\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":36,"votesCount":52},"rating":13,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2105953","alias":"BanzaiGames","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F8f1\u002F042\u002F064\u002F8f104206479a1cda45284c1167e45592.png","speciality":"Пользователь"},"statistics":{"commentsCount":4,"favoritesCount":15,"readingCount":1430,"score":13,"votesCount":13},"hubs":[{"relatedData":null,"id":"7773","alias":"gamedev","type":"collective","title":"Разработка игр","titleHtml":"Разработка игр","isProfiled":true},{"relatedData":null,"id":"17831","alias":"unity","type":"collective","title":"Unity","titleHtml":"Unity","isProfiled":true},{"relatedData":null,"id":"19798","alias":"animation","type":"collective","title":"Компьютерная анимация","titleHtml":"Компьютерная анимация","isProfiled":true},{"relatedData":null,"id":"21968","alias":"physics","type":"collective","title":"Физика","titleHtml":"Физика","isProfiled":false}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"2","alias":"design","title":"Дизайн"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fa8\u002Fou\u002Fjj\u002Fa8oujjm51fnktyghmu1bpd6h6qo.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fa8\u002Fou\u002Fjj\u002Fa8oujjm51fnktyghmu1bpd6h6qo.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВедущий технический художник \u003Ca href=\"https:\u002F\u002Fbanzai.games\u002F\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ci\u003EBanzai.Games\u003C\u002Fi\u003E\u003C\u002Fa\u003E Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга \u003Ci\u003EShadow Fight Arena\u003C\u002Fi\u003E. Главным нововведением игры является \u003Cb\u003Eсинхронный PvP\u003C\u002Fb\u003E, появления которого ждали 400 миллионов игроков по всему миру в течение 9 лет. И для команды было важно не только сохранить реалистичность анимаций, но и согласовать движения двух персонажей на двух разных устройствах.\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nВизуально \u003Ci\u003EShadow Fight Arena\u003C\u002Fi\u003E (SFA) выгодно выделяется среди других игр серии благодаря переходу на Physically Based Rendering (PBR). Мы значительно улучшили графику, повысив качество текстур, изменив освещение и добавив постэффекты. Чтобы соответствовать установленной планке, мы так же переработали физику в игре, улучшив ее как визуально, так и в плане оптимизации. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fyh\u002Fyy\u002Fvj\u002Fyhyyvjmeguavxsz13y27dkxqojk.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ \u003Cb\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fbanzai\u002Fblog\u002F480108\u002F\"\u003Eпредыдущей статье\u003C\u002Fa\u003E\u003C\u002Fb\u003E я рассказывал о технических решениях, которые мы применили при настройке реалистичной и оптимизированной физики в игре Shadow Fight 3 (SF3). Часть этих решений перекочевали в SFA, поэтому я буду периодически ссылаться на старую статью. Однако большинство этих решений были изменены или улучшены. В данной статье я расскажу, как и почему мы перешли на плоскую иерархию в сцене, как избежали артефактов при просадке fps и зачем снова переписали физику для персонажей с нуля, построив ее на твердых телах и добившись ее полной детерминированности.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fof\u002Ft4\u002Fkp\u002Foft4kp1utyfcgw6qrsf7n5znemy.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003EПлоская иерархия\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nВ стандартном скелете персонажей в SFA присутствует много иерархических цепочек: руки, ноги, голова, являющиеся дочерними от груди, которая, в свою очередь, имеет «родителя» в виде таза. В таком виде при изменении трансформов любой кости просчитывается изменение трансформов всех костей, присутствующих в иерархической цепочке, даже если никаких изменений для них не произошло.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭто значит, что чем больше костей в скелете персонажа, чем длиннее иерархические цепочки, тем сильнее нагрузка при просчёте их изменений во время анимаций. Для оптимизации этого процесса мы решили перейти на плоскую иерархию в сцене. Каждый раз после инициализации моделей на сцене мы разбиваем все иерархии, вытаскивая компоненты префабов так, чтобы каждый из них стал отдельным game object.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fhm\u002Ffc\u002F_n\u002Fhmfc_nqdc5usf0ge6ztg01nrwmi.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭто позволило нам просчитывать изменения трансформов каждой кости только один раз в кадр, тогда как раньше запись каждой кости вызывала авто-пересчёт всех дочерних костей. С такой системой мы можем практически не ограничивать себя в количестве костей в скелете персонажей, конечно же, в рамках разумного.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКак же переход на плоскую иерархию сказался на физике?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003EВо-первых,\u003C\u002Fb\u003E это позволило отказаться от физического клона, который мы использовали для разных типов оружия. Подробно об этом решении я писал в предыдущей статье, здесь лишь кратко напомню.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля достижения наиболее реалистичного поведения во время симуляции нам требовалось вынимать оружие из иерархии персонажа и создавать для него физический клон. Во время анимации rigidbody-костей клон оставался неактивным, а на трансформацию основного скелета влиял только анимационный трек.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВо время последнего кадра анимации происходила синхронизация трансформов костей двух скелетов. Физический клон считывал положение и ротацию костей основного скелета и задавал своим точно такие же параметры.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЗатем активировался rigidbody, и кости физического клона подвергались симуляции. Далее, вплоть до начала следующей атакующей анимации, уже основной скелет каждый кадр считывал трансформы костей физического клона, которые в этот момент двигались по физике, и задавал эти параметры своим костям.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fc-\u002Fzz\u002F2w\u002Fc-zz2w_tz4ivlrqcwihofotgiqu.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nФизический клон отлично показал себя в плане реалистичности поведения во время симуляции, но, к сожалению, такое решение является не самым оптимизированным, так как кости в иерархии в связке с джоинтами требуют лишних вычислений. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nГораздо дешевле связывать джоинтами кости, являющиеся отдельными game object. После перехода на плоскую иерархию мы получили такой же результат, только без необходимости в лишних вычислениях. Однако нам потребовалось переработать физику для многих объектов, т.к. старые настройки были актуальны для иерархической системы и не подходили для симуляции отдельных game object.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fn8\u002Fjc\u002F_5\u002Fn8jc_592lip7qdy3ql7rhovdm9s.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003EВо-вторых,\u003C\u002Fb\u003E мы отказались от фейкового импульса, который применялся в SF3 для исправления визуальных артефактов при симуляции физики твёрдых тел. В SFA использование этого решения невозможно, так как оно подразумевает нахождение симулируемых костей внутри иерархии. Однако фейковый импульс — скорее временная мера и не даёт достаточного физически реалистичного результата, и для SFA мы применили другой метод.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля начала о проблеме. При стабильных 60 FPS все идёт гладко, но во время просадок, которые возможны на слабых устройствах, мы наблюдаем следующее: симулируемые кости начинают с задержкой «догонять» анимируемые кости, с которыми они связаны джоинтами.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fuw\u002F6l\u002Fl7\u002Fuw6ll7eq78ahumsjfauwtvxuwik.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСвязано это с тем, что физика в Unity обновляется перед вызовом Update, где мы изменяем позиции трансформов, с которыми, в свою очередь, связаны джоинтами физически активные объекты. Из-за этого во время рендера кадра объекты, трансформируемые с помощью физики, всегда были в небольшом рассинхроне с объектами, с которыми они связаны.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИ если при стабильном фреймрейте эта разница практически незаметна, то при резкой просадке рассинхрон становится более явным, поскольку в Update мы запускаем симуляцию несколько раз, чтобы компенсировать потерянное на пролаг время. Соответственно, дистанция между объектом, движущимся по физике, и ведущим трансформом становится больше.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Feb\u002Fs2\u002Fox\u002Febs2oxjezdklpunhe3jy1jxagji.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ качестве решения мы отключили автоматическое обновление физики в Unity. Теперь мы самостоятельно обновляем физическое состояние объектов после основного апдейта и перед рендером. Это решение было бы невозможным, если бы мы использовали дефолтную физику Unity для персонажей. В таком случае симуляция для них развивалась бы по-разному в момент просадки FPS на одном из устройств, что непозволительно при синхронном PvP. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОднако поскольку для персонажей мы написали свою физику, мы можем позволить себе не привязываться к автообновлению Unity-физики и обновлять ее самостоятельно в нужный нам момент. Оставшиеся же физически активные объекты несут исключительно визуальную функцию, и их симуляция не требует детерминированности.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F28\u002Ff5\u002F8o\u002F28f58oyxngr6sclouxdos-3gbh0.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТаким образом, становится не важно, сколько симуляций было в текущем кадре — физика перед рендером в любом случае обновится исходя из конечных данных.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fsv\u002F4i\u002Fsq\u002Fsv4isqy6se5syvdsgmpptjdzodu.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003EXPBD детерминированная физика, построенная на твердых телах. \u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nПерсонажи в серии игр Shadow Fight подвергались нескольким итерациям настройки физики. В SF3 мы использовали дефолтную физику Unity до тех пор, пока в игру не был введён режим синхронного PvP, для которого потребовалась одинаковая симуляция на двух клиентах. Из-за вычислений с плавающей запятой, которые используются внутри физики в Unity, от неё пришлось отказаться в пользу собственной физики, построенной на узлах, мышцах и ребрах и использующей целочисленные вычисления.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ Shadow Fight Arena мы пошли дальше и, основываясь на предыдущем опыте, создали новый ragdoll для персонажей, основанный на подходе Extended position-based dynamics (XPBD). Новая физика также использует целочисленные вычисления и полностью детерминированна, однако имеет ряд преимуществ перед предыдущем решением, построенным на узлах.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxk\u002Fer\u002Fzz\u002Fxkerzzkyjgr-iayz_92yf-2xnz4.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nС технической точки зрения традиционная Unity-физика имеет constraint solver, а XPBD-физика — iterative solver. То есть вместо того, чтобы решать каждый тик систему уравнений для выяснения того, какое положение тел удовлетворит всем ограничениям, мы итерационно выводим систему из состояния с нарушенными ограничениями в состояние, соответствующее им.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nРассмотрим на примере обнаружения проникновения двух тел друг в друга при столкновении. Если используется традиционный метод, сначала рассчитывается сила столкновения, вызванная проникновением объекта, а затем на основе силы вычисляется информация о скорости и местоположении. Прежде чем окончательно обновить положение объекта, этот метод должен рассчитать силу, скорость и текущее положение, что требует значительных вычислений.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ методе PBD, когда обнаруживается проникновение двух объектов, положение объекта напрямую корректируется в соответствии с заданными ограничениями, а затем обновляется информация о скорости. Итеративный метод PBD обеспечивает сравнимое с PhysX качество удовлетворения ограничений за счёт большего количества итераций. Благодаря этому PBD даёт больше детализации без потери очень быстрых движений и контактов, однако существенно хуже масштабируется по сравнению с PhysX. Поскольку в нашей игре одновременно могут быть активны только два ragdoll, нас это полностью устроило.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНаш ragdoll состоит из box-коллайдеров, соединённых между собой джоинтами двух типов: Spherical и Hinge. Первый тип ограничивает поворот коллайдеров по заданным осям, а во втором указывается конус вращения по определенной оси. Для этих box-коллайдеров рассчитываются столкновения только с бесконечным горизонтальным полом, соответственно они не имеют коллизий между собой и с внешними динамическими коллайдерами. Таким образом, на результат симуляции влияет только стартовая позиция.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИзбежать вероятности проникновения тел друг в друга нам удалось за счёт точечной настройки каждого джоинта. Также для каждого тела настраивается масса, а для соединений — степень затухания (damping) и другие стандартные для подобной системы параметры.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fnt\u002Fui\u002Fyj\u002Fntuiyjqt-chfc-n3qmmvpzwbu6e.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосле инициализации персонажа на сцене его скелет синхронизируется с нашим ragdoll. На старте симуляции каждое тело принимает начальную позицию кости, с которой оно было связано при настройке. Далее уже кости скелета каждый кадр перезаписывают свои позиции в соответствии с телами, исходя из результатов симуляции. Незадействованные кости, в свою очередь, на всё время симуляции сохраняют локальную позицию без изменений.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fk9\u002F_y\u002Ft0\u002Fk9_yt0rfifw7ehwqbtpwhztuv2c.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕще при разработке физики, построенной на узлах, мы обнаружили, что использование большого количества итераций корректировки за один шаг (Substep) даёт намного более мягкий результат симуляции, чем много шагов по одной итерации. Автор метода XPBD так же сделал подобное наблюдение и положил этот принцип в основу своего подхода.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxw\u002Frh\u002Frf\u002Fxwrhrflypdywlf2vbjpjuqzi0f4.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНастроив ragdoll и интегрировав новую физику в проект, мы заметили, что во время симуляции тело персонажа ведет себя абсолютно безвольно, так, как если бы персонаж был «в отключке» или мёртв. Это выглядело достаточно реалистично, но в нашей игре чаще всего после перехода в физику персонажи быстро встают и продолжают бой.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНам хотелось добиться эффекта сгруппированности, как если бы персонаж был просто сбит с ног, но сохранял сознание. Для этого мы добавили ещё одно ограничение для box-коллайдеров — стремление к определённой позе. В результате мы получили сгруппированное, но очень жёсткое тело, поведение персонажа стало слишком «деревянным».\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля достижения более мягкой симуляции мы добавили регулируемый параметр податливости (Compliance) и сделали его динамическим. Первые 20 кадров симуляции мы повышаем значение Compliance, делая тело более мягким в момент получения удара и перехода в физику.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭто нужно для того, чтобы мягко выводить персонажа из стартовой позы к целевой, так как эти позы могут быть далеки друг от друга, и без Compliance этот переход может вызвать нежелательные импульсы в конечности. Затем мы обнуляем Compliance, оставляя ragdoll жёстким и сгруппированным вплоть до момента приземления, когда мы снова смягчаем тело, чтобы оно выглядело более расслабленным.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fe9\u002Fcw\u002Fze\u002Fe9cwze6h0qusen4ksvf53sfwa3s.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003EOriginal — Pose — Pose + Compliance\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПреимущество любой самописной физики по отношению к традиционной заключается в том, что мы можем вносить практически любые изменения или ограничения в поведение ragdoll. Одним из таких изменений стала система распределения импульса. Чтобы симуляция сохраняла кинематографичность, мы всегда передаем часть полученного телами импульса в торс персонажа.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТакже у нас есть возможность точечно регулировать входящий в любую конечность импульс, меняя его силу или отдавая его часть в соседние либо другие тела. Так, например, чтобы ноги не разлетались слишком сильно, при получении удара в одну из ступней часть импульса передается в другую.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПомимо этого мы всегда придаем дополнительный импульс в размере 20% от основного по оси Z, слегка подкидывая ragdoll. А в случае если во время симуляции персонаж получит новый удар, мы сохраняем изначальный вектор движения, добавляя к нему только 30% от нового импульса. Все эти манипуляции позволили добиться достаточно реалистичного и кинематографичного результата.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fi.ibb.co\u002F4dSn4Lm\u002Fimage15.gif\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ итоге мы получили более контролируемую, предсказуемую и производительную физику, относительно предыдущей, построенной на узлах. Визуально главное отличие — это отсутствие вероятности неестественной деформации персонажа и более реалистичное поведение за счёт наличия полноценных твёрдых тел.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИспользуемый итерационный подход весьма дешёвый по математике и оперирует очень маленькими шагами по времени, что даёт хорошую временную детализацию — не теряются очень быстрые движения и контакты. Детерминированность достигается за счёт целочисленных вычислений и строгой замкнутости физики в себе: отсутствие коллизий с внешними динамическими коллайдерами, только наш ragdoll, бесконечный пол и начальный импульс. На результат симуляции влияет только стартовая позиция.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПодробнее ознакомиться с методом Position based dynamics \u003Ca href=\"https:\u002F\u002Fmatthias-research.github.io\u002Fpages\u002Fpublications\u002Fpublications.html\" rel=\"nofollow noopener noreferrer\"\u003Eможно по ссылке\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fmatthias-research.github.io\u002Fpages\u002Fchallenges\u002Fchallenges.html\" rel=\"nofollow noopener noreferrer\"\u003EА скачать демо и сорсы по этой ссылке\u003C\u002Fa\u003E.\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"Banzai Games"},{"titleHtml":"Физика"},{"titleHtml":"Unity"},{"titleHtml":"Unity 3d"},{"titleHtml":"Shadow Fight"},{"titleHtml":"Shadow Fight Arena"},{"titleHtml":"Разработка игр"},{"titleHtml":"PvP"},{"titleHtml":"анимация и 3d графика"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fa8\u002Fou\u002Fjj\u002Fa8oujjm51fnktyghmu1bpd6h6qo.jpeg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fa8\u002Fou\u002Fjj\u002Fa8oujjm51fnktyghmu1bpd6h6qo.jpeg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584550\\\u002F\"},\"headline\":\"Оптимизируем физику Shadow Fight Arena — мобильного файтинга с синхронным PvP\",\"datePublished\":\"2021-10-20T15:06:05+03:00\",\"dateModified\":\"2021-10-22T16:12:55+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"BanzaiGames\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Ведущий технический художник Banzai.Games Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопольз...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584550\\\u002F#post-content-body\",\"about\":[\"h_gamedev\",\"h_unity\",\"h_animation\",\"h_physics\",\"f_develop\",\"f_design\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F584550\\\u002F4c981f0bca5ae21b065b5ad0d15ddc80\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa8\\\u002Fou\\\u002Fjj\\\u002Fa8oujjm51fnktyghmu1bpd6h6qo.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fyh\\\u002Fyy\\\u002Fvj\\\u002Fyhyyvjmeguavxsz13y27dkxqojk.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fof\\\u002Ft4\\\u002Fkp\\\u002Foft4kp1utyfcgw6qrsf7n5znemy.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fhm\\\u002Ffc\\\u002F_n\\\u002Fhmfc_nqdc5usf0ge6ztg01nrwmi.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fc-\\\u002Fzz\\\u002F2w\\\u002Fc-zz2w_tz4ivlrqcwihofotgiqu.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fn8\\\u002Fjc\\\u002F_5\\\u002Fn8jc_592lip7qdy3ql7rhovdm9s.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fuw\\\u002F6l\\\u002Fl7\\\u002Fuw6ll7eq78ahumsjfauwtvxuwik.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Feb\\\u002Fs2\\\u002Fox\\\u002Febs2oxjezdklpunhe3jy1jxagji.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F28\\\u002Ff5\\\u002F8o\\\u002F28f58oyxngr6sclouxdos-3gbh0.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fsv\\\u002F4i\\\u002Fsq\\\u002Fsv4isqy6se5syvdsgmpptjdzodu.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fxk\\\u002Fer\\\u002Fzz\\\u002Fxkerzzkyjgr-iayz_92yf-2xnz4.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fnt\\\u002Fui\\\u002Fyj\\\u002Fntuiyjqt-chfc-n3qmmvpzwbu6e.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fk9\\\u002F_y\\\u002Ft0\\\u002Fk9_yt0rfifw7ehwqbtpwhztuv2c.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fxw\\\u002Frh\\\u002Frf\\\u002Fxwrhrflypdywlf2vbjpjuqzi0f4.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fe9\\\u002Fcw\\\u002Fze\\\u002Fe9cwze6h0qusen4ksvf53sfwa3s.gif\",\"https:\\\u002F\\\u002Fi.ibb.co\\\u002F4dSn4Lm\\\u002Fimage15.gif\"]}","metaDescription":"Ведущий технический художник Banzai.Games Роман Терский рассказывает о технических решениях, позволивших улучшить и оптимизировать физику мобильного многопользовательского файтинга Shadow Fight...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"gamedev,unity,animation,physics"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

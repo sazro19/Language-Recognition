@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Async/await в TypeScript / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/piter\/blog\/585236\/"},"headline":"Async\/await в TypeScript","datePublished":"2021-10-25T10:10:51+03:00","dateModified":"2021-10-25T12:36:15+03:00","author":{"@type":"Person","name":"Полина Семенова"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно рабо...","url":"https:\/\/habr.com\/ru\/company\/piter\/blog\/585236\/#post-content-body","about":["c_piter","h_webdev","h_javascript","h_programming","h_client_side_optimization","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/585236\/94cde053cb2c317ded2ce941e5472d73\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/37a\/86c\/092\/37a86c09240e790eb8873b76fca6ca93.jpg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/2ac\/f87\/bcf\/2acf87bcfe3fd11b554b5eb711008ba1.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Async/await в TypeScript" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Async/await в TypeScript" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Async/await в TypeScript" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.Поскольку TypeScript..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.Поскольку TypeScript..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.Поскольку TypeScript..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.Поскольку TypeScript..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.Поскольку TypeScript..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/37a/86c/092/37a86c09240e790eb8873b76fca6ca93.jpg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/37a/86c/092/37a86c09240e790eb8873b76fca6ca93.jpg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/37a/86c/092/37a86c09240e790eb8873b76fca6ca93.jpg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/37a/86c/092/37a86c09240e790eb8873b76fca6ca93.jpg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/37a/86c/092/37a86c09240e790eb8873b76fca6ca93.jpg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="585236" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-25T07:10:51.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/585236/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/piter/blog/585236/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/37a/86c/092/37a86c09240e790eb8873b76fca6ca93.jpg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/585236/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="piter" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/piter/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/e4d/50a/630/e4d50a630923dbf6e6b786d26b9da6d7.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">162.89</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/piter/profile/" class="tm-company-card__name">
+        Издательский дом «Питер»
+      </a> <div class="tm-company-card__description"></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/kimmhhed/" title="kimmhhed" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/kimmhhed/" class="tm-user-info__username">
+      kimmhhed
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-25T07:10:51.000Z" title="2021-10-25, 10:10">сегодня в 10:10</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Async/await в TypeScript</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/piter/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Издательский дом «Питер»</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/webdev/" class="tm-article-snippet__hubs-item-link"><span>Разработка веб-сайтов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/javascript/" class="tm-article-snippet__hubs-item-link"><span>JavaScript</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/client_side_optimization/" class="tm-article-snippet__hubs-item-link"><span>Клиентская оптимизация</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://blog.logrocket.com/async-await-in-typescript/" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Olasunkanmi John Ajiboye
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/37a/86c/092/37a86c09240e790eb8873b76fca6ca93.jpg" width="1460" height="974" data-src="https://habrastorage.org/getpro/habr/upload_files/37a/86c/092/37a86c09240e790eb8873b76fca6ca93.jpg" data-blurred="true"/><figcaption></figcaption></figure><p>Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.</p><p>Поскольку TypeScript – это надмножество JavaScript, async/await там работает точно так же, но с некоторыми дополнительными бонусами и безопасностью типов. TypeScript позволяет запрограммировать безопасность типа ожидаемого результата и даже проверить, нет ли ошибок, связанных с типом. Поэтому баги отлавливаются на ранних стадиях разработки программы. </p><p>В сущности, async/await – это <a href="https://medium.com/@matt.mcalister93/async-and-await-syntactic-sugar-for-promises-in-javascript-aee7ace36d14"><u>синтаксический сахар</u></a> для промисов, то есть, ключевое слово <code>async/await</code> обертывает промисы. Функция <code>async</code> всегда возвращает промис. Даже если пропустить ключевое слово <code>Promise</code>, компилятор обернет вашу функцию в немедленно разрешаемый промис.</p><p>Давайте покажу:</p><pre><code class="javascript">const myAsynFunction = async (url: string): Promise&lt;T> => {
+    const { data } = await fetch(url)
+    return data
+}
+</code></pre><pre><code class="javascript">const immediatelyResolvedPromise = (url: string) => {
+    const resultPromise = new Promise((resolve, reject) => {
+        resolve(fetch(url))
+    })
+    return  resultPromise
+}
+</code></pre><p>Пусть они и выглядят совершенно по-разному, два вышеприведенных фрагмента кода более-менее эквивалентны. <a href="https://blog.logrocket.com/promise-chaining-is-dead-long-live-async-await-445897870abc/"><u>Async/await</u></a> просто позволяет писать код в более синхронной манере и избавляет от необходимости встраивать промис в строку. Это очень мощный прием, если имеешь дело со сложными асинхронными паттернами.</p><p>Чтобы выжать максимум из синтаксиса <code>async/await</code>, нужно иметь базовое представление о промисах. Давайте подробнее рассмотрим, что представляют собой промисы на фундаментальном уровне.</p><h2>Что такое промис в TypeScript?</h2><p>В переводе с английского «promise» означает «обещание». В JavaScript промис описывает ожидание того, что некоторое событие произойдет в определенный момент, и ваше приложение полагается на результат этого будущего события при выполнении определенных других задач.</p><p>Чтобы показать, что я имею в виду, разберу реалистичный пример, выражу его в псевдокоде, а затем в действующем коде TypeScript.</p><p>Допустим, мне нужно покосить газон. Звоню в газонокосильную компанию, где мне обещают, что через пару часов придет человек и покосит газон. Я, в свою очередь, обещаю сразу же ему за это заплатить, при условии, что мой газон будет выкошен как следует.</p><p>Заметили паттерн? Первая очевидная вещь, которую нужно отметить – второе событие полностью полагается на первое. Если будет выполнено обещание, заложенное в первом событии, то выполнится и следующее событие. Промис в том событии либо выполняется, либо не выполняется, либо остается в подвешенном состоянии.</p><p>Рассмотрим эту последовательность шаг за шагом и выразим ее в коде.</p><figure class=""><img src="/img/image-loader.svg" height="654" data-src="https://habrastorage.org/getpro/habr/upload_files/2ac/f87/bcf/2acf87bcfe3fd11b554b5eb711008ba1.png" data-width="502"/><figcaption></figcaption></figure><h2>Синтаксис промиса</h2><p>Прежде, чем написать весь код, давайте разберемся в синтаксисе промиса – конкретно, такого промиса, который разрешается в строку.</p><p>Мы объявили <code>promise</code> при помощи ключевого слова <code>new + Promise</code>, где промис принимает аргументы <code>resolve</code> и <code>reject</code>. Теперь давайте напишем промис, выражающий события из вышеприведенной блок-схемы.</p><pre><code class="javascript">// Я отправляю запрос в компанию. Он синхронный
+// Компания обещает мне выполнить работу
+const angelMowersPromise = new Promise&lt;string>((resolve, reject) => {
+    // Обещание разрешилось спустя несколько часов
+    setTimeout(() => {
+        resolve('We finished mowing the lawn')
+    }, 100000) // разрешается спустя 100 000 мс
+    reject("We couldn't mow the lawn")
+})
+
+const myPaymentPromise = new Promise&lt;Record&lt;string, number | string>>((resolve, reject) => {
+    // разрешившийся промис с объектом: платежом в 1000 евро
+    // и большое спасибо
+    setTimeout(() => {
+        resolve({
+            amount: 1000,
+            note: 'Thank You',
+        })
+    }, 100000)
+    // промис отклонен. 0 евро и отзыв «неудовлетворительно» 
+    reject({
+        amount: 0,
+        note: 'Sorry Lawn was not properly Mowed',
+    })
+})
+</code></pre><p>В вышеприведенном коде объявлены как обещания компании, так и наши обещания. Обещание компании либо выполняется через 100 000 мс, либо отклоняется. <code>Promise</code> всегда находится в одном из трех состояний: <code>resolved</code>, если ошибки нет, <code>rejected</code>, если встретилась ошибка, или <code>pending</code>, если обещание <code>promise</code> пока ни отклонено, ни выполнено. В нашем случае все это укладывается в период <code>100000ms</code>.</p><p>Но как нам выполнить эту задачу последовательным синхронным образом? Здесь-то и пригодится ключевое слово <code>then</code>. Без него функции просто выполняются в том же порядке, в котором и разрешаются.</p><h2>Последовательное выполнение с .then</h2><p>Теперь можно сцепить промисы, что позволяет выполнять их последовательно с применением <code>.then</code>. Эти функции похожи на обычный человеческий язык: сделай так, а затем вот это, а потом то и так далее.</p><pre><code class="javascript">angelMowersPromise
+    .then(() => myPaymentPromise.then(res => console.log(res)))
+    .catch(error => console.log(error))
+</code></pre><p>Вышеприведенный код выполнит <code>angelMowersPromise</code>. Если с этим ошибки не случится, он выполнит <code>myPaymentPromise</code>. Если в одном из двух промисов возникнет ошибка, то она будет отловлена в блоке <code>catch</code>.</p><p>Теперь давайте рассмотрим более технический пример. При программировании клиентского интерфейса есть типичная задача: выполнять запросы по сети и адекватно реагировать на их результаты.</p><p>Ниже – запрос, требующий выбрать список сотрудников с удаленного сервера.</p><pre><code class="javascript">const api =  'http://dummy.restapiexample.com/api/v1/employees'
+   fetch(api)
+    .then(response => response.json())
+    .then(employees => employees.forEach(employee => console.log(employee.id)) // логирует id всех сотрудников
+    .catch(error => console.log(error.message))) // логирует любую ошибку, приходящую от промиса
+</code></pre><p>Бывает так, что необходимо параллельно или последовательно выполнять сразу множество обещаний. В подобных сценариях особенно полезны такие конструкции как <code>Promise.all</code> или <code>Promise.race</code>.</p><p>Представьте, к примеру, сто нужно выбрать список из 1 000 пользователей GitHub, а затем сделать дополнительный запрос с ID, чтобы выбрать для каждого из них аватарки. Совсем не обязательно вы захотите дожидаться завершения этих операций со всеми пользователями в последовательности; вам нужны только все выбранные аватарки. Мы подробнее поговорим об этом ниже, когда будем обсуждать <code>Promise.all</code>.</p><p>Теперь, когда вы в общем и целом поняли, что такое промисы, давайте рассмотрим синтаксис <code>async/await</code>.</p><h2>async/await</h2><p>Синтаксис Async/await удивительно прост при работе с промисами. Он предоставляет простой интерфейс для чтения и записи промисов, причем, таким образом, что они кажутся синхронными.</p><p>Конструкция <code>async/await</code> всегда возвращает <code>Promise</code>. Даже если пропустить ключевое слово <code>Promise</code>, компилятор обернет вашу функцию в немедленно разрешаемый промис. Таким образом, можно трактовать возвращаемое значение функции <a href="https://blog.logrocket.com/the-visual-learners-guide-to-async-js-62a0a03d1d57/">async</a> как <code>Promise</code>, что довольно полезно, когда нужно разрешать сразу множество асинхронных функций.</p><p>Как понятно из названия, <code>async</code> с <code>await</code> всегда ходят парой. То есть, делать <code>await</code> можно только внутри функции <code>async</code>. Функция <code>async</code> сообщает компилятору, что это асинхронная функция.</p><p>Если преобразовать вышеприведенные промисы, то получится такой синтаксис:</p><pre><code class="javascript">const myAsync = async (): Promise&lt;Record&lt;string, number | string>> => {
+    await angelMowersPromise
+    const response = await myPaymentPromise
+    return response
+}</code></pre><p>Сразу заметно, что этот код выглядит более удобочитаемым и кажется синхронным. В строке 3 мы сказали компилятору дожидаться выполнения <code>angelMowersPromise</code>, и только потом делать что-то еще. Затем возвращаем отклик от <code>myPaymentPromise</code>.</p><p>Возможно, вы заметили, что здесь мы пропустили обработку ошибок. Это можно было бы сделать в блоке <code>catch</code> после <code>.then</code> в промисе. Но что делать, если нам попадется ошибка? Это приводит нас к блоку <code>try/catch</code>.</p><h2>Обработка ошибок в try/catch</h2><p>Вернемся к примеру с выбором записей о сотрудниках, чтобы показать обработку ошибок в действии, поскольку именно при выполнении запроса по сети ошибка вполне может возникнуть.</p><p>Допустим, например, что у нас лег сервер, либо что мы отправили запрос в неверном формате. Мы должны приостановить выполнение, чтобы предотвратить обвал программы. Синтаксис будет выглядеть так:</p><pre><code class="javascript">interface Employee {
+    id: number
+    employee_name: string
+    employee_salary: number
+    employee_age: number
+    profile_image: string
+}
+const fetchEmployees = async (): Promise&lt;Array&lt;Employee> | string> => {
+    const api = 'http://dummy.restapiexample.com/api/v1/employees'
+    try {
+        const response = await fetch(api)
+        const { data } = await response.json()
+        return data
+    } catch (error) {
+        if (error) {
+            return error.message
+        }
+    }
+}
+</code></pre><p>Мы инициировали функцию <code>async</code>. В качестве возвращаемого значения ожидаем массив типа <code>typeof</code> с информацией о сотрудниках, либо строку с сообщениями об ошибке. Соответственно, тип Promise формулируется как <code>Promise&lt;Array&lt;Employee> | string></code>.</p><p>В блоке <code>try</code> находятся выражения, которые функция должна выполнять, если ошибок не будет. Блок <code>catch</code> захватывает любую возникающую ошибку. В таком случае мы просто возвращаем свойство <code>message</code> объекта <code>error</code>.</p><p>Красота происходящего заключается в том, что любая ошибка, рождающаяся в блоке try, сразу выбрасывается и захватывается блоком <code>catch</code>. Если какое-то исключение ускользнет, то может получиться код, плохо поддающийся отладке, либо даже может быть испорчена вся программа.</p><h2>Конкурентное выполнение при помощи Promise.all</h2><p>Как я говорил ранее, бывает, что обещания должны выполняться параллельно.</p><p>Продолжим пример с нашим API для выбора сотрудников. Допустим, нам нужно выбрать всех сотрудников, затем выбрать их имена, затем сгенерировать на основе имен электронные сообщения. Очевидно, нам нужно выполнять эти функции в синхронной манере, но при этом параллельно, чтобы одна функция не блокировала другую.</p><p>В данном случае мы воспользуемся <code>Promise.all</code>. Как пишет Mozilla, “<code>Promise.all</code> обычно применяется после того, как было запущено множество асинхронных задач, которые должны работать конкурентно, и после того, как пообещали, каковы будут их результаты – чтобы можно было дождаться, пока все эти задачи будут завершены.”</p><p>В псевдокоде было бы что-то подобное:</p><ul><li><p>Выбрать всех пользователей => <code>/employee</code></p></li><li><p>Дождаться всех данных о пользователях. Извлечь <code>id</code> от каждого пользователя. Выбрать каждого пользователя => <code>/employee/{id}</code></p></li><li><p>Сгенерировать электронное сообщение для каждого      пользователя по его имени </p></li></ul><pre><code class="javascript">const baseApi = 'https://reqres.in/api/users?page=1'
+const userApi = 'https://reqres.in/api/user'
+
+const fetchAllEmployees = async (url: string): Promise&lt;Employee[]> => {
+    const response = await fetch(url)
+    const { data } = await response.json()
+    return data
+}
+
+const fetchEmployee = async (url: string, id: number): Promise&lt;Record&lt;string, string>> => {
+    const response = await fetch(`${url}/${id}`)
+    const { data } = await response.json()
+    return data
+}
+const generateEmail = (name: string): string => {
+    return `${name.split(' ').join('.')}@company.com`
+}
+
+const runAsyncFunctions = async () => {
+    try {
+        const employees = await fetchAllEmployees(baseApi)
+        Promise.all(
+            employees.map(async user => {
+                const userName = await fetchEmployee(userApi, user.id)
+                const emails = generateEmail(userName.name)
+                return emails
+            })
+        )
+    } catch (error) {
+        console.log(error)
+    }
+}
+runAsyncFunctions()</code></pre><p>В вышеприведенном коде <code>fetchEmployees</code> выбирает всех сотрудников из  <code>baseApi</code>. Мы ожидаем отклик (<code>await</code>), преобразуем его в <code>JSON</code>, а затем возвращаем преобразованные данные.</p><p>Самое важное, о чем здесь нужно помнить – как мы последовательно выполняли код строка за строкой внутри функции <code>async</code> с ключевым словом <code>await</code>. Мы бы получили ошибку, если бы попытались преобразовать в JSON данные, которых дождались не полностью. То же касается <code>fetchEmployee</code>, с той оговоркой, что выбирали бы всего одного сотрудника. Более интересен фрагмент <code>runAsyncFunctions</code>, где все асинхронные функции выполняются конкурентно.</p><p>Сначала обернем в блок <code>try/catch</code> все методы, находящиеся внутри <code>runAsyncFunctions</code>. Далее ждем (<code>await</code>) результат выбора всех сотрудников. Нам нужен <code>id</code> каждого сотрудника, чтобы выбрать соответствующие им данные, но в конечном счете нам нужна именно информация о сотрудниках. </p><p>Вот где можно прибегнуть к <code>Promise.all</code>, чтобы конкурентно обработать все <code>Promises</code>. Каждый <code>fetchEmployee Promise</code> конкурентно выполняется для всех сотрудников. Информация о сотрудниках, которую мы дождемся, используется для генерации электронного сообщения от каждого сотрудника, это делается при помощи функции <code>generateEmai</code>l.</p><p>Если случится ошибка, то она распространяется как обычно, от невыполненного обещания к <code>Promise.all</code>, а затем превращается в исключение, которое можно отловить в блоке <code>catch</code>.</p><h2>Ключевые выводы</h2><p><code>async</code> и <code>await</code> позволяет писать асинхронный код так, что он выглядит и действует как синхронный. Такой код становится гораздо проще читать, писать и судить о нем.</p><p>Завершу статью несколькими ключевыми тезисами; помните о них, когда будете работать над вашим следующим асинхронным проектом на <code>TypeScript</code>.</p><ul><li><p><code>await</code> работает только внутри функции <code>async</code> </p></li><li><p>Функция, помеченная ключевым словом <code>async</code>, всегда возвращает <code>Promise</code></p></li><li><p>Если возвращаемое значение внутри <code>async</code> не возвращает <code>Promise</code>, то оно      будет обернуто в немедленно разрешаемый <code>Promise</code></p></li><li><p>Как только встретится ключевое слово <code>await</code>, выполнение приостанавливается, пока не будет завершено <code>Promise</code> </p></li><li><p><code>await</code> либо вернет результат от выполненного <code>Promise</code>, либо выбросит исключение от отклоненного <code>Promise</code></p></li></ul></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bjavascript%5D" class="tm-tags-list__link">javascript</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Btypescript%5D" class="tm-tags-list__link">typescript</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D1%81%D0%B8%D0%BD%D1%85%D1%80%D0%BE%D0%BD%D0%BD%D0%BE%D0%B5%20%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">асинхронное программирование</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bfrontend%5D" class="tm-tags-list__link">frontend</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%BE%D0%BF%5D" class="tm-tags-list__link">ооп</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bweb-%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0%5D" class="tm-tags-list__link">web-разработка</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/piter/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Издательский дом «Питер»
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/webdev/" class="tm-hubs-list__link">
+    Разработка веб-сайтов
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/javascript/" class="tm-hubs-list__link">
+    JavaScript
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/client_side_optimization/" class="tm-hubs-list__link">
+    Клиентская оптимизация
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 7: ↑6 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 7: ↑6 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+5</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">2.6K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    28
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/piter/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/e4d/50a/630/e4d50a630923dbf6e6b786d26b9da6d7.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/piter/profile/" class="tm-company-snippet__title">Издательский дом «Питер»</a> <div class="tm-company-snippet__description">Компания</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="http://piter.com" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/kimmhhed/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 13 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    7
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">8</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Полина Семенова</span> <a href="/ru/users/kimmhhed/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @kimmhhed
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/piter/blog/585236/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 7 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="1991-09-04T21:00:00.000Z" title="1991-09-05, 00:00">5  сентября  1991</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="http://piter.com/" target="_blank" class="tm-company-basic-info__link">
+      piter.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    201–500 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2012-08-15T08:08:48.000Z" title="2012-08-15, 12:08">15  августа  2012</time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/piter/blog/585236/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/piter/blog/585236/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"585236":{"id":"585236","timePublished":"2021-10-25T07:10:51+00:00","isCorporative":true,"lang":"ru","titleHtml":"Async\u002Fawait в TypeScript","leadData":{"textHtml":"\u003Cp\u003EЕсли вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.\u003C\u002Fp\u003E\u003Cp\u003EПоскольку TypeScript – это надмножество JavaScript, async\u002Fawait там работает точно также, но с некоторыми дополнительными бонусами и безопасностью типов. TypeScript позволяет запрограммировать безопасность типа ожидаемого результата и даже проверить, нет ли ошибок, связанных с типом. Поэтому баги отлавливаются на ранних стадиях разработки программы. \u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F37a\u002F86c\u002F092\u002F37a86c09240e790eb8873b76fca6ca93.jpg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F37a\u002F86c\u002F092\u002F37a86c09240e790eb8873b76fca6ca93.jpg","fit":"cover","positionY":29.545454545455,"positionX":25.897435897436}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Olasunkanmi John Ajiboye","originalUrl":"https:\u002F\u002Fblog.logrocket.com\u002Fasync-await-in-typescript\u002F"}}],"author":{"scoreStats":{"score":7,"votesCount":13},"rating":8,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1445280","alias":"kimmhhed","fullname":"Полина Семенова","avatarUrl":null,"speciality":null},"statistics":{"commentsCount":7,"favoritesCount":28,"readingCount":2560,"score":5,"votesCount":7},"hubs":[{"relatedData":null,"id":"17823","alias":"piter","type":"corporative","title":"Блог компании Издательский дом «Питер»","titleHtml":"Блог компании Издательский дом «Питер»","isProfiled":false},{"relatedData":null,"id":"91","alias":"webdev","type":"collective","title":"Разработка веб-сайтов","titleHtml":"Разработка веб-сайтов","isProfiled":true},{"relatedData":null,"id":"357","alias":"javascript","type":"collective","title":"JavaScript","titleHtml":"JavaScript","isProfiled":true},{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"530","alias":"client_side_optimization","type":"collective","title":"Клиентская оптимизация","titleHtml":"Клиентская оптимизация","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F37a\u002F86c\u002F092\u002F37a86c09240e790eb8873b76fca6ca93.jpg\" width=\"1460\" height=\"974\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F37a\u002F86c\u002F092\u002F37a86c09240e790eb8873b76fca6ca93.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЕсли вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.\u003C\u002Fp\u003E\u003Cp\u003EПоскольку TypeScript – это надмножество JavaScript, async\u002Fawait там работает точно так же, но с некоторыми дополнительными бонусами и безопасностью типов. TypeScript позволяет запрограммировать безопасность типа ожидаемого результата и даже проверить, нет ли ошибок, связанных с типом. Поэтому баги отлавливаются на ранних стадиях разработки программы. \u003C\u002Fp\u003E\u003Cp\u003EВ сущности, async\u002Fawait – это \u003Ca href=\"https:\u002F\u002Fmedium.com\u002F@matt.mcalister93\u002Fasync-and-await-syntactic-sugar-for-promises-in-javascript-aee7ace36d14\"\u003E\u003Cu\u003Eсинтаксический сахар\u003C\u002Fu\u003E\u003C\u002Fa\u003E для промисов, то есть, ключевое слово \u003Ccode\u003Easync\u002Fawait\u003C\u002Fcode\u003E обертывает промисы. Функция \u003Ccode\u003Easync\u003C\u002Fcode\u003E всегда возвращает промис. Даже если пропустить ключевое слово \u003Ccode\u003EPromise\u003C\u002Fcode\u003E, компилятор обернет вашу функцию в немедленно разрешаемый промис.\u003C\u002Fp\u003E\u003Cp\u003EДавайте покажу:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econst myAsynFunction = async (url: string): Promise&lt;T\u003E =\u003E {\n    const { data } = await fetch(url)\n    return data\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econst immediatelyResolvedPromise = (url: string) =\u003E {\n    const resultPromise = new Promise((resolve, reject) =\u003E {\n        resolve(fetch(url))\n    })\n    return  resultPromise\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПусть они и выглядят совершенно по-разному, два вышеприведенных фрагмента кода более-менее эквивалентны. \u003Ca href=\"https:\u002F\u002Fblog.logrocket.com\u002Fpromise-chaining-is-dead-long-live-async-await-445897870abc\u002F\"\u003E\u003Cu\u003EAsync\u002Fawait\u003C\u002Fu\u003E\u003C\u002Fa\u003E просто позволяет писать код в более синхронной манере и избавляет от необходимости встраивать промис в строку. Это очень мощный прием, если имеешь дело со сложными асинхронными паттернами.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы выжать максимум из синтаксиса \u003Ccode\u003Easync\u002Fawait\u003C\u002Fcode\u003E, нужно иметь базовое представление о промисах. Давайте подробнее рассмотрим, что представляют собой промисы на фундаментальном уровне.\u003C\u002Fp\u003E\u003Ch2\u003EЧто такое промис в TypeScript?\u003C\u002Fh2\u003E\u003Cp\u003EВ переводе с английского «promise» означает «обещание». В JavaScript промис описывает ожидание того, что некоторое событие произойдет в определенный момент, и ваше приложение полагается на результат этого будущего события при выполнении определенных других задач.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы показать, что я имею в виду, разберу реалистичный пример, выражу его в псевдокоде, а затем в действующем коде TypeScript.\u003C\u002Fp\u003E\u003Cp\u003EДопустим, мне нужно покосить газон. Звоню в газонокосильную компанию, где мне обещают, что через пару часов придет человек и покосит газон. Я, в свою очередь, обещаю сразу же ему за это заплатить, при условии, что мой газон будет выкошен как следует.\u003C\u002Fp\u003E\u003Cp\u003EЗаметили паттерн? Первая очевидная вещь, которую нужно отметить – второе событие полностью полагается на первое. Если будет выполнено обещание, заложенное в первом событии, то выполнится и следующее событие. Промис в том событии либо выполняется, либо не выполняется, либо остается в подвешенном состоянии.\u003C\u002Fp\u003E\u003Cp\u003EРассмотрим эту последовательность шаг за шагом и выразим ее в коде.\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"654\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F2ac\u002Ff87\u002Fbcf\u002F2acf87bcfe3fd11b554b5eb711008ba1.png\" data-width=\"502\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EСинтаксис промиса\u003C\u002Fh2\u003E\u003Cp\u003EПрежде, чем написать весь код, давайте разберемся в синтаксисе промиса – конкретно, такого промиса, который разрешается в строку.\u003C\u002Fp\u003E\u003Cp\u003EМы объявили \u003Ccode\u003Epromise\u003C\u002Fcode\u003E при помощи ключевого слова \u003Ccode\u003Enew + Promise\u003C\u002Fcode\u003E, где промис принимает аргументы \u003Ccode\u003Eresolve\u003C\u002Fcode\u003E и \u003Ccode\u003Ereject\u003C\u002Fcode\u003E. Теперь давайте напишем промис, выражающий события из вышеприведенной блок-схемы.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F Я отправляю запрос в компанию. Он синхронный\n\u002F\u002F Компания обещает мне выполнить работу\nconst angelMowersPromise = new Promise&lt;string\u003E((resolve, reject) =\u003E {\n    \u002F\u002F Обещание разрешилось спустя несколько часов\n    setTimeout(() =\u003E {\n        resolve('We finished mowing the lawn')\n    }, 100000) \u002F\u002F разрешается спустя 100 000 мс\n    reject(\"We couldn't mow the lawn\")\n})\n\nconst myPaymentPromise = new Promise&lt;Record&lt;string, number | string\u003E\u003E((resolve, reject) =\u003E {\n    \u002F\u002F разрешившийся промис с объектом: платежом в 1000 евро\n    \u002F\u002F и большое спасибо\n    setTimeout(() =\u003E {\n        resolve({\n            amount: 1000,\n            note: 'Thank You',\n        })\n    }, 100000)\n    \u002F\u002F промис отклонен. 0 евро и отзыв «неудовлетворительно» \n    reject({\n        amount: 0,\n        note: 'Sorry Lawn was not properly Mowed',\n    })\n})\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ вышеприведенном коде объявлены как обещания компании, так и наши обещания. Обещание компании либо выполняется через 100 000 мс, либо отклоняется. \u003Ccode\u003EPromise\u003C\u002Fcode\u003E всегда находится в одном из трех состояний: \u003Ccode\u003Eresolved\u003C\u002Fcode\u003E, если ошибки нет, \u003Ccode\u003Erejected\u003C\u002Fcode\u003E, если встретилась ошибка, или \u003Ccode\u003Epending\u003C\u002Fcode\u003E, если обещание \u003Ccode\u003Epromise\u003C\u002Fcode\u003E пока ни отклонено, ни выполнено. В нашем случае все это укладывается в период \u003Ccode\u003E100000ms\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EНо как нам выполнить эту задачу последовательным синхронным образом? Здесь-то и пригодится ключевое слово \u003Ccode\u003Ethen\u003C\u002Fcode\u003E. Без него функции просто выполняются в том же порядке, в котором и разрешаются.\u003C\u002Fp\u003E\u003Ch2\u003EПоследовательное выполнение с .then\u003C\u002Fh2\u003E\u003Cp\u003EТеперь можно сцепить промисы, что позволяет выполнять их последовательно с применением \u003Ccode\u003E.then\u003C\u002Fcode\u003E. Эти функции похожи на обычный человеческий язык: сделай так, а затем вот это, а потом то и так далее.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003EangelMowersPromise\n    .then(() =\u003E myPaymentPromise.then(res =\u003E console.log(res)))\n    .catch(error =\u003E console.log(error))\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВышеприведенный код выполнит \u003Ccode\u003EangelMowersPromise\u003C\u002Fcode\u003E. Если с этим ошибки не случится, он выполнит \u003Ccode\u003EmyPaymentPromise\u003C\u002Fcode\u003E. Если в одном из двух промисов возникнет ошибка, то она будет отловлена в блоке \u003Ccode\u003Ecatch\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EТеперь давайте рассмотрим более технический пример. При программировании клиентского интерфейса есть типичная задача: выполнять запросы по сети и адекватно реагировать на их результаты.\u003C\u002Fp\u003E\u003Cp\u003EНиже – запрос, требующий выбрать список сотрудников с удаленного сервера.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econst api =  'http:\u002F\u002Fdummy.restapiexample.com\u002Fapi\u002Fv1\u002Femployees'\n   fetch(api)\n    .then(response =\u003E response.json())\n    .then(employees =\u003E employees.forEach(employee =\u003E console.log(employee.id)) \u002F\u002F логирует id всех сотрудников\n    .catch(error =\u003E console.log(error.message))) \u002F\u002F логирует любую ошибку, приходящую от промиса\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EБывает так, что необходимо параллельно или последовательно выполнять сразу множество обещаний. В подобных сценариях особенно полезны такие конструкции как \u003Ccode\u003EPromise.all\u003C\u002Fcode\u003E или \u003Ccode\u003EPromise.race\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EПредставьте, к примеру, сто нужно выбрать список из 1 000 пользователей GitHub, а затем сделать дополнительный запрос с ID, чтобы выбрать для каждого из них аватарки. Совсем не обязательно вы захотите дожидаться завершения этих операций со всеми пользователями в последовательности; вам нужны только все выбранные аватарки. Мы подробнее поговорим об этом ниже, когда будем обсуждать \u003Ccode\u003EPromise.all\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EТеперь, когда вы в общем и целом поняли, что такое промисы, давайте рассмотрим синтаксис \u003Ccode\u003Easync\u002Fawait\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Ch2\u003Easync\u002Fawait\u003C\u002Fh2\u003E\u003Cp\u003EСинтаксис Async\u002Fawait удивительно прост при работе с промисами. Он предоставляет простой интерфейс для чтения и записи промисов, причем, таким образом, что они кажутся синхронными.\u003C\u002Fp\u003E\u003Cp\u003EКонструкция \u003Ccode\u003Easync\u002Fawait\u003C\u002Fcode\u003E всегда возвращает \u003Ccode\u003EPromise\u003C\u002Fcode\u003E. Даже если пропустить ключевое слово \u003Ccode\u003EPromise\u003C\u002Fcode\u003E, компилятор обернет вашу функцию в немедленно разрешаемый промис. Таким образом, можно трактовать возвращаемое значение функции \u003Ca href=\"https:\u002F\u002Fblog.logrocket.com\u002Fthe-visual-learners-guide-to-async-js-62a0a03d1d57\u002F\"\u003Easync\u003C\u002Fa\u003E как \u003Ccode\u003EPromise\u003C\u002Fcode\u003E, что довольно полезно, когда нужно разрешать сразу множество асинхронных функций.\u003C\u002Fp\u003E\u003Cp\u003EКак понятно из названия, \u003Ccode\u003Easync\u003C\u002Fcode\u003E с \u003Ccode\u003Eawait\u003C\u002Fcode\u003E всегда ходят парой. То есть, делать \u003Ccode\u003Eawait\u003C\u002Fcode\u003E можно только внутри функции \u003Ccode\u003Easync\u003C\u002Fcode\u003E. Функция \u003Ccode\u003Easync\u003C\u002Fcode\u003E сообщает компилятору, что это асинхронная функция.\u003C\u002Fp\u003E\u003Cp\u003EЕсли преобразовать вышеприведенные промисы, то получится такой синтаксис:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econst myAsync = async (): Promise&lt;Record&lt;string, number | string\u003E\u003E =\u003E {\n    await angelMowersPromise\n    const response = await myPaymentPromise\n    return response\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСразу заметно, что этот код выглядит более удобочитаемым и кажется синхронным. В строке 3 мы сказали компилятору дожидаться выполнения \u003Ccode\u003EangelMowersPromise\u003C\u002Fcode\u003E, и только потом делать что-то еще. Затем возвращаем отклик от \u003Ccode\u003EmyPaymentPromise\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EВозможно, вы заметили, что здесь мы пропустили обработку ошибок. Это можно было бы сделать в блоке \u003Ccode\u003Ecatch\u003C\u002Fcode\u003E после \u003Ccode\u003E.then\u003C\u002Fcode\u003E в промисе. Но что делать, если нам попадется ошибка? Это приводит нас к блоку \u003Ccode\u003Etry\u002Fcatch\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Ch2\u003EОбработка ошибок в try\u002Fcatch\u003C\u002Fh2\u003E\u003Cp\u003EВернемся к примеру с выбором записей о сотрудниках, чтобы показать обработку ошибок в действии, поскольку именно при выполнении запроса по сети ошибка вполне может возникнуть.\u003C\u002Fp\u003E\u003Cp\u003EДопустим, например, что у нас лег сервер, либо что мы отправили запрос в неверном формате. Мы должны приостановить выполнение, чтобы предотвратить обвал программы. Синтаксис будет выглядеть так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Einterface Employee {\n    id: number\n    employee_name: string\n    employee_salary: number\n    employee_age: number\n    profile_image: string\n}\nconst fetchEmployees = async (): Promise&lt;Array&lt;Employee\u003E | string\u003E =\u003E {\n    const api = 'http:\u002F\u002Fdummy.restapiexample.com\u002Fapi\u002Fv1\u002Femployees'\n    try {\n        const response = await fetch(api)\n        const { data } = await response.json()\n        return data\n    } catch (error) {\n        if (error) {\n            return error.message\n        }\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EМы инициировали функцию \u003Ccode\u003Easync\u003C\u002Fcode\u003E. В качестве возвращаемого значения ожидаем массив типа \u003Ccode\u003Etypeof\u003C\u002Fcode\u003E с информацией о сотрудниках, либо строку с сообщениями об ошибке. Соответственно, тип Promise формулируется как \u003Ccode\u003EPromise&lt;Array&lt;Employee\u003E | string\u003E\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EВ блоке \u003Ccode\u003Etry\u003C\u002Fcode\u003E находятся выражения, которые функция должна выполнять, если ошибок не будет. Блок \u003Ccode\u003Ecatch\u003C\u002Fcode\u003E захватывает любую возникающую ошибку. В таком случае мы просто возвращаем свойство \u003Ccode\u003Emessage\u003C\u002Fcode\u003E объекта \u003Ccode\u003Eerror\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EКрасота происходящего заключается в том, что любая ошибка, рождающаяся в блоке try, сразу выбрасывается и захватывается блоком \u003Ccode\u003Ecatch\u003C\u002Fcode\u003E. Если какое-то исключение ускользнет, то может получиться код, плохо поддающийся отладке, либо даже может быть испорчена вся программа.\u003C\u002Fp\u003E\u003Ch2\u003EКонкурентное выполнение при помощи Promise.all\u003C\u002Fh2\u003E\u003Cp\u003EКак я говорил ранее, бывает, что обещания должны выполняться параллельно.\u003C\u002Fp\u003E\u003Cp\u003EПродолжим пример с нашим API для выбора сотрудников. Допустим, нам нужно выбрать всех сотрудников, затем выбрать их имена, затем сгенерировать на основе имен электронные сообщения. Очевидно, нам нужно выполнять эти функции в синхронной манере, но при этом параллельно, чтобы одна функция не блокировала другую.\u003C\u002Fp\u003E\u003Cp\u003EВ данном случае мы воспользуемся \u003Ccode\u003EPromise.all\u003C\u002Fcode\u003E. Как пишет Mozilla, “\u003Ccode\u003EPromise.all\u003C\u002Fcode\u003E обычно применяется после того, как было запущено множество асинхронных задач, которые должны работать конкурентно, и после того, как пообещали, каковы будут их результаты – чтобы можно было дождаться, пока все эти задачи будут завершены.”\u003C\u002Fp\u003E\u003Cp\u003EВ псевдокоде было бы что-то подобное:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EВыбрать всех пользователей =\u003E \u003Ccode\u003E\u002Femployee\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДождаться всех данных о пользователях. Извлечь \u003Ccode\u003Eid\u003C\u002Fcode\u003E от каждого пользователя. Выбрать каждого пользователя =\u003E \u003Ccode\u003E\u002Femployee\u002F{id}\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСгенерировать электронное сообщение для каждого      пользователя по его имени \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econst baseApi = 'https:\u002F\u002Freqres.in\u002Fapi\u002Fusers?page=1'\nconst userApi = 'https:\u002F\u002Freqres.in\u002Fapi\u002Fuser'\n\nconst fetchAllEmployees = async (url: string): Promise&lt;Employee[]\u003E =\u003E {\n    const response = await fetch(url)\n    const { data } = await response.json()\n    return data\n}\n\nconst fetchEmployee = async (url: string, id: number): Promise&lt;Record&lt;string, string\u003E\u003E =\u003E {\n    const response = await fetch(`${url}\u002F${id}`)\n    const { data } = await response.json()\n    return data\n}\nconst generateEmail = (name: string): string =\u003E {\n    return `${name.split(' ').join('.')}@company.com`\n}\n\nconst runAsyncFunctions = async () =\u003E {\n    try {\n        const employees = await fetchAllEmployees(baseApi)\n        Promise.all(\n            employees.map(async user =\u003E {\n                const userName = await fetchEmployee(userApi, user.id)\n                const emails = generateEmail(userName.name)\n                return emails\n            })\n        )\n    } catch (error) {\n        console.log(error)\n    }\n}\nrunAsyncFunctions()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ вышеприведенном коде \u003Ccode\u003EfetchEmployees\u003C\u002Fcode\u003E выбирает всех сотрудников из  \u003Ccode\u003EbaseApi\u003C\u002Fcode\u003E. Мы ожидаем отклик (\u003Ccode\u003Eawait\u003C\u002Fcode\u003E), преобразуем его в \u003Ccode\u003EJSON\u003C\u002Fcode\u003E, а затем возвращаем преобразованные данные.\u003C\u002Fp\u003E\u003Cp\u003EСамое важное, о чем здесь нужно помнить – как мы последовательно выполняли код строка за строкой внутри функции \u003Ccode\u003Easync\u003C\u002Fcode\u003E с ключевым словом \u003Ccode\u003Eawait\u003C\u002Fcode\u003E. Мы бы получили ошибку, если бы попытались преобразовать в JSON данные, которых дождались не полностью. То же касается \u003Ccode\u003EfetchEmployee\u003C\u002Fcode\u003E, с той оговоркой, что выбирали бы всего одного сотрудника. Более интересен фрагмент \u003Ccode\u003ErunAsyncFunctions\u003C\u002Fcode\u003E, где все асинхронные функции выполняются конкурентно.\u003C\u002Fp\u003E\u003Cp\u003EСначала обернем в блок \u003Ccode\u003Etry\u002Fcatch\u003C\u002Fcode\u003E все методы, находящиеся внутри \u003Ccode\u003ErunAsyncFunctions\u003C\u002Fcode\u003E. Далее ждем (\u003Ccode\u003Eawait\u003C\u002Fcode\u003E) результат выбора всех сотрудников. Нам нужен \u003Ccode\u003Eid\u003C\u002Fcode\u003E каждого сотрудника, чтобы выбрать соответствующие им данные, но в конечном счете нам нужна именно информация о сотрудниках. \u003C\u002Fp\u003E\u003Cp\u003EВот где можно прибегнуть к \u003Ccode\u003EPromise.all\u003C\u002Fcode\u003E, чтобы конкурентно обработать все \u003Ccode\u003EPromises\u003C\u002Fcode\u003E. Каждый \u003Ccode\u003EfetchEmployee Promise\u003C\u002Fcode\u003E конкурентно выполняется для всех сотрудников. Информация о сотрудниках, которую мы дождемся, используется для генерации электронного сообщения от каждого сотрудника, это делается при помощи функции \u003Ccode\u003EgenerateEmai\u003C\u002Fcode\u003El.\u003C\u002Fp\u003E\u003Cp\u003EЕсли случится ошибка, то она распространяется как обычно, от невыполненного обещания к \u003Ccode\u003EPromise.all\u003C\u002Fcode\u003E, а затем превращается в исключение, которое можно отловить в блоке \u003Ccode\u003Ecatch\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Ch2\u003EКлючевые выводы\u003C\u002Fh2\u003E\u003Cp\u003E\u003Ccode\u003Easync\u003C\u002Fcode\u003E и \u003Ccode\u003Eawait\u003C\u002Fcode\u003E позволяет писать асинхронный код так, что он выглядит и действует как синхронный. Такой код становится гораздо проще читать, писать и судить о нем.\u003C\u002Fp\u003E\u003Cp\u003EЗавершу статью несколькими ключевыми тезисами; помните о них, когда будете работать над вашим следующим асинхронным проектом на \u003Ccode\u003ETypeScript\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Eawait\u003C\u002Fcode\u003E работает только внутри функции \u003Ccode\u003Easync\u003C\u002Fcode\u003E \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EФункция, помеченная ключевым словом \u003Ccode\u003Easync\u003C\u002Fcode\u003E, всегда возвращает \u003Ccode\u003EPromise\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЕсли возвращаемое значение внутри \u003Ccode\u003Easync\u003C\u002Fcode\u003E не возвращает \u003Ccode\u003EPromise\u003C\u002Fcode\u003E, то оно      будет обернуто в немедленно разрешаемый \u003Ccode\u003EPromise\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EКак только встретится ключевое слово \u003Ccode\u003Eawait\u003C\u002Fcode\u003E, выполнение приостанавливается, пока не будет завершено \u003Ccode\u003EPromise\u003C\u002Fcode\u003E \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003Eawait\u003C\u002Fcode\u003E либо вернет результат от выполненного \u003Ccode\u003EPromise\u003C\u002Fcode\u003E, либо выбросит исключение от отклоненного \u003Ccode\u003EPromise\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"javascript"},{"titleHtml":"typescript"},{"titleHtml":"асинхронное программирование"},{"titleHtml":"frontend"},{"titleHtml":"ооп"},{"titleHtml":"web-разработка"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F37a\u002F86c\u002F092\u002F37a86c09240e790eb8873b76fca6ca93.jpg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F37a\u002F86c\u002F092\u002F37a86c09240e790eb8873b76fca6ca93.jpg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fpiter\\\u002Fblog\\\u002F585236\\\u002F\"},\"headline\":\"Async\\\u002Fawait в TypeScript\",\"datePublished\":\"2021-10-25T10:10:51+03:00\",\"dateModified\":\"2021-10-25T12:36:15+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Полина Семенова\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно рабо...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fpiter\\\u002Fblog\\\u002F585236\\\u002F#post-content-body\",\"about\":[\"c_piter\",\"h_webdev\",\"h_javascript\",\"h_programming\",\"h_client_side_optimization\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F585236\\\u002F94cde053cb2c317ded2ce941e5472d73\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F37a\\\u002F86c\\\u002F092\\\u002F37a86c09240e790eb8873b76fca6ca93.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F2ac\\\u002Ff87\\\u002Fbcf\\\u002F2acf87bcfe3fd11b554b5eb711008ba1.png\"]}","metaDescription":"Если вас заинтересовала эта статья, то вы, наверное, несколько разбираетесь в асинхронном программировании на JavaScript и, возможно, интересуетесь, как оно работает в TypeScript.Поскольку TypeScript...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"piter":{"alias":"piter","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Fe4d\u002F50a\u002F630\u002Fe4d50a630923dbf6e6b786d26b9da6d7.png","titleHtml":"Издательский дом «Питер»","descriptionHtml":null,"relatedData":null,"statistics":{"postsCount":816,"newsCount":0,"vacanciesCount":1,"employeesCount":5,"careerRating":null,"subscribersCount":5532,"rating":162.89,"invest":null},"foundationDate":{"year":"1991","month":"09","day":"05"},"location":{"city":{"id":"447733","title":"Санкт-Петербург"},"region":{"id":"1948","title":"Санкт-Петербург и область"},"country":{"id":"168","title":"Россия"}},"siteUrl":"http:\u002F\u002Fpiter.com\u002F","staffNumber":"201–500 человек","registrationDate":"2012-08-15T08:08:48+00:00","representativeUser":null,"contacts":[{"title":"Сайт","url":"http:\u002F\u002Fpiter.com"}],"settings":{"analyticsSettings":[],"branding":null,"status":"active"},"metadata":{"titleHtml":"Издательский дом «Питер», Санкт-Петербург -  с 5 сентября 1991 г.","title":"Издательский дом «Питер», Санкт-Петербург -  с 5 сентября 1991 г.","keywords":["Профессиональная литература","Программирование","Python","Java","JavaScript"],"descriptionHtml":"816 статей от авторов компании Издательский дом «Питер»","description":"816 статей от авторов компании Издательский дом «Питер»"},"aDeskSettings":null,"careerAlias":"piter","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

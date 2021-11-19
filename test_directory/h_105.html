@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Маленькие «малинки» в крупном дата-центре (часть 2 — iPXE + Buildroot) / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/selectel\/blog\/582576\/"},"headline":"Маленькие «малинки» в крупном дата-центре (часть 2 — iPXE + Buildroot)","datePublished":"2021-10-23T10:35:29+03:00","dateModified":"2021-10-24T01:24:17+03:00","author":{"@type":"Person","name":"burlunder"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Привет всем, кто заинтересовался историей интеграции &laquo;малинок&raquo; в серверы! Многие хотели увидеть, как они выглядят в стойке, &mdash; вот они, представлены на заглавной...","url":"https:\/\/habr.com\/ru\/company\/selectel\/blog\/582576\/#post-content-body","about":["c_selectel","h_it-infrastructure","h_s_admin","h_raspberrypi","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/582576\/44d5bc89b46710cd0b5495a2be9686b3\/","https:\/\/habrastorage.org\/webt\/1p\/hd\/yh\/1phdyhydgo__u9tw54yngclvp-0.png","https:\/\/habrastorage.org\/webt\/tc\/cd\/j3\/tccdj3itayq7tpqluu4-qziadry.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Маленькие «малинки» в крупном дата-центре (часть 2 — iPXE + Buildroot)" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Маленькие «малинки» в крупном дата-центре (часть 2 — iPXE + Buildroot)" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Маленькие «малинки» в крупном дата-центре (часть 2 — iPXE + Buildroot)" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Привет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. 
+
+Продолжим нашу..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Привет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. 
+
+Продолжим нашу..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Привет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. 
+
+Продолжим нашу..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Привет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. 
+
+Продолжим нашу..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Привет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. 
+
+Продолжим нашу..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/1p/hd/yh/1phdyhydgo__u9tw54yngclvp-0.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/1p/hd/yh/1phdyhydgo__u9tw54yngclvp-0.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/1p/hd/yh/1phdyhydgo__u9tw54yngclvp-0.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/1p/hd/yh/1phdyhydgo__u9tw54yngclvp-0.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/1p/hd/yh/1phdyhydgo__u9tw54yngclvp-0.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582576" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-23T07:35:29.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582576/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/selectel/blog/582576/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/1p/hd/yh/1phdyhydgo__u9tw54yngclvp-0.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="selectel" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/selectel/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/66a/f7d/039/66af7d03979b6d18654293d8f1e72837.png" width="48" class="tm-entity-image__pic"></div></a> <a href="https://career.habr.com/companies/selectel" rel="noopener" target="_blank" class="tm-grade tm-company-card__rating"><div class="tm-rating"><div class="tm-rating__header"><svg height="24" width="24" class="tm-svg-img tm-svg-grade__icon"><title>Оценка компании на Хабр Карьере</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#grade"></use></svg> <div class="tm-rating__counter tm-rating__counter_variant-grade">4.73</div></div> <div class="tm-rating__text tm-rating__text_variant-grade">
+    Оценка
+  </div></div></a> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">1480.89</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/selectel/profile/" class="tm-company-card__name">
+        Selectel
+      </a> <div class="tm-company-card__description">IT-инфраструктура для бизнеса</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/burlunder/" title="burlunder" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/burlunder/" class="tm-user-info__username">
+      burlunder
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-23T07:35:29.000Z" title="2021-10-23, 10:35">23  октября   в 10:35</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Маленькие «малинки» в крупном дата-центре (часть 2 — iPXE + Buildroot)</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/selectel/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Selectel</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/it-infrastructure/" class="tm-article-snippet__hubs-item-link"><span>IT-инфраструктура</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/s_admin/" class="tm-article-snippet__hubs-item-link"><span>Серверное администрирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/raspberrypi/" class="tm-article-snippet__hubs-item-link"><span>Разработка на Raspberry Pi</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/1p/hd/yh/1phdyhydgo__u9tw54yngclvp-0.png"/></div><br/>
+Привет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. <br/>
+<br/>
+Продолжим нашу историю о появлении <a href="https://slc.tl/Kctzk">одноплатников в выделенных серверах</a>. В прошлой <a href="https://habr.com/ru/company/selectel/blog/580398/">статье</a> мы рассмотрели отличие процесса загрузки Raspberry Pi 4 от «‎обычных» серверов и подробно описали какие файлы необходимы для ее успешного завершения. Теперь нужно научиться менять этот процесс под наши нужды.<br/>
+<a name="habracut"></a><br/>
+Остановились мы на загрузке по сети обратно в ОС, установленную на SD-карту. Напомню, что произошло это потому, что при загрузке ядра Linux <b>kernel8.img</b> мы дополнительно передали ему аргументы через файл <b>cmdline.txt</b>.<br/>
+<br/>
+<pre><code class="plaintext">cat cmdline.txt
+ 
+console=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 elevator=deadline rootwait dwc_otg.lpm_enable=0</code></pre><br/>
+Ключевым аргументом здесь является root, который указывает на устройство, где располагается корневая файловая система. Логично предположить, что, меняя устройство, мы можем влиять на процесс загрузки по сети.<br/>
+<br/>
+Прежде чем развивать гипотезу, давайте рассмотрим проверенные варианты загрузки по сети для «малинок».<br/>
+<br/>
+<font color="#092433"><h2>Загрузка в PXE + NFS</h2></font><br/>
+В сети можно найти достаточно <a href="http://googleitfor.me/?q=raspberry+pi+4+pxe">инструкций</a>, описывающих подготовку NFS-сервера для загрузки «малинки» в полностью автономном режиме, без участия SD-карты. Повторяться не буду, но обозначу ряд важных моментов:<br/>
+<br/>
+<ul>
+<li>Мы можем изменить аргумент <i>root</i>, чтобы он указывал на удаленный источник. Но все равно нужна корневая файловая система. Только «‎приготовленная» не локально, а на удаленном сервере.</li>
+<li>Теперь <i>/boot</i>-раздел у нас загружается через TFTP-сервер, а корневая файловая система — через NFS-сервер. Процесс загрузки мы практически никак не поменяли — только источники. Значит, и управлять мы может только с уровня загруженной по NFS операционной системы, не ранее.</li>
+<li>Непонятно, как решать проблему с доступом множества «малинок» к одному NFS-серверу. Создавать по одной корневой файловой системе на каждую ноду ­— тупиковый путь, запутаемся во множестве копий. Оставить одну в режиме только на чтение — возникнет проблема с изменяемыми данными (<i>/tmp</i>, <i>/var</i>, …).</li>
+</ul><br/>
+Да, при должном усердии указанные проблемы можно решить через изменение скриптов инициализации при старте операционной системы. Тогда мы сможем на «малинке» загрузиться в какую-то среду, из которой будем запускать действия для дальнейшего развертывания сервера. Но результат все равно неоднозначен, а действий много.<br/>
+<br/>
+<font color="#092433"><h2>piPXE</h2></font><br/>
+На этом месте стоит остановиться и сделать шаг назад. На «стандартных» серверах ведь уже есть среда, через которую мы управляем дальнейшей загрузкой сервера, — iPXE. Может, есть возможность перенести ее на «малинки»?<br/>
+<br/>
+Недолгие поиски показали, что существует проект <a href="https://github.com/ipxe/pipxe">piPXE</a>, предназначенный специально для запуска iPXE на одноплатниках. Стоит его протестировать и разобраться, как он работает.<br/>
+<br/>
+Подготовка простая, достаточно раскатать образ на SD-карту.<br/>
+<br/>
+<pre><code class="plaintext">curl https://github.com/ipxe/pipxe/releases/latest/download/sdcard.img | sudo dd of=/dev/sdX</code></pre><br/>
+После перезагрузки сервер успешно загрузится в iPXE, откуда уже можно загрузиться по сети. Рассмотрим, как именно это происходит и к каким файлам происходит обращение. Сверяться будем с <a href="https://www.raspberrypi.org/documentation/computers/configuration.html#the-boot-folder">официальной документацией</a>.<br/>
+<br/>
+<ol>
+<li><b>start4.elf</b> и <b>fixup4.dat</b> — начинается процесс стандартно, с файлов, необходимых для инициализации видеоядра.</li>
+<li><b>сonfig.txt</b> — с этого момента начинается самое интересное. В этот раз его содержимое отличается от того, что было в дистрибутиве <a href="https://www.raspberrypi.org/software/operating-systems/">Raspberry Pi OS</a>. <br/>
+<br/>
+<pre><code class="plaintext">arm_64bit=1
+armstub=RPI_EFI.fd
+boot_delay=0
+enable_uart=1</code></pre></li>
+<li><b>RPI_EFI.fd</b> — ключевым является параметр <b>armstub</b>, который указывает на файл с ARM-кодом, выполняемым до запуска ядра. В данном случае запускается код EFI-среды, основанном на <a href="https://github.com/tianocore/edk2">EDK II</a> (во многом пересекается с проектом <a href="https://github.com/pftf/RPi4">RPi4</a>, также направленном на запуск EFI-окружения на Raspberry Pi).</li>
+<li><b>/efi/boot/bootaa64.efi</b> — исполняемый файл EFI-приложения. Здесь он располагается в директории, откуда автоматически запускаются исполняемые файлы при запуске EFI-прошивки. В данном случае iPXE, скомпилированный в EFI.</li>
+</ol><br/>
+Последний пункт позволяет нам скомпилировать собственную сборку iPXE, со встроенным скриптом под наши задачи. Для примера соберем iPXE-загрузчик с нашим кастомным скриптом <i>rpi.ipxe</i><br/>
+<br/>
+<pre><code class="bash">#!ipxe
+dhcp
+iseq ${platform} efi    	&amp;&amp; set uefi true ||
+iseq ${platform} pcbios 	&amp;&amp; set uefi false ||
+
+isset 224 || goto noparameter
+chain --autofree ${224}&amp;uefi=${uefi} || goto chain_error
+:noparameter
+echo ***************************************************************
+echo * No 224 parameter was set: ${224}
+echo ***************************************************************
+goto exit0
+:chain_error
+echo ***************************************************************
+echo * Error chaining to ${224}
+echo ***************************************************************
+goto exit0
+:exit0
+sleep 10
+exit 0</code></pre><br/>
+Подробно останавливаться на работе этого скрипта не буду. Важно только отметить, что по нему iPXE получает сетевые настройки по DHCP. Проверяется наличие в DHCP-ответе опции 224 (первая из свободных опций <a href="https://www.iana.org/assignments/bootp-dhcp-parameters/bootp-dhcp-parameters.xhtml">для частного использования</a>). Содержимое этой опции используется как адрес до образа, который запускается через <a href="https://www.ipxe.org/cmd/chain">chain</a>. Для удобства добавлены диагностические сообщения, если опция 224 не задана или загрузка по ней невозможна.<br/>
+<br/>
+Перед сборкой необходимо учесть, что мы собираем iPXE-загрузчик под архитектуру, отличную от x86_64. Поэтому сперва потребуется установка пакетов, нужных для кросс-компиляции (на примере Ubuntu 20.04). После чего уже клонировать <a href="https://github.com/ipxe/ipxe/">репозиторий iPXE</a> и собрать его утилитой <i>make</i> со <a href="https://www.ipxe.org/embed">встроенным</a> скриптом.<br/>
+<br/>
+<pre><code class="plaintext">apt install gcc-aarch64-linux-gnu</code></pre><br/>
+<pre><code class="plaintext">git clone https://github.com/ipxe/ipxe/ &amp;&amp; cd ipxe
+CROSS_COMPILE=aarch64-linux-gnu- make bin-arm64-efi/ipxe.efi EMBED=./rpi.ipxe</code></pre><br/>
+Убедиться, что файл собран правильно под нужную архитектуру, можно через утилиту <i>file</i>:<br/>
+<br/>
+<pre><code class="plaintext">file bootaa64.efi
+
+bootaa64.efi: MS-DOS executable PE32+ executable (DLL) (EFI application) Aarch64, for MS Windows</code></pre><br/>
+Затем достаточно скопировать готовый файл на SD-карту в <i>/efi/boot/bootaa64.efi</i>. После перезагрузки видим успешную загрузку в iPXE с нашим кастомным скриптом.<br/>
+<br/>
+Казалось бы, успех?<br/>
+<br/>
+Нет, такая схема оставляет нерешенными две проблемы:<br/>
+<br/>
+<ol>
+<li>Зависимость от SD-карты, где располагается файл-заглушка <b>RPI_EFI.fd</b>. Да, его можно передать по TFTP, но в этом случае корректно он уже не запускается. Экспертизы в <a href="https://github.com/tianocore/edk2">EDK II</a>, чтобы это поправить, у нас нет.</li>
+<li>iPXE запускается через EFI. А это означает, что запускаемая установка дистрибутива должна поддерживать работу в этом режиме. Дистрибутивы под одноплатники обычно лишены этой способности за ненадобностью. Из-за этого могут не работать отдельные компоненты (например, сетевая карта), что потребует дополнительной адаптации дистрибутивов.</li>
+</ol><br/>
+Опыт с запуском iPXE через EFI интересен и даже открывает некоторые перспективы (например, так обеспечивается запуск VMware ESXi на «малинках»), но, увы, для нас не подходит.<br/>
+<br/>
+<font color="#092433"><h2>Образ Buildroot</h2></font><br/>
+Остановимся еще раз и оценим полученный опыт. Напрямую изменить последовательность загрузки «малинки» мы не можем. Список типов файлов, которые мы можем передавать по TFTP, определен. Возможность запуска <i>arm stub</i> файла до ядра нам не помогает, так как при передаче по сети корректно запускать его мы не умеем.<br/>
+<br/>
+На что действительно можно повлиять — файл ядра Linux (и связанный с ним образ <i>initramfs</i>), который запускается на последнем этапе загрузки одноплатника. Нужно только собственное ядро с минимальным окружением в <i>initramfs</i>, которое бы позволило воспроизвести поведение iPXE. Фактически требуется собственный мини-дистрибутив, запускаемый из памяти, чтобы не зависеть от локальных носителей.<br/>
+<br/>
+При загрузке Linux используется схема, когда сперва загружается initramfs-образ с минимально необходимой корневой файловой системой <i>rootfs</i> (прежде всего модули ядра). На втором этапе <i>rootfs</i> меняется и он перемонтируется на полноценную корневую файловую систему (локально на SD-карте или по NFS). Взять файлы ядра и initramfs-образа из существующего дистрибутива без дополнительной их адаптации мы не можем.<br/>
+<br/>
+Можно собрать ядро Linux напрямую из исходных файлов. Инструкцию, как это сделать под Raspberry Pi 4, можно найти в официальной <a href="https://www.raspberrypi.com/documentation/computers/linux_kernel.html#building-the-kernel">документации</a>. Но к ядру еще требуется минимальное рабочее окружение из командной оболочки (shell) и базовых утилит, которые и будут образовывать корневую файловую систему, упакованную в initramfs и загружаемую в память.<br/>
+<br/>
+Чтобы упростить эту задачу, мы обратимся к <a href="https://buildroot.org/">Buildroot</a> — инструменту для сборки собственного мини-дистрибутива. О нем уже <a href="https://habr.com/ru/post/448638/">писали</a> на Хабре. Мы же пойдем чуть дальше и воспользуемся его механизмом <a href="https://habr.com/ru/post/449348/">еxternal toolchain</a>, чтобы отделить наши изменения от основного кода.<br/>
+<br/>
+Предварительно создадим buildroot-окружение и установим необходимые пакеты.<br/>
+<br/>
+<pre><code class="bash"># on ubuntu 20.04
+export BUILDROOT="$HOME/buildroot_pi4"
+
+sudo apt -y install \
+    python-is-python3 \
+    expect-dev \
+    git \
+    bc rsync wget cpio unzip
+git clone --single-branch --branch 2021.08.x https://github.com/buildroot/buildroot.git ${BUILDROOT}</code></pre><br/>
+После подготовки Buildroot-окружения мы можем сразу же запустить сборку образа по Raspbery Pi 4, используя готовый профиль.<br/>
+<br/>
+<pre><code class="plaintext">cd ${BUILDROOT}</code></pre><br/>
+<pre><code class="plaintext">make raspberrypi4_64_defconfig</code></pre><br/>
+<pre><code class="plaintext">make</code></pre><br/>
+После запуска мы можем отойти попить чаю (может, даже не одну кружку), так как скачивание зависимостей, необходимых утилит и кросс-компиляция займут значительное время. После завершения в директории <i>./output/images</i> мы обнаружим необходимый нам образ <b>sdcard.img</b>, пригодный для записи на SD-карту.<br/>
+<br/>
+Убедиться в этом мы можем, просматривая передаваемые ядру Linux аргументы. Видно, что корневая файловая система (root) ожидается на втором разделе SD.<br/>
+<br/>
+<pre><code class="plaintext">cat output/images/rpi-firmware/cmdline.txt
+
+root=/dev/mmcblk0p2 rootwait console=tty1 console=ttyAMA0,115200</code></pre><br/>
+Нам нужно, чтобы вся корневая файловая система располагалась в памяти и не была привязана к локальным носителям. Для этого мы создадим внешнее окружение buildroot, где уже на основе существующего профиля <b>raspberrypi4_64_defconfig</b> создадим собственный.<br/>
+<br/>
+<pre><code class="plaintext">EXT_BUILDROOT="$HOME/pi4_pxe_buildroot"</code></pre><br/>
+<pre><code class="plaintext">mkdir -p ${EXT_BUILDROOT}</code></pre><br/>
+<pre><code class="plaintext">cd ${EXT_BUILDROOT}</code></pre><br/>
+Для начала создадим описание нового профиля через файл <b>external.desc</b><br/>
+<br/>
+<pre><code class="plaintext">name: raspberrypi4_64_pxe
+desc: raspberrypi4_64_pxe: builds special image to boot raspberry Pi4 over pxe</code></pre><br/>
+Далее создадим наш новый профиль. Самый простой способ для этого — скопировать существующий профиль и внести изменения.<br/>
+<br/>
+<pre><code class="plaintext">mkdir -p ${EXT_BUILDROOT}/configs</code></pre><br/>
+<pre><code class="plaintext">cp ${BUILDROOT}/configs/raspberrypi4_64_defconfig "$_/raspberrypi4_64_pxe_defconfig"</code></pre><br/>
+Поскольку нам нужно, чтобы корневая файловая система (root) после запуска ядра Linux располагалась в оперативной памяти (RAM), указываем опцию в профиле. Для этого добавим в конец файла две дополнительные строки.<br/>
+<br/>
+<pre><code class="bash">BR2_TARGET_ROOTFS_CPIO=y
+BR2_TARGET_ROOTFS_CPIO_GZIP=y</code></pre><br/>
+В целом, этого достаточно, чтобы после пересборки полученные файлы <b>Image</b> и <b>rootfs.cpio.gz</b> можно было использовать для загрузки по PXE. Но пойдем чуть дальше и изменим систему инициализации с busybox на systemd. Для этого нам потребуется изменить системную библиотеку с <a href="https://uclibc.org/about.html">uclibc</a> на glibc, указав это в профиле и включив дополнительные пакеты.<br/>
+<br/>
+<pre><code class="bash"># Systemd
+BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
+BR2_TOOLCHAIN_BUILDROOT_LIBC="glibc"
+BR2_TOOLCHAIN_USES_GLIBC=y
+BR2_INIT_SYSTEMD=y
+BR2_PACKAGE_SYSTEMD_INITRD=y
+BR2_PACKAGE_SYSTEMD_FIRSTBOOT=y
+BR2_PACKAGE_SYSTEMD_HOSTNAMED=y
+BR2_PACKAGE_SYSTEMD_HWDB=y
+BR2_PACKAGE_SYSTEMD_LOCALED=y
+BR2_PACKAGE_SYSTEMD_LOGIND=y
+BR2_PACKAGE_SYSTEMD_MACHINED=y
+BR2_PACKAGE_SYSTEMD_MYHOSTNAME=y
+BR2_PACKAGE_SYSTEMD_NETWORKD=y
+BR2_PACKAGE_SYSTEMD_RESOLVED=y
+BR2_PACKAGE_SYSTEMD_TIMEDATED=y
+BR2_PACKAGE_SYSTEMD_TIMESYNCD=y
+BR2_PACKAGE_SYSTEMD_TMPFILES=y
+BR2_PACKAGE_SYSTEMD_VCONSOLE=y</code></pre><br/>
+Так как <b>busybox</b> больше не используется, желательно также изменить командную оболочку, например, на <b>bash</b>. Образ загружается по сети, поэтому неплохо иметь еще и мультиплексор <b>tmux</b>. Также добавим его в профиль.<br/>
+<br/>
+<pre><code class="bash">BR2_SYSTEM_BIN_SH_BASH=y
+BR2_PACKAGE_BASH=y
+BR2_PACKAGE_BASH_COMPLETION=y
+BR2_PACKAGE_TMUX=y</code></pre><br/>
+Для добавления в образ наших собственных файлов и скриптов следует воспользоваться механизмом <i><a href="https://buildroot.org/downloads/manual/manual.html#rootfs-custom">root filesystem overlay</a></i>, задаваемым через опцию BR2_ROOTFS_OVERLAY. <br/>
+<br/>
+<pre><code class="bash">BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_raspberrypi4_64_pxe_PATH)/files"</code></pre><br/>
+Через нее мы задаем путь до директории, содержимое которой будет скопировано поверх в собранный нами образ. <b>BR2_EXTERNAL_raspberrypi4_64_pxe_PATH</b> здесь — это автоматически генерируемая опция, связанная с нашим кастомных профилем.<br/>
+<br/>
+Так, для примера создадим файл (относительно директории профиля) с содержимым, меняющим приглашение bash на красный цвет:<br/>
+<br/>
+<pre><code class="plaintext">echo 'export PS1="\e[0;31m[\u@\h \W]# \e[m "' > ./files/root/.bashrc</code></pre><br/>
+В собранном образе он окажется в <i>/root/.bashrc</i>, т.е. в домашней папке пользователя root.<br/>
+<br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Итоговое содержимое профиля raspberrypi4_64_pxe_defconfig:</b>
+                        <div class="spoiler_text"><pre><code class="bash">BR2_aarch64=y
+BR2_cortex_a72=y
+BR2_ARM_FPU_VFPV4=y
+
+BR2_TOOLCHAIN_BUILDROOT_CXX=y
+BR2_TOOLCHAIN_BUILDROOT_GLIBC=y
+BR2_TOOLCHAIN_BUILDROOT_LIBC="glibc"
+BR2_TOOLCHAIN_USES_GLIBC=y
+
+BR2_SYSTEM_DHCP="eth0"
+
+# Linux headers same as kernel, a 5.10 series
+BR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10=y
+
+BR2_LINUX_KERNEL=y
+BR2_LINUX_KERNEL_CUSTOM_TARBALL=y
+BR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION="$(call github,raspberrypi,linux,4afd064509b23882268922824edc5b391a1ea55d)/linux-4afd06459b23882268922824edc5b391a1ea55d.tar.gz"
+BR2_LINUX_KERNEL_DEFCONFIG="bcm2711"
+
+# Build the DTB from the kernel sources
+BR2_LINUX_KERNEL_DTS_SUPPORT=y
+BR2_LINUX_KERNEL_INTREE_DTS_NAME="broadcom/bcm2711-rpi-4-b"
+
+BR2_LINUX_KERNEL_NEEDS_HOST_OPENSSL=y
+
+BR2_PACKAGE_RPI_FIRMWARE=y
+BR2_PACKAGE_RPI_FIRMWARE_VARIANT_PI4=y
+
+# Required tools to create the SD image
+BR2_PACKAGE_HOST_DOSFSTOOLS=y
+BR2_PACKAGE_HOST_GENIMAGE=y
+BR2_PACKAGE_HOST_MTOOLS=y
+
+# Filesystem / imageBR2_TARGET_ROOTFS_EXT2=y
+BR2_TARGET_ROOTFS_EXT2_4=y
+BR2_TARGET_ROOTFS_EXT2_SIZE="120M"
+# BR2_TARGET_ROOTFS_TAR is not set
+BR2_ROOTFS_POST_BUILD_SCRIPT="board/raspberrypi4-64/post-build.sh"
+BR2_ROOTFS_POST_IMAGE_SCRIPT="board/raspberrypi4-64/post-image.sh"
+BR2_ROOTFS_POST_SCRIPT_ARGS="--add-miniuart-bt-overlay --aarch64"
+BR2_ROOTFS_OVERLAY="$(BR2_EXTERNAL_raspberrypi4_64_pxe_PATH)/files"
+BR2_TARGET_ROOTFS_CPIO=y
+BR2_TARGET_ROOTFS_CPIO_GZIP=y
+
+BR2_INIT_SYSTEMD=y
+BR2_PACKAGE_SYSTEMD_INITRD=y
+BR2_PACKAGE_SYSTEMD_FIRSTBOOT=y
+BR2_PACKAGE_SYSTEMD_HOSTNAMED=y
+BR2_PACKAGE_SYSTEMD_HWDB=y
+BR2_PACKAGE_SYSTEMD_LOCALED=y
+BR2_PACKAGE_SYSTEMD_LOGIND=y
+BR2_PACKAGE_SYSTEMD_MACHINED=y
+BR2_PACKAGE_SYSTEMD_MYHOSTNAME=y
+BR2_PACKAGE_SYSTEMD_NETWORKD=y
+BR2_PACKAGE_SYSTEMD_RESOLVED=y
+BR2_PACKAGE_SYSTEMD_TIMEDATED=y
+BR2_PACKAGE_SYSTEMD_TIMESYNCD=y
+BR2_PACKAGE_SYSTEMD_TMPFILES=y
+BR2_PACKAGE_SYSTEMD_VCONSOLE=y
+
+BR2_SYSTEM_BIN_SH_BASH=y
+BR2_PACKAGE_BASH=y
+BR2_PACKAGE_BASH_COMPLETION=y
+BR2_PACKAGE_TMUX=y</code></pre></div>
+                    </div><br/>
+Несмотря на то, что новый профиль располагается в отдельной директории, его сборка все равно происходит из основного buildroot-окружения. Нужно только указать его расположение через переменную окружения <b>BR2_EXTERNAL</b>. Для ускорения пересборки buildroot использует кэш. Так как мы используем измененный профиль и заменили системную библиотеку uclibc на glibc, то пересобрать лучше с нуля.<br/>
+<br/>
+<pre><code class="bash">cd ${BUILDROOT}</code></pre><br/>
+<pre><code class="bash">make clean</code></pre><br/>
+<pre><code class="bash">make BR2_EXTERNAL=${EXT_BUILDROOT} raspberrypi4_64_pxe_defconfig</code></pre><br/>
+<pre><code class="bash">make</code></pre><br/>
+После завершения сборки нам достаточно скопировать на удаленный TFTP-сервер файлы <b>Image</b> и <b>rootfs.cpio.gz</b> из директории <b>output/images</b>.<br/>
+<br/>
+Чтобы «малинка» знала, какие файлы ей необходимо запрашивать по TFTP, необходимо указать их имена в файле <b>config.txt</b>:<br/>
+<br/>
+<pre><code class="plaintext">kernel=Image
+initramfs rootfs.cpio.gz</code></pre><br/>
+Изменим также файл <b>cmdline.txt</b>, чтобы при загрузке дополнительно передать аргументы ядру, указывающие на расположение корневой файловой системы (root) в оперативной памяти.<br/>
+<br/>
+<pre><code class="plaintext">cat cmdline.txt
+root=/dev/ram0 rootwait console=tty1 console=ttyAMA0,115200</code></pre><br/>
+<font color="#092433"><h2>Итоги и планы</h2></font><br/>
+Итак, мы добились нужного нам результата. С помощью buildroot мы создали собственный мини-дистрибутив. После загрузки по TFTP он полностью располагается в оперативной памяти и больше никак не зависит от локальных носителей (прежде всего от SD-карты, но в потенциале и от usb-дисков). И мы можем достаточно гибко модифицировать полученный образ, добавлять в него собственные скрипты с нужным функционалом.<br/>
+<br/>
+Осталось только воспроизвести описанное поведение iPXE с получением опции 224. Но что это за опция, зачем она нужна и как она передается? Для ответа потребуется предварительно рассказать о Kea DHCP сервере и его системе hook-модулей. Этим и займемся в следующей статье.<br/>
+<br/>
+<a href="https://slc.tl/sWzVf"><div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/tc/cd/j3/tccdj3itayq7tpqluu4-qziadry.png"/></div></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Braspberry%20pi%5D" class="tm-tags-list__link">raspberry pi</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bselectel%5D" class="tm-tags-list__link">selectel</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpxe%5D" class="tm-tags-list__link">pxe</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpxeboot%5D" class="tm-tags-list__link">pxeboot</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bbuildroot%5D" class="tm-tags-list__link">buildroot</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bipxe%5D" class="tm-tags-list__link">ipxe</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Brpi%5D" class="tm-tags-list__link">rpi</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Brpi4%5D" class="tm-tags-list__link">rpi4</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%B4%D0%BD%D0%BE%D0%BF%D0%BB%D0%B0%D1%82%D0%BD%D1%8B%D0%B9%20%D0%BA%D0%BE%D0%BC%D0%BF%D1%8C%D1%8E%D1%82%D0%B5%D1%80%5D" class="tm-tags-list__link">одноплатный компьютер</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/selectel/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Selectel
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/it-infrastructure/" class="tm-hubs-list__link">
+    IT-инфраструктура
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/s_admin/" class="tm-hubs-list__link">
+    Серверное администрирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/raspberrypi/" class="tm-hubs-list__link">
+    Разработка на Raspberry Pi
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 48: ↑47 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 48: ↑47 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+46</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">7.2K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    45
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/selectel/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/66a/f7d/039/66af7d03979b6d18654293d8f1e72837.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/selectel/profile/" class="tm-company-snippet__title">Selectel</a> <div class="tm-company-snippet__description">IT-инфраструктура для бизнеса</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/selectel" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://vk.com/selectel" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://telegram.me/SelectelNews" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/burlunder/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 38 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    36
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">114</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/burlunder/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @burlunder
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/selectel/blog/582576/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 3 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2007-09-10T20:00:00.000Z" title="2007-09-11, 00:00">11  сентября  2007</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://selectel.ru/" target="_blank" class="tm-company-basic-info__link">
+      selectel.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    501–1 000 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2010-03-15T19:29:17.000Z" title="2010-03-15, 22:29">15  марта  2010</time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/selectel/blog/582576/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/selectel/blog/582576/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582576":{"id":"582576","timePublished":"2021-10-23T07:35:29+00:00","isCorporative":true,"lang":"ru","titleHtml":"Маленькие «малинки» в крупном дата-центре (часть 2 — iPXE + Buildroot)","leadData":{"textHtml":"\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F1p\u002Fhd\u002Fyh\u002F1phdyhydgo__u9tw54yngclvp-0.png\"\u003E\u003C\u002Fdiv\u003E\u003Cbr\u003E\r\nПривет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. \u003Cbr\u003E\r\n\u003Cbr\u003E\r\nПродолжим нашу историю о появлении \u003Ca href=\"https:\u002F\u002Fslc.tl\u002FKctzk\" rel=\"nofollow noopener noreferrer\"\u003Eодноплатников в выделенных серверах\u003C\u002Fa\u003E. В прошлой \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fselectel\u002Fblog\u002F580398\u002F\"\u003Eстатье\u003C\u002Fa\u003E мы рассмотрели отличие процесса загрузки Raspberry Pi 4 от «‎обычных» серверов и подробно описали какие файлы необходимы для ее успешного завершения. Теперь нужно научиться менять этот процесс под наши нужды.\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":36,"votesCount":38},"rating":114,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"174986","alias":"burlunder","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":3,"favoritesCount":45,"readingCount":7243,"score":46,"votesCount":48},"hubs":[{"relatedData":null,"id":"14740","alias":"selectel","type":"corporative","title":"Блог компании Selectel","titleHtml":"Блог компании Selectel","isProfiled":false},{"relatedData":null,"id":"6398","alias":"it-infrastructure","type":"collective","title":"IT-инфраструктура","titleHtml":"IT-инфраструктура","isProfiled":true},{"relatedData":null,"id":"17350","alias":"s_admin","type":"collective","title":"Серверное администрирование","titleHtml":"Серверное администрирование","isProfiled":true},{"relatedData":null,"id":"21476","alias":"raspberrypi","type":"collective","title":"Разработка на Raspberry Pi","titleHtml":"Разработка на Raspberry Pi","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F1p\u002Fhd\u002Fyh\u002F1phdyhydgo__u9tw54yngclvp-0.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nПривет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПродолжим нашу историю о появлении \u003Ca href=\"https:\u002F\u002Fslc.tl\u002FKctzk\"\u003Eодноплатников в выделенных серверах\u003C\u002Fa\u003E. В прошлой \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fselectel\u002Fblog\u002F580398\u002F\"\u003Eстатье\u003C\u002Fa\u003E мы рассмотрели отличие процесса загрузки Raspberry Pi 4 от «‎обычных» серверов и подробно описали какие файлы необходимы для ее успешного завершения. Теперь нужно научиться менять этот процесс под наши нужды.\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nОстановились мы на загрузке по сети обратно в ОС, установленную на SD-карту. Напомню, что произошло это потому, что при загрузке ядра Linux \u003Cb\u003Ekernel8.img\u003C\u002Fb\u003E мы дополнительно передали ему аргументы через файл \u003Cb\u003Ecmdline.txt\u003C\u002Fb\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ecat cmdline.txt\n \nconsole=ttyAMA0,115200 console=tty1 root=\u002Fdev\u002Fmmcblk0p2 rootfstype=ext4 elevator=deadline rootwait dwc_otg.lpm_enable=0\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nКлючевым аргументом здесь является root, который указывает на устройство, где располагается корневая файловая система. Логично предположить, что, меняя устройство, мы можем влиять на процесс загрузки по сети.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПрежде чем развивать гипотезу, давайте рассмотрим проверенные варианты загрузки по сети для «малинок».\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#092433\"\u003E\u003Ch2\u003EЗагрузка в PXE + NFS\u003C\u002Fh2\u003E\u003C\u002Ffont\u003E\u003Cbr\u002F\u003E\r\nВ сети можно найти достаточно \u003Ca href=\"http:\u002F\u002Fgoogleitfor.me\u002F?q=raspberry+pi+4+pxe\"\u003Eинструкций\u003C\u002Fa\u003E, описывающих подготовку NFS-сервера для загрузки «малинки» в полностью автономном режиме, без участия SD-карты. Повторяться не буду, но обозначу ряд важных моментов:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EМы можем изменить аргумент \u003Ci\u003Eroot\u003C\u002Fi\u003E, чтобы он указывал на удаленный источник. Но все равно нужна корневая файловая система. Только «‎приготовленная» не локально, а на удаленном сервере.\u003C\u002Fli\u003E\r\n\u003Cli\u003EТеперь \u003Ci\u003E\u002Fboot\u003C\u002Fi\u003E-раздел у нас загружается через TFTP-сервер, а корневая файловая система — через NFS-сервер. Процесс загрузки мы практически никак не поменяли — только источники. Значит, и управлять мы может только с уровня загруженной по NFS операционной системы, не ранее.\u003C\u002Fli\u003E\r\n\u003Cli\u003EНепонятно, как решать проблему с доступом множества «малинок» к одному NFS-серверу. Создавать по одной корневой файловой системе на каждую ноду ­— тупиковый путь, запутаемся во множестве копий. Оставить одну в режиме только на чтение — возникнет проблема с изменяемыми данными (\u003Ci\u003E\u002Ftmp\u003C\u002Fi\u003E, \u003Ci\u003E\u002Fvar\u003C\u002Fi\u003E, …).\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nДа, при должном усердии указанные проблемы можно решить через изменение скриптов инициализации при старте операционной системы. Тогда мы сможем на «малинке» загрузиться в какую-то среду, из которой будем запускать действия для дальнейшего развертывания сервера. Но результат все равно неоднозначен, а действий много.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#092433\"\u003E\u003Ch2\u003EpiPXE\u003C\u002Fh2\u003E\u003C\u002Ffont\u003E\u003Cbr\u002F\u003E\r\nНа этом месте стоит остановиться и сделать шаг назад. На «стандартных» серверах ведь уже есть среда, через которую мы управляем дальнейшей загрузкой сервера, — iPXE. Может, есть возможность перенести ее на «малинки»?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНедолгие поиски показали, что существует проект \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fipxe\u002Fpipxe\"\u003EpiPXE\u003C\u002Fa\u003E, предназначенный специально для запуска iPXE на одноплатниках. Стоит его протестировать и разобраться, как он работает.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПодготовка простая, достаточно раскатать образ на SD-карту.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ecurl https:\u002F\u002Fgithub.com\u002Fipxe\u002Fpipxe\u002Freleases\u002Flatest\u002Fdownload\u002Fsdcard.img | sudo dd of=\u002Fdev\u002FsdX\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПосле перезагрузки сервер успешно загрузится в iPXE, откуда уже можно загрузиться по сети. Рассмотрим, как именно это происходит и к каким файлам происходит обращение. Сверяться будем с \u003Ca href=\"https:\u002F\u002Fwww.raspberrypi.org\u002Fdocumentation\u002Fcomputers\u002Fconfiguration.html#the-boot-folder\"\u003Eофициальной документацией\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Cb\u003Estart4.elf\u003C\u002Fb\u003E и \u003Cb\u003Efixup4.dat\u003C\u002Fb\u003E — начинается процесс стандартно, с файлов, необходимых для инициализации видеоядра.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Cb\u003Eсonfig.txt\u003C\u002Fb\u003E — с этого момента начинается самое интересное. В этот раз его содержимое отличается от того, что было в дистрибутиве \u003Ca href=\"https:\u002F\u002Fwww.raspberrypi.org\u002Fsoftware\u002Foperating-systems\u002F\"\u003ERaspberry Pi OS\u003C\u002Fa\u003E. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Earm_64bit=1\narmstub=RPI_EFI.fd\nboot_delay=0\nenable_uart=1\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Cb\u003ERPI_EFI.fd\u003C\u002Fb\u003E — ключевым является параметр \u003Cb\u003Earmstub\u003C\u002Fb\u003E, который указывает на файл с ARM-кодом, выполняемым до запуска ядра. В данном случае запускается код EFI-среды, основанном на \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftianocore\u002Fedk2\"\u003EEDK II\u003C\u002Fa\u003E (во многом пересекается с проектом \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fpftf\u002FRPi4\"\u003ERPi4\u003C\u002Fa\u003E, также направленном на запуск EFI-окружения на Raspberry Pi).\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Cb\u003E\u002Fefi\u002Fboot\u002Fbootaa64.efi\u003C\u002Fb\u003E — исполняемый файл EFI-приложения. Здесь он располагается в директории, откуда автоматически запускаются исполняемые файлы при запуске EFI-прошивки. В данном случае iPXE, скомпилированный в EFI.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nПоследний пункт позволяет нам скомпилировать собственную сборку iPXE, со встроенным скриптом под наши задачи. Для примера соберем iPXE-загрузчик с нашим кастомным скриптом \u003Ci\u003Erpi.ipxe\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#!ipxe\ndhcp\niseq ${platform} efi    \t&amp;&amp; set uefi true ||\niseq ${platform} pcbios \t&amp;&amp; set uefi false ||\n\nisset 224 || goto noparameter\nchain --autofree ${224}&amp;uefi=${uefi} || goto chain_error\n:noparameter\necho ***************************************************************\necho * No 224 parameter was set: ${224}\necho ***************************************************************\ngoto exit0\n:chain_error\necho ***************************************************************\necho * Error chaining to ${224}\necho ***************************************************************\ngoto exit0\n:exit0\nsleep 10\nexit 0\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПодробно останавливаться на работе этого скрипта не буду. Важно только отметить, что по нему iPXE получает сетевые настройки по DHCP. Проверяется наличие в DHCP-ответе опции 224 (первая из свободных опций \u003Ca href=\"https:\u002F\u002Fwww.iana.org\u002Fassignments\u002Fbootp-dhcp-parameters\u002Fbootp-dhcp-parameters.xhtml\"\u003Eдля частного использования\u003C\u002Fa\u003E). Содержимое этой опции используется как адрес до образа, который запускается через \u003Ca href=\"https:\u002F\u002Fwww.ipxe.org\u002Fcmd\u002Fchain\"\u003Echain\u003C\u002Fa\u003E. Для удобства добавлены диагностические сообщения, если опция 224 не задана или загрузка по ней невозможна.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПеред сборкой необходимо учесть, что мы собираем iPXE-загрузчик под архитектуру, отличную от x86_64. Поэтому сперва потребуется установка пакетов, нужных для кросс-компиляции (на примере Ubuntu 20.04). После чего уже клонировать \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fipxe\u002Fipxe\u002F\"\u003Eрепозиторий iPXE\u003C\u002Fa\u003E и собрать его утилитой \u003Ci\u003Emake\u003C\u002Fi\u003E со \u003Ca href=\"https:\u002F\u002Fwww.ipxe.org\u002Fembed\"\u003Eвстроенным\u003C\u002Fa\u003E скриптом.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Eapt install gcc-aarch64-linux-gnu\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Egit clone https:\u002F\u002Fgithub.com\u002Fipxe\u002Fipxe\u002F &amp;&amp; cd ipxe\nCROSS_COMPILE=aarch64-linux-gnu- make bin-arm64-efi\u002Fipxe.efi EMBED=.\u002Frpi.ipxe\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nУбедиться, что файл собран правильно под нужную архитектуру, можно через утилиту \u003Ci\u003Efile\u003C\u002Fi\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Efile bootaa64.efi\n\nbootaa64.efi: MS-DOS executable PE32+ executable (DLL) (EFI application) Aarch64, for MS Windows\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЗатем достаточно скопировать готовый файл на SD-карту в \u003Ci\u003E\u002Fefi\u002Fboot\u002Fbootaa64.efi\u003C\u002Fi\u003E. После перезагрузки видим успешную загрузку в iPXE с нашим кастомным скриптом.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКазалось бы, успех?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНет, такая схема оставляет нерешенными две проблемы:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EЗависимость от SD-карты, где располагается файл-заглушка \u003Cb\u003ERPI_EFI.fd\u003C\u002Fb\u003E. Да, его можно передать по TFTP, но в этом случае корректно он уже не запускается. Экспертизы в \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftianocore\u002Fedk2\"\u003EEDK II\u003C\u002Fa\u003E, чтобы это поправить, у нас нет.\u003C\u002Fli\u003E\r\n\u003Cli\u003EiPXE запускается через EFI. А это означает, что запускаемая установка дистрибутива должна поддерживать работу в этом режиме. Дистрибутивы под одноплатники обычно лишены этой способности за ненадобностью. Из-за этого могут не работать отдельные компоненты (например, сетевая карта), что потребует дополнительной адаптации дистрибутивов.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nОпыт с запуском iPXE через EFI интересен и даже открывает некоторые перспективы (например, так обеспечивается запуск VMware ESXi на «малинках»), но, увы, для нас не подходит.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#092433\"\u003E\u003Ch2\u003EОбраз Buildroot\u003C\u002Fh2\u003E\u003C\u002Ffont\u003E\u003Cbr\u002F\u003E\r\nОстановимся еще раз и оценим полученный опыт. Напрямую изменить последовательность загрузки «малинки» мы не можем. Список типов файлов, которые мы можем передавать по TFTP, определен. Возможность запуска \u003Ci\u003Earm stub\u003C\u002Fi\u003E файла до ядра нам не помогает, так как при передаче по сети корректно запускать его мы не умеем.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНа что действительно можно повлиять — файл ядра Linux (и связанный с ним образ \u003Ci\u003Einitramfs\u003C\u002Fi\u003E), который запускается на последнем этапе загрузки одноплатника. Нужно только собственное ядро с минимальным окружением в \u003Ci\u003Einitramfs\u003C\u002Fi\u003E, которое бы позволило воспроизвести поведение iPXE. Фактически требуется собственный мини-дистрибутив, запускаемый из памяти, чтобы не зависеть от локальных носителей.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри загрузке Linux используется схема, когда сперва загружается initramfs-образ с минимально необходимой корневой файловой системой \u003Ci\u003Erootfs\u003C\u002Fi\u003E (прежде всего модули ядра). На втором этапе \u003Ci\u003Erootfs\u003C\u002Fi\u003E меняется и он перемонтируется на полноценную корневую файловую систему (локально на SD-карте или по NFS). Взять файлы ядра и initramfs-образа из существующего дистрибутива без дополнительной их адаптации мы не можем.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМожно собрать ядро Linux напрямую из исходных файлов. Инструкцию, как это сделать под Raspberry Pi 4, можно найти в официальной \u003Ca href=\"https:\u002F\u002Fwww.raspberrypi.com\u002Fdocumentation\u002Fcomputers\u002Flinux_kernel.html#building-the-kernel\"\u003Eдокументации\u003C\u002Fa\u003E. Но к ядру еще требуется минимальное рабочее окружение из командной оболочки (shell) и базовых утилит, которые и будут образовывать корневую файловую систему, упакованную в initramfs и загружаемую в память.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧтобы упростить эту задачу, мы обратимся к \u003Ca href=\"https:\u002F\u002Fbuildroot.org\u002F\"\u003EBuildroot\u003C\u002Fa\u003E — инструменту для сборки собственного мини-дистрибутива. О нем уже \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F448638\u002F\"\u003Eписали\u003C\u002Fa\u003E на Хабре. Мы же пойдем чуть дальше и воспользуемся его механизмом \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F449348\u002F\"\u003Eеxternal toolchain\u003C\u002Fa\u003E, чтобы отделить наши изменения от основного кода.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПредварительно создадим buildroot-окружение и установим необходимые пакеты.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E# on ubuntu 20.04\nexport BUILDROOT=\"$HOME\u002Fbuildroot_pi4\"\n\nsudo apt -y install \\\n    python-is-python3 \\\n    expect-dev \\\n    git \\\n    bc rsync wget cpio unzip\ngit clone --single-branch --branch 2021.08.x https:\u002F\u002Fgithub.com\u002Fbuildroot\u002Fbuildroot.git ${BUILDROOT}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПосле подготовки Buildroot-окружения мы можем сразу же запустить сборку образа по Raspbery Pi 4, используя готовый профиль.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ecd ${BUILDROOT}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Emake raspberrypi4_64_defconfig\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Emake\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПосле запуска мы можем отойти попить чаю (может, даже не одну кружку), так как скачивание зависимостей, необходимых утилит и кросс-компиляция займут значительное время. После завершения в директории \u003Ci\u003E.\u002Foutput\u002Fimages\u003C\u002Fi\u003E мы обнаружим необходимый нам образ \u003Cb\u003Esdcard.img\u003C\u002Fb\u003E, пригодный для записи на SD-карту.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nУбедиться в этом мы можем, просматривая передаваемые ядру Linux аргументы. Видно, что корневая файловая система (root) ожидается на втором разделе SD.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ecat output\u002Fimages\u002Frpi-firmware\u002Fcmdline.txt\n\nroot=\u002Fdev\u002Fmmcblk0p2 rootwait console=tty1 console=ttyAMA0,115200\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНам нужно, чтобы вся корневая файловая система располагалась в памяти и не была привязана к локальным носителям. Для этого мы создадим внешнее окружение buildroot, где уже на основе существующего профиля \u003Cb\u003Eraspberrypi4_64_defconfig\u003C\u002Fb\u003E создадим собственный.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003EEXT_BUILDROOT=\"$HOME\u002Fpi4_pxe_buildroot\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Emkdir -p ${EXT_BUILDROOT}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ecd ${EXT_BUILDROOT}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nДля начала создадим описание нового профиля через файл \u003Cb\u003Eexternal.desc\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ename: raspberrypi4_64_pxe\ndesc: raspberrypi4_64_pxe: builds special image to boot raspberry Pi4 over pxe\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nДалее создадим наш новый профиль. Самый простой способ для этого — скопировать существующий профиль и внести изменения.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Emkdir -p ${EXT_BUILDROOT}\u002Fconfigs\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ecp ${BUILDROOT}\u002Fconfigs\u002Fraspberrypi4_64_defconfig \"$_\u002Fraspberrypi4_64_pxe_defconfig\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПоскольку нам нужно, чтобы корневая файловая система (root) после запуска ядра Linux располагалась в оперативной памяти (RAM), указываем опцию в профиле. Для этого добавим в конец файла две дополнительные строки.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EBR2_TARGET_ROOTFS_CPIO=y\nBR2_TARGET_ROOTFS_CPIO_GZIP=y\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВ целом, этого достаточно, чтобы после пересборки полученные файлы \u003Cb\u003EImage\u003C\u002Fb\u003E и \u003Cb\u003Erootfs.cpio.gz\u003C\u002Fb\u003E можно было использовать для загрузки по PXE. Но пойдем чуть дальше и изменим систему инициализации с busybox на systemd. Для этого нам потребуется изменить системную библиотеку с \u003Ca href=\"https:\u002F\u002Fuclibc.org\u002Fabout.html\"\u003Euclibc\u003C\u002Fa\u003E на glibc, указав это в профиле и включив дополнительные пакеты.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E# Systemd\nBR2_TOOLCHAIN_BUILDROOT_GLIBC=y\nBR2_TOOLCHAIN_BUILDROOT_LIBC=\"glibc\"\nBR2_TOOLCHAIN_USES_GLIBC=y\nBR2_INIT_SYSTEMD=y\nBR2_PACKAGE_SYSTEMD_INITRD=y\nBR2_PACKAGE_SYSTEMD_FIRSTBOOT=y\nBR2_PACKAGE_SYSTEMD_HOSTNAMED=y\nBR2_PACKAGE_SYSTEMD_HWDB=y\nBR2_PACKAGE_SYSTEMD_LOCALED=y\nBR2_PACKAGE_SYSTEMD_LOGIND=y\nBR2_PACKAGE_SYSTEMD_MACHINED=y\nBR2_PACKAGE_SYSTEMD_MYHOSTNAME=y\nBR2_PACKAGE_SYSTEMD_NETWORKD=y\nBR2_PACKAGE_SYSTEMD_RESOLVED=y\nBR2_PACKAGE_SYSTEMD_TIMEDATED=y\nBR2_PACKAGE_SYSTEMD_TIMESYNCD=y\nBR2_PACKAGE_SYSTEMD_TMPFILES=y\nBR2_PACKAGE_SYSTEMD_VCONSOLE=y\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nТак как \u003Cb\u003Ebusybox\u003C\u002Fb\u003E больше не используется, желательно также изменить командную оболочку, например, на \u003Cb\u003Ebash\u003C\u002Fb\u003E. Образ загружается по сети, поэтому неплохо иметь еще и мультиплексор \u003Cb\u003Etmux\u003C\u002Fb\u003E. Также добавим его в профиль.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EBR2_SYSTEM_BIN_SH_BASH=y\nBR2_PACKAGE_BASH=y\nBR2_PACKAGE_BASH_COMPLETION=y\nBR2_PACKAGE_TMUX=y\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nДля добавления в образ наших собственных файлов и скриптов следует воспользоваться механизмом \u003Ci\u003E\u003Ca href=\"https:\u002F\u002Fbuildroot.org\u002Fdownloads\u002Fmanual\u002Fmanual.html#rootfs-custom\"\u003Eroot filesystem overlay\u003C\u002Fa\u003E\u003C\u002Fi\u003E, задаваемым через опцию BR2_ROOTFS_OVERLAY. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EBR2_ROOTFS_OVERLAY=\"$(BR2_EXTERNAL_raspberrypi4_64_pxe_PATH)\u002Ffiles\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЧерез нее мы задаем путь до директории, содержимое которой будет скопировано поверх в собранный нами образ. \u003Cb\u003EBR2_EXTERNAL_raspberrypi4_64_pxe_PATH\u003C\u002Fb\u003E здесь — это автоматически генерируемая опция, связанная с нашим кастомных профилем.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТак, для примера создадим файл (относительно директории профиля) с содержимым, меняющим приглашение bash на красный цвет:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Eecho 'export PS1=\"\\e[0;31m[\\u@\\h \\W]# \\e[m \"' \u003E .\u002Ffiles\u002Froot\u002F.bashrc\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВ собранном образе он окажется в \u003Ci\u003E\u002Froot\u002F.bashrc\u003C\u002Fi\u003E, т.е. в домашней папке пользователя root.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EИтоговое содержимое профиля raspberrypi4_64_pxe_defconfig:\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003EBR2_aarch64=y\nBR2_cortex_a72=y\nBR2_ARM_FPU_VFPV4=y\n\nBR2_TOOLCHAIN_BUILDROOT_CXX=y\nBR2_TOOLCHAIN_BUILDROOT_GLIBC=y\nBR2_TOOLCHAIN_BUILDROOT_LIBC=\"glibc\"\nBR2_TOOLCHAIN_USES_GLIBC=y\n\nBR2_SYSTEM_DHCP=\"eth0\"\n\n# Linux headers same as kernel, a 5.10 series\nBR2_PACKAGE_HOST_LINUX_HEADERS_CUSTOM_5_10=y\n\nBR2_LINUX_KERNEL=y\nBR2_LINUX_KERNEL_CUSTOM_TARBALL=y\nBR2_LINUX_KERNEL_CUSTOM_TARBALL_LOCATION=\"$(call github,raspberrypi,linux,4afd064509b23882268922824edc5b391a1ea55d)\u002Flinux-4afd06459b23882268922824edc5b391a1ea55d.tar.gz\"\nBR2_LINUX_KERNEL_DEFCONFIG=\"bcm2711\"\n\n# Build the DTB from the kernel sources\nBR2_LINUX_KERNEL_DTS_SUPPORT=y\nBR2_LINUX_KERNEL_INTREE_DTS_NAME=\"broadcom\u002Fbcm2711-rpi-4-b\"\n\nBR2_LINUX_KERNEL_NEEDS_HOST_OPENSSL=y\n\nBR2_PACKAGE_RPI_FIRMWARE=y\nBR2_PACKAGE_RPI_FIRMWARE_VARIANT_PI4=y\n\n# Required tools to create the SD image\nBR2_PACKAGE_HOST_DOSFSTOOLS=y\nBR2_PACKAGE_HOST_GENIMAGE=y\nBR2_PACKAGE_HOST_MTOOLS=y\n\n# Filesystem \u002F imageBR2_TARGET_ROOTFS_EXT2=y\nBR2_TARGET_ROOTFS_EXT2_4=y\nBR2_TARGET_ROOTFS_EXT2_SIZE=\"120M\"\n# BR2_TARGET_ROOTFS_TAR is not set\nBR2_ROOTFS_POST_BUILD_SCRIPT=\"board\u002Fraspberrypi4-64\u002Fpost-build.sh\"\nBR2_ROOTFS_POST_IMAGE_SCRIPT=\"board\u002Fraspberrypi4-64\u002Fpost-image.sh\"\nBR2_ROOTFS_POST_SCRIPT_ARGS=\"--add-miniuart-bt-overlay --aarch64\"\nBR2_ROOTFS_OVERLAY=\"$(BR2_EXTERNAL_raspberrypi4_64_pxe_PATH)\u002Ffiles\"\nBR2_TARGET_ROOTFS_CPIO=y\nBR2_TARGET_ROOTFS_CPIO_GZIP=y\n\nBR2_INIT_SYSTEMD=y\nBR2_PACKAGE_SYSTEMD_INITRD=y\nBR2_PACKAGE_SYSTEMD_FIRSTBOOT=y\nBR2_PACKAGE_SYSTEMD_HOSTNAMED=y\nBR2_PACKAGE_SYSTEMD_HWDB=y\nBR2_PACKAGE_SYSTEMD_LOCALED=y\nBR2_PACKAGE_SYSTEMD_LOGIND=y\nBR2_PACKAGE_SYSTEMD_MACHINED=y\nBR2_PACKAGE_SYSTEMD_MYHOSTNAME=y\nBR2_PACKAGE_SYSTEMD_NETWORKD=y\nBR2_PACKAGE_SYSTEMD_RESOLVED=y\nBR2_PACKAGE_SYSTEMD_TIMEDATED=y\nBR2_PACKAGE_SYSTEMD_TIMESYNCD=y\nBR2_PACKAGE_SYSTEMD_TMPFILES=y\nBR2_PACKAGE_SYSTEMD_VCONSOLE=y\n\nBR2_SYSTEM_BIN_SH_BASH=y\nBR2_PACKAGE_BASH=y\nBR2_PACKAGE_BASH_COMPLETION=y\nBR2_PACKAGE_TMUX=y\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nНесмотря на то, что новый профиль располагается в отдельной директории, его сборка все равно происходит из основного buildroot-окружения. Нужно только указать его расположение через переменную окружения \u003Cb\u003EBR2_EXTERNAL\u003C\u002Fb\u003E. Для ускорения пересборки buildroot использует кэш. Так как мы используем измененный профиль и заменили системную библиотеку uclibc на glibc, то пересобрать лучше с нуля.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Ecd ${BUILDROOT}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Emake clean\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Emake BR2_EXTERNAL=${EXT_BUILDROOT} raspberrypi4_64_pxe_defconfig\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Emake\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПосле завершения сборки нам достаточно скопировать на удаленный TFTP-сервер файлы \u003Cb\u003EImage\u003C\u002Fb\u003E и \u003Cb\u003Erootfs.cpio.gz\u003C\u002Fb\u003E из директории \u003Cb\u003Eoutput\u002Fimages\u003C\u002Fb\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧтобы «малинка» знала, какие файлы ей необходимо запрашивать по TFTP, необходимо указать их имена в файле \u003Cb\u003Econfig.txt\u003C\u002Fb\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ekernel=Image\ninitramfs rootfs.cpio.gz\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИзменим также файл \u003Cb\u003Ecmdline.txt\u003C\u002Fb\u003E, чтобы при загрузке дополнительно передать аргументы ядру, указывающие на расположение корневой файловой системы (root) в оперативной памяти.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Ecat cmdline.txt\nroot=\u002Fdev\u002Fram0 rootwait console=tty1 console=ttyAMA0,115200\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#092433\"\u003E\u003Ch2\u003EИтоги и планы\u003C\u002Fh2\u003E\u003C\u002Ffont\u003E\u003Cbr\u002F\u003E\r\nИтак, мы добились нужного нам результата. С помощью buildroot мы создали собственный мини-дистрибутив. После загрузки по TFTP он полностью располагается в оперативной памяти и больше никак не зависит от локальных носителей (прежде всего от SD-карты, но в потенциале и от usb-дисков). И мы можем достаточно гибко модифицировать полученный образ, добавлять в него собственные скрипты с нужным функционалом.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОсталось только воспроизвести описанное поведение iPXE с получением опции 224. Но что это за опция, зачем она нужна и как она передается? Для ответа потребуется предварительно рассказать о Kea DHCP сервере и его системе hook-модулей. Этим и займемся в следующей статье.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fslc.tl\u002FsWzVf\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ftc\u002Fcd\u002Fj3\u002Ftccdj3itayq7tpqluu4-qziadry.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"raspberry pi"},{"titleHtml":"selectel"},{"titleHtml":"pxe"},{"titleHtml":"pxeboot"},{"titleHtml":"buildroot"},{"titleHtml":"ipxe"},{"titleHtml":"rpi"},{"titleHtml":"rpi4"},{"titleHtml":"одноплатный компьютер"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F1p\u002Fhd\u002Fyh\u002F1phdyhydgo__u9tw54yngclvp-0.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F1p\u002Fhd\u002Fyh\u002F1phdyhydgo__u9tw54yngclvp-0.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fselectel\\\u002Fblog\\\u002F582576\\\u002F\"},\"headline\":\"Маленькие «малинки» в крупном дата-центре (часть 2 — iPXE + Buildroot)\",\"datePublished\":\"2021-10-23T10:35:29+03:00\",\"dateModified\":\"2021-10-24T01:24:17+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"burlunder\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Привет всем, кто заинтересовался историей интеграции &laquo;малинок&raquo; в серверы! Многие хотели увидеть, как они выглядят в стойке, &mdash; вот они, представлены на заглавной...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fselectel\\\u002Fblog\\\u002F582576\\\u002F#post-content-body\",\"about\":[\"c_selectel\",\"h_it-infrastructure\",\"h_s_admin\",\"h_raspberrypi\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582576\\\u002F44d5bc89b46710cd0b5495a2be9686b3\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F1p\\\u002Fhd\\\u002Fyh\\\u002F1phdyhydgo__u9tw54yngclvp-0.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Ftc\\\u002Fcd\\\u002Fj3\\\u002Ftccdj3itayq7tpqluu4-qziadry.png\"]}","metaDescription":"Привет всем, кто заинтересовался историей интеграции «малинок» в серверы! Многие хотели увидеть, как они выглядят в стойке, — вот они, представлены на заглавной иллюстрации. \r\n\r\nПродолжим нашу...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"selectel":{"alias":"selectel","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F66a\u002Ff7d\u002F039\u002F66af7d03979b6d18654293d8f1e72837.png","titleHtml":"Selectel","descriptionHtml":"IT-инфраструктура для бизнеса","relatedData":null,"statistics":{"postsCount":941,"newsCount":37,"vacanciesCount":7,"employeesCount":113,"careerRating":4.73,"subscribersCount":27336,"rating":1480.89,"invest":null},"foundationDate":{"year":"2007","month":"09","day":"11"},"location":{"city":{"id":"447733","title":"Санкт-Петербург"},"region":{"id":"1948","title":"Санкт-Петербург и область"},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fselectel.ru\u002F","staffNumber":"501–1 000 человек","registrationDate":"2010-03-15T19:29:17+00:00","representativeUser":null,"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fselectel"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fselectel"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002FSelectelNews"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-8163992-13"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"Selectel, Санкт-Петербург - IT-инфраструктура для бизнеса с 11 сентября 2007 г.","title":"Selectel, Санкт-Петербург - IT-инфраструктура для бизнеса с 11 сентября 2007 г.","keywords":["Компьютерное железо","Будущее здесь","Научно-популярное","Гаджеты","История IT"],"descriptionHtml":"941 статья от авторов компании Selectel","description":"941 статья от авторов компании Selectel"},"aDeskSettings":null,"careerAlias":"selectel","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

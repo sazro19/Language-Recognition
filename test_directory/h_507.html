@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Песочница для Nginx / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583562\/"},"headline":"Песочница для Nginx","datePublished":"2021-10-14T23:15:14+03:00","dateModified":"2021-10-15T02:28:23+03:00","author":{"@type":"Person","name":"Борзенко Денис"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протест...","url":"https:\/\/habr.com\/ru\/post\/583562\/#post-content-body","about":["h_nginx","f_admin"],"image":["https:\/\/habrastorage.org\/webt\/49\/26\/39\/492639mleho7gecfzhtgtp6kxie.jpeg"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Песочница для Nginx" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Песочница для Nginx" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Песочница для Nginx" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/583562/ff2253be97ba62489efc5b426f274cca/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/583562/ff2253be97ba62489efc5b426f274cca/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/583562/ff2253be97ba62489efc5b426f274cca/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/583562/ff2253be97ba62489efc5b426f274cca/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/583562/ff2253be97ba62489efc5b426f274cca/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583562" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-14T20:15:14.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583562/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583562/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/583562/ff2253be97ba62489efc5b426f274cca/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/bBars/" title="bBars" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/76c/663/d64/76c663d642ded49c50702b3e5dbe9860.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/bBars/" class="tm-user-info__username">
+      bBars
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-14T20:15:14.000Z" title="2021-10-14, 23:15">14  октября   в 23:15</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Песочница для Nginx</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/nginx/" class="tm-article-snippet__hubs-item-link"><span>Nginx</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://jvns.ca/blog/2021/09/24/new-tool--an-nginx-playground/" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Julia Evans
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><p>Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так уж сложно сделать, поэтому погрузилась в тему и сделала: <a href="https://nginx-playground.wizardzines.com" rel="nofollow noopener noreferrer">nginx-playground.wizardzines.com</a>.</p><br/>
+<p><img src="https://habrastorage.org/r/w780q1/webt/49/26/39/492639mleho7gecfzhtgtp6kxie.jpeg" alt="screenshot" data-src="https://habrastorage.org/webt/49/26/39/492639mleho7gecfzhtgtp6kxie.jpeg" data-blurred="true"/></p><a name="habracut"></a><br/>
+<blockquote>Просьба от переводчика: пожалуйста, не насильничайте рабочий сервис хитрыми директивами вроде создания миллиона воркеров — автор не кичится супер-защищённой средой запуска Nginx. Даже наоборот — взывает к приличному поведению, потому что некоторые уязвимости явно открыты. Вы запросто сможете положить сервис, если хотя бы раз видели доку по настройке Nginx, поэтому тут нет повода для гордости. С другой стороны, мысли об уязвимых местах (а возможно сразу и методах избавления от них) приветствуются в комментариях. Спасибо!</blockquote><p>Далее поговорим о том, как тут всё устроено, потому что в процессе я столкнулась с некоторыми любопытными нюансами и проблемами с неочевидными решениями.</p><br/>
+<h2 id="kak-polzovatsya">Как пользоваться</h2><br/>
+<p>Нужно задать конфигурацию Nginx, а также написать curl или http команду, которая отправит HTTP-запрос этому сконфигурированному вами веб-серверу.</p><br/>
+<p>Вы жмёте "Run" вверху-справа и получаете ответ:</p><br/>
+<ul>
+<li>результат выполненной команды (если Nginx запустился нормально), либо</li>
+<li>лог ошибок Nginx-а (если что-то пошло не так).</li>
+</ul><br/>
+<h2 id="zachem-nuzhna-eta-pesochnica">Зачем нужна эта песочница?</h2><br/>
+<p>Я обратила внимание, что подобные песочницы помогают мне учиться: очень полезно иметь возможность быстро и безопасно поэкспериментировать и проверить разные подходы к решению задач, при этом без опасений что-то сломать из-за допущенной ошибки.</p><br/>
+<p>А Nginx чрезвычайно привередлив в настройке, и поэтому, я думаю, что уж для него-то точно должен быть такой инструмент.</p><br/>
+<p>Вот три других похожих проекта, которые я сделала ранее:</p><br/>
+<ul>
+<li><a href="https://sql-playground.wizardzines.com/" rel="nofollow noopener noreferrer">SQL-песочница</a> — позволяет выполнять произвольные SQL-запросы на небольших данных к SQLite (использует <a href="https://github.com/sql-js/sql.js/" rel="nofollow noopener noreferrer">sql.js</a>).</li>
+<li><a href="https://css-examples.wizardzines.com/" rel="nofollow noopener noreferrer">CSS примеры</a> — используя <a href="https://codepen.io/" rel="nofollow noopener noreferrer">CodePen</a> демонстрируют некоторые поразительные примеры стилизации с помощью CSS, с которыми вы можете поиграться.</li>
+<li><a href="https://dns-lookup.jvns.ca/" rel="nofollow noopener noreferrer">DNS lookup</a> — позволяет выполнять любые DNS-запросы и видеть ответы.</li>
+</ul><br/>
+<p>И несколько других замечательных песочниц, разработанных другими людьми:</p><br/>
+<ul>
+<li><a href="https://codepen.io/" rel="nofollow noopener noreferrer">CodePen</a> — для CSS/JS/HTML.</li>
+<li><a href="https://regexr.com/" rel="nofollow noopener noreferrer">RegExr</a> — для регулярных выражений.</li>
+<li><a href="https://www.db-fiddle.com/" rel="nofollow noopener noreferrer">DB Fiddle</a> — для SQL (MySQL, PostgreSQL и SQLite).</li>
+<li><a href="https://nginx.viraptor.info/" rel="nofollow noopener noreferrer">Nginx location match tester</a> — имитирует алгоритм перебора директив location конфига Nginx (написан на TypeScript).</li>
+</ul><br/>
+<h2 id="delaem-bystro-bez-uslozhneniy">Делаем быстро, без усложнений</h2><br/>
+<p>Сайт состоит из:</p><br/>
+<ol>
+<li>статичного фронтенда (и применением Vue.js и Tailwind, моего типичного фронтендового набора);</li>
+<li>написанного на Go бэкенда с единственным API-методом, который делает лишь одно — запускает Nginx с заданным конфигом.</li>
+</ol><br/>
+<p>План прост, потому красив: всего-то нужно написать один API-метод, ну и ещё фронт, который его вызывает. Так же просто выполнен инструмент <a href="https://dns-lookup.jvns.ca/" rel="nofollow noopener noreferrer">DNS lookup</a>. Уж очень нравится мне такой подход, думаю, я и остальные проекты буду делать так же.</p><br/>
+<p>Давайте расскажу о том, что делает код на бэкенде, когда к нему поступает запрос с фронта.</p><br/>
+<h2 id="chto-proishodit-pri-postuplenii-zaprosa">Что происходит при поступлении запроса</h2><br/>
+<p>Вот что делает Go-бэкенд, когда вы жмёте "Run" (вот вам сразу <a href="https://gist.github.com/jvns/edf78e7775fea8888685a9a2956bc477" rel="nofollow noopener noreferrer">заметка с кодом</a>):</p><br/>
+<ol>
+<li>записываем конфиг во временный файл;</li>
+<li>создаём новый сетевой неймспейс (<code>ip netns add $RANDOM_NAMESPACE_NAME</code>);</li>
+<li>запускаем <a href="https://github.com/mccutchen/go-httpbin" rel="nofollow noopener noreferrer">go-httpbin</a> на порту 7777, чтобы люди могли использовать его в качестве следующего узла в своих конфигурациях Nginx (для отладки обратного прокси);</li>
+<li>запускаем Nginx;</li>
+<li>ждём 100 миллисекунд — позволяем Nginx-у запуститься, а если он не заработал, то возвращаем клиенту лог с ошибками;</li>
+<li>выполняем заданную пользователем команду (предварительно убеждаемся, что команда начинается с <code>curl</code> или <code>http</code>);</li>
+<li>возвращаем результат выполнения команды;</li>
+<li>PROFIT!</li>
+</ol><br/>
+<h2 id="voprosy-o-bezopasnosti">Вопросы о безопасности</h2><br/>
+<p>Основная идея инструмента состоит в том, чтобы дать пользователю возможность пробовать совершенно любые конфигурации Nginx. На фоне этого легко представить, сколько всего нехорошего можно натворить на сервере. Я хотела сделать инструмент бесплатным для пользователей, при этом не слишком тратиться на хостинг. В идеале — обойтись одним сервером для обслуживания всех запросов.</p><br/>
+<p>Подобные нюансы часто останавливали меня на пути к запуску похожих проектов, но конкретно с этим всё должно было получиться.</p><br/>
+<h2 id="podhod-k-bezopasnosti-nemnogo-izolyacii-i-yolo-">Подход к безопасности: немного изоляции и YOLO (!)</h2><br/>
+<p>Вот, к чему я пришла по поводу безопасности после обсуждения с другом:</p><br/>
+<ol>
+<li>Нужно разместить фронтенд отдельно от бэкенда — где-то в CDN (если бэкенд и будет взломан, то хотя бы на фронте никто не разместит какой-нибудь малварь).</li>
+<li>Не использовать базу данных, только localStorage браузера (невозможно взломать БД, если её нет).</li>
+<li>Изолировать Nginx в собственном сетевом неймспейсе, запретить выходить в глобальную сеть.</li>
+<li>Использовать бесплатный план на fly.io: слабые сервера, зато изолированные виртуальные машины, которые я при желании могу убивать и пересоздавать хоть каждый час.</li>
+<li>Попросить людей быть лапочками в разделе FAQ (это и есть "YOLO" :) )</li>
+</ol><br/>
+<p>Самое плохое, что может случиться при всех этих ограничениях:</p><br/>
+<ul>
+<li>кто-то сможет получить доступ к чужому конфигу Nginx, если два человека пользуются сайтом одновременно;</li>
+<li>подменит бэкенд так, что последующие клиенты будут получать всякие гадости в качестве ответа сервера вместо ожидаемого лога с ошибками или результата выполнения curl;</li>
+<li>какой-нибудь хитрец попробует майнить биткоин на этом крошечном виртуальном сервере (1 shared CPU, 256 MB RAM).</li>
+</ul><br/>
+<p>Не думаю, что перечисленное выглядит так уж плохо в свете потенциальной пользы от сайта. Впрочем, возможно я упускаю что-то ещё более важное. Например, кто-то уже показал, что можно украсть содержимое файла <code>/etc/passwd</code> (было занятно, но в нём всё равно ничего важного не было).</p><br/>
+<p>Можно было бы запускать Nginx в контейнере (вместо изоляции только с помощью сетевого неймспейса), но это сильно ударит по производительности. И без этого работает не то чтобы очень быстро.</p><br/>
+<p>К слову о производительности.</p><br/>
+<h2 id="koe-chto-o-proizvoditelnosti">Кое-что о производительности</h2><br/>
+<p>Как упомянуто ранее, бэкенд работает на довольно слабом железе (1 shared CPU, 256 MB RAM). По этому поводу имею сказать следующее:</p><br/>
+<ol>
+<li>Фронтенд расположен в CDN, поэтому нагрузка бэкенда начинается только тогда, когда пользователь нажимает кнопку "Run". Уже только это значительно облегчает серверу жизнь.</li>
+<li>Если верить логам, запросы занимают порядка 400 миллисекунд. Неплохо!</li>
+<li>Сейчас проект живёт на сервере, расположенном в Торонто. Полагаю, что для удалённых от Торонто пользователей всё происходит ещё медленнее. Так что можно развернуть больше таких маленьких серверов и в других уголках планеты.</li>
+<li>Я применила написанный на Go клон <a href="https://httpbin.org/" rel="nofollow noopener noreferrer">httpbin</a> вместо оригинального (написанного на Python), потому что эта версия показалась более лёгкой и быстрой.</li>
+<li>Производительность на стороне фронтенда слегка хромает: стили и скрипты разделены на несколько файлов. Я не хотела собирать это всё командой <code>npm build</code>, потому что я не очень сильна в JavaScript, и поэтому переживала, что в случае возникновения проблем в скриптах это будет дополнительным препятствием перед исправлением ошибок и обновлениями — просто будет лень.</li>
+<li>Добавила маленькую гифку с летящей ракетой — её видит пользователь, пока выполняется запрос.</li>
+</ol><br/>
+<p>Самая глупая ошибка, связанная с производительностью, была вызвана тем, что для остановки Nginx я отправляла <code>SIGKILL</code>. Это останавливало только главный процесс, а воркер-процессы продолжали работать, и в какой-то момент в системе заканчивалась свободная память. Когда я переделала всё так, чтобы отправлялся сигнал <code>SIGTERM</code>, ситуация улучшилась.</p><br/>
+<h2 id="dizayn">Дизайн</h2><br/>
+<p>Внешне повторяет дизайн <a href="https://jsfiddle.net/" rel="nofollow noopener noreferrer">JSFiddle</a> и CodePen.</p><br/>
+<p>В частности, у JSFiddle есть кое-что занятное: они вычисляют высоту рабочей области как <code>calc(100vh - 60px)</code>, а для заголовка установлена высота <code>60px</code>. Я бы не догадалась сама, а работает это хорошо.</p><br/>
+<p>Я использую <a href="https://codemirror.net/" rel="nofollow noopener noreferrer">CodeMirror</a> в качестве редактора с подсветкой синтаксиса, потому что именно его применяют JSFiddle и CodePen. Настроить его было достаточно просто. К тому же, там есть подсветка синтаксиса для конфигов Nginx и shell. Всё, о чём только можно мечтать :)</p><br/>
+<p>Была головная боль с этим CodeMirror только из-за того, что я собиралась использовать готовый пакет <code>vue-codemirror</code>, но были проблемы совместимости с Vue 3. Я решила, что в этом нет необходимости, и просто написала свою крошечную интеграцию, которая обновляет Vue при обновлении текстового поля.</p><br/>
+<p>Вы можете взглянуть на код в файле <a href="https://nginx-playground.wizardzines.com/script.js" rel="nofollow noopener noreferrer">script.js</a>, его там не много.</p><br/>
+<h2 id="chto-by-sdelat-eschyo-bolshe-primerov-konfigov">Что бы сделать ещё: больше примеров конфигов</h2><br/>
+<p>Я до сих пор не понимаю, какими именно должны быть эти примеры конфигурации, но не лишним было бы добавить парочку разных типичных конфигов в качестве стартовых.</p><br/>
+<h2 id="eto-bylo-legche-chem-kazalos">Это было легче, чем казалось</h2><br/>
+<p>Сделать этот инструмент было гораздо проще, чем я думала. И этот успех побуждает делать ещё больше подобных песочниц для других программ, хотя я и не выбрала следующую. HAProxy кажется хорошим кандидатом.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnginx%5D" class="tm-tags-list__link">nginx</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bplayground%5D" class="tm-tags-list__link">playground</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%B5%D1%81%D0%BE%D1%87%D0%BD%D0%B8%D1%86%D0%B0%5D" class="tm-tags-list__link">песочница</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BA%D0%BE%D0%BD%D1%84%D0%B8%D0%B3%D1%83%D1%80%D0%B0%D1%86%D0%B8%D1%8F%5D" class="tm-tags-list__link">конфигурация</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/nginx/" class="tm-hubs-list__link">
+    Nginx
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 14: ↑12 и ↓2</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 14: ↑12 и ↓2" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+10</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">6.7K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    115
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/bBars/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/76c/663/d64/76c663d642ded49c50702b3e5dbe9860.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 19 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">4</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Борзенко Денис</span> <a href="/ru/users/bBars/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @bBars
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583562/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 21 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583562/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583562/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583562":{"id":"583562","timePublished":"2021-10-14T20:15:14+00:00","isCorporative":false,"lang":"ru","titleHtml":"Песочница для Nginx","leadData":{"textHtml":"\u003Cp\u003EКак-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так уж сложно сделать, поэтому погрузилась в тему и сделала: \u003Ca href=\"https:\u002F\u002Fnginx-playground.wizardzines.com\" rel=\"nofollow noopener noreferrer\"\u003Enginx-playground.wizardzines.com\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F49\u002F26\u002F39\u002F492639mleho7gecfzhtgtp6kxie.jpeg\" alt=\"screenshot\"\u003E\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Julia Evans","originalUrl":"https:\u002F\u002Fjvns.ca\u002Fblog\u002F2021\u002F09\u002F24\u002Fnew-tool--an-nginx-playground\u002F"}}],"author":{"scoreStats":{"score":5,"votesCount":19},"rating":4,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"126021","alias":"bBars","fullname":"Борзенко Денис","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F76c\u002F663\u002Fd64\u002F76c663d642ded49c50702b3e5dbe9860.jpg","speciality":null},"statistics":{"commentsCount":21,"favoritesCount":115,"readingCount":6742,"score":10,"votesCount":14},"hubs":[{"relatedData":null,"id":"6659","alias":"nginx","type":"collective","title":"Nginx","titleHtml":"Nginx","isProfiled":true}],"flows":[{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EКак-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так уж сложно сделать, поэтому погрузилась в тему и сделала: \u003Ca href=\"https:\u002F\u002Fnginx-playground.wizardzines.com\" rel=\"nofollow noopener noreferrer\"\u003Enginx-playground.wizardzines.com\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002F49\u002F26\u002F39\u002F492639mleho7gecfzhtgtp6kxie.jpeg\" alt=\"screenshot\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F49\u002F26\u002F39\u002F492639mleho7gecfzhtgtp6kxie.jpeg\" data-blurred=\"true\"\u002F\u003E\u003C\u002Fp\u003E\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EПросьба от переводчика: пожалуйста, не насильничайте рабочий сервис хитрыми директивами вроде создания миллиона воркеров — автор не кичится супер-защищённой средой запуска Nginx. Даже наоборот — взывает к приличному поведению, потому что некоторые уязвимости явно открыты. Вы запросто сможете положить сервис, если хотя бы раз видели доку по настройке Nginx, поэтому тут нет повода для гордости. С другой стороны, мысли об уязвимых местах (а возможно сразу и методах избавления от них) приветствуются в комментариях. Спасибо!\u003C\u002Fblockquote\u003E\u003Cp\u003EДалее поговорим о том, как тут всё устроено, потому что в процессе я столкнулась с некоторыми любопытными нюансами и проблемами с неочевидными решениями.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"kak-polzovatsya\"\u003EКак пользоваться\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНужно задать конфигурацию Nginx, а также написать curl или http команду, которая отправит HTTP-запрос этому сконфигурированному вами веб-серверу.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВы жмёте \"Run\" вверху-справа и получаете ответ:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eрезультат выполненной команды (если Nginx запустился нормально), либо\u003C\u002Fli\u003E\r\n\u003Cli\u003Eлог ошибок Nginx-а (если что-то пошло не так).\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"zachem-nuzhna-eta-pesochnica\"\u003EЗачем нужна эта песочница?\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЯ обратила внимание, что подобные песочницы помогают мне учиться: очень полезно иметь возможность быстро и безопасно поэкспериментировать и проверить разные подходы к решению задач, при этом без опасений что-то сломать из-за допущенной ошибки.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EА Nginx чрезвычайно привередлив в настройке, и поэтому, я думаю, что уж для него-то точно должен быть такой инструмент.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВот три других похожих проекта, которые я сделала ранее:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fsql-playground.wizardzines.com\u002F\" rel=\"nofollow noopener noreferrer\"\u003ESQL-песочница\u003C\u002Fa\u003E — позволяет выполнять произвольные SQL-запросы на небольших данных к SQLite (использует \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fsql-js\u002Fsql.js\u002F\" rel=\"nofollow noopener noreferrer\"\u003Esql.js\u003C\u002Fa\u003E).\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fcss-examples.wizardzines.com\u002F\" rel=\"nofollow noopener noreferrer\"\u003ECSS примеры\u003C\u002Fa\u003E — используя \u003Ca href=\"https:\u002F\u002Fcodepen.io\u002F\" rel=\"nofollow noopener noreferrer\"\u003ECodePen\u003C\u002Fa\u003E демонстрируют некоторые поразительные примеры стилизации с помощью CSS, с которыми вы можете поиграться.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fdns-lookup.jvns.ca\u002F\" rel=\"nofollow noopener noreferrer\"\u003EDNS lookup\u003C\u002Fa\u003E — позволяет выполнять любые DNS-запросы и видеть ответы.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИ несколько других замечательных песочниц, разработанных другими людьми:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fcodepen.io\u002F\" rel=\"nofollow noopener noreferrer\"\u003ECodePen\u003C\u002Fa\u003E — для CSS\u002FJS\u002FHTML.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fregexr.com\u002F\" rel=\"nofollow noopener noreferrer\"\u003ERegExr\u003C\u002Fa\u003E — для регулярных выражений.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fwww.db-fiddle.com\u002F\" rel=\"nofollow noopener noreferrer\"\u003EDB Fiddle\u003C\u002Fa\u003E — для SQL (MySQL, PostgreSQL и SQLite).\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fnginx.viraptor.info\u002F\" rel=\"nofollow noopener noreferrer\"\u003ENginx location match tester\u003C\u002Fa\u003E — имитирует алгоритм перебора директив location конфига Nginx (написан на TypeScript).\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"delaem-bystro-bez-uslozhneniy\"\u003EДелаем быстро, без усложнений\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСайт состоит из:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003Eстатичного фронтенда (и применением Vue.js и Tailwind, моего типичного фронтендового набора);\u003C\u002Fli\u003E\r\n\u003Cli\u003Eнаписанного на Go бэкенда с единственным API-методом, который делает лишь одно — запускает Nginx с заданным конфигом.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПлан прост, потому красив: всего-то нужно написать один API-метод, ну и ещё фронт, который его вызывает. Так же просто выполнен инструмент \u003Ca href=\"https:\u002F\u002Fdns-lookup.jvns.ca\u002F\" rel=\"nofollow noopener noreferrer\"\u003EDNS lookup\u003C\u002Fa\u003E. Уж очень нравится мне такой подход, думаю, я и остальные проекты буду делать так же.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДавайте расскажу о том, что делает код на бэкенде, когда к нему поступает запрос с фронта.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"chto-proishodit-pri-postuplenii-zaprosa\"\u003EЧто происходит при поступлении запроса\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВот что делает Go-бэкенд, когда вы жмёте \"Run\" (вот вам сразу \u003Ca href=\"https:\u002F\u002Fgist.github.com\u002Fjvns\u002Fedf78e7775fea8888685a9a2956bc477\" rel=\"nofollow noopener noreferrer\"\u003Eзаметка с кодом\u003C\u002Fa\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003Eзаписываем конфиг во временный файл;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eсоздаём новый сетевой неймспейс (\u003Ccode\u003Eip netns add $RANDOM_NAMESPACE_NAME\u003C\u002Fcode\u003E);\u003C\u002Fli\u003E\r\n\u003Cli\u003Eзапускаем \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fmccutchen\u002Fgo-httpbin\" rel=\"nofollow noopener noreferrer\"\u003Ego-httpbin\u003C\u002Fa\u003E на порту 7777, чтобы люди могли использовать его в качестве следующего узла в своих конфигурациях Nginx (для отладки обратного прокси);\u003C\u002Fli\u003E\r\n\u003Cli\u003Eзапускаем Nginx;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eждём 100 миллисекунд — позволяем Nginx-у запуститься, а если он не заработал, то возвращаем клиенту лог с ошибками;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eвыполняем заданную пользователем команду (предварительно убеждаемся, что команда начинается с \u003Ccode\u003Ecurl\u003C\u002Fcode\u003E или \u003Ccode\u003Ehttp\u003C\u002Fcode\u003E);\u003C\u002Fli\u003E\r\n\u003Cli\u003Eвозвращаем результат выполнения команды;\u003C\u002Fli\u003E\r\n\u003Cli\u003EPROFIT!\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"voprosy-o-bezopasnosti\"\u003EВопросы о безопасности\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОсновная идея инструмента состоит в том, чтобы дать пользователю возможность пробовать совершенно любые конфигурации Nginx. На фоне этого легко представить, сколько всего нехорошего можно натворить на сервере. Я хотела сделать инструмент бесплатным для пользователей, при этом не слишком тратиться на хостинг. В идеале — обойтись одним сервером для обслуживания всех запросов.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПодобные нюансы часто останавливали меня на пути к запуску похожих проектов, но конкретно с этим всё должно было получиться.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"podhod-k-bezopasnosti-nemnogo-izolyacii-i-yolo-\"\u003EПодход к безопасности: немного изоляции и YOLO (!)\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВот, к чему я пришла по поводу безопасности после обсуждения с другом:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EНужно разместить фронтенд отдельно от бэкенда — где-то в CDN (если бэкенд и будет взломан, то хотя бы на фронте никто не разместит какой-нибудь малварь).\u003C\u002Fli\u003E\r\n\u003Cli\u003EНе использовать базу данных, только localStorage браузера (невозможно взломать БД, если её нет).\u003C\u002Fli\u003E\r\n\u003Cli\u003EИзолировать Nginx в собственном сетевом неймспейсе, запретить выходить в глобальную сеть.\u003C\u002Fli\u003E\r\n\u003Cli\u003EИспользовать бесплатный план на fly.io: слабые сервера, зато изолированные виртуальные машины, которые я при желании могу убивать и пересоздавать хоть каждый час.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПопросить людей быть лапочками в разделе FAQ (это и есть \"YOLO\" :) )\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСамое плохое, что может случиться при всех этих ограничениях:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eкто-то сможет получить доступ к чужому конфигу Nginx, если два человека пользуются сайтом одновременно;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eподменит бэкенд так, что последующие клиенты будут получать всякие гадости в качестве ответа сервера вместо ожидаемого лога с ошибками или результата выполнения curl;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eкакой-нибудь хитрец попробует майнить биткоин на этом крошечном виртуальном сервере (1 shared CPU, 256 MB RAM).\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНе думаю, что перечисленное выглядит так уж плохо в свете потенциальной пользы от сайта. Впрочем, возможно я упускаю что-то ещё более важное. Например, кто-то уже показал, что можно украсть содержимое файла \u003Ccode\u003E\u002Fetc\u002Fpasswd\u003C\u002Fcode\u003E (было занятно, но в нём всё равно ничего важного не было).\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EМожно было бы запускать Nginx в контейнере (вместо изоляции только с помощью сетевого неймспейса), но это сильно ударит по производительности. И без этого работает не то чтобы очень быстро.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EК слову о производительности.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"koe-chto-o-proizvoditelnosti\"\u003EКое-что о производительности\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКак упомянуто ранее, бэкенд работает на довольно слабом железе (1 shared CPU, 256 MB RAM). По этому поводу имею сказать следующее:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EФронтенд расположен в CDN, поэтому нагрузка бэкенда начинается только тогда, когда пользователь нажимает кнопку \"Run\". Уже только это значительно облегчает серверу жизнь.\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли верить логам, запросы занимают порядка 400 миллисекунд. Неплохо!\u003C\u002Fli\u003E\r\n\u003Cli\u003EСейчас проект живёт на сервере, расположенном в Торонто. Полагаю, что для удалённых от Торонто пользователей всё происходит ещё медленнее. Так что можно развернуть больше таких маленьких серверов и в других уголках планеты.\u003C\u002Fli\u003E\r\n\u003Cli\u003EЯ применила написанный на Go клон \u003Ca href=\"https:\u002F\u002Fhttpbin.org\u002F\" rel=\"nofollow noopener noreferrer\"\u003Ehttpbin\u003C\u002Fa\u003E вместо оригинального (написанного на Python), потому что эта версия показалась более лёгкой и быстрой.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПроизводительность на стороне фронтенда слегка хромает: стили и скрипты разделены на несколько файлов. Я не хотела собирать это всё командой \u003Ccode\u003Enpm build\u003C\u002Fcode\u003E, потому что я не очень сильна в JavaScript, и поэтому переживала, что в случае возникновения проблем в скриптах это будет дополнительным препятствием перед исправлением ошибок и обновлениями — просто будет лень.\u003C\u002Fli\u003E\r\n\u003Cli\u003EДобавила маленькую гифку с летящей ракетой — её видит пользователь, пока выполняется запрос.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСамая глупая ошибка, связанная с производительностью, была вызвана тем, что для остановки Nginx я отправляла \u003Ccode\u003ESIGKILL\u003C\u002Fcode\u003E. Это останавливало только главный процесс, а воркер-процессы продолжали работать, и в какой-то момент в системе заканчивалась свободная память. Когда я переделала всё так, чтобы отправлялся сигнал \u003Ccode\u003ESIGTERM\u003C\u002Fcode\u003E, ситуация улучшилась.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"dizayn\"\u003EДизайн\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВнешне повторяет дизайн \u003Ca href=\"https:\u002F\u002Fjsfiddle.net\u002F\" rel=\"nofollow noopener noreferrer\"\u003EJSFiddle\u003C\u002Fa\u003E и CodePen.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ частности, у JSFiddle есть кое-что занятное: они вычисляют высоту рабочей области как \u003Ccode\u003Ecalc(100vh - 60px)\u003C\u002Fcode\u003E, а для заголовка установлена высота \u003Ccode\u003E60px\u003C\u002Fcode\u003E. Я бы не догадалась сама, а работает это хорошо.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЯ использую \u003Ca href=\"https:\u002F\u002Fcodemirror.net\u002F\" rel=\"nofollow noopener noreferrer\"\u003ECodeMirror\u003C\u002Fa\u003E в качестве редактора с подсветкой синтаксиса, потому что именно его применяют JSFiddle и CodePen. Настроить его было достаточно просто. К тому же, там есть подсветка синтаксиса для конфигов Nginx и shell. Всё, о чём только можно мечтать :)\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EБыла головная боль с этим CodeMirror только из-за того, что я собиралась использовать готовый пакет \u003Ccode\u003Evue-codemirror\u003C\u002Fcode\u003E, но были проблемы совместимости с Vue 3. Я решила, что в этом нет необходимости, и просто написала свою крошечную интеграцию, которая обновляет Vue при обновлении текстового поля.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВы можете взглянуть на код в файле \u003Ca href=\"https:\u002F\u002Fnginx-playground.wizardzines.com\u002Fscript.js\" rel=\"nofollow noopener noreferrer\"\u003Escript.js\u003C\u002Fa\u003E, его там не много.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"chto-by-sdelat-eschyo-bolshe-primerov-konfigov\"\u003EЧто бы сделать ещё: больше примеров конфигов\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЯ до сих пор не понимаю, какими именно должны быть эти примеры конфигурации, но не лишним было бы добавить парочку разных типичных конфигов в качестве стартовых.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"eto-bylo-legche-chem-kazalos\"\u003EЭто было легче, чем казалось\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСделать этот инструмент было гораздо проще, чем я думала. И этот успех побуждает делать ещё больше подобных песочниц для других программ, хотя я и не выбрала следующую. HAProxy кажется хорошим кандидатом.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"nginx"},{"titleHtml":"playground"},{"titleHtml":"песочница"},{"titleHtml":"конфигурация"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F583562\u002Fff2253be97ba62489efc5b426f274cca\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F583562\u002Fff2253be97ba62489efc5b426f274cca\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583562\\\u002F\"},\"headline\":\"Песочница для Nginx\",\"datePublished\":\"2021-10-14T23:15:14+03:00\",\"dateModified\":\"2021-10-15T02:28:23+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Борзенко Денис\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протест...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583562\\\u002F#post-content-body\",\"about\":[\"h_nginx\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F49\\\u002F26\\\u002F39\\\u002F492639mleho7gecfzhtgtp6kxie.jpeg\"]}","metaDescription":"Как-то я болтала с приятелем о том, как было бы здорово, если бы был такой сайт-песочница, где бы можно было просто скопировать-вставить конфиг Nginx-а и протестировать его. И я поняла, что это не так...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"nginx"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

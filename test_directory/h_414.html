@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Автоматическая раздача прав на файловом сервере / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583900\/"},"headline":"Автоматическая раздача прав на файловом сервере","datePublished":"2021-10-17T13:52:29+03:00","dateModified":"2021-10-17T14:25:44+03:00","author":{"@type":"Person","name":"HPMan"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурс...","url":"https:\/\/habr.com\/ru\/post\/583900\/#post-content-body","about":["h_sys_admin","h_powershell","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/583900\/ff0ff92d1a741e52b267793a2f027452\/"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Автоматическая раздача прав на файловом сервере" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Автоматическая раздача прав на файловом сервере" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Автоматическая раздача прав на файловом сервере" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.Как правильно организовать доступ к..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.Как правильно организовать доступ к..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.Как правильно организовать доступ к..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.Как правильно организовать доступ к..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.Как правильно организовать доступ к..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/966/de9/847/966de984763127fa30046972f29c9912.jpg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/966/de9/847/966de984763127fa30046972f29c9912.jpg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/966/de9/847/966de984763127fa30046972f29c9912.jpg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/966/de9/847/966de984763127fa30046972f29c9912.jpg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/966/de9/847/966de984763127fa30046972f29c9912.jpg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583900" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-17T10:52:29.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583900/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583900/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/966/de9/847/966de984763127fa30046972f29c9912.jpg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583900/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/HPMan/" title="HPMan" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/HPMan/" class="tm-user-info__username">
+      HPMan
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-17T10:52:29.000Z" title="2021-10-17, 13:52">17  октября   в 13:52</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Автоматическая раздача прав на файловом сервере</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/sys_admin/" class="tm-article-snippet__hubs-item-link"><span>Системное администрирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/powershell/" class="tm-article-snippet__hubs-item-link"><span>PowerShell</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Из песочницы
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.</p><p>Как правильно организовать доступ к файловым ресурсам описано в Best Practices от Microsoft, в том числе и в документе Windows Productivity for IT Professionals из Microsoft Resource Kit. В Сети можно найти множество статей на русском языке по организации файлового сервера, в том числе и на Хабре.<br/><br/>Например, вот эти:<br/><br/><a href="https://habr.com/ru/company/servermall/blog/311124/" rel="noopener noreferrer nofollow">Аспирин от настройки прав на файловом сервере</a><br/><a href="https://habr.com/ru/post/118313/" rel="noopener noreferrer nofollow">Правила хорошего тона для дизайна разрешений на файловых серверах</a></p><p>В статьях хорошо описано, что необходимо создавать группы доступа в Active Directory и уже потом раздавать права на папки шары этим группам и в свою очередь в эти группы доступа помещать пользователей или ролевые группы. Подход достаточно здравый и применим в большинстве практических ситуаций.</p><p>А что делать, если необходимо, например, раздать доступ на ресурсе, в котором 200 папок? И таких ресурсов у вас несколько штук.</p><p>Сделаем подсчет сколько времени уйдет на ручную настройку такой структуры.<br/><em>… тут был скучный подсчет времени, которое требуется для ручного выполнения задачи.<br/></em>Избавлю Вас от этого чтения рассуждений и подсчетов и сразу перейду к выводу: такую работу необходимо автоматизировать. </p><p>Достаточно просто это сделать при помощи скрипта на PowerShell.</p><h3>Что требуется от скрипта</h3><ul><li><p>После выполнения скрипта мы должны получить в Active Directory структуру OU в виде дерева, которое будет повторять дерево папок нашего ресурса (шары). </p></li><li><p>В каждой OU-папке будут созданы группы с названием каждой из папок. </p></li><li><p>Нам необходимо четыре вида групп: </p><p>RO – группы только для чтения.<br/>RW – группы на запись, но без возможности переименовывать или создавать папки в закрепленной структуре. <br/>FL – группы  с полными правами на папки и файлы, в том числе с правами на редактирование закрепленной структуры.<br/>DY – группы с полным запретом на чтение папки.</p></li><li><p>Систему выдачи прав сделать таким образом, чтобы можно было выдавать права с любого уровня такой структуры. То есть, если мы выдали права на верхнюю папку структуры, необходимо чтобы пользователь имел такие же права и на другие вложенные папки. </p></li><li><p>Если мы выдали права на папку где-то в глубине структуры, и пользователь не имеет доступа на родительские папки, то он должен иметь права на листинг этих родительских папок выше, чтобы можно было пройти по всему дереву к необходимой папке в глубине структуры.</p></li><li><p>У каждой группы доступа в описании должен быть закреплен полный путь к ресурсу, которым она управляет. </p></li><li><p>Структура должна автоматически поддерживаться в одном и том же состоянии за счет периодического выполнения данного скрипта.</p></li><li><p>Для каждого ресурса, шары должна быть создана одна супер группа, которой должен быть выдан полный доступ ко всем папкам структуры (подарок шифровальщикам).</p></li><li><p>Весь механизм  должен работать с выключенными режимом наследования до желаемого уровня, далее наследование должно быть включено и остальные папки структуры (ниже желаемого уровня) должны наследовать права от родителя.</p></li></ul><details class="spoiler"><summary>Сам скрипт </summary><div class="spoiler__content"><pre><code class="powershell">&lt;#
+.Synopsis
+    Creates OU structure in Active Directory like share structure and creates access groups in created OUs.
+.Description
+    Script creates OU structure in Active Directory like share structure and creates access groups in created OUs.
+    Also script can assign folders permissions for created groups if particular parameters are switched (SetFolderRights, EnableSubInheritance).
+    Script find folders more than 40 characters long and find folders with spec symbols in names ['',#%^`+]
+    More than 40 characters long folders not allowed because Active Directory group cant have name more 
+    than 64 characters (24 characters script uses for group prefix and random string).
+    Spec symbols not allowed because OU names cant contains them. 
+    All OUs and groups with long names and spec symbols will be renamed.
+.Parameter ServerName
+    Specifies server name where shared folder.
+.Parameter ShareName
+    Specifies share name on server.
+.Parameter SubDir
+    Specifies sub directory for share name. Should contains full path to the folder. 
+    For example, creating structure only for specific folder in share not for full share.
+    Example - ./Create-FoldersOU.ps1 -ServerName FileServer01 -ShareName 'Cloud' -SubDir 'Department3/Unit1'.
+    It create structure only for specific folder 'Department3/Unit1' in share Cloud on FileServer01.
+.Parameter LevelOfDepth
+    Level of recursion depth. Starts from 0
+.Parameter BaseFileShareOU
+    Specifies the distinguished name path ("OU=Shares,DC=domain,DC=com") to a based OU where script will store OUs structure and groups.
+.Parameter SetFolderRights
+    Assign permissions to folders after creating groups.
+.Parameter EnableSubInheritance
+    Enable inheritance for all folders after last folder and its subtree.
+.Parameter GroupPrefix
+    Specifies group prefix for access groups. Should be equal or less 5 characters. Default prefix is "GRFS"
+.Example
+    .\Create-FolderOU.ps1 -ServerName FileServer01 -ShareName 'Cloud' -SubDir 'Department3/Unit1' -LevelOfDepth 0
+    Create only OU structure and access groups for subfolder Department3/Unit1  on \\FileServer01\Cloud
+.Example
+    .\Create-FolderOU.ps1 -ServerName FileServer01 -ShareName 'Cloud'-LevelOfDepth 2 -SetFolderRights -EnableSubInheritance
+    Create OU structure, access groups and assign permissions for groups on \\FileServer01\Cloud with recursion for 3 branch of share.
+.Inputs
+    No inputs
+#>
+
+&lt;#/***************************************************************************
+ * DISCLAIMER OF WARRANTIES:
+ *
+ * THE SOFTWARE PROVIDED HEREUNDER IS PROVIDED ON AN "AS IS" BASIS, WITHOUT
+ * ANY WARRANTIES OR REPRESENTATIONS EXPRESS, IMPLIED OR STATUTORY; INCLUDING,
+ * WITHOUT LIMITATION, WARRANTIES OF QUALITY, PERFORMANCE, NONINFRINGEMENT,
+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  NOR ARE THERE ANY
+ * WARRANTIES CREATED BY A COURSE OR DEALING, COURSE OF PERFORMANCE OR TRADE
+ * USAGE.  FURTHERMORE, THERE ARE NO WARRANTIES THAT THE SOFTWARE WILL MEET
+ * YOUR NEEDS OR BE FREE FROM ERRORS, OR THAT THE OPERATION OF THE SOFTWARE
+ * WILL BE UNINTERRUPTED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */*************************************************************************** #>
+########################################################### 
+# AUTHOR  : Rinat K. Nugaev - http://www.nugaev.net - rn@nugaev.net
+# DATE    : 15-06-2021
+# EDIT    : 07-07-2021 
+# COMMENT : This script creates OU structure in Active Directory like FileShare structure
+#           and creates groups with RW,FL,DY and RO access to directories and files
+#           RO - read only permisssions
+#           RW - read write permissions only for files, cant rename or change folders
+#           FY - full permissions
+#           DY - deny read permissions
+#
+# VERSION : 3.9
+########################################################### 
+
+#Parameters
+[CmdletBinding()]Param (
+    [Parameter(Mandatory)]
+    [string] $ServerName,
+    [Parameter(Mandatory)]
+    [string]$ShareName,
+    [Parameter(Mandatory)]
+    [string]$BaseFileShareOU,
+    [Parameter(Mandatory)]
+    [int]$LevelOfDepth,
+    [string]$SubDir,
+    [string]$GroupPrefix = "GRFS",
+    [switch]$SetFolderRights,
+    [switch]$EnableSubInheritance
+)
+
+Set-StrictMode -Version Latest
+#Begining functions block
+Function TrackTime($Time) {
+    If (!($Time)) { Return Get-Date } Else {
+        Return ((get-date) - $Time)
+    }
+}
+
+Function remove-SpecSymbols {
+    [CmdletBinding()]
+    Param (
+        [parameter(Mandatory = $true)][string]$strName        
+    )
+    Process {
+        $pattern = '['',#%^`+]'
+        if ($strName -match $pattern) {
+            $strName = $strName -replace $pattern, ''
+        }
+        return $strName
+    }   
+}
+function Rename-Longnames {
+    #Required Get-RandomAlphanumericString function
+    [CmdletBinding()]
+    Param (
+        [parameter(Mandatory = $true)][string]$strName,
+        [parameter(Mandatory = $true)][ValidateLength(0, 1)][string]$Char,
+        [parameter(Mandatory = $true)][int]$length
+    )
+    Process {
+        if ($strName.Length -ge $length) {
+            $strName = $strName.Substring(0, ($length - 1)) + $Char
+        }
+        return $strName
+    }
+}
+Function Reset-AclInheritance {
+    [CmdletBinding(SupportsShouldProcess = $true)]
+    param(
+        [Parameter(Mandatory = $True)] [String]$Path
+    )
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Write-Error -Message "The object at '$Path' doesn't exist"
+        return
+    }
+    Write-Verbose -Message "Getting security descriptor for item at '$Path'"
+    $aclinh = Get-Acl -LiteralPath $Path
+    $Changed = $False
+    if ($aclinh.AreAccessRulesProtected) {
+        Write-Verbose -Message "Object at '$Path' has disabled inheritance, re-enabling it"
+        $aclinh.SetAccessRuleProtection($False, $False)
+        $Changed = $True
+    }
+    $Acls = $aclinh.GetAccessRules($true, $false, [System.Security.Principal.NTAccount])
+    ForEach ($Ace in $Acls) {
+        $Ace_String = "$($Ace.IdentityReference.Value): $($Ace.AccessControlType.ToString()) ($($Ace.FileSystemRights.ToString()))"
+        Write-Verbose -Message "Removing non-inherited ACE at '$Path' - $Ace_String"
+        $result = $aclinh.RemoveAccessRule($ace)
+        if (-not $Result) {
+            Write-Error -Message "Failed to remove non-inherited ACE at '$Path' - $Ace_String"
+        }
+        else {
+            $Changed = $True
+        }
+    }
+    if ($Changed) {
+        if ($PSCmdlet.ShouldProcess($Path, "Persisting new security descriptor that has been reset")) {
+            Write-Verbose -Message "Setting new security descriptor for item at '$Path'"
+            Set-Acl -LiteralPath $Path -AclObject $aclinh
+        }
+        else {
+            Write-Verbose -Message "What if: Setting new security descriptor for item at '$Path'"
+        }
+    }
+    else {
+        Write-Verbose -Message "No changes required to the security descriptor for item at '$Path'"
+    }
+    if (Test-Path -LiteralPath $Path -PathType Container) {
+        Get-ChildItem -LiteralPath $Path | ForEach-Object { Reset-AclInheritance -Path $_.FullName }
+    }
+}
+Function Set-FileObjectPermissions {
+    &lt;#
+    .SYNOPSIS
+    Sets Folders or Files Permissions
+  
+    .PARAMETER Object
+    Provide Object path
+  
+    .PARAMETER Principal
+    Provide group or user set permissions for
+
+    .PARAMETER Permisssion
+    Provide type of Permissions. Possible parameters are FullControl, "FullControl,TakeOwnership", "CreateFiles, AppendData, Delete" Modify,ReadAndExecute
+  
+    .PARAMETER Inheritance
+    Inheritance or None
+    .PARAMETER TypeOfAccess
+    Allow or Deny
+  
+    .EXAMPLE
+    Set-FileObjectPermissions -Object $PathFolder -Principal Administrators -Permission FullControl -TypeOfAccess Allow
+    .EXAMPLE
+    Set-FileObjectPermissions -Object $PathFolder -Principal Administrators -Permission "CreateFiles, AppendData, Delete" -TypeOfAccess Allow -NoneInheritance
+    #>
+    param (
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]$Object,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]$Principal,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateSet("FullControl", "FullControl,TakeOwnership", "CreateFiles, AppendData, Delete", "Delete", "Modify", "ReadAndExecute")]
+        $Permission,
+        [switch]$NoneInheritance,
+        [parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateSet("Allow", "Deny")]
+        $TypeOfAccess
+    ) 
+    #Getting Acl from Object
+    $Acl = Get-Acl "$Object"
+    #Preparing AccessRule
+    if ($NoneInheritance) {
+        $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule ("$Principal", "$Permission", "None", "None", "$TypeOfAccess");
+    }
+    else {
+        $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule ("$Principal", "$Permission", "ContainerInherit,ObjectInherit", "None", "$TypeOfAccess");
+    }
+    ##Setting AccessRule
+    $Acl.SetAccessRule($AccessRule);
+    $Acl | Set-Acl "$Object"
+}
+
+Function Get-OUExists {
+    [CmdletBinding()]
+    Param (
+        [string] $OUName
+    )
+    Process {
+        ### Getting groupname without Tail (random number in the end of name of group)   
+        #$GroupName
+        if ([adsi]::Exists("LDAP://$OUName")) {
+            return $true            
+            Write-Verbose "Group $GroupName already exists!"
+        }
+        else {
+            return $false
+            Write-Verbose "Group $GroupName does not exist!"
+        }
+    }
+}
+Function Get-ADGroupExists {
+    [CmdletBinding()]
+    Param (
+        [string] $GroupName,
+        [string] $OUName
+    )
+    Process {
+        ### Getting groupname without Tail (random number at the end of name of the group)   
+        $GroupName = $GroupName -replace "_\w{4}$"
+        $Filter = "$($GroupName)_*"
+        #$GroupName
+        if (Get-ADGroup -SearchScope OneLevel -SearchBase $OUName -Filter { Name -like $Filter } -ErrorAction SilentlyContinue) {
+            $ExistedGroup = Get-ADGroup -SearchScope OneLevel -SearchBase $OUName -Filter { Name -like $Filter } | Select-Object -Expand Name
+            return $ExistedGroup
+            Write-Verbose "Group $GroupName already exists!"
+        }
+        else {
+            return $false
+            Write-Verbose "Group $GroupName does not exist!"
+        }
+    }
+}
+Function Get-RandomAlphanumericString {
+    #Required Get-RandomAlphanumericString function
+    [CmdletBinding()]
+    Param (
+        [int] $length = 4
+    )
+    Begin {
+    }
+    Process {
+        Write-Output ( -join ((48..57) + (97..122) | Get-Random -Count $length  | ForEach-Object { [char]$_ }) )
+    }
+}
+Function Get-subDirectory {
+    [CmdletBinding()]
+    Param (
+        [string] $Directory,
+        [string] $SubDirectory,
+        [int] $LevelOfDepth
+    )
+    Process {
+        #Deleting \ at the end of dirs
+        $Directory = $Directory -replace '\\$'
+        $SubDirectory = $SubDirectory -replace '\\$'
+
+        $TempSubDir = $Directory + "\" + $SubDirectory
+        $SubDirsArr = $SubDirectory.Split('\')              
+        #Calculating $LevelOfDepth for subdirs
+        if ($SubDirsArr) {
+            $SubLevelOfDepth = ($SubDirsArr | Measure-Object).count
+            $LevelOfDepth = $LevelOfDepth + $SubLevelOfDepth
+        }
+        else { $LevelOfDepth = $LevelOfDepth }
+        $DirsArr = @()
+        $Directories = Get-ChildItem -Depth $LevelOfDepth -Recurse -Directory -Path $Directory
+        ForEach ($Dir in $Directories) {
+            ForEach ($SubDir in $SubDirsArr) {
+                if ($Dir.FullName.EndsWith($SubDir) -and $Dir -notin $DirsArr ) {
+                    $DirsArr += $Dir
+                }
+            }
+            if ($Dir.FullName.StartsWith($TempSubDir) -and $Dir -notin $DirsArr) {
+                $DirsArr += $Dir
+            }
+        }   
+        return $DirsArr         
+    }
+}
+Function Write-Log {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory = $False)]
+        [ValidateSet("INFO", "WARN", "ERROR", "FATAL", "DEBUG")]
+        [String]
+        $Level = "INFO",
+        [Parameter(Mandatory = $True)]
+        [string]
+        $Message,
+        [Parameter(Mandatory = $False)]
+        [string]
+        $Logfile
+    )
+    $Stamp = (Get-Date).toString("yyyy/MM/dd HH:mm:ss")
+    $Line = "$Stamp $Level $Message"
+    If ($logfile) {
+        Add-Content $logfile -Value $Line -Encoding "utf8"
+    }
+    Else {
+        Write-Output $Line
+    }
+}
+#End functions block
+$DomainAdminsGroup = "Администраторы домена"
+#$DomainAdminsGroup = "Domain Admins"
+
+#Path to shared folder
+$BaseSharePath = "\\$ServerName\$ShareName"
+$ScriptDir = (Resolve-Path .\).Path
+#Logs directory and in script dir and log file in it
+$LogsDir = "$ScriptDir\Logs"
+$LogFile = $LogsDir + "\" + "Logfile" + "-" + (Get-Date).toString("yyyy-MM-dd_HH-mm-ss") + ".log"
+#Begining main part of the script
+#Begining Tracking time
+Clear-Host
+$time = 0
+$time = TrackTime $time
+#Basic tests
+#Test base share exists
+if (!(Test-Path $BaseSharePath)) {
+    Write-Error "Share $BaseSharePath not presence or not created!"
+    Write-Warning "Please create share $BaseSharePath and set full permissions for the user the script runas."
+    Exit(0)
+}
+#Test logs dir exists, if not created, create it.
+if (!(Test-Path $LogsDir)) {
+    Write-Warning "Logs dir  $LogsDir not presence or not created!"
+    Write-Verbose "Creating $LogsDir"
+    try {
+        New-Item -ItemType Directory -Force -Path $LogsDir -InformationAction SilentlyContinue
+    }
+    catch {
+        $message = "Failed to create $LogsDir" + $($error[0])
+        Write-Warning $message
+        Exit(0)
+    }
+}
+#Test Base File Share OU already exists
+if (!(Get-OUExists -OUName $BaseFileShareOU)) {
+    $message = "Base OU $BaseFileShareOU does not exist!`n"
+    $message += "Please create Base OU $BaseFileShareOU and set full permissions for the user the script runas."
+    Write-Warning $message
+    Write-log -Level FATAL $message -Logfile $LogFile
+    Exit(0)
+}
+#Test BaseOU already exists and if doesn't, create it
+$BaseOU = 'OU=' + $ShareName + ',' + $BaseFileShareOU
+try {
+    if ((Get-OUExists -OUName $BaseOU)) {
+        Write-Verbose "OU $BaseOU already exists"
+    }
+    else {
+        Write-Verbose "Creating OU $ShareName"
+        New-ADOrganizationalUnit -Name "$ShareName" -Path "$BaseFileShareOU" -ProtectedFromAccidentalDeletion $false
+    }
+}
+catch {
+    $message = "Failed to create OU $ShareName in $BaseFileShareOU" + $($error[0])
+    Write-Warning $message
+    Write-log -Level ERROR $message -Logfile $LogFile
+}
+$FullGroupNameFullRW = "_tech_" + $GroupPrefix + "FULL_" + $ShareName
+start-sleep 1
+try {
+    if (!(Get-ADGroup -SearchScope OneLevel -SearchBase $BaseOU -Filter { Name -eq $FullGroupNameFullRW } -ErrorAction SilentlyContinue) ) {
+        Write-Verbose "Creating GROUP $FullGroupNameFullRW"
+        New-ADGroup -Name $FullGroupNameFullRW -GroupCategory Security -GroupScope DomainLocal `
+            -DisplayName $FullGroupNameFullRW -Path $BaseOU `
+            -Description "Super FULL RW for $BaseSharePath"
+    }
+    else {
+        Write-Verbose "Group like $FullGroupNameFullRW already exists"
+    }
+}
+catch {
+    $message = "Failed to create group $FullGroupNameFullRW in $BaseOU" + $($error[0])
+    Write-Warning $message
+    Write-log -Level ERROR $message -Logfile $LogFile
+}
+$FullGroupNameFullRW = (Get-adgroup $FullGroupNameFullRW -ErrorAction Stop).Name
+###Create OUS, groups of share and set rights to it
+
+#Calculating $SublevelofDepth
+$SubDirsArr = $SubDir.Split('\')
+if ($LevelOfDepth -lt 0) 
+{ Write-warning "LevelOfDepth cant be less than 0"; exit }
+if ($LevelOfDepth -gt 0 -and !($SubDirsArr)) { $SubLevelOfDepth = $LevelOfDepth - 1 }
+elseif ($SubDirsArr) {
+    $SubLevelOfDepth = ($SubDirsArr | Measure-Object).count
+    $SubLevelOfDepth = $LevelOfDepth + $SubLevelOfDepth
+}
+else { $SubLevelOfDepth = $LevelOfDepth }
+#Calculating $NameLength
+$GroupNameLength = 64 - ($GroupPrefix.Length + 15)
+$OUNameLength = 64
+#Base work
+#GroupCount and FolderCount counters variables that I use for statistics
+$GroupCount = 0
+$OUsCount = 0
+##Getting folders from share and subdir
+$Folders = Get-subDirectory -Directory $BaseSharePath -SubDirectory $Subdir -LevelOfDepth $LevelOfDepth | Select-Object -Expand FullName
+#Init progress items
+$prog_i = 1
+$prog_s = 1
+#Generating OUs names from folders names, creates groups and set permissions for groups to share folders
+$Folders | ForEach-Object {
+    $NestOU = ''
+    $GroupDescription = $_
+    $FolderFullPath = $_
+    #Deleting \\servername\sharename\
+    #If you want, please create better regex for it )
+    $FolderWithOutSRVname = $_ -replace "^\\\\(.*?)\\(.*?)\\"    
+    $OUS = (Split-Path $FolderWithOutSRVname -Parent).Split('\')
+    #Reversing Array
+    [array]::Reverse($OUS)
+    $OUS | ForEach-Object {
+        if ($_.Length -eq 0) {
+            return
+        }
+        #Removing spec symbols
+        $strNSS = remove-SpecSymbols -strName $_
+        #Rename long names for full 64 length
+        $strOU = Rename-Longnames -strName $strNSS -Char "~" -length $OUNameLength
+        $NestOU = $NestOU + 'OU=' + $strOU + ','
+    }
+    $NestOU += $BaseOU
+    $LeafOU = Split-Path $_ -Leaf
+    #removing spec symbols from LeafOU names
+    $LeafOU = remove-SpecSymbols -strName $LeafOU
+    #truncate LeafOU to 64 symbols
+    $LeafOU = Rename-Longnames -strName $LeafOU -Char "~" -length $OUNameLength
+    #getting GroupName from LeafOU
+    $GroupName = [string]$LeafOU
+    #truncate GroupName to $GroupNameLength
+    $GroupName = Rename-Longnames -strName $GroupName -Char "~" -length $GroupNameLength    
+    #Creating pseudo random 4 symbol string for tail of groups names
+    $TailGroup = Get-RandomAlphanumericString 
+    #Generating Groups names
+    $FullGroupNameLIST = "_tech_" + $GroupPrefix + "_" + "LS_" + $GroupName + "_" + $TailGroup
+    $FullGroupNameDYdel = "_tech_" + $GroupPrefix + "_" + "DD_" + $GroupName + "_" + $TailGroup
+    $FullGroupNameRO = $GroupPrefix + "_" + "RO_" + $GroupName + "_" + $TailGroup 
+    $FullGroupNameRW = $GroupPrefix + "_" + "RW_" + $GroupName + "_" + $TailGroup
+    $FullGroupNameFL = $GroupPrefix + "_" + "FL_" + $GroupName + "_" + $TailGroup
+    $FullGroupNameDY = $GroupPrefix + "_" + "DY_" + $GroupName + "_" + $TailGroup
+    #Adding groups names to the GroupsHash
+    $GroupsHash = @{
+        'FullGroupNameFL'    = $FullGroupNameFL
+        'FullGroupNameDY'    = $FullGroupNameDY
+        'FullGroupNameRO'    = $FullGroupNameRO
+        'FullGroupNameRW'    = $FullGroupNameRW
+        'FullGroupNameLIST'  = $FullGroupNameLIST
+        'FullGroupNameDYdel' = $FullGroupNameDYdel
+    }
+    #Creating OUs for from share structure
+    try {
+        #Generating GroupOU from LeafOU and NestOU
+        $GroupOU = 'OU=' + "$LeafOU" + "," + "$NestOU"
+        if ((Get-OUExists -OUName $GroupOU)) {
+            Write-Verbose "OU  $GroupOU already exists"
+        }
+        else {
+            $PercentComplete = ($prog_s / ($Folders | Measure-Object).count * 100)
+            Write-Progress -id 5  -Activity "Creating SubOUs in Base OU " -status "SubOU $LeafOU" `
+                -PercentComplete $PercentComplete
+            $prog_s++ 
+            Write-Verbose "Creating OU $LeafOU"
+            New-ADOrganizationalUnit -Name $LeafOU -Path $NestOU -ProtectedFromAccidentalDeletion $false
+            $OUsCount += 1
+        }
+    }
+    catch {
+        $message = "Failed to create OU $LeafOU in $NestOU" + $($error[0])
+        Write-Warning $message
+        Write-log -Level ERROR $message -Logfile $LogFile
+    }
+    #Creating Access Groups
+    #Init progress item
+    $prog_q = 1
+    foreach ($hkey in $($GroupsHash.keys)) {
+        #Here we are adding old ones groups if they are already exist
+        try {
+            if ((Get-ADGroupExists -GroupName  $GroupsHash[$hkey] -OuName  $GroupOU) ) {
+                Write-Verbose "Group like $($GroupsHash[$hkey]) already exists!!!"
+                $GroupsHash[$hkey] = (Get-ADGroupExists -GroupName  $GroupsHash[$hkey] -OuName  $GroupOU)
+            }
+            else {
+                $PercentComplete = ($prog_q / ($($GroupsHash.keys) | Measure-Object).count * 100)
+                Write-Progress -id 10 -ParentId 5  -Activity "Creating spec Groups for $GroupName" -status "Group $($GroupsHash[$hkey])" `
+                    -PercentComplete $PercentComplete
+                $prog_q++
+                Write-Verbose "Creating GROUP $($GroupsHash[$hkey])"
+                New-ADGroup -Name $GroupsHash[$hkey] -GroupCategory Security -GroupScope DomainLocal `
+                    -DisplayName $GroupsHash[$hkey] -Path $GroupOU `
+                    -Description $GroupDescription
+                $GroupCount += 1
+            }
+        }
+        catch {
+            $message = "Failed to create Group $($GroupsHash[$hkey]) in $GroupOU" + $($error[0])
+            Write-Warning $message
+            Write-log -Level ERROR $message -Logfile $LogFile
+        }
+    }
+    try {
+        #Adding group RW to denyDel Group
+        if (Get-adgroup $($GroupsHash['FullGroupNameRW'])) {
+            Add-ADGroupMember $($GroupsHash['FullGroupNameDYdel']) -Members  $($GroupsHash['FullGroupNameRW'])
+        }
+    }
+    catch {
+        $message = "Failed to add Group $($GroupsHash['FullGroupNameRW']) to $FullGroupNameDYdel" + $($error[0])
+        Write-Warning $message
+        Write-log -Level ERROR $message -Logfile $LogFile
+    }
+    #Adding groups to the NestListGroup
+    $regexLSGroup = "_tech_" + $GroupPrefix + "_" + "LS_*"
+    $NestListGroup = Get-ADGroup -SearchScope OneLevel  -SearchBase $NestOU -filter { Name -like $regexLSGroup }
+    foreach ($hkey in $($GroupsHash.keys)) {
+        if (Get-adgroup  $GroupsHash[$hkey]) {
+            #Adding all groups to NestListGroup exept DY groups $FullGroupNameDYdel
+            if ($NestListGroup -and $GroupsHash[$hkey] -ne $GroupsHash['FullGroupNameDY'] -and $GroupsHash[$hkey] -ne $GroupsHash['FullGroupNameDYdel']) {
+                Write-Verbose "Adding $($GroupsHash[$hkey]) to $(($NestListGroup).Name)"
+                Add-ADGroupMember $NestListGroup  -Members  $GroupsHash[$hkey]
+            }
+        }
+    }
+    #Getting variables from Hash back
+    #Sorry, some AD commandlets have strange behavior with hash keys
+    $FullGroupNameFL = $GroupsHash['FullGroupNameFL']
+    $FullGroupNameDY = $GroupsHash['FullGroupNameDY']
+    $FullGroupNameRO = $GroupsHash['FullGroupNameRO']
+    $FullGroupNameRW = $GroupsHash['FullGroupNameRW']
+    $FullGroupNameLIST = $GroupsHash['FullGroupNameLIST']
+    $FullGroupNameDYdel = $GroupsHash['FullGroupNameDYdel']
+    #Assigning rights to the folders
+    if ($SetFolderRights) {
+        $PercentComplete = ($prog_i / ($Folders | Measure-Object).count * 100)
+        Write-Progress -id 20  -Activity "Setting group $GroupName rights for Folder" -status "Folder $FolderFullPath" `
+            -PercentComplete $PercentComplete
+        $prog_i++ 
+        try {
+            #Setting Deny Del Rights to the Folder
+            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameDYdel }) {
+                Write-Verbose "Setting Deny Del for $FolderFullPath"
+                #Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameDYdel -Permission "CreateFiles, AppendData, Delete" -TypeOfAccess Deny -NoneInheritance
+                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameDYdel -Permission "Delete" -TypeOfAccess Deny -NoneInheritance
+            }
+            #Setting Deny Del Rights to the Folder
+            if (Get-adgroup -Filter { SamAccountName -eq $FullGroupNameDY }) {
+                Write-Verbose "Setting Deny Read for $FolderFullPath"
+                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameDY -Permission "ReadAndExecute" -TypeOfAccess Deny 
+            }
+            #Setting RW Rights to the Folder
+            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameRW }) {
+                Write-Verbose "Setting RW for $FolderFullPath"
+                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameRW -Permission "Modify" -TypeOfAccess Allow 
+                $FoldersRW = Get-subDirectory -Directory $FolderFullPath -SubDirectory $Subdir -LevelOfDepth ($SubLevelOfDepth) | Select-Object -Expand FullName
+                #Init progress item
+                $prog_j = 1
+                $FoldersRW | ForEach-Object {
+                    $FolderPathRW = $_
+                    Write-Verbose "Set ACL for $FullGroupNameRW recursive for folder $_"
+                    $PercentComplete = ($prog_j / ($FoldersRW | Measure-Object).count * 100)
+                    Write-Progress -id 30 -ParentId 20 -Activity "Setting group $FullGroupNameRW rights to subfolders" -status "Folder $_" `
+                        -PercentComplete $PercentComplete 
+                    $prog_j++
+                    Set-FileObjectPermissions -Object $FolderPathRW -Principal $FullGroupNameRW -Permission "Modify" -TypeOfAccess Allow }
+            }
+            #Setting Full Rights to the Folder
+            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameFL }) {
+                Write-Verbose "Setting FULL for $FolderFullPath"
+                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameFL -Permission "Modify" -TypeOfAccess Allow 
+                #Adding $FullGroupNameFL to subfolders recurcively
+                $FoldersFL = Get-subDirectory -Directory $FolderFullPath -SubDirectory $Subdir  -LevelOfDepth ($SubLevelOfDepth) | Select-Object -Expand FullName
+                #Init progress item
+                $prog_k = 1
+                $FoldersFL | ForEach-Object {
+                    $FolderPathFL = $_
+                    Write-Verbose "Set ACL for $FullGroupNameFL recursive for folder $_"
+                    $PercentComplete = ($prog_k / ($FoldersFL | Measure-Object).count * 100)
+                    Write-Progress -id 40 -ParentId 20 -Activity "Setting group $FullGroupNameFL rights to subfolders" -status "Folder $_" `
+                        -PercentComplete $PercentComplete 
+                    $prog_k++
+                    Set-FileObjectPermissions -Object $FolderPathFL -Principal $FullGroupNameFL -Permission "Modify" -TypeOfAccess Allow }
+            }
+            #Setting RO Rights to the Folder
+            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameRO }) {
+                Write-Verbose "Setting RO for $FolderFullPath"
+                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameRO -Permission "ReadAndExecute" -TypeOfAccess Allow
+                #Adding $FullGroupNameRO to subfolders recurcively
+                $FoldersRO = Get-subDirectory -Directory $FolderFullPath -SubDirectory $Subdir -LevelOfDepth ($SubLevelOfDepth) | Select-Object -Expand FullName
+                #Init progress item
+                $prog_m = 1
+                $FoldersRO | ForEach-Object {
+                    $FolderPathRO = $_
+                    Write-Verbose "Set ACL for $FullGroupNameRO recursive for folder $_"
+                    $PercentComplete = ($prog_m / ($FoldersRO | Measure-Object).count * 100)
+                    Write-Progress -id 50 -ParentId 20 -Activity "Setting group $FullGroupNameRO rights to subfolders" -status "Folder $_" `
+                        -PercentComplete $PercentComplete 
+                    $prog_m++
+                    Set-FileObjectPermissions -Object $FolderPathRO -Principal $FullGroupNameRO -Permission "ReadAndExecute" -TypeOfAccess Allow }
+            }
+            #Setting List Rights to the Folder
+            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameLIST }) {
+                Write-Verbose "Setting List for $FolderFullPath"
+                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameLIST -Permission "ReadAndExecute" -TypeOfAccess Allow -NoneInheritance
+            }
+        }
+        catch {
+            $message = "Failed to assign permissions to $FolderFullPath" + $($error[0])
+            Write-Warning $message
+            Write-log -Level ERROR $message -Logfile $LogFile
+        }
+    }
+    else {
+        Write-Verbose "Switch parameter SetFolderRights is not set, nothing to do"
+    }
+    try {
+        #Set rights for super groups
+        Write-Verbose "Set ACL for $FullGroupNameFullRW recursive for folder $GroupDescription"
+        Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameFullRW -Permission "FullControl" -TypeOfAccess Allow 
+        #Assign permissions for Creator OWNER group
+        if (Get-adgroup $DomainAdminsGroup -ErrorAction SilentlyContinue) {
+            Write-Verbose "Set Full perms for Domain admins for folder $GroupDescription"
+            Set-FileObjectPermissions -Object $FolderFullPath -Principal $DomainAdminsGroup -Permission "FullControl,TakeOwnership" -TypeOfAccess Allow 
+        }
+        #Assign permissions for Creator OWNER group 
+        Write-Verbose "Setting CREATOR OWNER perms for $FolderFullPath"
+        ###Warnset
+        Set-FileObjectPermissions -Object $FolderFullPath -Principal "CREATOR OWNER" -Permission "Modify" -TypeOfAccess Allow 
+        #Assign permissions for server admin adminsuser
+        &lt;#if (Get-aduser adminuser -ErrorAction SilentlyContinue) {
+            ### Write-Verbose "Set ACL for adminuser fullcontrol for folder $GroupDescription"
+            ###Warnset
+            Set-FileObjectPermissions -Object $FolderFullPath -Principal "nrk" -Permission "FullControl,TakeOwnership" -TypeOfAccess Allow  
+        }#>
+    }
+    catch {
+        $message = "Failed to assign built-in permissions to $FolderFullPath" + $($error[0])
+        Write-Warning $message
+        Write-log -Level ERROR $message -Logfile $LogFile
+    }
+    #Disable Inheritance if no SubDir
+    try {
+        if (!$Subdir) {
+            Write-Verbose "Reseting inheritance for $FolderFullPath"
+            $acl = Get-Acl  $FolderFullPath
+            $acl.SetAccessRuleProtection($true, $false)
+            $acl | Set-Acl $FolderFullPath
+        }
+        else {
+            Write-Verbose "Variable DisableInheritance is not set, nothing to do"
+        }
+    }
+    catch {
+        $message = "Failed to disable inheritance for $FolderFullPath" + $($error[0])
+        Write-Warning $message
+        Write-log -Level ERROR $message -Logfile $LogFile
+    }
+}
+#Reenabling inheritance from +1 LevelOfDepth
+if ($EnableSubInheritance) {
+    $FoldersDeep = @()
+    #$FoldersTemp = Get-ChildItem -Depth ($LevelOfDepth + 1) -Recurse -Directory -Path $BaseSharePath | Select-Object -Expand FullName
+    $FoldersTemp = Get-subDirectory -Directory $BaseSharePath -SubDirectory $Subdir -LevelOfDepth ($LevelOfDepth + 1) | Select-Object -Expand FullName
+    ForEach ($Folder  in $FoldersTemp) {
+        if ($Folder -notin $Folders) {
+            Write-Verbose "Adding $Folder to FoldersDeep array"
+            $FoldersDeep += $Folder
+        }
+    }
+    #Init progress item
+    $prog_r = 1
+    $FoldersDeep | ForEach-Object {
+        try {
+            $PercentComplete = ($prog_r / ($FoldersDeep | Measure-Object).count * 100)
+            Write-Progress -id 60  -Activity "Enable inheritance for Folder" -status "Folder $_" `
+                -PercentComplete $PercentComplete
+            $prog_r++ 
+            Write-Verbose "Enable inheritance in $_"
+            Reset-AclInheritance -Path $_
+        }
+        catch {
+            $message = "Failed to enable inheritance to $_" + $($error[0])
+            Write-Warning $message
+            Write-log -Level ERROR $message -Logfile $LogFile
+        }
+    }
+}
+$time = TrackTime $time
+$message = "All tasks complete!!!`n"
+$message += "Created $GroupCount groups for $OusCount OUs`n"
+$message += "Script run $($time.Hours) hours $($time.Minutes) minutes"
+Write-Output $message
+Write-log -Level INFO $message -Logfile $LogFile</code></pre></div></details><p>Перед запуском скрипта прочитайте все рекомендации ниже.<br/></p><p>Требования к окружению для запуска скрипта.</p><ul><li><p>PowerShell 5 и выше</p></li><li><p>Сервер с установленными PowerShell модулями Active Directory</p></li><li><p>Также обязательно включите на шаре access based enumeration. Google подскажет как это сделать.</p></li></ul><p><strong>Подготовка шары к выполнению скрипта.</strong></p><p>Скрип сработает правильно, если на всех папках ресурса (шары) будет <strong>выключено</strong> наследование. Сделать это можно при помощи другого скрипта.</p><details class="spoiler"><summary>Скрипт подготовки ресурса</summary><div class="spoiler__content"><pre><code class="powershell">Function Remove-ACL {    
+    [CmdletBinding(SupportsShouldProcess=$True)]
+    Param(
+        [parameter(Mandatory=$true,ValueFromPipeline=$true,Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({Test-Path $_ -PathType Container})]
+        [String[]]$Folder,
+        [String[]]$AdminUser,
+        [Switch]$Recurse
+    )
+
+    Process {
+
+        foreach ($f in $Folder) {
+
+            if ($Recurse) {$Folders = $(Get-ChildItem $f -Recurse -Directory ).FullName} else {$Folders = $f}
+
+            if ($Folders -ne $null) {
+
+                $Folders | ForEach-Object {
+
+                    # Remove inheritance
+                    $acl = Get-Acl $_
+                    $acl.SetAccessRuleProtection($true,$true)
+                    Set-Acl $_ $acl
+                    
+                    # Remove ACL
+                    $acl = Get-Acl $_
+                    $acl.Access | %{$acl.RemoveAccessRule($_)} | Out-Null
+
+                    # Add local admin
+                    $permission  = "BUILTIN\Administrators","FullControl", "ContainerInherit,ObjectInherit","None","Allow"
+                    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
+                    $acl.SetAccessRule($rule)
+
+                    Set-Acl $_ $acl
+
+                    
+
+                    # Add SPEC GROUP PERMS
+                    $acl = Get-Acl $_
+                    $permission  = "$AdminUser","FullControl", "ContainerInherit,ObjectInherit","None","Allow"
+                    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission
+                    $acl.SetAccessRule($rule)
+
+                    Set-Acl $_ $acl
+
+                    #>
+
+                    Write-Verbose "Remove-HCacl: Inheritance disabled and permissions removed from $_"
+                }
+            }
+            else {
+                Write-Verbose "Remove-HCacl: No subfolders found for $f"
+            }
+        }
+    }
+}
+
+#Path to shared folder
+$BaseSharePath = "F:\Fileshare\"
+$AdminUser = "scripuser"
+Function TrackTime($Time){
+If (!($Time)) { Return Get-Date } Else {
+Return ((get-date) - $Time)
+}
+}
+$time = 0
+$time = TrackTime $time
+Remove-ACL $BaseSharePath -Recurse -AdminUser $AdminUser -Verbose
+
+$time = TrackTime $time
+Write-host "It run $($time.Hours) hours $($time.Minutes) minutes $($time.seconds) seconds"
+</code></pre></div></details><p>Задайте переменные в скрипте <br/>Путь к папке ресурса <code>$BaseSharePath = "\\FileServer\Fileshare\"<br/></code>Пользователь от которого будете запускать основной скрипт <code>$AdminUser = "scripuser"</code></p><p>После подготовки ресурса (шары) запускайте основной скрипт.</p><p>Пример команды запуска основного скрипта с параметрами.</p><pre><code class="powershell">.\create-FoldersOU.ps1 -ServerName nn-FileServer01 -ShareName "FilesShare1" `
+-BaseFileShareOU "OU=FileShares,OU=PermissionsGroups,OU=Groups,DC=example,DC=com" `
+-SetFolderRights  -EnableSubInheritance -LevelOfDepth 1 `
+-GroupPrefix "GRFS"</code></pre><p><strong>Параметры скрипта:</strong> </p><p><code>-ServerName</code> имя сервера с ресурсом; </p><p><code>-ShareName</code> название ресурса (шары) на сервере;</p><p> <code>-BaseFileShareOU</code> название OU, где будет создана структура шары;</p><p> <code>-LevelOfDepth</code> желаемый уровень вложения;</p><p> <code>-GroupPrefix</code> префикс создаваемых групп;</p><p> <code>-SetFolderRights</code> применение прав к папкам;</p><p><code>-EnableSubInheritance</code> включение наследования в папках ниже построенной структуры.</p><p>Также скрипт поддерживает параметр <code>-Verbose</code>, с ним он будет подробно писать, что делает.</p><p><strong>Что сделает скрипт после запуска</strong></p><p>Далее скрипт создаст структуру OU согласно структуре вашей шары. В каждой OU будет созданы группы 5 видов. </p><ol><li><p>Создаст OU для вашей ресурса.</p></li><li><p>Создаст одну служебную супер группу <code>_tech_GRFS_DYDel_имя_ресурса</code> - эта группа необходима, чтобы запретить группам RW изменять структуру.</p></li><li><p>Создаст одну служебную группу <code>_tech_GRFS_FULL_имя_ресурса</code> - эта группа будет иметь полный доступ ко всему ресурсу, режим Бога в шаре (подарок шифровальщикам).</p></li><li><p>Скрипт создаст в текущей директории папку <code>Logs</code>, - там будут лежать логи.</p></li></ol><ul><li><p>Служебная группа <code>_tech_GRFS_LS_Имя-папки_gwp5</code></p></li><li><p><code>GRFS_DY_Имя-папки_gwp5</code> - запрет на чтение папки</p></li><li><p><code>GRFS_FL_Имя-папки_gwp5</code> - полный доступ к папке, в том числе с изменением структуры</p></li><li><p><code>GRFS_RO_Имя-папки_gwp5</code> - только чтение</p></li><li><p><code>GRFS_RW_Имя-папки_gwp5</code> - полный доступ без возможности изменять структуру папок</p><p><code>GRFS</code> - префикс, обозначающий предназначение группы: GR - group, FS - file server.<br/><code>gwp5</code> - случайная последовательность, для уникальности каждой группы.</p></li></ul><p>Во время выполнения скрипт автоматически вложит группы FL, RO, RW в группу LS и вложит в нее еще LS группы нижележащих папок для обеспечения возможности давать доступ пользователю в любой части структуры. <br/><br/>Скрипт автоматически выдаст нужные права всем группам на папки ресурса по всей структуре. Выключит наследование прав до заданного уровня вложения (сканирования) и включит наследование прав ниже уровня вложения.<br/><br/>Если запустить скрипт повторно на уже выстроенной структуре, то он просканирует структуру шары и если структура шары соответствует структуре OU созданной раньше, то скрипт ничего не будет создавать, а только заново выставит права на уже созданные группы.<br/><br/>Если же вы или ваши пользователи создали в структуре шары какие-либо папки, то скрипт при следующем запуске достроит структуру учитывая новые папки.<br/><br/>В независимости от того, созданы новые папки или нет, скрипт всегда проходит еще раз по папкам и выставляет заданные права для групп. Таким образом обеспечивается необходимое постоянное состояние структуры OU, которое всегда соответствует ресурсу. Но скрипт ничего не делает, если какая-либо из папок была удалена. При удалении папки из ресурса, необходимо вручную удалять OU и группы.</p><p>Как быть, если у вас не везде необходимо выдержать один и тот же уровень вложения скрипта, но в некоторые папки опуститься глубже? <br/><br/>После первого запуска скрипта и создания базовой структуры запустите скрипт с параметром -SubDir и укажите папку ресурса для которой необходимо выстроить структуру с более глубоким уровнем вложения.</p><p>P.S!</p><p>Конечно, поместить пользователей в группы доступа вам будет необходимо самостоятельно и поэтому раздача прав не совсем уж такая автоматическая, но практическая польза скрипта от этого все равно не уменьшается.</p><p>Просьба профессиональных программистов не судить строго за то, как написан скрипт. Я не являюсь программистом, а просто иногда пишу код для решения рутинных задач.<br/><br/>Некоторые функции для скрипта я взял у коллег из Сети, например, функцию включения наследования с заменой прав у наследников. И скрипт подготовки ресурса для выполнения основного скрипта.</p><p>Также извините за справку и комментарии в скрипте на ломаном английском, но скриптом пользуются зарубежные коллеги и лучше такие комментарии, чем их полное отсутствие.</p><p>Очень приветствуются конструктивные дополнения к скрипту и логике его работы.<br/>Всем желаю экономить время и делать ручной работы как можно меньше!</p><p>Спасибо!</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%84%D0%B0%D0%B9%D0%BB%D0%BE%D0%B2%D1%8B%D0%B9%20%D1%81%D0%B5%D1%80%D0%B2%D0%B5%D1%80%5D" class="tm-tags-list__link">файловый сервер</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%84%D0%B0%D0%B9%D0%BB%D0%BE%D0%B2%D1%8B%D0%B9%20%D1%80%D0%B5%D1%81%D1%83%D1%80%D1%81%5D" class="tm-tags-list__link">файловый ресурс</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%80%D0%B0%D0%B7%D0%B4%D0%B0%D1%87%D0%B0%20%D0%BF%D1%80%D0%B0%D0%B2%20%D0%BD%D0%B0%20%D1%84%D0%B0%D0%B9%D0%BB%D0%BE%D0%B2%D0%BE%D0%BC%20%D1%81%D0%B5%D1%80%D0%B2%D0%B5%D1%80%D0%B5%5D" class="tm-tags-list__link">раздача прав на файловом сервере</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/sys_admin/" class="tm-hubs-list__link">
+    Системное администрирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/powershell/" class="tm-hubs-list__link">
+    PowerShell
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 6: ↑6 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 6: ↑6 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+6</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">5.9K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    55
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/HPMan/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 3 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    3
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">6</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/HPMan/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @HPMan
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583900/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 18 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583900/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583900/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583900":{"id":"583900","timePublished":"2021-10-17T10:52:29+00:00","isCorporative":false,"lang":"ru","titleHtml":"Автоматическая раздача прав на файловом сервере","leadData":{"textHtml":"\u003Cp\u003EВ 2021 году все еще многие компании используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.\u003C\u002Fp\u003E\u003Cp\u003EКак правильно организовать доступ к файловым ресурсам описано в Best Practices от Microsoft, в том числе и в документе Windows Productivity for IT Professionals из Microsoft Resource Kit. В Сети можно найти множество статей на русском языке по организации файлового сервера, в том числе и на Хабре.\u003Cbr\u003E\u003Cbr\u003EНапример, вот эти:\u003Cbr\u003E\u003Cbr\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fservermall\u002Fblog\u002F311124\u002F\" rel=\"noopener noreferrer nofollow\"\u003EАспирин от настройки прав на файловом сервере\u003C\u002Fa\u003E\u003Cbr\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F118313\u002F\" rel=\"noopener noreferrer nofollow\"\u003EПравила хорошего тона для дизайна разрешений на файловых серверах\u003C\u002Fa\u003E\u003Cbr\u003E\u003Cbr\u003EВ статьях хорошо описано, что необходимо создавать группы доступа в Active Directory и уже потом раздавать права на папки шары этим группам и в свою очередь в эти группы доступа помещать пользователей или ролевые группы. Подход достаточно здравый и применим в большинстве практических ситуаций.\u003Cbr\u003E\u003Cbr\u003EА что делать, если необходимо, раздать доступ на ресурсе, в котором 200 папок? И таких ресурсов у вас несколько штук.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F966\u002Fde9\u002F847\u002F966de984763127fa30046972f29c9912.jpg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F966\u002Fde9\u002F847\u002F966de984763127fa30046972f29c9912.jpg","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"sandbox","data":null}],"author":{"scoreStats":{"score":3,"votesCount":3},"rating":6,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2743015","alias":"HPMan","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":18,"favoritesCount":55,"readingCount":5939,"score":6,"votesCount":6},"hubs":[{"relatedData":null,"id":"221","alias":"sys_admin","type":"collective","title":"Системное администрирование","titleHtml":"Системное администрирование","isProfiled":true},{"relatedData":null,"id":"6065","alias":"powershell","type":"collective","title":"PowerShell","titleHtml":"PowerShell","isProfiled":true}],"flows":[{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EВ 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.\u003C\u002Fp\u003E\u003Cp\u003EКак правильно организовать доступ к файловым ресурсам описано в Best Practices от Microsoft, в том числе и в документе Windows Productivity for IT Professionals из Microsoft Resource Kit. В Сети можно найти множество статей на русском языке по организации файлового сервера, в том числе и на Хабре.\u003Cbr\u002F\u003E\u003Cbr\u002F\u003EНапример, вот эти:\u003Cbr\u002F\u003E\u003Cbr\u002F\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fservermall\u002Fblog\u002F311124\u002F\" rel=\"noopener noreferrer nofollow\"\u003EАспирин от настройки прав на файловом сервере\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F118313\u002F\" rel=\"noopener noreferrer nofollow\"\u003EПравила хорошего тона для дизайна разрешений на файловых серверах\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cp\u003EВ статьях хорошо описано, что необходимо создавать группы доступа в Active Directory и уже потом раздавать права на папки шары этим группам и в свою очередь в эти группы доступа помещать пользователей или ролевые группы. Подход достаточно здравый и применим в большинстве практических ситуаций.\u003C\u002Fp\u003E\u003Cp\u003EА что делать, если необходимо, например, раздать доступ на ресурсе, в котором 200 папок? И таких ресурсов у вас несколько штук.\u003C\u002Fp\u003E\u003Cp\u003EСделаем подсчет сколько времени уйдет на ручную настройку такой структуры.\u003Cbr\u002F\u003E\u003Cem\u003E… тут был скучный подсчет времени, которое требуется для ручного выполнения задачи.\u003Cbr\u002F\u003E\u003C\u002Fem\u003EИзбавлю Вас от этого чтения рассуждений и подсчетов и сразу перейду к выводу: такую работу необходимо автоматизировать. \u003C\u002Fp\u003E\u003Cp\u003EДостаточно просто это сделать при помощи скрипта на PowerShell.\u003C\u002Fp\u003E\u003Ch3\u003EЧто требуется от скрипта\u003C\u002Fh3\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EПосле выполнения скрипта мы должны получить в Active Directory структуру OU в виде дерева, которое будет повторять дерево папок нашего ресурса (шары). \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ каждой OU-папке будут созданы группы с названием каждой из папок. \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EНам необходимо четыре вида групп: \u003C\u002Fp\u003E\u003Cp\u003ERO – группы только для чтения.\u003Cbr\u002F\u003ERW – группы на запись, но без возможности переименовывать или создавать папки в закрепленной структуре. \u003Cbr\u002F\u003EFL – группы  с полными правами на папки и файлы, в том числе с правами на редактирование закрепленной структуры.\u003Cbr\u002F\u003EDY – группы с полным запретом на чтение папки.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСистему выдачи прав сделать таким образом, чтобы можно было выдавать права с любого уровня такой структуры. То есть, если мы выдали права на верхнюю папку структуры, необходимо чтобы пользователь имел такие же права и на другие вложенные папки. \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЕсли мы выдали права на папку где-то в глубине структуры, и пользователь не имеет доступа на родительские папки, то он должен иметь права на листинг этих родительских папок выше, чтобы можно было пройти по всему дереву к необходимой папке в глубине структуры.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EУ каждой группы доступа в описании должен быть закреплен полный путь к ресурсу, которым она управляет. \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСтруктура должна автоматически поддерживаться в одном и том же состоянии за счет периодического выполнения данного скрипта.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДля каждого ресурса, шары должна быть создана одна супер группа, которой должен быть выдан полный доступ ко всем папкам структуры (подарок шифровальщикам).\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВесь механизм  должен работать с выключенными режимом наследования до желаемого уровня, далее наследование должно быть включено и остальные папки структуры (ниже желаемого уровня) должны наследовать права от родителя.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EСам скрипт \u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"powershell\"\u003E&lt;#\n.Synopsis\n    Creates OU structure in Active Directory like share structure and creates access groups in created OUs.\n.Description\n    Script creates OU structure in Active Directory like share structure and creates access groups in created OUs.\n    Also script can assign folders permissions for created groups if particular parameters are switched (SetFolderRights, EnableSubInheritance).\n    Script find folders more than 40 characters long and find folders with spec symbols in names ['',#%^`+]\n    More than 40 characters long folders not allowed because Active Directory group cant have name more \n    than 64 characters (24 characters script uses for group prefix and random string).\n    Spec symbols not allowed because OU names cant contains them. \n    All OUs and groups with long names and spec symbols will be renamed.\n.Parameter ServerName\n    Specifies server name where shared folder.\n.Parameter ShareName\n    Specifies share name on server.\n.Parameter SubDir\n    Specifies sub directory for share name. Should contains full path to the folder. \n    For example, creating structure only for specific folder in share not for full share.\n    Example - .\u002FCreate-FoldersOU.ps1 -ServerName FileServer01 -ShareName 'Cloud' -SubDir 'Department3\u002FUnit1'.\n    It create structure only for specific folder 'Department3\u002FUnit1' in share Cloud on FileServer01.\n.Parameter LevelOfDepth\n    Level of recursion depth. Starts from 0\n.Parameter BaseFileShareOU\n    Specifies the distinguished name path (\"OU=Shares,DC=domain,DC=com\") to a based OU where script will store OUs structure and groups.\n.Parameter SetFolderRights\n    Assign permissions to folders after creating groups.\n.Parameter EnableSubInheritance\n    Enable inheritance for all folders after last folder and its subtree.\n.Parameter GroupPrefix\n    Specifies group prefix for access groups. Should be equal or less 5 characters. Default prefix is \"GRFS\"\n.Example\n    .\\Create-FolderOU.ps1 -ServerName FileServer01 -ShareName 'Cloud' -SubDir 'Department3\u002FUnit1' -LevelOfDepth 0\n    Create only OU structure and access groups for subfolder Department3\u002FUnit1  on \\\\FileServer01\\Cloud\n.Example\n    .\\Create-FolderOU.ps1 -ServerName FileServer01 -ShareName 'Cloud'-LevelOfDepth 2 -SetFolderRights -EnableSubInheritance\n    Create OU structure, access groups and assign permissions for groups on \\\\FileServer01\\Cloud with recursion for 3 branch of share.\n.Inputs\n    No inputs\n#\u003E\n\n&lt;#\u002F***************************************************************************\n * DISCLAIMER OF WARRANTIES:\n *\n * THE SOFTWARE PROVIDED HEREUNDER IS PROVIDED ON AN \"AS IS\" BASIS, WITHOUT\n * ANY WARRANTIES OR REPRESENTATIONS EXPRESS, IMPLIED OR STATUTORY; INCLUDING,\n * WITHOUT LIMITATION, WARRANTIES OF QUALITY, PERFORMANCE, NONINFRINGEMENT,\n * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.  NOR ARE THERE ANY\n * WARRANTIES CREATED BY A COURSE OR DEALING, COURSE OF PERFORMANCE OR TRADE\n * USAGE.  FURTHERMORE, THERE ARE NO WARRANTIES THAT THE SOFTWARE WILL MEET\n * YOUR NEEDS OR BE FREE FROM ERRORS, OR THAT THE OPERATION OF THE SOFTWARE\n * WILL BE UNINTERRUPTED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR\n * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,\n * EXEMPLARY, OR CONSEQUENTIAL DAMAGES HOWEVER CAUSED AND ON ANY THEORY OF\n * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING\n * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS\n * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n *\u002F*************************************************************************** #\u003E\n########################################################### \n# AUTHOR  : Rinat K. Nugaev - http:\u002F\u002Fwww.nugaev.net - rn@nugaev.net\n# DATE    : 15-06-2021\n# EDIT    : 07-07-2021 \n# COMMENT : This script creates OU structure in Active Directory like FileShare structure\n#           and creates groups with RW,FL,DY and RO access to directories and files\n#           RO - read only permisssions\n#           RW - read write permissions only for files, cant rename or change folders\n#           FY - full permissions\n#           DY - deny read permissions\n#\n# VERSION : 3.9\n########################################################### \n\n#Parameters\n[CmdletBinding()]Param (\n    [Parameter(Mandatory)]\n    [string] $ServerName,\n    [Parameter(Mandatory)]\n    [string]$ShareName,\n    [Parameter(Mandatory)]\n    [string]$BaseFileShareOU,\n    [Parameter(Mandatory)]\n    [int]$LevelOfDepth,\n    [string]$SubDir,\n    [string]$GroupPrefix = \"GRFS\",\n    [switch]$SetFolderRights,\n    [switch]$EnableSubInheritance\n)\n\nSet-StrictMode -Version Latest\n#Begining functions block\nFunction TrackTime($Time) {\n    If (!($Time)) { Return Get-Date } Else {\n        Return ((get-date) - $Time)\n    }\n}\n\nFunction remove-SpecSymbols {\n    [CmdletBinding()]\n    Param (\n        [parameter(Mandatory = $true)][string]$strName        \n    )\n    Process {\n        $pattern = '['',#%^`+]'\n        if ($strName -match $pattern) {\n            $strName = $strName -replace $pattern, ''\n        }\n        return $strName\n    }   \n}\nfunction Rename-Longnames {\n    #Required Get-RandomAlphanumericString function\n    [CmdletBinding()]\n    Param (\n        [parameter(Mandatory = $true)][string]$strName,\n        [parameter(Mandatory = $true)][ValidateLength(0, 1)][string]$Char,\n        [parameter(Mandatory = $true)][int]$length\n    )\n    Process {\n        if ($strName.Length -ge $length) {\n            $strName = $strName.Substring(0, ($length - 1)) + $Char\n        }\n        return $strName\n    }\n}\nFunction Reset-AclInheritance {\n    [CmdletBinding(SupportsShouldProcess = $true)]\n    param(\n        [Parameter(Mandatory = $True)] [String]$Path\n    )\n    if (-not (Test-Path -LiteralPath $Path)) {\n        Write-Error -Message \"The object at '$Path' doesn't exist\"\n        return\n    }\n    Write-Verbose -Message \"Getting security descriptor for item at '$Path'\"\n    $aclinh = Get-Acl -LiteralPath $Path\n    $Changed = $False\n    if ($aclinh.AreAccessRulesProtected) {\n        Write-Verbose -Message \"Object at '$Path' has disabled inheritance, re-enabling it\"\n        $aclinh.SetAccessRuleProtection($False, $False)\n        $Changed = $True\n    }\n    $Acls = $aclinh.GetAccessRules($true, $false, [System.Security.Principal.NTAccount])\n    ForEach ($Ace in $Acls) {\n        $Ace_String = \"$($Ace.IdentityReference.Value): $($Ace.AccessControlType.ToString()) ($($Ace.FileSystemRights.ToString()))\"\n        Write-Verbose -Message \"Removing non-inherited ACE at '$Path' - $Ace_String\"\n        $result = $aclinh.RemoveAccessRule($ace)\n        if (-not $Result) {\n            Write-Error -Message \"Failed to remove non-inherited ACE at '$Path' - $Ace_String\"\n        }\n        else {\n            $Changed = $True\n        }\n    }\n    if ($Changed) {\n        if ($PSCmdlet.ShouldProcess($Path, \"Persisting new security descriptor that has been reset\")) {\n            Write-Verbose -Message \"Setting new security descriptor for item at '$Path'\"\n            Set-Acl -LiteralPath $Path -AclObject $aclinh\n        }\n        else {\n            Write-Verbose -Message \"What if: Setting new security descriptor for item at '$Path'\"\n        }\n    }\n    else {\n        Write-Verbose -Message \"No changes required to the security descriptor for item at '$Path'\"\n    }\n    if (Test-Path -LiteralPath $Path -PathType Container) {\n        Get-ChildItem -LiteralPath $Path | ForEach-Object { Reset-AclInheritance -Path $_.FullName }\n    }\n}\nFunction Set-FileObjectPermissions {\n    &lt;#\n    .SYNOPSIS\n    Sets Folders or Files Permissions\n  \n    .PARAMETER Object\n    Provide Object path\n  \n    .PARAMETER Principal\n    Provide group or user set permissions for\n\n    .PARAMETER Permisssion\n    Provide type of Permissions. Possible parameters are FullControl, \"FullControl,TakeOwnership\", \"CreateFiles, AppendData, Delete\" Modify,ReadAndExecute\n  \n    .PARAMETER Inheritance\n    Inheritance or None\n    .PARAMETER TypeOfAccess\n    Allow or Deny\n  \n    .EXAMPLE\n    Set-FileObjectPermissions -Object $PathFolder -Principal Administrators -Permission FullControl -TypeOfAccess Allow\n    .EXAMPLE\n    Set-FileObjectPermissions -Object $PathFolder -Principal Administrators -Permission \"CreateFiles, AppendData, Delete\" -TypeOfAccess Allow -NoneInheritance\n    #\u003E\n    param (\n        [parameter(Mandatory = $true)]\n        [ValidateNotNullOrEmpty()]$Object,\n        [parameter(Mandatory = $true)]\n        [ValidateNotNullOrEmpty()]$Principal,\n        [parameter(Mandatory = $true)]\n        [ValidateNotNullOrEmpty()]\n        [ValidateSet(\"FullControl\", \"FullControl,TakeOwnership\", \"CreateFiles, AppendData, Delete\", \"Delete\", \"Modify\", \"ReadAndExecute\")]\n        $Permission,\n        [switch]$NoneInheritance,\n        [parameter(Mandatory = $true)]\n        [ValidateNotNullOrEmpty()]\n        [ValidateSet(\"Allow\", \"Deny\")]\n        $TypeOfAccess\n    ) \n    #Getting Acl from Object\n    $Acl = Get-Acl \"$Object\"\n    #Preparing AccessRule\n    if ($NoneInheritance) {\n        $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule (\"$Principal\", \"$Permission\", \"None\", \"None\", \"$TypeOfAccess\");\n    }\n    else {\n        $AccessRule = New-Object System.Security.AccessControl.FileSystemAccessRule (\"$Principal\", \"$Permission\", \"ContainerInherit,ObjectInherit\", \"None\", \"$TypeOfAccess\");\n    }\n    ##Setting AccessRule\n    $Acl.SetAccessRule($AccessRule);\n    $Acl | Set-Acl \"$Object\"\n}\n\nFunction Get-OUExists {\n    [CmdletBinding()]\n    Param (\n        [string] $OUName\n    )\n    Process {\n        ### Getting groupname without Tail (random number in the end of name of group)   \n        #$GroupName\n        if ([adsi]::Exists(\"LDAP:\u002F\u002F$OUName\")) {\n            return $true            \n            Write-Verbose \"Group $GroupName already exists!\"\n        }\n        else {\n            return $false\n            Write-Verbose \"Group $GroupName does not exist!\"\n        }\n    }\n}\nFunction Get-ADGroupExists {\n    [CmdletBinding()]\n    Param (\n        [string] $GroupName,\n        [string] $OUName\n    )\n    Process {\n        ### Getting groupname without Tail (random number at the end of name of the group)   \n        $GroupName = $GroupName -replace \"_\\w{4}$\"\n        $Filter = \"$($GroupName)_*\"\n        #$GroupName\n        if (Get-ADGroup -SearchScope OneLevel -SearchBase $OUName -Filter { Name -like $Filter } -ErrorAction SilentlyContinue) {\n            $ExistedGroup = Get-ADGroup -SearchScope OneLevel -SearchBase $OUName -Filter { Name -like $Filter } | Select-Object -Expand Name\n            return $ExistedGroup\n            Write-Verbose \"Group $GroupName already exists!\"\n        }\n        else {\n            return $false\n            Write-Verbose \"Group $GroupName does not exist!\"\n        }\n    }\n}\nFunction Get-RandomAlphanumericString {\n    #Required Get-RandomAlphanumericString function\n    [CmdletBinding()]\n    Param (\n        [int] $length = 4\n    )\n    Begin {\n    }\n    Process {\n        Write-Output ( -join ((48..57) + (97..122) | Get-Random -Count $length  | ForEach-Object { [char]$_ }) )\n    }\n}\nFunction Get-subDirectory {\n    [CmdletBinding()]\n    Param (\n        [string] $Directory,\n        [string] $SubDirectory,\n        [int] $LevelOfDepth\n    )\n    Process {\n        #Deleting \\ at the end of dirs\n        $Directory = $Directory -replace '\\\\$'\n        $SubDirectory = $SubDirectory -replace '\\\\$'\n\n        $TempSubDir = $Directory + \"\\\" + $SubDirectory\n        $SubDirsArr = $SubDirectory.Split('\\')              \n        #Calculating $LevelOfDepth for subdirs\n        if ($SubDirsArr) {\n            $SubLevelOfDepth = ($SubDirsArr | Measure-Object).count\n            $LevelOfDepth = $LevelOfDepth + $SubLevelOfDepth\n        }\n        else { $LevelOfDepth = $LevelOfDepth }\n        $DirsArr = @()\n        $Directories = Get-ChildItem -Depth $LevelOfDepth -Recurse -Directory -Path $Directory\n        ForEach ($Dir in $Directories) {\n            ForEach ($SubDir in $SubDirsArr) {\n                if ($Dir.FullName.EndsWith($SubDir) -and $Dir -notin $DirsArr ) {\n                    $DirsArr += $Dir\n                }\n            }\n            if ($Dir.FullName.StartsWith($TempSubDir) -and $Dir -notin $DirsArr) {\n                $DirsArr += $Dir\n            }\n        }   \n        return $DirsArr         \n    }\n}\nFunction Write-Log {\n    [CmdletBinding()]\n    Param(\n        [Parameter(Mandatory = $False)]\n        [ValidateSet(\"INFO\", \"WARN\", \"ERROR\", \"FATAL\", \"DEBUG\")]\n        [String]\n        $Level = \"INFO\",\n        [Parameter(Mandatory = $True)]\n        [string]\n        $Message,\n        [Parameter(Mandatory = $False)]\n        [string]\n        $Logfile\n    )\n    $Stamp = (Get-Date).toString(\"yyyy\u002FMM\u002Fdd HH:mm:ss\")\n    $Line = \"$Stamp $Level $Message\"\n    If ($logfile) {\n        Add-Content $logfile -Value $Line -Encoding \"utf8\"\n    }\n    Else {\n        Write-Output $Line\n    }\n}\n#End functions block\n$DomainAdminsGroup = \"Администраторы домена\"\n#$DomainAdminsGroup = \"Domain Admins\"\n\n#Path to shared folder\n$BaseSharePath = \"\\\\$ServerName\\$ShareName\"\n$ScriptDir = (Resolve-Path .\\).Path\n#Logs directory and in script dir and log file in it\n$LogsDir = \"$ScriptDir\\Logs\"\n$LogFile = $LogsDir + \"\\\" + \"Logfile\" + \"-\" + (Get-Date).toString(\"yyyy-MM-dd_HH-mm-ss\") + \".log\"\n#Begining main part of the script\n#Begining Tracking time\nClear-Host\n$time = 0\n$time = TrackTime $time\n#Basic tests\n#Test base share exists\nif (!(Test-Path $BaseSharePath)) {\n    Write-Error \"Share $BaseSharePath not presence or not created!\"\n    Write-Warning \"Please create share $BaseSharePath and set full permissions for the user the script runas.\"\n    Exit(0)\n}\n#Test logs dir exists, if not created, create it.\nif (!(Test-Path $LogsDir)) {\n    Write-Warning \"Logs dir  $LogsDir not presence or not created!\"\n    Write-Verbose \"Creating $LogsDir\"\n    try {\n        New-Item -ItemType Directory -Force -Path $LogsDir -InformationAction SilentlyContinue\n    }\n    catch {\n        $message = \"Failed to create $LogsDir\" + $($error[0])\n        Write-Warning $message\n        Exit(0)\n    }\n}\n#Test Base File Share OU already exists\nif (!(Get-OUExists -OUName $BaseFileShareOU)) {\n    $message = \"Base OU $BaseFileShareOU does not exist!`n\"\n    $message += \"Please create Base OU $BaseFileShareOU and set full permissions for the user the script runas.\"\n    Write-Warning $message\n    Write-log -Level FATAL $message -Logfile $LogFile\n    Exit(0)\n}\n#Test BaseOU already exists and if doesn't, create it\n$BaseOU = 'OU=' + $ShareName + ',' + $BaseFileShareOU\ntry {\n    if ((Get-OUExists -OUName $BaseOU)) {\n        Write-Verbose \"OU $BaseOU already exists\"\n    }\n    else {\n        Write-Verbose \"Creating OU $ShareName\"\n        New-ADOrganizationalUnit -Name \"$ShareName\" -Path \"$BaseFileShareOU\" -ProtectedFromAccidentalDeletion $false\n    }\n}\ncatch {\n    $message = \"Failed to create OU $ShareName in $BaseFileShareOU\" + $($error[0])\n    Write-Warning $message\n    Write-log -Level ERROR $message -Logfile $LogFile\n}\n$FullGroupNameFullRW = \"_tech_\" + $GroupPrefix + \"FULL_\" + $ShareName\nstart-sleep 1\ntry {\n    if (!(Get-ADGroup -SearchScope OneLevel -SearchBase $BaseOU -Filter { Name -eq $FullGroupNameFullRW } -ErrorAction SilentlyContinue) ) {\n        Write-Verbose \"Creating GROUP $FullGroupNameFullRW\"\n        New-ADGroup -Name $FullGroupNameFullRW -GroupCategory Security -GroupScope DomainLocal `\n            -DisplayName $FullGroupNameFullRW -Path $BaseOU `\n            -Description \"Super FULL RW for $BaseSharePath\"\n    }\n    else {\n        Write-Verbose \"Group like $FullGroupNameFullRW already exists\"\n    }\n}\ncatch {\n    $message = \"Failed to create group $FullGroupNameFullRW in $BaseOU\" + $($error[0])\n    Write-Warning $message\n    Write-log -Level ERROR $message -Logfile $LogFile\n}\n$FullGroupNameFullRW = (Get-adgroup $FullGroupNameFullRW -ErrorAction Stop).Name\n###Create OUS, groups of share and set rights to it\n\n#Calculating $SublevelofDepth\n$SubDirsArr = $SubDir.Split('\\')\nif ($LevelOfDepth -lt 0) \n{ Write-warning \"LevelOfDepth cant be less than 0\"; exit }\nif ($LevelOfDepth -gt 0 -and !($SubDirsArr)) { $SubLevelOfDepth = $LevelOfDepth - 1 }\nelseif ($SubDirsArr) {\n    $SubLevelOfDepth = ($SubDirsArr | Measure-Object).count\n    $SubLevelOfDepth = $LevelOfDepth + $SubLevelOfDepth\n}\nelse { $SubLevelOfDepth = $LevelOfDepth }\n#Calculating $NameLength\n$GroupNameLength = 64 - ($GroupPrefix.Length + 15)\n$OUNameLength = 64\n#Base work\n#GroupCount and FolderCount counters variables that I use for statistics\n$GroupCount = 0\n$OUsCount = 0\n##Getting folders from share and subdir\n$Folders = Get-subDirectory -Directory $BaseSharePath -SubDirectory $Subdir -LevelOfDepth $LevelOfDepth | Select-Object -Expand FullName\n#Init progress items\n$prog_i = 1\n$prog_s = 1\n#Generating OUs names from folders names, creates groups and set permissions for groups to share folders\n$Folders | ForEach-Object {\n    $NestOU = ''\n    $GroupDescription = $_\n    $FolderFullPath = $_\n    #Deleting \\\\servername\\sharename\\\n    #If you want, please create better regex for it )\n    $FolderWithOutSRVname = $_ -replace \"^\\\\\\\\(.*?)\\\\(.*?)\\\\\"    \n    $OUS = (Split-Path $FolderWithOutSRVname -Parent).Split('\\')\n    #Reversing Array\n    [array]::Reverse($OUS)\n    $OUS | ForEach-Object {\n        if ($_.Length -eq 0) {\n            return\n        }\n        #Removing spec symbols\n        $strNSS = remove-SpecSymbols -strName $_\n        #Rename long names for full 64 length\n        $strOU = Rename-Longnames -strName $strNSS -Char \"~\" -length $OUNameLength\n        $NestOU = $NestOU + 'OU=' + $strOU + ','\n    }\n    $NestOU += $BaseOU\n    $LeafOU = Split-Path $_ -Leaf\n    #removing spec symbols from LeafOU names\n    $LeafOU = remove-SpecSymbols -strName $LeafOU\n    #truncate LeafOU to 64 symbols\n    $LeafOU = Rename-Longnames -strName $LeafOU -Char \"~\" -length $OUNameLength\n    #getting GroupName from LeafOU\n    $GroupName = [string]$LeafOU\n    #truncate GroupName to $GroupNameLength\n    $GroupName = Rename-Longnames -strName $GroupName -Char \"~\" -length $GroupNameLength    \n    #Creating pseudo random 4 symbol string for tail of groups names\n    $TailGroup = Get-RandomAlphanumericString \n    #Generating Groups names\n    $FullGroupNameLIST = \"_tech_\" + $GroupPrefix + \"_\" + \"LS_\" + $GroupName + \"_\" + $TailGroup\n    $FullGroupNameDYdel = \"_tech_\" + $GroupPrefix + \"_\" + \"DD_\" + $GroupName + \"_\" + $TailGroup\n    $FullGroupNameRO = $GroupPrefix + \"_\" + \"RO_\" + $GroupName + \"_\" + $TailGroup \n    $FullGroupNameRW = $GroupPrefix + \"_\" + \"RW_\" + $GroupName + \"_\" + $TailGroup\n    $FullGroupNameFL = $GroupPrefix + \"_\" + \"FL_\" + $GroupName + \"_\" + $TailGroup\n    $FullGroupNameDY = $GroupPrefix + \"_\" + \"DY_\" + $GroupName + \"_\" + $TailGroup\n    #Adding groups names to the GroupsHash\n    $GroupsHash = @{\n        'FullGroupNameFL'    = $FullGroupNameFL\n        'FullGroupNameDY'    = $FullGroupNameDY\n        'FullGroupNameRO'    = $FullGroupNameRO\n        'FullGroupNameRW'    = $FullGroupNameRW\n        'FullGroupNameLIST'  = $FullGroupNameLIST\n        'FullGroupNameDYdel' = $FullGroupNameDYdel\n    }\n    #Creating OUs for from share structure\n    try {\n        #Generating GroupOU from LeafOU and NestOU\n        $GroupOU = 'OU=' + \"$LeafOU\" + \",\" + \"$NestOU\"\n        if ((Get-OUExists -OUName $GroupOU)) {\n            Write-Verbose \"OU  $GroupOU already exists\"\n        }\n        else {\n            $PercentComplete = ($prog_s \u002F ($Folders | Measure-Object).count * 100)\n            Write-Progress -id 5  -Activity \"Creating SubOUs in Base OU \" -status \"SubOU $LeafOU\" `\n                -PercentComplete $PercentComplete\n            $prog_s++ \n            Write-Verbose \"Creating OU $LeafOU\"\n            New-ADOrganizationalUnit -Name $LeafOU -Path $NestOU -ProtectedFromAccidentalDeletion $false\n            $OUsCount += 1\n        }\n    }\n    catch {\n        $message = \"Failed to create OU $LeafOU in $NestOU\" + $($error[0])\n        Write-Warning $message\n        Write-log -Level ERROR $message -Logfile $LogFile\n    }\n    #Creating Access Groups\n    #Init progress item\n    $prog_q = 1\n    foreach ($hkey in $($GroupsHash.keys)) {\n        #Here we are adding old ones groups if they are already exist\n        try {\n            if ((Get-ADGroupExists -GroupName  $GroupsHash[$hkey] -OuName  $GroupOU) ) {\n                Write-Verbose \"Group like $($GroupsHash[$hkey]) already exists!!!\"\n                $GroupsHash[$hkey] = (Get-ADGroupExists -GroupName  $GroupsHash[$hkey] -OuName  $GroupOU)\n            }\n            else {\n                $PercentComplete = ($prog_q \u002F ($($GroupsHash.keys) | Measure-Object).count * 100)\n                Write-Progress -id 10 -ParentId 5  -Activity \"Creating spec Groups for $GroupName\" -status \"Group $($GroupsHash[$hkey])\" `\n                    -PercentComplete $PercentComplete\n                $prog_q++\n                Write-Verbose \"Creating GROUP $($GroupsHash[$hkey])\"\n                New-ADGroup -Name $GroupsHash[$hkey] -GroupCategory Security -GroupScope DomainLocal `\n                    -DisplayName $GroupsHash[$hkey] -Path $GroupOU `\n                    -Description $GroupDescription\n                $GroupCount += 1\n            }\n        }\n        catch {\n            $message = \"Failed to create Group $($GroupsHash[$hkey]) in $GroupOU\" + $($error[0])\n            Write-Warning $message\n            Write-log -Level ERROR $message -Logfile $LogFile\n        }\n    }\n    try {\n        #Adding group RW to denyDel Group\n        if (Get-adgroup $($GroupsHash['FullGroupNameRW'])) {\n            Add-ADGroupMember $($GroupsHash['FullGroupNameDYdel']) -Members  $($GroupsHash['FullGroupNameRW'])\n        }\n    }\n    catch {\n        $message = \"Failed to add Group $($GroupsHash['FullGroupNameRW']) to $FullGroupNameDYdel\" + $($error[0])\n        Write-Warning $message\n        Write-log -Level ERROR $message -Logfile $LogFile\n    }\n    #Adding groups to the NestListGroup\n    $regexLSGroup = \"_tech_\" + $GroupPrefix + \"_\" + \"LS_*\"\n    $NestListGroup = Get-ADGroup -SearchScope OneLevel  -SearchBase $NestOU -filter { Name -like $regexLSGroup }\n    foreach ($hkey in $($GroupsHash.keys)) {\n        if (Get-adgroup  $GroupsHash[$hkey]) {\n            #Adding all groups to NestListGroup exept DY groups $FullGroupNameDYdel\n            if ($NestListGroup -and $GroupsHash[$hkey] -ne $GroupsHash['FullGroupNameDY'] -and $GroupsHash[$hkey] -ne $GroupsHash['FullGroupNameDYdel']) {\n                Write-Verbose \"Adding $($GroupsHash[$hkey]) to $(($NestListGroup).Name)\"\n                Add-ADGroupMember $NestListGroup  -Members  $GroupsHash[$hkey]\n            }\n        }\n    }\n    #Getting variables from Hash back\n    #Sorry, some AD commandlets have strange behavior with hash keys\n    $FullGroupNameFL = $GroupsHash['FullGroupNameFL']\n    $FullGroupNameDY = $GroupsHash['FullGroupNameDY']\n    $FullGroupNameRO = $GroupsHash['FullGroupNameRO']\n    $FullGroupNameRW = $GroupsHash['FullGroupNameRW']\n    $FullGroupNameLIST = $GroupsHash['FullGroupNameLIST']\n    $FullGroupNameDYdel = $GroupsHash['FullGroupNameDYdel']\n    #Assigning rights to the folders\n    if ($SetFolderRights) {\n        $PercentComplete = ($prog_i \u002F ($Folders | Measure-Object).count * 100)\n        Write-Progress -id 20  -Activity \"Setting group $GroupName rights for Folder\" -status \"Folder $FolderFullPath\" `\n            -PercentComplete $PercentComplete\n        $prog_i++ \n        try {\n            #Setting Deny Del Rights to the Folder\n            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameDYdel }) {\n                Write-Verbose \"Setting Deny Del for $FolderFullPath\"\n                #Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameDYdel -Permission \"CreateFiles, AppendData, Delete\" -TypeOfAccess Deny -NoneInheritance\n                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameDYdel -Permission \"Delete\" -TypeOfAccess Deny -NoneInheritance\n            }\n            #Setting Deny Del Rights to the Folder\n            if (Get-adgroup -Filter { SamAccountName -eq $FullGroupNameDY }) {\n                Write-Verbose \"Setting Deny Read for $FolderFullPath\"\n                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameDY -Permission \"ReadAndExecute\" -TypeOfAccess Deny \n            }\n            #Setting RW Rights to the Folder\n            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameRW }) {\n                Write-Verbose \"Setting RW for $FolderFullPath\"\n                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameRW -Permission \"Modify\" -TypeOfAccess Allow \n                $FoldersRW = Get-subDirectory -Directory $FolderFullPath -SubDirectory $Subdir -LevelOfDepth ($SubLevelOfDepth) | Select-Object -Expand FullName\n                #Init progress item\n                $prog_j = 1\n                $FoldersRW | ForEach-Object {\n                    $FolderPathRW = $_\n                    Write-Verbose \"Set ACL for $FullGroupNameRW recursive for folder $_\"\n                    $PercentComplete = ($prog_j \u002F ($FoldersRW | Measure-Object).count * 100)\n                    Write-Progress -id 30 -ParentId 20 -Activity \"Setting group $FullGroupNameRW rights to subfolders\" -status \"Folder $_\" `\n                        -PercentComplete $PercentComplete \n                    $prog_j++\n                    Set-FileObjectPermissions -Object $FolderPathRW -Principal $FullGroupNameRW -Permission \"Modify\" -TypeOfAccess Allow }\n            }\n            #Setting Full Rights to the Folder\n            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameFL }) {\n                Write-Verbose \"Setting FULL for $FolderFullPath\"\n                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameFL -Permission \"Modify\" -TypeOfAccess Allow \n                #Adding $FullGroupNameFL to subfolders recurcively\n                $FoldersFL = Get-subDirectory -Directory $FolderFullPath -SubDirectory $Subdir  -LevelOfDepth ($SubLevelOfDepth) | Select-Object -Expand FullName\n                #Init progress item\n                $prog_k = 1\n                $FoldersFL | ForEach-Object {\n                    $FolderPathFL = $_\n                    Write-Verbose \"Set ACL for $FullGroupNameFL recursive for folder $_\"\n                    $PercentComplete = ($prog_k \u002F ($FoldersFL | Measure-Object).count * 100)\n                    Write-Progress -id 40 -ParentId 20 -Activity \"Setting group $FullGroupNameFL rights to subfolders\" -status \"Folder $_\" `\n                        -PercentComplete $PercentComplete \n                    $prog_k++\n                    Set-FileObjectPermissions -Object $FolderPathFL -Principal $FullGroupNameFL -Permission \"Modify\" -TypeOfAccess Allow }\n            }\n            #Setting RO Rights to the Folder\n            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameRO }) {\n                Write-Verbose \"Setting RO for $FolderFullPath\"\n                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameRO -Permission \"ReadAndExecute\" -TypeOfAccess Allow\n                #Adding $FullGroupNameRO to subfolders recurcively\n                $FoldersRO = Get-subDirectory -Directory $FolderFullPath -SubDirectory $Subdir -LevelOfDepth ($SubLevelOfDepth) | Select-Object -Expand FullName\n                #Init progress item\n                $prog_m = 1\n                $FoldersRO | ForEach-Object {\n                    $FolderPathRO = $_\n                    Write-Verbose \"Set ACL for $FullGroupNameRO recursive for folder $_\"\n                    $PercentComplete = ($prog_m \u002F ($FoldersRO | Measure-Object).count * 100)\n                    Write-Progress -id 50 -ParentId 20 -Activity \"Setting group $FullGroupNameRO rights to subfolders\" -status \"Folder $_\" `\n                        -PercentComplete $PercentComplete \n                    $prog_m++\n                    Set-FileObjectPermissions -Object $FolderPathRO -Principal $FullGroupNameRO -Permission \"ReadAndExecute\" -TypeOfAccess Allow }\n            }\n            #Setting List Rights to the Folder\n            if (Get-adgroup  -Filter { SamAccountName -eq $FullGroupNameLIST }) {\n                Write-Verbose \"Setting List for $FolderFullPath\"\n                Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameLIST -Permission \"ReadAndExecute\" -TypeOfAccess Allow -NoneInheritance\n            }\n        }\n        catch {\n            $message = \"Failed to assign permissions to $FolderFullPath\" + $($error[0])\n            Write-Warning $message\n            Write-log -Level ERROR $message -Logfile $LogFile\n        }\n    }\n    else {\n        Write-Verbose \"Switch parameter SetFolderRights is not set, nothing to do\"\n    }\n    try {\n        #Set rights for super groups\n        Write-Verbose \"Set ACL for $FullGroupNameFullRW recursive for folder $GroupDescription\"\n        Set-FileObjectPermissions -Object $FolderFullPath -Principal $FullGroupNameFullRW -Permission \"FullControl\" -TypeOfAccess Allow \n        #Assign permissions for Creator OWNER group\n        if (Get-adgroup $DomainAdminsGroup -ErrorAction SilentlyContinue) {\n            Write-Verbose \"Set Full perms for Domain admins for folder $GroupDescription\"\n            Set-FileObjectPermissions -Object $FolderFullPath -Principal $DomainAdminsGroup -Permission \"FullControl,TakeOwnership\" -TypeOfAccess Allow \n        }\n        #Assign permissions for Creator OWNER group \n        Write-Verbose \"Setting CREATOR OWNER perms for $FolderFullPath\"\n        ###Warnset\n        Set-FileObjectPermissions -Object $FolderFullPath -Principal \"CREATOR OWNER\" -Permission \"Modify\" -TypeOfAccess Allow \n        #Assign permissions for server admin adminsuser\n        &lt;#if (Get-aduser adminuser -ErrorAction SilentlyContinue) {\n            ### Write-Verbose \"Set ACL for adminuser fullcontrol for folder $GroupDescription\"\n            ###Warnset\n            Set-FileObjectPermissions -Object $FolderFullPath -Principal \"nrk\" -Permission \"FullControl,TakeOwnership\" -TypeOfAccess Allow  \n        }#\u003E\n    }\n    catch {\n        $message = \"Failed to assign built-in permissions to $FolderFullPath\" + $($error[0])\n        Write-Warning $message\n        Write-log -Level ERROR $message -Logfile $LogFile\n    }\n    #Disable Inheritance if no SubDir\n    try {\n        if (!$Subdir) {\n            Write-Verbose \"Reseting inheritance for $FolderFullPath\"\n            $acl = Get-Acl  $FolderFullPath\n            $acl.SetAccessRuleProtection($true, $false)\n            $acl | Set-Acl $FolderFullPath\n        }\n        else {\n            Write-Verbose \"Variable DisableInheritance is not set, nothing to do\"\n        }\n    }\n    catch {\n        $message = \"Failed to disable inheritance for $FolderFullPath\" + $($error[0])\n        Write-Warning $message\n        Write-log -Level ERROR $message -Logfile $LogFile\n    }\n}\n#Reenabling inheritance from +1 LevelOfDepth\nif ($EnableSubInheritance) {\n    $FoldersDeep = @()\n    #$FoldersTemp = Get-ChildItem -Depth ($LevelOfDepth + 1) -Recurse -Directory -Path $BaseSharePath | Select-Object -Expand FullName\n    $FoldersTemp = Get-subDirectory -Directory $BaseSharePath -SubDirectory $Subdir -LevelOfDepth ($LevelOfDepth + 1) | Select-Object -Expand FullName\n    ForEach ($Folder  in $FoldersTemp) {\n        if ($Folder -notin $Folders) {\n            Write-Verbose \"Adding $Folder to FoldersDeep array\"\n            $FoldersDeep += $Folder\n        }\n    }\n    #Init progress item\n    $prog_r = 1\n    $FoldersDeep | ForEach-Object {\n        try {\n            $PercentComplete = ($prog_r \u002F ($FoldersDeep | Measure-Object).count * 100)\n            Write-Progress -id 60  -Activity \"Enable inheritance for Folder\" -status \"Folder $_\" `\n                -PercentComplete $PercentComplete\n            $prog_r++ \n            Write-Verbose \"Enable inheritance in $_\"\n            Reset-AclInheritance -Path $_\n        }\n        catch {\n            $message = \"Failed to enable inheritance to $_\" + $($error[0])\n            Write-Warning $message\n            Write-log -Level ERROR $message -Logfile $LogFile\n        }\n    }\n}\n$time = TrackTime $time\n$message = \"All tasks complete!!!`n\"\n$message += \"Created $GroupCount groups for $OusCount OUs`n\"\n$message += \"Script run $($time.Hours) hours $($time.Minutes) minutes\"\nWrite-Output $message\nWrite-log -Level INFO $message -Logfile $LogFile\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EПеред запуском скрипта прочитайте все рекомендации ниже.\u003Cbr\u002F\u003E\u003C\u002Fp\u003E\u003Cp\u003EТребования к окружению для запуска скрипта.\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EPowerShell 5 и выше\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСервер с установленными PowerShell модулями Active Directory\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EТакже обязательно включите на шаре access based enumeration. Google подскажет как это сделать.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003E\u003Cstrong\u003EПодготовка шары к выполнению скрипта.\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EСкрип сработает правильно, если на всех папках ресурса (шары) будет \u003Cstrong\u003Eвыключено\u003C\u002Fstrong\u003E наследование. Сделать это можно при помощи другого скрипта.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EСкрипт подготовки ресурса\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"powershell\"\u003EFunction Remove-ACL {    \n    [CmdletBinding(SupportsShouldProcess=$True)]\n    Param(\n        [parameter(Mandatory=$true,ValueFromPipeline=$true,Position=0)]\n        [ValidateNotNullOrEmpty()]\n        [ValidateScript({Test-Path $_ -PathType Container})]\n        [String[]]$Folder,\n        [String[]]$AdminUser,\n        [Switch]$Recurse\n    )\n\n    Process {\n\n        foreach ($f in $Folder) {\n\n            if ($Recurse) {$Folders = $(Get-ChildItem $f -Recurse -Directory ).FullName} else {$Folders = $f}\n\n            if ($Folders -ne $null) {\n\n                $Folders | ForEach-Object {\n\n                    # Remove inheritance\n                    $acl = Get-Acl $_\n                    $acl.SetAccessRuleProtection($true,$true)\n                    Set-Acl $_ $acl\n                    \n                    # Remove ACL\n                    $acl = Get-Acl $_\n                    $acl.Access | %{$acl.RemoveAccessRule($_)} | Out-Null\n\n                    # Add local admin\n                    $permission  = \"BUILTIN\\Administrators\",\"FullControl\", \"ContainerInherit,ObjectInherit\",\"None\",\"Allow\"\n                    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission\n                    $acl.SetAccessRule($rule)\n\n                    Set-Acl $_ $acl\n\n                    \n\n                    # Add SPEC GROUP PERMS\n                    $acl = Get-Acl $_\n                    $permission  = \"$AdminUser\",\"FullControl\", \"ContainerInherit,ObjectInherit\",\"None\",\"Allow\"\n                    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule $permission\n                    $acl.SetAccessRule($rule)\n\n                    Set-Acl $_ $acl\n\n                    #\u003E\n\n                    Write-Verbose \"Remove-HCacl: Inheritance disabled and permissions removed from $_\"\n                }\n            }\n            else {\n                Write-Verbose \"Remove-HCacl: No subfolders found for $f\"\n            }\n        }\n    }\n}\n\n#Path to shared folder\n$BaseSharePath = \"F:\\Fileshare\\\"\n$AdminUser = \"scripuser\"\nFunction TrackTime($Time){\nIf (!($Time)) { Return Get-Date } Else {\nReturn ((get-date) - $Time)\n}\n}\n$time = 0\n$time = TrackTime $time\nRemove-ACL $BaseSharePath -Recurse -AdminUser $AdminUser -Verbose\n\n$time = TrackTime $time\nWrite-host \"It run $($time.Hours) hours $($time.Minutes) minutes $($time.seconds) seconds\"\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EЗадайте переменные в скрипте \u003Cbr\u002F\u003EПуть к папке ресурса \u003Ccode\u003E$BaseSharePath = \"\\\\FileServer\\Fileshare\\\"\u003Cbr\u002F\u003E\u003C\u002Fcode\u003EПользователь от которого будете запускать основной скрипт \u003Ccode\u003E$AdminUser = \"scripuser\"\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cp\u003EПосле подготовки ресурса (шары) запускайте основной скрипт.\u003C\u002Fp\u003E\u003Cp\u003EПример команды запуска основного скрипта с параметрами.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"powershell\"\u003E.\\create-FoldersOU.ps1 -ServerName nn-FileServer01 -ShareName \"FilesShare1\" `\n-BaseFileShareOU \"OU=FileShares,OU=PermissionsGroups,OU=Groups,DC=example,DC=com\" `\n-SetFolderRights  -EnableSubInheritance -LevelOfDepth 1 `\n-GroupPrefix \"GRFS\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EПараметры скрипта:\u003C\u002Fstrong\u003E \u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003E-ServerName\u003C\u002Fcode\u003E имя сервера с ресурсом; \u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003E-ShareName\u003C\u002Fcode\u003E название ресурса (шары) на сервере;\u003C\u002Fp\u003E\u003Cp\u003E \u003Ccode\u003E-BaseFileShareOU\u003C\u002Fcode\u003E название OU, где будет создана структура шары;\u003C\u002Fp\u003E\u003Cp\u003E \u003Ccode\u003E-LevelOfDepth\u003C\u002Fcode\u003E желаемый уровень вложения;\u003C\u002Fp\u003E\u003Cp\u003E \u003Ccode\u003E-GroupPrefix\u003C\u002Fcode\u003E префикс создаваемых групп;\u003C\u002Fp\u003E\u003Cp\u003E \u003Ccode\u003E-SetFolderRights\u003C\u002Fcode\u003E применение прав к папкам;\u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003E-EnableSubInheritance\u003C\u002Fcode\u003E включение наследования в папках ниже построенной структуры.\u003C\u002Fp\u003E\u003Cp\u003EТакже скрипт поддерживает параметр \u003Ccode\u003E-Verbose\u003C\u002Fcode\u003E, с ним он будет подробно писать, что делает.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EЧто сделает скрипт после запуска\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EДалее скрипт создаст структуру OU согласно структуре вашей шары. В каждой OU будет созданы группы 5 видов. \u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EСоздаст OU для вашей ресурса.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСоздаст одну служебную супер группу \u003Ccode\u003E_tech_GRFS_DYDel_имя_ресурса\u003C\u002Fcode\u003E - эта группа необходима, чтобы запретить группам RW изменять структуру.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСоздаст одну служебную группу \u003Ccode\u003E_tech_GRFS_FULL_имя_ресурса\u003C\u002Fcode\u003E - эта группа будет иметь полный доступ ко всему ресурсу, режим Бога в шаре (подарок шифровальщикам).\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСкрипт создаст в текущей директории папку \u003Ccode\u003ELogs\u003C\u002Fcode\u003E, - там будут лежать логи.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EСлужебная группа \u003Ccode\u003E_tech_GRFS_LS_Имя-папки_gwp5\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003EGRFS_DY_Имя-папки_gwp5\u003C\u002Fcode\u003E - запрет на чтение папки\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003EGRFS_FL_Имя-папки_gwp5\u003C\u002Fcode\u003E - полный доступ к папке, в том числе с изменением структуры\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003EGRFS_RO_Имя-папки_gwp5\u003C\u002Fcode\u003E - только чтение\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ccode\u003EGRFS_RW_Имя-папки_gwp5\u003C\u002Fcode\u003E - полный доступ без возможности изменять структуру папок\u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003EGRFS\u003C\u002Fcode\u003E - префикс, обозначающий предназначение группы: GR - group, FS - file server.\u003Cbr\u002F\u003E\u003Ccode\u003Egwp5\u003C\u002Fcode\u003E - случайная последовательность, для уникальности каждой группы.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EВо время выполнения скрипт автоматически вложит группы FL, RO, RW в группу LS и вложит в нее еще LS группы нижележащих папок для обеспечения возможности давать доступ пользователю в любой части структуры. \u003Cbr\u002F\u003E\u003Cbr\u002F\u003EСкрипт автоматически выдаст нужные права всем группам на папки ресурса по всей структуре. Выключит наследование прав до заданного уровня вложения (сканирования) и включит наследование прав ниже уровня вложения.\u003Cbr\u002F\u003E\u003Cbr\u002F\u003EЕсли запустить скрипт повторно на уже выстроенной структуре, то он просканирует структуру шары и если структура шары соответствует структуре OU созданной раньше, то скрипт ничего не будет создавать, а только заново выставит права на уже созданные группы.\u003Cbr\u002F\u003E\u003Cbr\u002F\u003EЕсли же вы или ваши пользователи создали в структуре шары какие-либо папки, то скрипт при следующем запуске достроит структуру учитывая новые папки.\u003Cbr\u002F\u003E\u003Cbr\u002F\u003EВ независимости от того, созданы новые папки или нет, скрипт всегда проходит еще раз по папкам и выставляет заданные права для групп. Таким образом обеспечивается необходимое постоянное состояние структуры OU, которое всегда соответствует ресурсу. Но скрипт ничего не делает, если какая-либо из папок была удалена. При удалении папки из ресурса, необходимо вручную удалять OU и группы.\u003C\u002Fp\u003E\u003Cp\u003EКак быть, если у вас не везде необходимо выдержать один и тот же уровень вложения скрипта, но в некоторые папки опуститься глубже? \u003Cbr\u002F\u003E\u003Cbr\u002F\u003EПосле первого запуска скрипта и создания базовой структуры запустите скрипт с параметром -SubDir и укажите папку ресурса для которой необходимо выстроить структуру с более глубоким уровнем вложения.\u003C\u002Fp\u003E\u003Cp\u003EP.S!\u003C\u002Fp\u003E\u003Cp\u003EКонечно, поместить пользователей в группы доступа вам будет необходимо самостоятельно и поэтому раздача прав не совсем уж такая автоматическая, но практическая польза скрипта от этого все равно не уменьшается.\u003C\u002Fp\u003E\u003Cp\u003EПросьба профессиональных программистов не судить строго за то, как написан скрипт. Я не являюсь программистом, а просто иногда пишу код для решения рутинных задач.\u003Cbr\u002F\u003E\u003Cbr\u002F\u003EНекоторые функции для скрипта я взял у коллег из Сети, например, функцию включения наследования с заменой прав у наследников. И скрипт подготовки ресурса для выполнения основного скрипта.\u003C\u002Fp\u003E\u003Cp\u003EТакже извините за справку и комментарии в скрипте на ломаном английском, но скриптом пользуются зарубежные коллеги и лучше такие комментарии, чем их полное отсутствие.\u003C\u002Fp\u003E\u003Cp\u003EОчень приветствуются конструктивные дополнения к скрипту и логике его работы.\u003Cbr\u002F\u003EВсем желаю экономить время и делать ручной работы как можно меньше!\u003C\u002Fp\u003E\u003Cp\u003EСпасибо!\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"файловый сервер"},{"titleHtml":"файловый ресурс"},{"titleHtml":"раздача прав на файловом сервере"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F966\u002Fde9\u002F847\u002F966de984763127fa30046972f29c9912.jpg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F966\u002Fde9\u002F847\u002F966de984763127fa30046972f29c9912.jpg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583900\\\u002F\"},\"headline\":\"Автоматическая раздача прав на файловом сервере\",\"datePublished\":\"2021-10-17T13:52:29+03:00\",\"dateModified\":\"2021-10-17T14:25:44+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"HPMan\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурс...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583900\\\u002F#post-content-body\",\"about\":[\"h_sys_admin\",\"h_powershell\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583900\\\u002Fff0ff92d1a741e52b267793a2f027452\\\u002F\"]}","metaDescription":"В 2021 году достаточно много компаний используют файловые серверы для совместной работы, поэтому остается актуальным вопрос разграничения доступа на общих ресурсах.Как правильно организовать доступ к...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"sys_admin,powershell"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Node.js: разрабатываем сервер для тестирования API / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/timeweb\/blog\/583588\/"},"headline":"Node.js: разрабатываем сервер для тестирования API","datePublished":"2021-10-15T09:17:57+03:00","dateModified":"2021-10-16T17:27:47+03:00","author":{"@type":"Person","name":"Igor Agapov"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Привет, друзья! В этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования API. Основной фун...","url":"https:\/\/habr.com\/ru\/company\/timeweb\/blog\/583588\/#post-content-body","about":["c_timeweb","h_webdev","h_javascript","h_programming","h_nodejs","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583588\/2ec43b3df5775e4933f1bc3cbc12f118\/","https:\/\/habrastorage.org\/webt\/4-\/hn\/8w\/4-hn8wkkaeafijehpfybkgcounq.png","https:\/\/habrastorage.org\/webt\/z_\/bm\/ge\/z_bmgez08qrefh2udyodneqniqi.png","https:\/\/habrastorage.org\/webt\/k9\/ih\/qy\/k9ihqyadr2xptnecjgzn14trfqs.png","https:\/\/habrastorage.org\/webt\/ea\/ov\/ay\/eaovay2rmwayppvx0pos6fth1fg.png","https:\/\/habrastorage.org\/webt\/sr\/6c\/ux\/sr6cuxrfq_nfq8e7ue9smqjnsdc.png","https:\/\/habrastorage.org\/webt\/xf\/xm\/f4\/xfxmf4ssyzdygi4hqpg1web-kxc.png","https:\/\/habrastorage.org\/webt\/xz\/9j\/-q\/xz9j-q3dqazj9tyjbrttn9hljjq.png","https:\/\/habrastorage.org\/webt\/hc\/qx\/me\/hcqxmebxxk8qsrrraa6ivx-95-0.png","https:\/\/habrastorage.org\/webt\/mg\/ma\/lj\/mgmaljygogo8xdfqfcjkftg2ybi.png","https:\/\/habrastorage.org\/webt\/_g\/92\/la\/_g92laa3vqc0shq0j7yufcgv1dc.png","https:\/\/habrastorage.org\/webt\/wn\/cq\/lp\/wncqlp9abeml4npwzsybuvhzcta.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Node.js: разрабатываем сервер для тестирования API" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Node.js: разрабатываем сервер для тестирования API" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Node.js: разрабатываем сервер для тестирования API" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Привет, друзья!
+В этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования API.
+Основной функционал нашего приложения будет..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Привет, друзья!
+В этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования API.
+Основной функционал нашего приложения будет..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Привет, друзья!
+В этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования API.
+Основной функционал нашего приложения будет..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Привет, друзья!
+В этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования API.
+Основной функционал нашего приложения будет..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Привет, друзья!
+В этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования API.
+Основной функционал нашего приложения будет..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/4-/hn/8w/4-hn8wkkaeafijehpfybkgcounq.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/4-/hn/8w/4-hn8wkkaeafijehpfybkgcounq.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/4-/hn/8w/4-hn8wkkaeafijehpfybkgcounq.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/4-/hn/8w/4-hn8wkkaeafijehpfybkgcounq.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/4-/hn/8w/4-hn8wkkaeafijehpfybkgcounq.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583588" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-15T06:17:57.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583588/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/timeweb/blog/583588/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/4-/hn/8w/4-hn8wkkaeafijehpfybkgcounq.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="timeweb" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/timeweb/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/b5b/7e1/c48/b5b7e1c4819388606f1a3c7ed1d2373a.jpg" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">1167.97</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/timeweb/profile/" class="tm-company-card__name">
+        Timeweb
+      </a> <div class="tm-company-card__description">Хостинг, VDS и ИТ-инфраструктура</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/aio350/" title="aio350" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/076/1e1/2c6/0761e12c6ea091cb6170c185394fae64.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/aio350/" class="tm-user-info__username">
+      aio350
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-15T06:17:57.000Z" title="2021-10-15, 09:17">15  октября   в 09:17</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Node.js: разрабатываем сервер для тестирования API</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/timeweb/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Timeweb</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/webdev/" class="tm-article-snippet__hubs-item-link"><span>Разработка веб-сайтов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/javascript/" class="tm-article-snippet__hubs-item-link"><span>JavaScript</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/nodejs/" class="tm-article-snippet__hubs-item-link"><span>Node.JS</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/4-/hn/8w/4-hn8wkkaeafijehpfybkgcounq.png"/><br/>
+<p><br/>
+Привет, друзья!</p><br/>
+<p>В этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования <code>API</code>.</p><br/>
+<p>Основной функционал нашего приложения будет следующим:</p><br/>
+<ul>
+<li>админка с возможностью добавления данных (далее — проекты) путем их набора (ввода) или копирования/вставки, либо путем загрузки файла;</li>
+<li>сохранение проектов на сервере;</li>
+<li>безопасная запись, чтение и удаление файлов на любом уровне вложенности;</li>
+<li>получение названий существующих проектов и их отображение в админке;</li>
+<li>возможность редактирования и удаления проектов;</li>
+<li>унифицированная обработка <code>GET</code>, <code>POST</code>, <code>PUT</code> и <code>DELETE</code> запросов к любому существующему проекту, включая <code>GET-запросы</code>, содержащие параметры и строки запроса;</li>
+<li>обработка специальных параметров строки запроса <code>sort</code>, <code>order</code>, <code>limit</code> и <code>offset</code>;</li>
+<li>и многое другое.</li>
+</ul><br/>
+<p>Наша админка будет выглядеть так:</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/z_/bm/ge/z_bmgez08qrefh2udyodneqniqi.png"/><br/>
+<p><br/>
+Для быстрой стилизации приложения будет использоваться <a href="https://getbootstrap.com/"><code>Bootstrap</code></a>.</p><br/>
+<p>Исходный код проекта находится <a href="https://github.com/harryheman/mock-api">здесь</a>.</p><br/>
+<p>Разумеется, с приложением, которое мы с разработаем, сразу в продакшн не пойдешь, но при необходимости довести его до производственного уровня не составит труда.</p><br/>
+<p>При разработке приложения мы будет придерживаться 2 важных условий:</p><br/>
+<ul>
+<li>формат данных — <code>JSON</code>;</li>
+<li>основная форма данных — массив.</li>
+</ul><br/>
+<p><em>Обратите внимание</em>: статья рассчитана, преимущественно, на начинающих разработчиков, хотя, смею надеяться, что и опытные найдут в ней что-нибудь интересное для себя.</p><br/>
+<p>Вы готовы? Тогда вперед.</p><a name="habracut"></a><br/>
+<h2 id="podgotovka-proekta">Подготовка проекта</h2><br/>
+<p>Создаем директорию для проекта, переходим в нее, инициализируем проект и устанавливаем зависимости:</p><br/>
+<pre><code class="bash">mkdir mock-api
+cd !$
+
+yarn init -y
+# or
+npm init -y
+
+yarn add express multer nodemon open-cli very-simple-fetch
+# or
+npm i ...</code></pre><br/>
+<p>Зависимости:</p><br/>
+<ul>
+<li><a href="https://expressjs.com/ru/"><code>express</code></a> — <code>Node.js-фреймворк</code> для разработки сервера</li>
+<li><a href="https://github.com/expressjs/multer/blob/master/doc/README-ru.md"><code>multer</code></a> — обертка над <a href="https://www.npmjs.com/package/busboy"><code>busboy</code></a>, утилита для обработки данных в формате <code>multipart/form-data</code>, часто используемая для сохранения файлов</li>
+<li><a href="https://www.npmjs.com/package/nodemon"><code>nodemon</code></a> — утилита для запуска сервера для разработки</li>
+<li><a href="https://www.npmjs.com/package/open-cli"><code>open-cli</code></a> — утилита для автоматического открытия вкладки браузера по указанному адресу</li>
+<li><a href="https://www.npmjs.com/package/very-simple-fetch"><code>very-simple-fetch</code></a> — обертка над <a href="https://developer.mozilla.org/ru/docs/Web/API/Fetch_API"><code>Fetch API</code></a>, упрощающая работу с названным интерфейсом</li>
+</ul><br/>
+<p>Открываем <code>package.json</code>, определяем в нем основной файл сервера (<code>index.js</code>) как модуль и команду для запуска сервера для разработки:</p><br/>
+<pre><code class="json">{
+ "type": "module",
+ "scripts": {
+   "dev": "open-cli http://localhost:5000 &amp;&amp; nodemon index.js"
+ }
+}</code></pre><br/>
+<p>Команда <code>dev</code> указывает открыть вкладку браузера по адресу <code>http://localhost:5000</code> (адрес, на котором будет запущен сервер) и выполнить код в файле <code>index.js</code> (запустить сервер для разработки).</p><br/>
+<p>Структура нашего проекта будет следующей:</p><br/>
+<ul>
+<li><code>projects</code> — директория для проектов</li>
+<li><code>public</code> — директория со статическими файлами для админки</li>
+<li><code>routes</code> — директория для роутов</li>
+<li><code>index.js</code> — основной файл сервера</li>
+<li><code>utils.js</code> — вспомогательные функции</li>
+</ul><br/>
+<p>Пожалуй, проект готов к разработке. Не будем откладывать на завтра то, что можно <del>отложить на послезавтра</del> сделать сейчас.</p><br/>
+<h2 id="server-marshrutizator-dlya-proektov-i-utility">Сервер, маршрутизатор для проектов и утилиты</h2><br/>
+<p>В файле <code>index.js</code> мы делаем следующее:</p><br/>
+<ul>
+<li>импортируем <code>express</code>, полный путь к текущей (рабочей) директории и роуты для проектов;</li>
+<li>создаем экземпляр <code>Express-приложения</code>;</li>
+<li>добавляем посредников (промежуточных обработчиков): для обслуживания статических файлов, для разбора (парсинга) данных в <code>JSON</code>, для декодирования <code>URL</code>;</li>
+<li>добавляем роут для получения файлов из директории <code>node_modules</code>;</li>
+<li>добавляем роуты для проектов;</li>
+<li>добавляем обработчик ошибок;</li>
+<li>определяем порт и запускаем сервер.</li>
+</ul><br/>
+<pre><code class="javascript">import express from 'express'
+import { __dirname } from './utils.js'
+import projectRoutes from './routes/project.routes.js'
+
+const app = express()
+
+app.use(express.static('public'))
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+app.get('/node_modules/*', (req, res) => {
+ res.sendFile(`${__dirname}/${req.url}`)
+})
+
+app.use('/project', projectRoutes)
+
+// обратите внимание: обработчик ошибок должен быть последним в цепочке посредников
+app.use((err, req, res, next) => {
+ console.error(err.message || err)
+ res.sendStatus(err.status || 500)
+})
+
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => {
+ console.log(`🚀 -> ${PORT}`)
+})</code></pre><br/>
+<p>Подумаем о том, какие роуты нам нужны для работы с проектами. Как насчет следующих запросов:</p><br/>
+<ul>
+<li><code>GET</code> — получение названий всех существующих проектов</li>
+<li><code>GET</code> — получение проекта по названию</li>
+<li><code>POST</code> — создание проекта</li>
+<li><code>POST</code> — загрузка проекта</li>
+<li><code>DELETE</code> — удаление проекта</li>
+</ul><br/>
+<p>Мы также могли бы определить отдельный роут для обновления проекта через <code>PUT-запрос</code>, но в этом нет особого смысла — проще перезаписать существующий проект новым.</p><br/>
+<p>В файле <code>routes/project.routes.js</code> мы делаем следующее:</p><br/>
+<ul>
+<li>импортируем роутер из <code>express</code> и вспомогательные функции из <code>utils.js</code>;</li>
+<li>экспортируем новый экземпляр роутера;</li>
+<li>определяем обработчики для каждого из указанных выше запроса.</li>
+</ul><br/>
+<pre><code class="javascript">import { Router } from 'express'
+// мы подробно рассмотрим каждую из этих утилит далее
+import {
+ getFileNames,
+ createFile,
+ readFile,
+ removeFile,
+ uploadFile
+} from '../utils.js'
+
+export default Router()</code></pre><br/>
+<p>Далее цепочкой (один за другим) идут обработчики.</p><br/>
+<p>Получение проекта по названию:</p><br/>
+<pre><code class="javascript"> .get('/', async (req, res, next) => {
+   // извлекаем название проекта из строки запроса - `?project_name=todos`
+   const { project_name } = req.query
+
+   // если `URL` не содержит строки запроса, значит,
+   // это запрос на получение названий всех проектов
+   // передаем управление следующему обработчику
+   if (!project_name) return next()
+
+   try {
+     // получаем проект
+     const project = await readFile(project_name)
+
+     // и возвращаем его
+     res.status(200).json(project)
+   } catch (e) {
+     // передаем ошибку обработчику ошибок
+     next(e)
+   }
+ })</code></pre><br/>
+<p>Получение названий всех проектов:</p><br/>
+<pre><code class="javascript"> .get('/', async (req, res, next) => {
+   try {
+     // получаем названия проектов
+     const projects = (await getFileNames()) || []
+
+     // и возвращаем их
+     res.status(200).json(projects)
+   } catch (e) {
+     next(e)
+   }
+ })</code></pre><br/>
+<p>Создание проекта:</p><br/>
+<pre><code class="javascript"> .post('/create', async (req, res, next) => {
+   // извлекаем название проекта и данные для него из тела запроса
+   const { project_name, project_data } = req.body
+
+   try {
+     // создаем проект
+     await createFile(project_data, project_name)
+
+     // сообщаем об успешном создании проекта
+     res.status(201).json({ message: `Project "${project_name}" created` })
+   } catch (e) {
+     next(e)
+   }
+ })</code></pre><br/>
+<p>Загрузка проекта:</p><br/>
+<pre><code class="javascript"> .post(
+   '/upload',
+   // `multer`; обратите внимание на передаваемый ему аргумент -
+   // название поля, содержащего данные, в теле запроса должно соответствовать этому значению
+   uploadFile.single('project_data_upload'),
+   (req, res, next) => {
+     // сообщаем об успешной загрузке проекта
+     res.status(201).json({
+       message: `Project "${req.body.project_name}" uploaded`
+     })
+   }
+ )</code></pre><br/>
+<p>Удаление проекта:</p><br/>
+<pre><code class="javascript"> .delete('/', async (req, res, next) => {
+   // извлекаем название проекта из строки запроса
+   const { project_name } = req.query
+
+   try {
+     // удаляем проект
+     await removeFile(project_name)
+
+     // сообщаем об успехе
+     res.status(201).json({ message: `Project "${project_name}" removed` })
+   } catch (e) {
+     next(e)
+   }
+ })</code></pre><br/>
+<p>Ошибка, возникшая в процессе выполнения любой операции, будет передана в обработчик, определенный в <code>index.js</code> — централизованная обработка ошибок. Нечто похожее мы реализуем и на клиенте.</p><br/>
+<p>Вспомогательные функции, определенные в файле <code>utils.js</code> — пожалуй, самая интересная и полезная часть туториала. Я постарался сделать так, чтобы эти функции были максимально универсальными с той целью, чтобы вы могли использовать их в своих проектах без существенных изменений.</p><br/>
+<p>Начнем с импорта модулей, определения полного (абсолютного) пути к текущей директории и директории для проектов (корневой директории), а также с создания 2 небольших утилит:</p><br/>
+<ul>
+<li>для определения того, что файла или директории не существует по сообщению об ошибке;</li>
+<li>для уменьшения пути на 1 "единицу".</li>
+</ul><br/>
+<pre><code class="javascript">import { dirname } from 'path'
+import { fileURLToPath } from 'url'
+import { promises as fs } from 'fs'
+import multer from 'multer'
+
+// полный путь к текущей директории
+export const __dirname = dirname(fileURLToPath(import.meta.url))
+// путь к директории с проектами
+const ROOT_PATH = `${__dirname}/projects`
+
+// утилита для определения несуществующего файла
+const notExist = (e) => e.code === 'ENOENT'
+// утилита для уменьшения пути на единицу
+// например, путь `path/to/file` после вызова этой функции
+// будет иметь значение `path/to`
+const truncPath = (p) => p.split('/').slice(0, -1).join('/')</code></pre><br/>
+<p>Утилита для создания файла:</p><br/>
+<pre><code class="javascript">// функция принимает 3 параметра: данные, путь и расширение (по умолчанию `json`)
+export async function createFile(fileData, filePath, fileExt = 'json') {
+ // формируем полный путь к файлу
+ const fileName = `${ROOT_PATH}/${filePath}.${fileExt}`
+
+ try {
+   // пробуем создать файл
+   // при отсутствии директории для файла, например, когда полным путем
+   // файла является `.../data/todos.json`, выбрасывается исключение
+   if (fileExt === 'json') {
+     await fs.writeFile(fileName, JSON.stringify(fileData, null, 2))
+   } else {
+     await fs.writeFile(fileName, fileData)
+   }
+ } catch (err) {
+   // если ошибка связана с отсутствующей директорией
+   if (notExist(err)) {
+     // создаем ее рекурсивно (несколько уровней вложенности)
+     await fs.mkdir(truncPath(`${ROOT_PATH}/${filePath}`), {
+       recursive: true
+     })
+     // и снова вызываем `createFile` с теми же параметрами - рекурсия
+     return createFile(fileData, filePath, fileExt)
+   }
+   // если ошибка не связана с отсутствующей директорией
+   // это позволяет подняться из утилиты в роут и передать ошибку в централизованный обработчик
+   throw err
+ }
+}</code></pre><br/>
+<p>Утилита для чтения файла:</p><br/>
+<pre><code class="javascript">// функция принимает путь и расширение
+export async function readFile(filePath, fileExt = 'json') {
+ // полный путь
+ const fileName = `${ROOT_PATH}/${filePath}.${fileExt}`
+
+ // переменная для обработчика файла
+ let fileHandler = null
+ try {
+   // `fs.open()` возвращает обработчик файла при наличии файла
+   // или выбрасывает исключение при отсутствии файла
+   // это является рекомендуемым способом определения наличия файла
+   fileHandler = await fs.open(fileName)
+
+   // читаем содержимое файла
+   const fileContent = await fileHandler.readFile('utf-8')
+
+   // и возвращаем его
+   return fileExt === 'json' ? JSON.parse(fileContent) : fileContent
+ } catch (err) {
+   // если файл отсутствует
+   // вы поймете почему мы используем именно такую сигнатуру ошибки,
+   // когда мы перейдем к роутам для `API`
+   if (notExist(err)) {
+     throw { status: 404, message: 'Not found' }
+   }
+   // если возникла другая ошибка
+   throw err
+ } finally {
+   // закрываем обработчик файла
+   fileHandler?.close()
+ }
+}</code></pre><br/>
+<p>Утилита для удаления файла:</p><br/>
+<pre><code class="javascript">// функция принимает путь и расширение
+export async function removeFile(filePath, fileExt = 'json') {
+ // полный путь
+ const fileName = `${ROOT_PATH}/${filePath}.${fileExt}`
+
+ try {
+   // пробуем удалить файл
+   await fs.unlink(fileName)
+
+   // нам также необходимо удалить директорию, если таковая имеется
+   // мы передаем утилите путь, сокращенный на единицу, т.е. без учета пути файла
+   await removeDir(truncPath(`${ROOT_PATH}/${filePath}`))
+ } catch (err) {
+   // если файл отсутствует
+   if (notExist(err)) {
+     throw { status: 404, message: 'Not found' }
+   }
+   // если возникла другая ошибка
+   throw err
+ }
+}</code></pre><br/>
+<p>Утилита для удаления директории:</p><br/>
+<pre><code class="javascript">// утилита принимает путь к удаляемой директории и путь к корневой директории,
+// который по умолчанию имеет значение директории с проектами
+async function removeDir(dirPath, rootPath = ROOT_PATH) {
+ // останавливаемся, если достигли корневой директории
+ if (dirPath === rootPath) return
+
+ // определяем является ли директория пустой
+ // длина ее содержимого должна равняться 0
+ const isEmpty = (await fs.readdir(dirPath)).length &lt; 1
+
+ // если директория является пустой
+ if (isEmpty) {
+   // удаляем ее
+   await fs.rmdir(dirPath)
+
+   // и... рекурсия
+   // на каждой итерации мы сокращаем путь на единицу,
+   // пока не поднимемся до корневой директории
+   removeDir(truncPath(dirPath), rootPath)
+ }
+}</code></pre><br/>
+<p>Еще одна рекурсивная функции (обещаю, что последняя) для получения названий всех существующих проектов:</p><br/>
+<pre><code class="javascript">// функция принимает путь к корневой директории
+export async function getFileNames(path = ROOT_PATH) {
+ // переменная для названий проектов
+ let fileNames = []
+
+ try {
+   // читаем содержимое директории
+   const files = await fs.readdir(path)
+
+   // если в директории находится только один файл
+   // возвращаем массив с названиями проектов
+   if (files.length &lt; 1) return fileNames
+
+   // иначе перебираем файлы
+   for (let file of files) {
+     // формируем путь каждого файла
+     file = `${path}/${file}`
+
+     // определяем, является ли файл директорией
+     const isDir = (await fs.stat(file)).isDirectory()
+
+     // если является
+     if (isDir) {
+       // прибегаем к рекурсии
+       fileNames = fileNames.concat(await getFileNames(file))
+     } else {
+       // если не является, добавляем его путь в массив
+       fileNames.push(file)
+     }
+   }
+
+   return fileNames
+ } catch (err) {
+   if (notExist(err)) {
+     throw { status: 404, message: 'Not found' }
+   }
+   throw err
+ }
+}</code></pre><br/>
+<p>Последняя функция, которая нужна нам для работы с проектами — это функция для загрузки файлов. Данная функция не является такой универсальной, как предыдущие. Она предназначена для обработки данных в формате <code>multipart/form-data</code>, содержащими вполне определенные поля:</p><br/>
+<pre><code class="javascript">// создаем посредника для загрузки файлов
+export const uploadFile = multer({
+ storage: multer.diskStorage({
+   // пункт назначения - директория для файлов
+   destination: (req, file, cb) => {
+     // важно: последняя часть названия проекта должна совпадать с названием файла
+     // например, если проект называется `data/todos`, то файл должен называться `todos.json`
+     // мы также удаляем расширение файла из пути к директории
+     const dirPath = `${ROOT_PATH}/${req.body.project_name.replace(
+       file.originalname.replace('.json', ''),
+       ''
+     )}`
+     // здесь мы исходим из предположения, что директория для файла отсутствует
+     // с существующей директорией ничего не случится
+     fs.mkdir(dirPath, { recursive: true }).then(() => {
+       cb(null, dirPath)
+     })
+   },
+   // название файла
+   filename: (_, file, cb) => {
+     cb(null, file.originalname)
+   }
+ })
+})</code></pre><br/>
+<p>Все, что нам осталось сделать для работы с проектами — это разработать клиентскую часть админки.</p><br/>
+<h2 id="klient">Клиент</h2><br/>
+<p>Разметка (<code>public/index.html</code>):</p><br/>
+<pre><code class="html">&lt;head>
+ &lt;!-- заголовок документа -->
+ &lt;title>Mock API&lt;/title>
+ &lt;!-- иконка -->
+ &lt;link rel="icon" href="icon.png" />
+ &lt;!-- Гугл-шрифт -->
+ &lt;link rel="preconnect" href="https://fonts.googleapis.com" />
+ &lt;link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+ &lt;link
+   href="https://fonts.googleapis.com/css2?family=Montserrat&amp;display=swap"
+   rel="stylesheet"
+ />
+ &lt;!-- bootstrap -->
+ &lt;link
+   rel="stylesheet"
+   href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+   integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T"
+   crossorigin="anonymous"
+ />
+ &lt;!-- bootstrap-icons -->
+ &lt;link
+   rel="stylesheet"
+   href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css"
+ />
+ &lt;!-- стили -->
+ &lt;link rel="stylesheet" href="style.css" />
+&lt;/head>
+&lt;body>
+ &lt;div class="container">
+   &lt;header>
+     &lt;h1 class="text-center my-3">Mock API&lt;/h1>
+   &lt;/header>
+
+   &lt;main>
+     &lt;div>
+       &lt;h3 class="my-3">My projects&lt;/h3>
+       &lt;!-- список существующих проектов -->
+       &lt;ul class="list-group" id="project_list">&lt;/ul>
+     &lt;/div>
+
+     &lt;div>
+       &lt;h3 class="my-3">New project&lt;/h3>
+       &lt;!-- форма для создания нового проекта -->
+       &lt;form id="project_create">
+         &lt;div class="mb-2">
+           &lt;label for="project_name" class="form-label">Project name&lt;/label>
+           &lt;!-- поле для ввода названия проекта -->
+           &lt;input
+             type="text"
+             class="form-control mt-2"
+             name="project_name"
+             id="project_name"
+             aria-describedby="project_name"
+             placeholder="Project name"
+           />
+         &lt;/div>
+
+         &lt;details class="mt-4">
+           &lt;summary>Enter or paste project data&lt;/summary>
+           &lt;!-- поле для ввода/вставки данных для проекта -->
+           &lt;textarea
+             class="form-control mt-2"
+             name="project_data"
+             id="project_data_paste"
+             rows="10"
+           >&lt;/textarea>
+         &lt;/details>
+         &lt;div class="mt-4">
+           &lt;label for="project_data_upload" class="form-label"
+             >Upload project data&lt;/label
+           >
+           &lt;!-- поле для загрузки файла с данными для проекта -->
+           &lt;!-- принимает только JSON-файлы в единственном числе -->
+           &lt;input
+             class="form-control mt-2"
+             type="file"
+             accept=".json"
+             name="project_data_upload"
+             id="project_data_upload"
+             aria-describedby="project_data_upload"
+           />
+         &lt;/div>
+         &lt;!-- кнопка для создания проекта -->
+         &lt;button class="btn btn-success my-4">Create project&lt;/button>
+       &lt;/form>
+     &lt;/div>
+   &lt;/main>
+ &lt;/div>
+
+ &lt;!-- скрипт-модуль -->
+ &lt;script src="script.js" type="module">&lt;/script>
+&lt;/body></code></pre><br/>
+<p><em>Обратите внимание</em> на <code>id</code> элементов. Поскольку элементы с атрибутом <code>id</code> становятся свойствами глобального объекта <code>window</code>, доступ к таким элементам можно получать напрямую, т.е. без предварительного получения ссылки на элемент с помощью таких методов, как <code>querySelector()</code>.</p><br/>
+<p>На стилях я останавливаться не буду: все, что мы там делаем — это определяем шрифт для всех элементов и ограничиваем максимальную ширину <code>.container</code>.</p><br/>
+<p>Переходим к <code>public/script.js</code>.</p><br/>
+<p>Импортируем <code>very-simple-fetch</code>, фиктивные данные, утилиту для определения того, является ли переданный аргумент <code>JSON</code>, и определяем базовый <code>URL</code> сервера:</p><br/>
+<pre><code class="javascript">import simpleFetch from '/node_modules/very-simple-fetch/index.js'
+import todos from './data/todos.js'
+import { isJson } from './utils.js'
+
+simpleFetch.baseUrl = 'http://localhost:5000/project'</code></pre><br/>
+<p>Фиктивные данные (<code>public/data/todos.js</code>):</p><br/>
+<pre><code class="javascript">export default [
+ {
+   id: '1',
+   text: 'Eat',
+   done: true,
+   edit: false
+ },
+ {
+   id: '2',
+   text: 'Code',
+   done: true,
+   edit: false
+ },
+ {
+   id: '3',
+   text: 'Sleep',
+   done: false,
+   edit: false
+ },
+ {
+   id: '4',
+   text: 'Repeat',
+   done: false,
+   edit: false
+ }
+]</code></pre><br/>
+<p>Утилита (<code>public/utils.js</code>):</p><br/>
+<pre><code class="javascript">export const isJson = (item) => {
+ try {
+   item = JSON.parse(item)
+ } catch (e) {
+   return false
+ }
+
+ if (typeof item === 'object' &amp;&amp; item !== null) {
+   return true
+ }
+
+ return false
+}</code></pre><br/>
+<p>Определяем функцию для получения названий проектов:</p><br/>
+<pre><code class="javascript">async function fetchProjects() {
+ // получаем данные и ошибку
+ // `customCache: false` отключает кеширование результатов
+ const { data, error } = await simpleFetch.get({ customCache: false })
+
+ // если при выполнении запроса возникла ошибка
+ if (error) {
+   return console.error(error)
+ }
+
+ // очищаем список проектов
+ project_list.innerHTML = ''
+
+ // если проектов нет
+ if (data.length &lt; 1) {
+   // /*html*/ - расширение `es6-string-html` для VSCode
+   // включает подсветку и дополнение в шаблонных литералах
+   return (project_list.innerHTML = /*html*/ `
+     &lt;li
+       class="list-group-item d-flex align-items-center"
+     >
+       You have no projects. Why don't create one?
+     &lt;/li>
+   `)
+ }
+
+ // форматируем список, оставляя только названия проектов
+ const projects = data.map((p) =>
+   p.replace(/.+projects\//, '').replace('.json', '')
+ )
+
+ // создаем элемент для каждого названия проекта
+ // обратите внимание на атрибуты `data-*`
+ for (const p of projects) {
+   project_list.innerHTML += /*html*/ `
+     &lt;li
+       class="list-group-item d-flex align-items-center"
+       data-name="${p}"
+     >
+       &lt;span class="flex-grow-1">
+         ${p}
+       &lt;/span>
+       &lt;button
+         class="btn btn-outline-success"
+         data-action="edit"
+       >
+         &lt;i class="bi bi-pencil">&lt;/i>
+       &lt;/button>
+       &lt;button
+         class="btn btn-outline-danger"
+         data-action="remove"
+       >
+         &lt;i class="bi bi-trash">&lt;/i>
+       &lt;/button>
+     &lt;/li>
+   `
+ }
+}</code></pre><br/>
+<p>Функция для инициализации проекта с помощью фиктивных данных:</p><br/>
+<pre><code class="javascript">function initProject(name, data) {
+ project_name.value = name
+ project_data_paste.value = isJson(data) ? data : JSON.stringify(data, null, 2)
+}</code></pre><br/>
+<p>Функция для инициализации обработчиков. Она включает в себя регистрацию обработчиков нажатия кнопок для редактирования и удаления проектов, а также обработчика отправки формы — создания или загрузки проекта:</p><br/>
+<pre><code class="javascript">function initHandlers() {
+ // ...
+}</code></pre><br/>
+<p>Обработчик нажатия кнопок:</p><br/>
+<pre><code class="javascript">// обработка нажатия кнопок делегируется списку проектов - элементу `ul`
+project_list.onclick = ({ target }) => {
+ // получаем ссылку на кнопку
+ const button = target.matches('button') ? target : target.closest('button')
+
+ // получаем тип операции
+ const { action } = button.dataset
+
+ // получаем название проекта
+ const { name } = target.closest('li').dataset
+
+ if (button &amp;&amp; action &amp;&amp; name) {
+   switch (action) {
+     case 'edit':
+       // функция для редактирования проекта
+       return editProject(name)
+     case 'remove':
+       // функция для удаления проекта
+       return removeProject(name)
+     default:
+       return
+   }
+ }
+}</code></pre><br/>
+<p>Обработчик отправки формы:</p><br/>
+<pre><code class="javascript">project_create.onsubmit = async (e) => {
+ e.preventDefault()
+
+ // проект должен иметь название
+ if (!project_name.value.trim()) return
+
+ // переменные для данных проекта и ответа от сервера
+ let data, response
+
+ // добавленный с помощью `&lt;input type="file" />` файл
+ // имеет приоритет перед значением `&lt;textarea>`
+ if (project_data_upload.value) {
+   // `multipart/form-data`
+   // названия полей совпадают со значениями
+   // атрибутов `name` элементов `input` и `textarea`
+   data = new FormData(project_create)
+
+   // удаляем лишнее поле
+   data.delete('project_data_paste')
+
+   // отправляем запрос и получаем ответ
+   response = await simpleFetch.post('/upload', data, {
+     // `multer` требует, чтобы заголовки запроса были пустыми
+     headers: {}
+   })
+ } else {
+   // получаем данные для проекта
+   data = project_data_paste.value.trim()
+   // получаем название проекта
+   const name = project_name.value.trim()
+
+   // если данные или название отсутствуют
+   if (!data || !name) return
+
+   // формируем тело запроса
+   const body = {
+     project_name: name,
+     project_data: isJson(data) ? JSON.parse(data) : data
+   }
+
+   // отправляем запрос и получаем ответ
+   response = await simpleFetch.post('/create', body)
+ }
+
+ // очищаем поля
+ project_name.value = ''
+ project_data_paste.value = ''
+ project_data_upload.value = ''
+
+ // вызываем обработчик ответа
+ // важно: для корректного обновления списка проектов
+ // необходимо ждать завершения обработки ответа
+ await handleResponse(response)
+}</code></pre><br/>
+<p>Функция для редактирования проекта:</p><br/>
+<pre><code class="javascript">async function editProject(name) {
+ // название проекта передается на сервер в виде строки запроса
+ const { data, error } = await simpleFetch.get(`?project_name=${name}`)
+
+ if (error) {
+   return console.error(error)
+ }
+
+ // инициализируем проект с помощью полученных от сервера данных
+ initProject(name, data)
+}</code></pre><br/>
+<p>Функция для удаления проекта:</p><br/>
+<pre><code class="javascript">async function removeProject(name) {
+ // название проекта передается на сервер в виде строки запроса
+ const response = await simpleFetch.remove(`?project_name=${name}`)
+
+ // вызываем обработчик ответа
+ await handleResponse(response)
+}</code></pre><br/>
+<p>Функция для обработки ответа от сервера:</p><br/>
+<pre><code class="javascript">async function handleResponse(response) {
+ // извлекаем данные и ошибку из ответа
+ const { data, error } = response
+
+ // если при выполнении ответа возникла ошибка
+ if (error) {
+   return console.error(error)
+ }
+
+ // выводим в консоль сообщение об успешно выполненной операции
+ console.log(data.message)
+
+ // обновляем список проектов
+ await fetchProjects()
+}</code></pre><br/>
+<p>Наконец, вызываем наши функции:</p><br/>
+<pre><code class="javascript">// получаем список существующих проектов
+fetchProjects()
+// инициализируем новый проект
+// initProject(название проекта, данные для проекта)
+initProject('todos', todos)
+// инициализируем обработчики событий
+initHandlers()</code></pre><br/>
+<p>Проверим работоспособность нашего сервиса для работы с проектами.</p><br/>
+<p>Выполняем команду:</p><br/>
+<pre><code class="bash">yarn dev
+# or
+npm run dev</code></pre><br/>
+<p>Запускается сервер для разработки, открывается новая вкладка браузера по адресу <code>http://localhost:5000</code>:</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/k9/ih/qy/k9ihqyadr2xptnecjgzn14trfqs.png"/><br/>
+<p><br/>
+У нас имеется название и данные для проекта. Нажимаем <code>Create project</code>. В директории <code>projects</code> появляется файл <code>todos.json</code>, список проектов обновляется:</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ea/ov/ay/eaovay2rmwayppvx0pos6fth1fg.png"/><br/>
+<p><br/>
+Попробуем загрузить файл. Вводим название нового проекта, например, <code>data/todos</code>, загружаем через инпут <code>JSON-файл</code> из директории <code>public/data</code>, нажимаем <code>Create project</code>. В директории <code>projects</code> появляется директория <code>data</code> с файлом нового проекта, список проектов обновляется:</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/sr/6c/ux/sr6cuxrfq_nfq8e7ue9smqjnsdc.png"/><br/>
+<p><br/>
+Нажатие кнопок для редактирования и удаления проекта также приводит к ожидаемым результатам.</p><br/>
+<p>Отлично, сервис для работы с проектами функционирует в штатном режиме. Но пока он не умеет отвечать на запросы со стороны. Давайте это исправим.</p><br/>
+<h2 id="routy-dlya-api">Роуты для <code>API</code></h2><br/>
+<p>Создаем файл <code>api.routes.js</code> в директории <code>routes</code>.</p><br/>
+<p>Импортируем роутер из <code>express</code>, утилиты из <code>utils.js</code> и экспортируем экземпляр роутера:</p><br/>
+<pre><code class="javascript">import { Router } from 'express'
+import { createFile, readFile, queryMap, areEqual } from '../utils.js'
+
+export default Router()</code></pre><br/>
+<p>Начнем с самого простого — <code>POST-запроса</code> на добавление данных в существующий проект:</p><br/>
+<pre><code class="javascript">.post('*', async (req, res, next) => {
+ try {
+   // получаем проект
+   const project = await readFile(req.url)
+
+   // создаем новый проект путем обновления существующего
+   const newProject = project.concat(req.body)
+
+   // сохраняем новый проект
+   await createFile(newProject, req.url)
+
+   // возвращаем новый проект
+   res.status(201).json(newProject)
+ } catch (e) {
+   next(e)
+ }
+})</code></pre><br/>
+<p><code>DELETE-запрос</code> на удаление данных из проекта:</p><br/>
+<pre><code class="javascript">// `slug` - это любой уникальный идентификатор проекта
+// он может называться как угодно, но, обычно, именуется как `slug` или `param`
+// как правило, таким идентификатором является `id` проекта
+// в нашем случае это также может быть текст задачи
+.delete('*/:slug', async (req, res, next) => {
+ // параметры запроса имеют вид `{ '0': '/todos', slug: '1' }`
+ // извлекаем путь и идентификатор
+ const [url, slug] = Object.values(req.params)
+
+ try {
+   // получаем проект
+   const project = await readFile(url)
+
+   // создаем новый проект путем фильтрации существующего
+   const newProject = project.filter(
+     (p) => !Object.values(p).find((v) => v === slug)
+   )
+
+   // если существующий и новый проекты равны, значит,
+   // данных для удаления не обнаружено
+   // небольшой хак
+   if (areEqual(project, newProject)) {
+     throw { status: 404, message: 'Not found' }
+   }
+
+   // создаем новый проект
+   await createFile(newProject, url)
+
+   // и возвращаем его
+   res.status(201).json(newProject)
+ } catch (e) {
+   next(e)
+ }
+})</code></pre><br/>
+<p>Вот как выглядит утилита для сравнения объектов (<code>utils.js</code>):</p><br/>
+<pre><code class="javascript">export function areEqual(a, b) {
+ if (a === b) return true
+
+ if (a instanceof Date &amp;&amp; b instanceof Date) return a.getTime() === b.getTime()
+
+ if (!a || !b || (typeof a !== 'object' &amp;&amp; typeof b !== 'object'))
+   return a === b
+
+ if (a.prototype !== b.prototype) return false
+
+ const keys = Object.keys(a)
+
+ if (keys.length !== Object.keys(b).length) return false
+
+ return keys.every((k) => areEqual(a[k], b[k]))
+}</code></pre><br/>
+<p><code>PUT-запрос</code> на обновление данных существующего проекта выглядит похоже:</p><br/>
+<pre><code class="javascript">.put('*/:slug', async (req, res, next) => {
+ const [url, slug] = Object.values(req.params)
+
+ try {
+   const project = await readFile(url)
+
+   // создаем новый проект путем обновления существующего
+   const newProject = project.map((p) => {
+     if (Object.values(p).find((v) => v === slug)) {
+       return { ...p, ...req.body }
+     } else return p
+   })
+
+   // если объекты равны...
+   if (areEqual(project, newProject)) {
+     throw { status: 404, message: 'Not found' }
+   }
+
+   await createFile(newProject, url)
+
+   res.status(201).json(newProject)
+ } catch (e) {
+   next(e)
+ }
+})</code></pre><br/>
+<p>Что касается <code>GET-запроса</code> на получение проекта, то с ним все не так просто. Мы должны иметь возможность получать как проект целиком, так и отдельные данные из него. При этом в случае с отдельными данными у нас должна быть возможность получать их как с помощью уникального идентификатора (параметра) — в этом случае должен возвращаться объект, так и с помощью строки запроса — в этом случае должен возвращаться массив.</p><br/>
+<p><code>GET-запрос</code> на получение всего проекта:</p><br/>
+<pre><code class="javascript">.get('*', async (req, res, next) => {
+ // если запрос включает `?`, значит, он содержит строку запроса
+ // передаем управление следующему роуту
+ if (req.url.includes('?')) {
+   return next()
+ }
+
+ try {
+   // пробуем получить проект
+   const project = await readFile(req.url)
+
+   // и возвращаем его
+   res.status(200).json(project)
+ } catch (e) {
+   // `throw { status: 404, message: 'Not found' }`
+   // если проект не обнаружен, возможно, мы имеем дело с запросом
+   // на получение уникальных данных по параметру
+   if (e.status === 404) {
+     // передаем управление следующему роуту
+     return next()
+   }
+
+   // другая ошибка
+   next(e)
+ }
+})</code></pre><br/>
+<p><code>GET-запрос</code> на получение данных по параметру или строке запроса:</p><br/>
+<pre><code class="javascript">.get('*/:slug', async (req, res, next) => {
+ let project = null
+
+ try {
+   // если запрос содержит строку запроса
+   if (req.url.includes('?')) {
+     // получаем проект, удаляя строку запроса
+     project = await readFile(req.url.replace(/\?.+/, ''))
+
+     // `req.query` - это объект вида `{ id: '1' }`, если строка запроса была `?id=1`
+     // нам необходимо исключить параметры, которые должны обрабатываться особым образом
+     // об утилите `queryMap` мы поговорим чуть позже
+     const notQueryKeyValues = Object.entries(req.query).filter(
+       ([k]) => !queryMap[k] &amp;&amp; k !== 'order'
+     )
+
+     // если имеются "обычные" параметры
+     if (notQueryKeyValues.length > 0) {
+       // фильтруем данные на их основе
+       project = project.filter((p) =>
+         notQueryKeyValues.some(([k, v]) => {
+           if (p[k]) {
+             // унифицируем определение идентичности
+             return p[k].toString() === v.toString()
+           }
+         })
+       )
+     }
+
+     // если строка запроса содержит параметры `sort` и/или `order`
+     // выполняем сортировку данных
+     if (req.query['sort'] || req.query['order']) {
+       project = queryMap.sort(
+         project,
+         req.query['sort'],
+         req.query['order']
+       )
+     }
+
+     // если строка запроса содержит параметр `offset`
+     // выполняет сдвиг - пропускаем указанное количество элементов
+     if (req.query['offset']) {
+       project = queryMap.offset(project, req.query['offset'])
+     }
+
+     // если строка запроса содержит параметр `limit`
+     // возвращаем только указанное количество элементов
+     if (req.query['limit']) {
+       project = queryMap.limit(project, req.query['limit'])
+     }
+   } else {
+     // если запрос не содержит строки запроса
+     // значит, это запрос на получение уникального объекта
+     // получаем проект
+     const _project = await readFile(req.params[0])
+
+     // пытаемся найти данные по идентификатору
+     for (const item of _project) {
+       for (const key in item) {
+         if (item[key] === req.params.slug) {
+           project = item
+         }
+       }
+     }
+   }
+
+   // если данных не обнаружено
+   if (!project || project.length &lt; 1) return res.sendStatus(404)
+
+   // возвращаем данные
+   res.status(200).json(project)
+ } catch (e) {
+   next(e)
+ }
+})</code></pre><br/>
+<p>Утилита для обработки специальных параметров строки запроса выглядит следующим образом (<code>utils.js</code>):</p><br/>
+<pre><code class="javascript">// создаем экземпляры `Intl.Collator` для локализованного сравнения строк и чисел
+const strCollator = new Intl.Collator()
+const numCollator = new Intl.Collator([], { numeric: true })
+
+export const queryMap = {
+ // сдвиг или пропуск указанного количества элементов
+ offset: (items, count) => items.slice(count),
+ // ограничение количества возвращаемых элементов
+ limit: (items, count) => items.slice(0, count),
+ // сортировка элементов
+ // по умолчанию элементы сортируются по `id` и по возрастанию
+ sort(items, field = 'id', order = 'asc') {
+   // определяем, являются ли значения поля для сортировки строками
+   const isString = typeof items[0][field] === 'string' &amp;&amp; Number.isNaN(items[0][field])
+   // выбираем правильный экземпляр `Intl.Collator`
+   const collator = isString ? strCollator : numCollator
+   // выполняем сортировку
+   return items.sort((a, b) => order.toLowerCase() === 'asc'
+       ? collator.compare(a[field], b[field])
+       : collator.compare(b[field], a[field])
+   )
+ }
+}</code></pre><br/>
+<p>Итак, у нас имеется сервис для работы с проектами и <code>API</code> для работы с запросами. В работоспособности сервиса мы уже убедились. Осталось проверить, что запросы к <code>API</code> также обрабатываются корректно.</p><br/>
+<h2 id="rest-client"><code>REST Client</code></h2><br/>
+<p>Тремя наиболее популярными решениями для быстрого тестирования <code>API</code> является следующее:</p><br/>
+<ul>
+<li><a href="https://curl.se/"><code>curl</code></a> — интерфейс командной строки</li>
+<li><a href="https://www.postman.com/"><code>postman</code></a> или <a href="https://insomnia.rest/download"><code>insomnia</code></a> — специализированные сервисы</li>
+<li><a href="https://marketplace.visualstudio.com/items?itemName=humao.rest-client"><code>REST Client</code></a> — расширение для <code>VSCode</code></li>
+</ul><br/>
+<p>Я покажу, как использовать <code>REST Client</code>, однако запросы, которые мы сформируем, можно будет легко использовать и в других инструментах.</p><br/>
+<p>После установки <code>REST Client</code> в корневой директории проекта необходимо создать файл с расширением <code>.http</code>, например, <code>test.http</code> следующего содержания:</p><br/>
+<pre><code class="bash">###
+### todos
+###
+GET http://localhost:5000/api/todos
+
+###
+GET http://localhost:5000/api/todos/2
+
+###
+GET http://localhost:5000/api/todos/5
+
+###
+GET http://localhost:5000/api/todos?text=Sleep
+
+###
+GET http://localhost:5000/api/todos?text=Test
+
+###
+GET http://localhost:5000/api/todos?done=true
+
+###
+POST http://localhost:5000/api/todos
+content-type: application/json
+
+{
+ "id": "5",
+ "text": "Test",
+ "done": false,
+ "edit": false
+}
+
+###
+POST http://localhost:5000/api/todos
+content-type: application/json
+
+[
+ {
+   "id": "6",
+   "text": "Test2",
+   "done": false,
+   "edit": false
+ },
+ {
+   "id": "7",
+   "text": "Test3",
+   "done": true,
+   "edit": false
+ }
+]
+
+###
+PUT http://localhost:5000/api/todos/2
+content-type: application/json
+
+{
+ "text": "Test",
+ "done": false
+}
+
+###
+DELETE http://localhost:5000/api/todos/5
+
+###
+### query
+###
+GET http://localhost:5000/api/todos?limit=2
+
+###
+GET http://localhost:5000/api/todos?offset=2&amp;limit=1
+
+###
+GET http://localhost:5000/api/todos?offset=3&amp;limit=2
+
+###
+GET http://localhost:5000/api/todos?sort=id&amp;order=desc
+
+###
+GET http://localhost:5000/api/todos?sort=title&amp;order=desc
+
+###
+GET http://localhost:5000/api/todos?sort=text
+
+###
+GET http://localhost:5000/api/todos?sort=text&amp;order=desc&amp;offset=1&amp;limit=2
+
+###
+### data/todos
+###
+GET http://localhost:5000/api/data/todos
+
+###
+GET http://localhost:5000/api/data/todos/2
+
+###
+GET http://localhost:5000/api/data/todos/5
+
+###
+GET http://localhost:5000/api/data/todos?text=Sleep
+
+###
+GET http://localhost:5000/api/data/todos?text=Test
+
+###
+GET http://localhost:5000/api/data/todos?done=false
+
+###
+POST http://localhost:5000/api/data/todos
+content-type: application/json
+
+{
+ "id": "5",
+ "text": "Test",
+ "done": false,
+ "edit": false
+}
+
+###
+POST http://localhost:5000/api/data/todos
+content-type: application/json
+
+[
+ {
+   "id": "6",
+   "text": "Test2",
+   "done": true,
+   "edit": false
+ },
+ {
+   "id": "7",
+   "text": "Test3",
+   "done": false,
+   "edit": false
+ }
+]
+
+###
+PUT http://localhost:5000/api/data/todos/3
+content-type: application/json
+
+{
+ "text": "Test",
+ "done": true
+}
+
+###
+DELETE http://localhost:5000/api/data/todos/7</code></pre><br/>
+<p>Здесь:</p><br/>
+<ul>
+<li><code>###</code> — разделитель запросов, который можно использовать для добавления комментариев</li>
+<li><code>GET</code>, <code>POST</code> и т.д. — метод запроса</li>
+<li><code>content-type: application/json</code> — заголовок запроса</li>
+<li><code>[ ... ]</code> или <code>{ ... }</code> — тело запроса</li>
+<li>заголовки и тело запроса должны разделяться пустой строкой</li>
+</ul><br/>
+<p>Над каждым запросом в <code>VSCode</code> имеется кнопка для выполнения запроса.</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/xf/xm/f4/xfxmf4ssyzdygi4hqpg1web-kxc.png"/><br/>
+<p><br/>
+Для тестирования <code>API</code> необходимо создать два проекта: <code>todos</code> и <code>data/todos</code>.</p><br/>
+<p>Выполним парочку запросов.</p><br/>
+<p><code>GET-запрос</code> на получение проекта <code>todos</code>:</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/xz/9j/-q/xz9j-q3dqazj9tyjbrttn9hljjq.png"/><br/>
+<p><br/>
+<code>GET-запрос</code> на получение задачи с текстом <code>Sleep</code> из проекта <code>todos</code> с помощью строки запроса (такой запрос также можно выполнить с помощью параметра — <code>GET http://localhost:5000/api/todos/Sleep</code>):</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/hc/qx/me/hcqxmebxxk8qsrrraa6ivx-95-0.png"/><br/>
+<p><br/>
+<code>POST-запрос</code> на добавление новой задачи в проект <code>todos</code>:</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/mg/ma/lj/mgmaljygogo8xdfqfcjkftg2ybi.png"/><br/>
+<p><br/>
+<code>GET-запрос</code> на получение второй и третьей задач из проекта <code>todos</code>, отсортированных по полю <code>text</code> по убыванию:</p><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/_g/92/la/_g92laa3vqc0shq0j7yufcgv1dc.png"/><br/>
+<p><br/>
+И т.д.</p><br/>
+<p><em>Обратите внимание</em>, что операции для работы с одним проектом не влияют на другие проекты.</p><br/>
+<p>Выполните несколько запросов самостоятельно, изучите ответы и мысленно свяжите их с роутами, реализованными в <code>api.routes.js</code>.</p><br/>
+<p>Пожалуй, это все, чем я хотел поделиться с вами в данной статье.</p><br/>
+<p>Буду рад любой форме обратной связи.</p><br/>
+<p>Благодарю за внимание и хорошего дня!</p><br/>
+<hr/><br/>
+<p><a href="https://cloud.timeweb.com/?utm_source=habr&amp;utm_medium=banner&amp;utm_campaign=cloud&amp;utm_content=direct&amp;utm_term=low"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/wn/cq/lp/wncqlp9abeml4npwzsybuvhzcta.png"/></a></p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bjavascript%5D" class="tm-tags-list__link">javascript</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnode%5D" class="tm-tags-list__link">node</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnodejs%5D" class="tm-tags-list__link">nodejs</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnode.js%5D" class="tm-tags-list__link">node.js</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bserver%5D" class="tm-tags-list__link">server</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmock%5D" class="tm-tags-list__link">mock</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bapi%5D" class="tm-tags-list__link">api</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bfake%20data%5D" class="tm-tags-list__link">fake data</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%81%D0%B5%D1%80%D0%B2%D0%B5%D1%80%5D" class="tm-tags-list__link">сервер</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%84%D0%B8%D0%BA%D1%82%D0%B8%D0%B2%D0%BD%D1%8B%D0%B5%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%B5%5D" class="tm-tags-list__link">фиктивные данные</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%20api%5D" class="tm-tags-list__link">тестирование api</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/timeweb/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Timeweb
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/webdev/" class="tm-hubs-list__link">
+    Разработка веб-сайтов
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/javascript/" class="tm-hubs-list__link">
+    JavaScript
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/nodejs/" class="tm-hubs-list__link">
+    Node.JS
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 5: ↑5 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 5: ↑5 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+5</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">4.2K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    63
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/timeweb/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/b5b/7e1/c48/b5b7e1c4819388606f1a3c7ed1d2373a.jpg" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/timeweb/profile/" class="tm-company-snippet__title">Timeweb</a> <div class="tm-company-snippet__description">Хостинг, VDS и ИТ-инфраструктура</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <!----> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/aio350/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/076/1e1/2c6/0761e12c6ea091cb6170c185394fae64.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 160 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    74
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">22</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Igor Agapov</span> <a href="/ru/users/aio350/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @aio350
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">JavaScript Developer</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/timeweb/blog/583588/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 3 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2006-05-24T20:00:00.000Z" title="2006-05-25, 00:00">25  мая  2006</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://timeweb.com/ru/?utm_source=habr.com&amp;utm_medium=smo" target="_blank" class="tm-company-basic-info__link">
+      timeweb.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    201–500 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2011-08-11T14:17:04.000Z" title="2011-08-11, 18:17">11  августа  2011</time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/timeweb/blog/583588/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/timeweb/blog/583588/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583588":{"id":"583588","timePublished":"2021-10-15T06:17:57+00:00","isCorporative":true,"lang":"ru","titleHtml":"Node.js: разрабатываем сервер для тестирования API","leadData":{"textHtml":"\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F4-\u002Fhn\u002F8w\u002F4-hn8wkkaeafijehpfybkgcounq.png\"\u003E\u003Cbr\u003E\r\n\u003Cp\u003E\u003Cbr\u003E\r\nПривет, друзья!\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EВ этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования \u003Ccode\u003EAPI\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EОсновной функционал нашего приложения будет следующим:\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eадминка с возможностью добавления данных (далее — проекты) путем их набора (ввода) или копирования\u002Fвставки, либо путем загрузки файла;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eсохранение проектов на сервере;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eбезопасная запись, чтение и удаление файлов на любом уровне вложенности;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eполучение названий существующих проектов и их отображение в админке;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eвозможность редактирования и удаления проектов;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eунифицированная обработка \u003Ccode\u003EGET\u003C\u002Fcode\u003E, \u003Ccode\u003EPOST\u003C\u002Fcode\u003E, \u003Ccode\u003EPUT\u003C\u002Fcode\u003E и \u003Ccode\u003EDELETE\u003C\u002Fcode\u003E запросов к любому существующему проекту, включая \u003Ccode\u003EGET-запросы\u003C\u002Fcode\u003E, содержащие параметры и строки запроса;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eобработка специальных параметров строки запроса \u003Ccode\u003Esort\u003C\u002Fcode\u003E, \u003Ccode\u003Eorder\u003C\u002Fcode\u003E, \u003Ccode\u003Elimit\u003C\u002Fcode\u003E и \u003Ccode\u003Eoffset\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eи многое другое.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u003E\r\n\u003Cp\u003EНаша админка будет выглядеть так:\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fz_\u002Fbm\u002Fge\u002Fz_bmgez08qrefh2udyodneqniqi.png\"\u003E\u003Cbr\u003E\r\n\u003Cp\u003E\u003Cbr\u003E\r\nДля быстрой стилизации приложения будет использоваться \u003Ca href=\"https:\u002F\u002Fgetbootstrap.com\u002F\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003EBootstrap\u003C\u002Fcode\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EИсходный код проекта находится \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fharryheman\u002Fmock-api\" rel=\"nofollow noopener noreferrer\"\u003Eздесь\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EРазумеется, с приложением, которое мы с разработаем, сразу в продакшн не пойдешь, но при необходимости довести его до производственного уровня не составит труда.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EПри разработке приложения мы будет придерживаться 2 важных условий:\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eформат данных — \u003Ccode\u003EJSON\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eосновная форма данных — массив.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u003E\r\n\u003Cp\u003E\u003Cem\u003EОбратите внимание\u003C\u002Fem\u003E: статья рассчитана, преимущественно, на начинающих разработчиков, хотя, смею надеяться, что и опытные найдут в ней что-нибудь интересное для себя.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EВы готовы? Тогда вперед.\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":74,"votesCount":160},"rating":22,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2147423","alias":"aio350","fullname":"Igor Agapov","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F076\u002F1e1\u002F2c6\u002F0761e12c6ea091cb6170c185394fae64.jpg","speciality":"JavaScript Developer"},"statistics":{"commentsCount":3,"favoritesCount":63,"readingCount":4192,"score":5,"votesCount":5},"hubs":[{"relatedData":null,"id":"17357","alias":"timeweb","type":"corporative","title":"Блог компании Timeweb","titleHtml":"Блог компании Timeweb","isProfiled":false},{"relatedData":null,"id":"91","alias":"webdev","type":"collective","title":"Разработка веб-сайтов","titleHtml":"Разработка веб-сайтов","isProfiled":true},{"relatedData":null,"id":"357","alias":"javascript","type":"collective","title":"JavaScript","titleHtml":"JavaScript","isProfiled":true},{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"17110","alias":"nodejs","type":"collective","title":"Node.JS","titleHtml":"Node.JS","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F4-\u002Fhn\u002F8w\u002F4-hn8wkkaeafijehpfybkgcounq.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\nПривет, друзья!\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования \u003Ccode\u003EAPI\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОсновной функционал нашего приложения будет следующим:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eадминка с возможностью добавления данных (далее — проекты) путем их набора (ввода) или копирования\u002Fвставки, либо путем загрузки файла;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eсохранение проектов на сервере;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eбезопасная запись, чтение и удаление файлов на любом уровне вложенности;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eполучение названий существующих проектов и их отображение в админке;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eвозможность редактирования и удаления проектов;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eунифицированная обработка \u003Ccode\u003EGET\u003C\u002Fcode\u003E, \u003Ccode\u003EPOST\u003C\u002Fcode\u003E, \u003Ccode\u003EPUT\u003C\u002Fcode\u003E и \u003Ccode\u003EDELETE\u003C\u002Fcode\u003E запросов к любому существующему проекту, включая \u003Ccode\u003EGET-запросы\u003C\u002Fcode\u003E, содержащие параметры и строки запроса;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eобработка специальных параметров строки запроса \u003Ccode\u003Esort\u003C\u002Fcode\u003E, \u003Ccode\u003Eorder\u003C\u002Fcode\u003E, \u003Ccode\u003Elimit\u003C\u002Fcode\u003E и \u003Ccode\u003Eoffset\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eи многое другое.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНаша админка будет выглядеть так:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fz_\u002Fbm\u002Fge\u002Fz_bmgez08qrefh2udyodneqniqi.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\nДля быстрой стилизации приложения будет использоваться \u003Ca href=\"https:\u002F\u002Fgetbootstrap.com\u002F\"\u003E\u003Ccode\u003EBootstrap\u003C\u002Fcode\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИсходный код проекта находится \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fharryheman\u002Fmock-api\"\u003Eздесь\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРазумеется, с приложением, которое мы с разработаем, сразу в продакшн не пойдешь, но при необходимости довести его до производственного уровня не составит труда.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПри разработке приложения мы будет придерживаться 2 важных условий:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eформат данных — \u003Ccode\u003EJSON\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eосновная форма данных — массив.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cem\u003EОбратите внимание\u003C\u002Fem\u003E: статья рассчитана, преимущественно, на начинающих разработчиков, хотя, смею надеяться, что и опытные найдут в ней что-нибудь интересное для себя.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВы готовы? Тогда вперед.\u003C\u002Fp\u003E\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"podgotovka-proekta\"\u003EПодготовка проекта\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСоздаем директорию для проекта, переходим в нее, инициализируем проект и устанавливаем зависимости:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Emkdir mock-api\ncd !$\n\nyarn init -y\n# or\nnpm init -y\n\nyarn add express multer nodemon open-cli very-simple-fetch\n# or\nnpm i ...\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗависимости:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fexpressjs.com\u002Fru\u002F\"\u003E\u003Ccode\u003Eexpress\u003C\u002Fcode\u003E\u003C\u002Fa\u003E — \u003Ccode\u003ENode.js-фреймворк\u003C\u002Fcode\u003E для разработки сервера\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fexpressjs\u002Fmulter\u002Fblob\u002Fmaster\u002Fdoc\u002FREADME-ru.md\"\u003E\u003Ccode\u003Emulter\u003C\u002Fcode\u003E\u003C\u002Fa\u003E — обертка над \u003Ca href=\"https:\u002F\u002Fwww.npmjs.com\u002Fpackage\u002Fbusboy\"\u003E\u003Ccode\u003Ebusboy\u003C\u002Fcode\u003E\u003C\u002Fa\u003E, утилита для обработки данных в формате \u003Ccode\u003Emultipart\u002Fform-data\u003C\u002Fcode\u003E, часто используемая для сохранения файлов\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fwww.npmjs.com\u002Fpackage\u002Fnodemon\"\u003E\u003Ccode\u003Enodemon\u003C\u002Fcode\u003E\u003C\u002Fa\u003E — утилита для запуска сервера для разработки\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fwww.npmjs.com\u002Fpackage\u002Fopen-cli\"\u003E\u003Ccode\u003Eopen-cli\u003C\u002Fcode\u003E\u003C\u002Fa\u003E — утилита для автоматического открытия вкладки браузера по указанному адресу\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fwww.npmjs.com\u002Fpackage\u002Fvery-simple-fetch\"\u003E\u003Ccode\u003Every-simple-fetch\u003C\u002Fcode\u003E\u003C\u002Fa\u003E — обертка над \u003Ca href=\"https:\u002F\u002Fdeveloper.mozilla.org\u002Fru\u002Fdocs\u002FWeb\u002FAPI\u002FFetch_API\"\u003E\u003Ccode\u003EFetch API\u003C\u002Fcode\u003E\u003C\u002Fa\u003E, упрощающая работу с названным интерфейсом\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОткрываем \u003Ccode\u003Epackage.json\u003C\u002Fcode\u003E, определяем в нем основной файл сервера (\u003Ccode\u003Eindex.js\u003C\u002Fcode\u003E) как модуль и команду для запуска сервера для разработки:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n \"type\": \"module\",\n \"scripts\": {\n   \"dev\": \"open-cli http:\u002F\u002Flocalhost:5000 &amp;&amp; nodemon index.js\"\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКоманда \u003Ccode\u003Edev\u003C\u002Fcode\u003E указывает открыть вкладку браузера по адресу \u003Ccode\u003Ehttp:\u002F\u002Flocalhost:5000\u003C\u002Fcode\u003E (адрес, на котором будет запущен сервер) и выполнить код в файле \u003Ccode\u003Eindex.js\u003C\u002Fcode\u003E (запустить сервер для разработки).\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСтруктура нашего проекта будет следующей:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eprojects\u003C\u002Fcode\u003E — директория для проектов\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Epublic\u003C\u002Fcode\u003E — директория со статическими файлами для админки\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eroutes\u003C\u002Fcode\u003E — директория для роутов\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eindex.js\u003C\u002Fcode\u003E — основной файл сервера\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Eutils.js\u003C\u002Fcode\u003E — вспомогательные функции\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПожалуй, проект готов к разработке. Не будем откладывать на завтра то, что можно \u003Cdel\u003Eотложить на послезавтра\u003C\u002Fdel\u003E сделать сейчас.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"server-marshrutizator-dlya-proektov-i-utility\"\u003EСервер, маршрутизатор для проектов и утилиты\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ файле \u003Ccode\u003Eindex.js\u003C\u002Fcode\u003E мы делаем следующее:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eимпортируем \u003Ccode\u003Eexpress\u003C\u002Fcode\u003E, полный путь к текущей (рабочей) директории и роуты для проектов;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eсоздаем экземпляр \u003Ccode\u003EExpress-приложения\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eдобавляем посредников (промежуточных обработчиков): для обслуживания статических файлов, для разбора (парсинга) данных в \u003Ccode\u003EJSON\u003C\u002Fcode\u003E, для декодирования \u003Ccode\u003EURL\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eдобавляем роут для получения файлов из директории \u003Ccode\u003Enode_modules\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eдобавляем роуты для проектов;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eдобавляем обработчик ошибок;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eопределяем порт и запускаем сервер.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eimport express from 'express'\nimport { __dirname } from '.\u002Futils.js'\nimport projectRoutes from '.\u002Froutes\u002Fproject.routes.js'\n\nconst app = express()\n\napp.use(express.static('public'))\napp.use(express.json())\napp.use(express.urlencoded({ extended: true }))\n\napp.get('\u002Fnode_modules\u002F*', (req, res) =\u003E {\n res.sendFile(`${__dirname}\u002F${req.url}`)\n})\n\napp.use('\u002Fproject', projectRoutes)\n\n\u002F\u002F обратите внимание: обработчик ошибок должен быть последним в цепочке посредников\napp.use((err, req, res, next) =\u003E {\n console.error(err.message || err)\n res.sendStatus(err.status || 500)\n})\n\nconst PORT = process.env.PORT || 5000\napp.listen(PORT, () =\u003E {\n console.log(`🚀 -\u003E ${PORT}`)\n})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПодумаем о том, какие роуты нам нужны для работы с проектами. Как насчет следующих запросов:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003EGET\u003C\u002Fcode\u003E — получение названий всех существующих проектов\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003EGET\u003C\u002Fcode\u003E — получение проекта по названию\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003EPOST\u003C\u002Fcode\u003E — создание проекта\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003EPOST\u003C\u002Fcode\u003E — загрузка проекта\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003EDELETE\u003C\u002Fcode\u003E — удаление проекта\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EМы также могли бы определить отдельный роут для обновления проекта через \u003Ccode\u003EPUT-запрос\u003C\u002Fcode\u003E, но в этом нет особого смысла — проще перезаписать существующий проект новым.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ файле \u003Ccode\u003Eroutes\u002Fproject.routes.js\u003C\u002Fcode\u003E мы делаем следующее:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eимпортируем роутер из \u003Ccode\u003Eexpress\u003C\u002Fcode\u003E и вспомогательные функции из \u003Ccode\u003Eutils.js\u003C\u002Fcode\u003E;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eэкспортируем новый экземпляр роутера;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eопределяем обработчики для каждого из указанных выше запроса.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eimport { Router } from 'express'\n\u002F\u002F мы подробно рассмотрим каждую из этих утилит далее\nimport {\n getFileNames,\n createFile,\n readFile,\n removeFile,\n uploadFile\n} from '..\u002Futils.js'\n\nexport default Router()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДалее цепочкой (один за другим) идут обработчики.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПолучение проекта по названию:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E .get('\u002F', async (req, res, next) =\u003E {\n   \u002F\u002F извлекаем название проекта из строки запроса - `?project_name=todos`\n   const { project_name } = req.query\n\n   \u002F\u002F если `URL` не содержит строки запроса, значит,\n   \u002F\u002F это запрос на получение названий всех проектов\n   \u002F\u002F передаем управление следующему обработчику\n   if (!project_name) return next()\n\n   try {\n     \u002F\u002F получаем проект\n     const project = await readFile(project_name)\n\n     \u002F\u002F и возвращаем его\n     res.status(200).json(project)\n   } catch (e) {\n     \u002F\u002F передаем ошибку обработчику ошибок\n     next(e)\n   }\n })\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПолучение названий всех проектов:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E .get('\u002F', async (req, res, next) =\u003E {\n   try {\n     \u002F\u002F получаем названия проектов\n     const projects = (await getFileNames()) || []\n\n     \u002F\u002F и возвращаем их\n     res.status(200).json(projects)\n   } catch (e) {\n     next(e)\n   }\n })\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСоздание проекта:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E .post('\u002Fcreate', async (req, res, next) =\u003E {\n   \u002F\u002F извлекаем название проекта и данные для него из тела запроса\n   const { project_name, project_data } = req.body\n\n   try {\n     \u002F\u002F создаем проект\n     await createFile(project_data, project_name)\n\n     \u002F\u002F сообщаем об успешном создании проекта\n     res.status(201).json({ message: `Project \"${project_name}\" created` })\n   } catch (e) {\n     next(e)\n   }\n })\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗагрузка проекта:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E .post(\n   '\u002Fupload',\n   \u002F\u002F `multer`; обратите внимание на передаваемый ему аргумент -\n   \u002F\u002F название поля, содержащего данные, в теле запроса должно соответствовать этому значению\n   uploadFile.single('project_data_upload'),\n   (req, res, next) =\u003E {\n     \u002F\u002F сообщаем об успешной загрузке проекта\n     res.status(201).json({\n       message: `Project \"${req.body.project_name}\" uploaded`\n     })\n   }\n )\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУдаление проекта:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E .delete('\u002F', async (req, res, next) =\u003E {\n   \u002F\u002F извлекаем название проекта из строки запроса\n   const { project_name } = req.query\n\n   try {\n     \u002F\u002F удаляем проект\n     await removeFile(project_name)\n\n     \u002F\u002F сообщаем об успехе\n     res.status(201).json({ message: `Project \"${project_name}\" removed` })\n   } catch (e) {\n     next(e)\n   }\n })\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОшибка, возникшая в процессе выполнения любой операции, будет передана в обработчик, определенный в \u003Ccode\u003Eindex.js\u003C\u002Fcode\u003E — централизованная обработка ошибок. Нечто похожее мы реализуем и на клиенте.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВспомогательные функции, определенные в файле \u003Ccode\u003Eutils.js\u003C\u002Fcode\u003E — пожалуй, самая интересная и полезная часть туториала. Я постарался сделать так, чтобы эти функции были максимально универсальными с той целью, чтобы вы могли использовать их в своих проектах без существенных изменений.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНачнем с импорта модулей, определения полного (абсолютного) пути к текущей директории и директории для проектов (корневой директории), а также с создания 2 небольших утилит:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003Eдля определения того, что файла или директории не существует по сообщению об ошибке;\u003C\u002Fli\u003E\r\n\u003Cli\u003Eдля уменьшения пути на 1 \"единицу\".\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eimport { dirname } from 'path'\nimport { fileURLToPath } from 'url'\nimport { promises as fs } from 'fs'\nimport multer from 'multer'\n\n\u002F\u002F полный путь к текущей директории\nexport const __dirname = dirname(fileURLToPath(import.meta.url))\n\u002F\u002F путь к директории с проектами\nconst ROOT_PATH = `${__dirname}\u002Fprojects`\n\n\u002F\u002F утилита для определения несуществующего файла\nconst notExist = (e) =\u003E e.code === 'ENOENT'\n\u002F\u002F утилита для уменьшения пути на единицу\n\u002F\u002F например, путь `path\u002Fto\u002Ffile` после вызова этой функции\n\u002F\u002F будет иметь значение `path\u002Fto`\nconst truncPath = (p) =\u003E p.split('\u002F').slice(0, -1).join('\u002F')\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУтилита для создания файла:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F функция принимает 3 параметра: данные, путь и расширение (по умолчанию `json`)\nexport async function createFile(fileData, filePath, fileExt = 'json') {\n \u002F\u002F формируем полный путь к файлу\n const fileName = `${ROOT_PATH}\u002F${filePath}.${fileExt}`\n\n try {\n   \u002F\u002F пробуем создать файл\n   \u002F\u002F при отсутствии директории для файла, например, когда полным путем\n   \u002F\u002F файла является `...\u002Fdata\u002Ftodos.json`, выбрасывается исключение\n   if (fileExt === 'json') {\n     await fs.writeFile(fileName, JSON.stringify(fileData, null, 2))\n   } else {\n     await fs.writeFile(fileName, fileData)\n   }\n } catch (err) {\n   \u002F\u002F если ошибка связана с отсутствующей директорией\n   if (notExist(err)) {\n     \u002F\u002F создаем ее рекурсивно (несколько уровней вложенности)\n     await fs.mkdir(truncPath(`${ROOT_PATH}\u002F${filePath}`), {\n       recursive: true\n     })\n     \u002F\u002F и снова вызываем `createFile` с теми же параметрами - рекурсия\n     return createFile(fileData, filePath, fileExt)\n   }\n   \u002F\u002F если ошибка не связана с отсутствующей директорией\n   \u002F\u002F это позволяет подняться из утилиты в роут и передать ошибку в централизованный обработчик\n   throw err\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУтилита для чтения файла:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F функция принимает путь и расширение\nexport async function readFile(filePath, fileExt = 'json') {\n \u002F\u002F полный путь\n const fileName = `${ROOT_PATH}\u002F${filePath}.${fileExt}`\n\n \u002F\u002F переменная для обработчика файла\n let fileHandler = null\n try {\n   \u002F\u002F `fs.open()` возвращает обработчик файла при наличии файла\n   \u002F\u002F или выбрасывает исключение при отсутствии файла\n   \u002F\u002F это является рекомендуемым способом определения наличия файла\n   fileHandler = await fs.open(fileName)\n\n   \u002F\u002F читаем содержимое файла\n   const fileContent = await fileHandler.readFile('utf-8')\n\n   \u002F\u002F и возвращаем его\n   return fileExt === 'json' ? JSON.parse(fileContent) : fileContent\n } catch (err) {\n   \u002F\u002F если файл отсутствует\n   \u002F\u002F вы поймете почему мы используем именно такую сигнатуру ошибки,\n   \u002F\u002F когда мы перейдем к роутам для `API`\n   if (notExist(err)) {\n     throw { status: 404, message: 'Not found' }\n   }\n   \u002F\u002F если возникла другая ошибка\n   throw err\n } finally {\n   \u002F\u002F закрываем обработчик файла\n   fileHandler?.close()\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУтилита для удаления файла:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F функция принимает путь и расширение\nexport async function removeFile(filePath, fileExt = 'json') {\n \u002F\u002F полный путь\n const fileName = `${ROOT_PATH}\u002F${filePath}.${fileExt}`\n\n try {\n   \u002F\u002F пробуем удалить файл\n   await fs.unlink(fileName)\n\n   \u002F\u002F нам также необходимо удалить директорию, если таковая имеется\n   \u002F\u002F мы передаем утилите путь, сокращенный на единицу, т.е. без учета пути файла\n   await removeDir(truncPath(`${ROOT_PATH}\u002F${filePath}`))\n } catch (err) {\n   \u002F\u002F если файл отсутствует\n   if (notExist(err)) {\n     throw { status: 404, message: 'Not found' }\n   }\n   \u002F\u002F если возникла другая ошибка\n   throw err\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУтилита для удаления директории:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F утилита принимает путь к удаляемой директории и путь к корневой директории,\n\u002F\u002F который по умолчанию имеет значение директории с проектами\nasync function removeDir(dirPath, rootPath = ROOT_PATH) {\n \u002F\u002F останавливаемся, если достигли корневой директории\n if (dirPath === rootPath) return\n\n \u002F\u002F определяем является ли директория пустой\n \u002F\u002F длина ее содержимого должна равняться 0\n const isEmpty = (await fs.readdir(dirPath)).length &lt; 1\n\n \u002F\u002F если директория является пустой\n if (isEmpty) {\n   \u002F\u002F удаляем ее\n   await fs.rmdir(dirPath)\n\n   \u002F\u002F и... рекурсия\n   \u002F\u002F на каждой итерации мы сокращаем путь на единицу,\n   \u002F\u002F пока не поднимемся до корневой директории\n   removeDir(truncPath(dirPath), rootPath)\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕще одна рекурсивная функции (обещаю, что последняя) для получения названий всех существующих проектов:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F функция принимает путь к корневой директории\nexport async function getFileNames(path = ROOT_PATH) {\n \u002F\u002F переменная для названий проектов\n let fileNames = []\n\n try {\n   \u002F\u002F читаем содержимое директории\n   const files = await fs.readdir(path)\n\n   \u002F\u002F если в директории находится только один файл\n   \u002F\u002F возвращаем массив с названиями проектов\n   if (files.length &lt; 1) return fileNames\n\n   \u002F\u002F иначе перебираем файлы\n   for (let file of files) {\n     \u002F\u002F формируем путь каждого файла\n     file = `${path}\u002F${file}`\n\n     \u002F\u002F определяем, является ли файл директорией\n     const isDir = (await fs.stat(file)).isDirectory()\n\n     \u002F\u002F если является\n     if (isDir) {\n       \u002F\u002F прибегаем к рекурсии\n       fileNames = fileNames.concat(await getFileNames(file))\n     } else {\n       \u002F\u002F если не является, добавляем его путь в массив\n       fileNames.push(file)\n     }\n   }\n\n   return fileNames\n } catch (err) {\n   if (notExist(err)) {\n     throw { status: 404, message: 'Not found' }\n   }\n   throw err\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПоследняя функция, которая нужна нам для работы с проектами — это функция для загрузки файлов. Данная функция не является такой универсальной, как предыдущие. Она предназначена для обработки данных в формате \u003Ccode\u003Emultipart\u002Fform-data\u003C\u002Fcode\u003E, содержащими вполне определенные поля:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F создаем посредника для загрузки файлов\nexport const uploadFile = multer({\n storage: multer.diskStorage({\n   \u002F\u002F пункт назначения - директория для файлов\n   destination: (req, file, cb) =\u003E {\n     \u002F\u002F важно: последняя часть названия проекта должна совпадать с названием файла\n     \u002F\u002F например, если проект называется `data\u002Ftodos`, то файл должен называться `todos.json`\n     \u002F\u002F мы также удаляем расширение файла из пути к директории\n     const dirPath = `${ROOT_PATH}\u002F${req.body.project_name.replace(\n       file.originalname.replace('.json', ''),\n       ''\n     )}`\n     \u002F\u002F здесь мы исходим из предположения, что директория для файла отсутствует\n     \u002F\u002F с существующей директорией ничего не случится\n     fs.mkdir(dirPath, { recursive: true }).then(() =\u003E {\n       cb(null, dirPath)\n     })\n   },\n   \u002F\u002F название файла\n   filename: (_, file, cb) =\u003E {\n     cb(null, file.originalname)\n   }\n })\n})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВсе, что нам осталось сделать для работы с проектами — это разработать клиентскую часть админки.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"klient\"\u003EКлиент\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EРазметка (\u003Ccode\u003Epublic\u002Findex.html\u003C\u002Fcode\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"html\"\u003E&lt;head\u003E\n &lt;!-- заголовок документа --\u003E\n &lt;title\u003EMock API&lt;\u002Ftitle\u003E\n &lt;!-- иконка --\u003E\n &lt;link rel=\"icon\" href=\"icon.png\" \u002F\u003E\n &lt;!-- Гугл-шрифт --\u003E\n &lt;link rel=\"preconnect\" href=\"https:\u002F\u002Ffonts.googleapis.com\" \u002F\u003E\n &lt;link rel=\"preconnect\" href=\"https:\u002F\u002Ffonts.gstatic.com\" crossorigin \u002F\u003E\n &lt;link\n   href=\"https:\u002F\u002Ffonts.googleapis.com\u002Fcss2?family=Montserrat&amp;display=swap\"\n   rel=\"stylesheet\"\n \u002F\u003E\n &lt;!-- bootstrap --\u003E\n &lt;link\n   rel=\"stylesheet\"\n   href=\"https:\u002F\u002Fstackpath.bootstrapcdn.com\u002Fbootstrap\u002F4.3.1\u002Fcss\u002Fbootstrap.min.css\"\n   integrity=\"sha384-ggOyR0iXCbMQv3Xipma34MD+dH\u002F1fQ784\u002Fj6cY\u002FiJTQUOhcWr7x9JvoRxT2MZw1T\"\n   crossorigin=\"anonymous\"\n \u002F\u003E\n &lt;!-- bootstrap-icons --\u003E\n &lt;link\n   rel=\"stylesheet\"\n   href=\"https:\u002F\u002Fcdn.jsdelivr.net\u002Fnpm\u002Fbootstrap-icons@1.3.0\u002Ffont\u002Fbootstrap-icons.css\"\n \u002F\u003E\n &lt;!-- стили --\u003E\n &lt;link rel=\"stylesheet\" href=\"style.css\" \u002F\u003E\n&lt;\u002Fhead\u003E\n&lt;body\u003E\n &lt;div class=\"container\"\u003E\n   &lt;header\u003E\n     &lt;h1 class=\"text-center my-3\"\u003EMock API&lt;\u002Fh1\u003E\n   &lt;\u002Fheader\u003E\n\n   &lt;main\u003E\n     &lt;div\u003E\n       &lt;h3 class=\"my-3\"\u003EMy projects&lt;\u002Fh3\u003E\n       &lt;!-- список существующих проектов --\u003E\n       &lt;ul class=\"list-group\" id=\"project_list\"\u003E&lt;\u002Ful\u003E\n     &lt;\u002Fdiv\u003E\n\n     &lt;div\u003E\n       &lt;h3 class=\"my-3\"\u003ENew project&lt;\u002Fh3\u003E\n       &lt;!-- форма для создания нового проекта --\u003E\n       &lt;form id=\"project_create\"\u003E\n         &lt;div class=\"mb-2\"\u003E\n           &lt;label for=\"project_name\" class=\"form-label\"\u003EProject name&lt;\u002Flabel\u003E\n           &lt;!-- поле для ввода названия проекта --\u003E\n           &lt;input\n             type=\"text\"\n             class=\"form-control mt-2\"\n             name=\"project_name\"\n             id=\"project_name\"\n             aria-describedby=\"project_name\"\n             placeholder=\"Project name\"\n           \u002F\u003E\n         &lt;\u002Fdiv\u003E\n\n         &lt;details class=\"mt-4\"\u003E\n           &lt;summary\u003EEnter or paste project data&lt;\u002Fsummary\u003E\n           &lt;!-- поле для ввода\u002Fвставки данных для проекта --\u003E\n           &lt;textarea\n             class=\"form-control mt-2\"\n             name=\"project_data\"\n             id=\"project_data_paste\"\n             rows=\"10\"\n           \u003E&lt;\u002Ftextarea\u003E\n         &lt;\u002Fdetails\u003E\n         &lt;div class=\"mt-4\"\u003E\n           &lt;label for=\"project_data_upload\" class=\"form-label\"\n             \u003EUpload project data&lt;\u002Flabel\n           \u003E\n           &lt;!-- поле для загрузки файла с данными для проекта --\u003E\n           &lt;!-- принимает только JSON-файлы в единственном числе --\u003E\n           &lt;input\n             class=\"form-control mt-2\"\n             type=\"file\"\n             accept=\".json\"\n             name=\"project_data_upload\"\n             id=\"project_data_upload\"\n             aria-describedby=\"project_data_upload\"\n           \u002F\u003E\n         &lt;\u002Fdiv\u003E\n         &lt;!-- кнопка для создания проекта --\u003E\n         &lt;button class=\"btn btn-success my-4\"\u003ECreate project&lt;\u002Fbutton\u003E\n       &lt;\u002Fform\u003E\n     &lt;\u002Fdiv\u003E\n   &lt;\u002Fmain\u003E\n &lt;\u002Fdiv\u003E\n\n &lt;!-- скрипт-модуль --\u003E\n &lt;script src=\"script.js\" type=\"module\"\u003E&lt;\u002Fscript\u003E\n&lt;\u002Fbody\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cem\u003EОбратите внимание\u003C\u002Fem\u003E на \u003Ccode\u003Eid\u003C\u002Fcode\u003E элементов. Поскольку элементы с атрибутом \u003Ccode\u003Eid\u003C\u002Fcode\u003E становятся свойствами глобального объекта \u003Ccode\u003Ewindow\u003C\u002Fcode\u003E, доступ к таким элементам можно получать напрямую, т.е. без предварительного получения ссылки на элемент с помощью таких методов, как \u003Ccode\u003EquerySelector()\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНа стилях я останавливаться не буду: все, что мы там делаем — это определяем шрифт для всех элементов и ограничиваем максимальную ширину \u003Ccode\u003E.container\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПереходим к \u003Ccode\u003Epublic\u002Fscript.js\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИмпортируем \u003Ccode\u003Every-simple-fetch\u003C\u002Fcode\u003E, фиктивные данные, утилиту для определения того, является ли переданный аргумент \u003Ccode\u003EJSON\u003C\u002Fcode\u003E, и определяем базовый \u003Ccode\u003EURL\u003C\u002Fcode\u003E сервера:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eimport simpleFetch from '\u002Fnode_modules\u002Fvery-simple-fetch\u002Findex.js'\nimport todos from '.\u002Fdata\u002Ftodos.js'\nimport { isJson } from '.\u002Futils.js'\n\nsimpleFetch.baseUrl = 'http:\u002F\u002Flocalhost:5000\u002Fproject'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EФиктивные данные (\u003Ccode\u003Epublic\u002Fdata\u002Ftodos.js\u003C\u002Fcode\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eexport default [\n {\n   id: '1',\n   text: 'Eat',\n   done: true,\n   edit: false\n },\n {\n   id: '2',\n   text: 'Code',\n   done: true,\n   edit: false\n },\n {\n   id: '3',\n   text: 'Sleep',\n   done: false,\n   edit: false\n },\n {\n   id: '4',\n   text: 'Repeat',\n   done: false,\n   edit: false\n }\n]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУтилита (\u003Ccode\u003Epublic\u002Futils.js\u003C\u002Fcode\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eexport const isJson = (item) =\u003E {\n try {\n   item = JSON.parse(item)\n } catch (e) {\n   return false\n }\n\n if (typeof item === 'object' &amp;&amp; item !== null) {\n   return true\n }\n\n return false\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОпределяем функцию для получения названий проектов:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Easync function fetchProjects() {\n \u002F\u002F получаем данные и ошибку\n \u002F\u002F `customCache: false` отключает кеширование результатов\n const { data, error } = await simpleFetch.get({ customCache: false })\n\n \u002F\u002F если при выполнении запроса возникла ошибка\n if (error) {\n   return console.error(error)\n }\n\n \u002F\u002F очищаем список проектов\n project_list.innerHTML = ''\n\n \u002F\u002F если проектов нет\n if (data.length &lt; 1) {\n   \u002F\u002F \u002F*html*\u002F - расширение `es6-string-html` для VSCode\n   \u002F\u002F включает подсветку и дополнение в шаблонных литералах\n   return (project_list.innerHTML = \u002F*html*\u002F `\n     &lt;li\n       class=\"list-group-item d-flex align-items-center\"\n     \u003E\n       You have no projects. Why don't create one?\n     &lt;\u002Fli\u003E\n   `)\n }\n\n \u002F\u002F форматируем список, оставляя только названия проектов\n const projects = data.map((p) =\u003E\n   p.replace(\u002F.+projects\\\u002F\u002F, '').replace('.json', '')\n )\n\n \u002F\u002F создаем элемент для каждого названия проекта\n \u002F\u002F обратите внимание на атрибуты `data-*`\n for (const p of projects) {\n   project_list.innerHTML += \u002F*html*\u002F `\n     &lt;li\n       class=\"list-group-item d-flex align-items-center\"\n       data-name=\"${p}\"\n     \u003E\n       &lt;span class=\"flex-grow-1\"\u003E\n         ${p}\n       &lt;\u002Fspan\u003E\n       &lt;button\n         class=\"btn btn-outline-success\"\n         data-action=\"edit\"\n       \u003E\n         &lt;i class=\"bi bi-pencil\"\u003E&lt;\u002Fi\u003E\n       &lt;\u002Fbutton\u003E\n       &lt;button\n         class=\"btn btn-outline-danger\"\n         data-action=\"remove\"\n       \u003E\n         &lt;i class=\"bi bi-trash\"\u003E&lt;\u002Fi\u003E\n       &lt;\u002Fbutton\u003E\n     &lt;\u002Fli\u003E\n   `\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EФункция для инициализации проекта с помощью фиктивных данных:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Efunction initProject(name, data) {\n project_name.value = name\n project_data_paste.value = isJson(data) ? data : JSON.stringify(data, null, 2)\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EФункция для инициализации обработчиков. Она включает в себя регистрацию обработчиков нажатия кнопок для редактирования и удаления проектов, а также обработчика отправки формы — создания или загрузки проекта:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Efunction initHandlers() {\n \u002F\u002F ...\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОбработчик нажатия кнопок:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F обработка нажатия кнопок делегируется списку проектов - элементу `ul`\nproject_list.onclick = ({ target }) =\u003E {\n \u002F\u002F получаем ссылку на кнопку\n const button = target.matches('button') ? target : target.closest('button')\n\n \u002F\u002F получаем тип операции\n const { action } = button.dataset\n\n \u002F\u002F получаем название проекта\n const { name } = target.closest('li').dataset\n\n if (button &amp;&amp; action &amp;&amp; name) {\n   switch (action) {\n     case 'edit':\n       \u002F\u002F функция для редактирования проекта\n       return editProject(name)\n     case 'remove':\n       \u002F\u002F функция для удаления проекта\n       return removeProject(name)\n     default:\n       return\n   }\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОбработчик отправки формы:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eproject_create.onsubmit = async (e) =\u003E {\n e.preventDefault()\n\n \u002F\u002F проект должен иметь название\n if (!project_name.value.trim()) return\n\n \u002F\u002F переменные для данных проекта и ответа от сервера\n let data, response\n\n \u002F\u002F добавленный с помощью `&lt;input type=\"file\" \u002F\u003E` файл\n \u002F\u002F имеет приоритет перед значением `&lt;textarea\u003E`\n if (project_data_upload.value) {\n   \u002F\u002F `multipart\u002Fform-data`\n   \u002F\u002F названия полей совпадают со значениями\n   \u002F\u002F атрибутов `name` элементов `input` и `textarea`\n   data = new FormData(project_create)\n\n   \u002F\u002F удаляем лишнее поле\n   data.delete('project_data_paste')\n\n   \u002F\u002F отправляем запрос и получаем ответ\n   response = await simpleFetch.post('\u002Fupload', data, {\n     \u002F\u002F `multer` требует, чтобы заголовки запроса были пустыми\n     headers: {}\n   })\n } else {\n   \u002F\u002F получаем данные для проекта\n   data = project_data_paste.value.trim()\n   \u002F\u002F получаем название проекта\n   const name = project_name.value.trim()\n\n   \u002F\u002F если данные или название отсутствуют\n   if (!data || !name) return\n\n   \u002F\u002F формируем тело запроса\n   const body = {\n     project_name: name,\n     project_data: isJson(data) ? JSON.parse(data) : data\n   }\n\n   \u002F\u002F отправляем запрос и получаем ответ\n   response = await simpleFetch.post('\u002Fcreate', body)\n }\n\n \u002F\u002F очищаем поля\n project_name.value = ''\n project_data_paste.value = ''\n project_data_upload.value = ''\n\n \u002F\u002F вызываем обработчик ответа\n \u002F\u002F важно: для корректного обновления списка проектов\n \u002F\u002F необходимо ждать завершения обработки ответа\n await handleResponse(response)\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EФункция для редактирования проекта:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Easync function editProject(name) {\n \u002F\u002F название проекта передается на сервер в виде строки запроса\n const { data, error } = await simpleFetch.get(`?project_name=${name}`)\n\n if (error) {\n   return console.error(error)\n }\n\n \u002F\u002F инициализируем проект с помощью полученных от сервера данных\n initProject(name, data)\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EФункция для удаления проекта:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Easync function removeProject(name) {\n \u002F\u002F название проекта передается на сервер в виде строки запроса\n const response = await simpleFetch.remove(`?project_name=${name}`)\n\n \u002F\u002F вызываем обработчик ответа\n await handleResponse(response)\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EФункция для обработки ответа от сервера:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Easync function handleResponse(response) {\n \u002F\u002F извлекаем данные и ошибку из ответа\n const { data, error } = response\n\n \u002F\u002F если при выполнении ответа возникла ошибка\n if (error) {\n   return console.error(error)\n }\n\n \u002F\u002F выводим в консоль сообщение об успешно выполненной операции\n console.log(data.message)\n\n \u002F\u002F обновляем список проектов\n await fetchProjects()\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНаконец, вызываем наши функции:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F получаем список существующих проектов\nfetchProjects()\n\u002F\u002F инициализируем новый проект\n\u002F\u002F initProject(название проекта, данные для проекта)\ninitProject('todos', todos)\n\u002F\u002F инициализируем обработчики событий\ninitHandlers()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПроверим работоспособность нашего сервиса для работы с проектами.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВыполняем команду:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eyarn dev\n# or\nnpm run dev\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗапускается сервер для разработки, открывается новая вкладка браузера по адресу \u003Ccode\u003Ehttp:\u002F\u002Flocalhost:5000\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fk9\u002Fih\u002Fqy\u002Fk9ihqyadr2xptnecjgzn14trfqs.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\nУ нас имеется название и данные для проекта. Нажимаем \u003Ccode\u003ECreate project\u003C\u002Fcode\u003E. В директории \u003Ccode\u003Eprojects\u003C\u002Fcode\u003E появляется файл \u003Ccode\u003Etodos.json\u003C\u002Fcode\u003E, список проектов обновляется:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fea\u002Fov\u002Fay\u002Feaovay2rmwayppvx0pos6fth1fg.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\nПопробуем загрузить файл. Вводим название нового проекта, например, \u003Ccode\u003Edata\u002Ftodos\u003C\u002Fcode\u003E, загружаем через инпут \u003Ccode\u003EJSON-файл\u003C\u002Fcode\u003E из директории \u003Ccode\u003Epublic\u002Fdata\u003C\u002Fcode\u003E, нажимаем \u003Ccode\u003ECreate project\u003C\u002Fcode\u003E. В директории \u003Ccode\u003Eprojects\u003C\u002Fcode\u003E появляется директория \u003Ccode\u003Edata\u003C\u002Fcode\u003E с файлом нового проекта, список проектов обновляется:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fsr\u002F6c\u002Fux\u002Fsr6cuxrfq_nfq8e7ue9smqjnsdc.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\nНажатие кнопок для редактирования и удаления проекта также приводит к ожидаемым результатам.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОтлично, сервис для работы с проектами функционирует в штатном режиме. Но пока он не умеет отвечать на запросы со стороны. Давайте это исправим.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"routy-dlya-api\"\u003EРоуты для \u003Ccode\u003EAPI\u003C\u002Fcode\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСоздаем файл \u003Ccode\u003Eapi.routes.js\u003C\u002Fcode\u003E в директории \u003Ccode\u003Eroutes\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИмпортируем роутер из \u003Ccode\u003Eexpress\u003C\u002Fcode\u003E, утилиты из \u003Ccode\u003Eutils.js\u003C\u002Fcode\u003E и экспортируем экземпляр роутера:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eimport { Router } from 'express'\nimport { createFile, readFile, queryMap, areEqual } from '..\u002Futils.js'\n\nexport default Router()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНачнем с самого простого — \u003Ccode\u003EPOST-запроса\u003C\u002Fcode\u003E на добавление данных в существующий проект:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E.post('*', async (req, res, next) =\u003E {\n try {\n   \u002F\u002F получаем проект\n   const project = await readFile(req.url)\n\n   \u002F\u002F создаем новый проект путем обновления существующего\n   const newProject = project.concat(req.body)\n\n   \u002F\u002F сохраняем новый проект\n   await createFile(newProject, req.url)\n\n   \u002F\u002F возвращаем новый проект\n   res.status(201).json(newProject)\n } catch (e) {\n   next(e)\n }\n})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ccode\u003EDELETE-запрос\u003C\u002Fcode\u003E на удаление данных из проекта:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F `slug` - это любой уникальный идентификатор проекта\n\u002F\u002F он может называться как угодно, но, обычно, именуется как `slug` или `param`\n\u002F\u002F как правило, таким идентификатором является `id` проекта\n\u002F\u002F в нашем случае это также может быть текст задачи\n.delete('*\u002F:slug', async (req, res, next) =\u003E {\n \u002F\u002F параметры запроса имеют вид `{ '0': '\u002Ftodos', slug: '1' }`\n \u002F\u002F извлекаем путь и идентификатор\n const [url, slug] = Object.values(req.params)\n\n try {\n   \u002F\u002F получаем проект\n   const project = await readFile(url)\n\n   \u002F\u002F создаем новый проект путем фильтрации существующего\n   const newProject = project.filter(\n     (p) =\u003E !Object.values(p).find((v) =\u003E v === slug)\n   )\n\n   \u002F\u002F если существующий и новый проекты равны, значит,\n   \u002F\u002F данных для удаления не обнаружено\n   \u002F\u002F небольшой хак\n   if (areEqual(project, newProject)) {\n     throw { status: 404, message: 'Not found' }\n   }\n\n   \u002F\u002F создаем новый проект\n   await createFile(newProject, url)\n\n   \u002F\u002F и возвращаем его\n   res.status(201).json(newProject)\n } catch (e) {\n   next(e)\n }\n})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВот как выглядит утилита для сравнения объектов (\u003Ccode\u003Eutils.js\u003C\u002Fcode\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eexport function areEqual(a, b) {\n if (a === b) return true\n\n if (a instanceof Date &amp;&amp; b instanceof Date) return a.getTime() === b.getTime()\n\n if (!a || !b || (typeof a !== 'object' &amp;&amp; typeof b !== 'object'))\n   return a === b\n\n if (a.prototype !== b.prototype) return false\n\n const keys = Object.keys(a)\n\n if (keys.length !== Object.keys(b).length) return false\n\n return keys.every((k) =\u003E areEqual(a[k], b[k]))\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ccode\u003EPUT-запрос\u003C\u002Fcode\u003E на обновление данных существующего проекта выглядит похоже:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E.put('*\u002F:slug', async (req, res, next) =\u003E {\n const [url, slug] = Object.values(req.params)\n\n try {\n   const project = await readFile(url)\n\n   \u002F\u002F создаем новый проект путем обновления существующего\n   const newProject = project.map((p) =\u003E {\n     if (Object.values(p).find((v) =\u003E v === slug)) {\n       return { ...p, ...req.body }\n     } else return p\n   })\n\n   \u002F\u002F если объекты равны...\n   if (areEqual(project, newProject)) {\n     throw { status: 404, message: 'Not found' }\n   }\n\n   await createFile(newProject, url)\n\n   res.status(201).json(newProject)\n } catch (e) {\n   next(e)\n }\n})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧто касается \u003Ccode\u003EGET-запроса\u003C\u002Fcode\u003E на получение проекта, то с ним все не так просто. Мы должны иметь возможность получать как проект целиком, так и отдельные данные из него. При этом в случае с отдельными данными у нас должна быть возможность получать их как с помощью уникального идентификатора (параметра) — в этом случае должен возвращаться объект, так и с помощью строки запроса — в этом случае должен возвращаться массив.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ccode\u003EGET-запрос\u003C\u002Fcode\u003E на получение всего проекта:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E.get('*', async (req, res, next) =\u003E {\n \u002F\u002F если запрос включает `?`, значит, он содержит строку запроса\n \u002F\u002F передаем управление следующему роуту\n if (req.url.includes('?')) {\n   return next()\n }\n\n try {\n   \u002F\u002F пробуем получить проект\n   const project = await readFile(req.url)\n\n   \u002F\u002F и возвращаем его\n   res.status(200).json(project)\n } catch (e) {\n   \u002F\u002F `throw { status: 404, message: 'Not found' }`\n   \u002F\u002F если проект не обнаружен, возможно, мы имеем дело с запросом\n   \u002F\u002F на получение уникальных данных по параметру\n   if (e.status === 404) {\n     \u002F\u002F передаем управление следующему роуту\n     return next()\n   }\n\n   \u002F\u002F другая ошибка\n   next(e)\n }\n})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ccode\u003EGET-запрос\u003C\u002Fcode\u003E на получение данных по параметру или строке запроса:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E.get('*\u002F:slug', async (req, res, next) =\u003E {\n let project = null\n\n try {\n   \u002F\u002F если запрос содержит строку запроса\n   if (req.url.includes('?')) {\n     \u002F\u002F получаем проект, удаляя строку запроса\n     project = await readFile(req.url.replace(\u002F\\?.+\u002F, ''))\n\n     \u002F\u002F `req.query` - это объект вида `{ id: '1' }`, если строка запроса была `?id=1`\n     \u002F\u002F нам необходимо исключить параметры, которые должны обрабатываться особым образом\n     \u002F\u002F об утилите `queryMap` мы поговорим чуть позже\n     const notQueryKeyValues = Object.entries(req.query).filter(\n       ([k]) =\u003E !queryMap[k] &amp;&amp; k !== 'order'\n     )\n\n     \u002F\u002F если имеются \"обычные\" параметры\n     if (notQueryKeyValues.length \u003E 0) {\n       \u002F\u002F фильтруем данные на их основе\n       project = project.filter((p) =\u003E\n         notQueryKeyValues.some(([k, v]) =\u003E {\n           if (p[k]) {\n             \u002F\u002F унифицируем определение идентичности\n             return p[k].toString() === v.toString()\n           }\n         })\n       )\n     }\n\n     \u002F\u002F если строка запроса содержит параметры `sort` и\u002Fили `order`\n     \u002F\u002F выполняем сортировку данных\n     if (req.query['sort'] || req.query['order']) {\n       project = queryMap.sort(\n         project,\n         req.query['sort'],\n         req.query['order']\n       )\n     }\n\n     \u002F\u002F если строка запроса содержит параметр `offset`\n     \u002F\u002F выполняет сдвиг - пропускаем указанное количество элементов\n     if (req.query['offset']) {\n       project = queryMap.offset(project, req.query['offset'])\n     }\n\n     \u002F\u002F если строка запроса содержит параметр `limit`\n     \u002F\u002F возвращаем только указанное количество элементов\n     if (req.query['limit']) {\n       project = queryMap.limit(project, req.query['limit'])\n     }\n   } else {\n     \u002F\u002F если запрос не содержит строки запроса\n     \u002F\u002F значит, это запрос на получение уникального объекта\n     \u002F\u002F получаем проект\n     const _project = await readFile(req.params[0])\n\n     \u002F\u002F пытаемся найти данные по идентификатору\n     for (const item of _project) {\n       for (const key in item) {\n         if (item[key] === req.params.slug) {\n           project = item\n         }\n       }\n     }\n   }\n\n   \u002F\u002F если данных не обнаружено\n   if (!project || project.length &lt; 1) return res.sendStatus(404)\n\n   \u002F\u002F возвращаем данные\n   res.status(200).json(project)\n } catch (e) {\n   next(e)\n }\n})\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EУтилита для обработки специальных параметров строки запроса выглядит следующим образом (\u003Ccode\u003Eutils.js\u003C\u002Fcode\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F создаем экземпляры `Intl.Collator` для локализованного сравнения строк и чисел\nconst strCollator = new Intl.Collator()\nconst numCollator = new Intl.Collator([], { numeric: true })\n\nexport const queryMap = {\n \u002F\u002F сдвиг или пропуск указанного количества элементов\n offset: (items, count) =\u003E items.slice(count),\n \u002F\u002F ограничение количества возвращаемых элементов\n limit: (items, count) =\u003E items.slice(0, count),\n \u002F\u002F сортировка элементов\n \u002F\u002F по умолчанию элементы сортируются по `id` и по возрастанию\n sort(items, field = 'id', order = 'asc') {\n   \u002F\u002F определяем, являются ли значения поля для сортировки строками\n   const isString = typeof items[0][field] === 'string' &amp;&amp; Number.isNaN(items[0][field])\n   \u002F\u002F выбираем правильный экземпляр `Intl.Collator`\n   const collator = isString ? strCollator : numCollator\n   \u002F\u002F выполняем сортировку\n   return items.sort((a, b) =\u003E order.toLowerCase() === 'asc'\n       ? collator.compare(a[field], b[field])\n       : collator.compare(b[field], a[field])\n   )\n }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИтак, у нас имеется сервис для работы с проектами и \u003Ccode\u003EAPI\u003C\u002Fcode\u003E для работы с запросами. В работоспособности сервиса мы уже убедились. Осталось проверить, что запросы к \u003Ccode\u003EAPI\u003C\u002Fcode\u003E также обрабатываются корректно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"rest-client\"\u003E\u003Ccode\u003EREST Client\u003C\u002Fcode\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТремя наиболее популярными решениями для быстрого тестирования \u003Ccode\u003EAPI\u003C\u002Fcode\u003E является следующее:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fcurl.se\u002F\"\u003E\u003Ccode\u003Ecurl\u003C\u002Fcode\u003E\u003C\u002Fa\u003E — интерфейс командной строки\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fwww.postman.com\u002F\"\u003E\u003Ccode\u003Epostman\u003C\u002Fcode\u003E\u003C\u002Fa\u003E или \u003Ca href=\"https:\u002F\u002Finsomnia.rest\u002Fdownload\"\u003E\u003Ccode\u003Einsomnia\u003C\u002Fcode\u003E\u003C\u002Fa\u003E — специализированные сервисы\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fmarketplace.visualstudio.com\u002Fitems?itemName=humao.rest-client\"\u003E\u003Ccode\u003EREST Client\u003C\u002Fcode\u003E\u003C\u002Fa\u003E — расширение для \u003Ccode\u003EVSCode\u003C\u002Fcode\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЯ покажу, как использовать \u003Ccode\u003EREST Client\u003C\u002Fcode\u003E, однако запросы, которые мы сформируем, можно будет легко использовать и в других инструментах.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПосле установки \u003Ccode\u003EREST Client\u003C\u002Fcode\u003E в корневой директории проекта необходимо создать файл с расширением \u003Ccode\u003E.http\u003C\u002Fcode\u003E, например, \u003Ccode\u003Etest.http\u003C\u002Fcode\u003E следующего содержания:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E###\n### todos\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos\u002F2\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos\u002F5\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?text=Sleep\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?text=Test\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?done=true\n\n###\nPOST http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos\ncontent-type: application\u002Fjson\n\n{\n \"id\": \"5\",\n \"text\": \"Test\",\n \"done\": false,\n \"edit\": false\n}\n\n###\nPOST http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos\ncontent-type: application\u002Fjson\n\n[\n {\n   \"id\": \"6\",\n   \"text\": \"Test2\",\n   \"done\": false,\n   \"edit\": false\n },\n {\n   \"id\": \"7\",\n   \"text\": \"Test3\",\n   \"done\": true,\n   \"edit\": false\n }\n]\n\n###\nPUT http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos\u002F2\ncontent-type: application\u002Fjson\n\n{\n \"text\": \"Test\",\n \"done\": false\n}\n\n###\nDELETE http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos\u002F5\n\n###\n### query\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?limit=2\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?offset=2&amp;limit=1\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?offset=3&amp;limit=2\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?sort=id&amp;order=desc\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?sort=title&amp;order=desc\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?sort=text\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos?sort=text&amp;order=desc&amp;offset=1&amp;limit=2\n\n###\n### data\u002Ftodos\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos\u002F2\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos\u002F5\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos?text=Sleep\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos?text=Test\n\n###\nGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos?done=false\n\n###\nPOST http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos\ncontent-type: application\u002Fjson\n\n{\n \"id\": \"5\",\n \"text\": \"Test\",\n \"done\": false,\n \"edit\": false\n}\n\n###\nPOST http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos\ncontent-type: application\u002Fjson\n\n[\n {\n   \"id\": \"6\",\n   \"text\": \"Test2\",\n   \"done\": true,\n   \"edit\": false\n },\n {\n   \"id\": \"7\",\n   \"text\": \"Test3\",\n   \"done\": false,\n   \"edit\": false\n }\n]\n\n###\nPUT http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos\u002F3\ncontent-type: application\u002Fjson\n\n{\n \"text\": \"Test\",\n \"done\": true\n}\n\n###\nDELETE http:\u002F\u002Flocalhost:5000\u002Fapi\u002Fdata\u002Ftodos\u002F7\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЗдесь:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ccode\u003E###\u003C\u002Fcode\u003E — разделитель запросов, который можно использовать для добавления комментариев\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003EGET\u003C\u002Fcode\u003E, \u003Ccode\u003EPOST\u003C\u002Fcode\u003E и т.д. — метод запроса\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003Econtent-type: application\u002Fjson\u003C\u002Fcode\u003E — заголовок запроса\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ccode\u003E[ ... ]\u003C\u002Fcode\u003E или \u003Ccode\u003E{ ... }\u003C\u002Fcode\u003E — тело запроса\u003C\u002Fli\u003E\r\n\u003Cli\u003Eзаголовки и тело запроса должны разделяться пустой строкой\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНад каждым запросом в \u003Ccode\u003EVSCode\u003C\u002Fcode\u003E имеется кнопка для выполнения запроса.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxf\u002Fxm\u002Ff4\u002Fxfxmf4ssyzdygi4hqpg1web-kxc.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\nДля тестирования \u003Ccode\u003EAPI\u003C\u002Fcode\u003E необходимо создать два проекта: \u003Ccode\u003Etodos\u003C\u002Fcode\u003E и \u003Ccode\u003Edata\u002Ftodos\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВыполним парочку запросов.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ccode\u003EGET-запрос\u003C\u002Fcode\u003E на получение проекта \u003Ccode\u003Etodos\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxz\u002F9j\u002F-q\u002Fxz9j-q3dqazj9tyjbrttn9hljjq.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\n\u003Ccode\u003EGET-запрос\u003C\u002Fcode\u003E на получение задачи с текстом \u003Ccode\u003ESleep\u003C\u002Fcode\u003E из проекта \u003Ccode\u003Etodos\u003C\u002Fcode\u003E с помощью строки запроса (такой запрос также можно выполнить с помощью параметра — \u003Ccode\u003EGET http:\u002F\u002Flocalhost:5000\u002Fapi\u002Ftodos\u002FSleep\u003C\u002Fcode\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fhc\u002Fqx\u002Fme\u002Fhcqxmebxxk8qsrrraa6ivx-95-0.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\n\u003Ccode\u003EPOST-запрос\u003C\u002Fcode\u003E на добавление новой задачи в проект \u003Ccode\u003Etodos\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fmg\u002Fma\u002Flj\u002Fmgmaljygogo8xdfqfcjkftg2ybi.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\n\u003Ccode\u003EGET-запрос\u003C\u002Fcode\u003E на получение второй и третьей задач из проекта \u003Ccode\u003Etodos\u003C\u002Fcode\u003E, отсортированных по полю \u003Ccode\u003Etext\u003C\u002Fcode\u003E по убыванию:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F_g\u002F92\u002Fla\u002F_g92laa3vqc0shq0j7yufcgv1dc.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cbr\u002F\u003E\r\nИ т.д.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cem\u003EОбратите внимание\u003C\u002Fem\u003E, что операции для работы с одним проектом не влияют на другие проекты.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВыполните несколько запросов самостоятельно, изучите ответы и мысленно свяжите их с роутами, реализованными в \u003Ccode\u003Eapi.routes.js\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПожалуй, это все, чем я хотел поделиться с вами в данной статье.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EБуду рад любой форме обратной связи.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EБлагодарю за внимание и хорошего дня!\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Chr\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fcloud.timeweb.com\u002F?utm_source=habr&amp;utm_medium=banner&amp;utm_campaign=cloud&amp;utm_content=direct&amp;utm_term=low\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fwn\u002Fcq\u002Flp\u002Fwncqlp9abeml4npwzsybuvhzcta.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"javascript"},{"titleHtml":"node"},{"titleHtml":"nodejs"},{"titleHtml":"node.js"},{"titleHtml":"server"},{"titleHtml":"mock"},{"titleHtml":"api"},{"titleHtml":"fake data"},{"titleHtml":"сервер"},{"titleHtml":"фиктивные данные"},{"titleHtml":"тестирование api"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F4-\u002Fhn\u002F8w\u002F4-hn8wkkaeafijehpfybkgcounq.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F4-\u002Fhn\u002F8w\u002F4-hn8wkkaeafijehpfybkgcounq.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Ftimeweb\\\u002Fblog\\\u002F583588\\\u002F\"},\"headline\":\"Node.js: разрабатываем сервер для тестирования API\",\"datePublished\":\"2021-10-15T09:17:57+03:00\",\"dateModified\":\"2021-10-16T17:27:47+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Igor Agapov\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Привет, друзья! В этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования API. Основной фун...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Ftimeweb\\\u002Fblog\\\u002F583588\\\u002F#post-content-body\",\"about\":[\"c_timeweb\",\"h_webdev\",\"h_javascript\",\"h_programming\",\"h_nodejs\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583588\\\u002F2ec43b3df5775e4933f1bc3cbc12f118\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F4-\\\u002Fhn\\\u002F8w\\\u002F4-hn8wkkaeafijehpfybkgcounq.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fz_\\\u002Fbm\\\u002Fge\\\u002Fz_bmgez08qrefh2udyodneqniqi.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fk9\\\u002Fih\\\u002Fqy\\\u002Fk9ihqyadr2xptnecjgzn14trfqs.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fea\\\u002Fov\\\u002Fay\\\u002Feaovay2rmwayppvx0pos6fth1fg.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fsr\\\u002F6c\\\u002Fux\\\u002Fsr6cuxrfq_nfq8e7ue9smqjnsdc.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fxf\\\u002Fxm\\\u002Ff4\\\u002Fxfxmf4ssyzdygi4hqpg1web-kxc.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fxz\\\u002F9j\\\u002F-q\\\u002Fxz9j-q3dqazj9tyjbrttn9hljjq.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fhc\\\u002Fqx\\\u002Fme\\\u002Fhcqxmebxxk8qsrrraa6ivx-95-0.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fmg\\\u002Fma\\\u002Flj\\\u002Fmgmaljygogo8xdfqfcjkftg2ybi.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F_g\\\u002F92\\\u002Fla\\\u002F_g92laa3vqc0shq0j7yufcgv1dc.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fwn\\\u002Fcq\\\u002Flp\\\u002Fwncqlp9abeml4npwzsybuvhzcta.png\"]}","metaDescription":"Привет, друзья!\r\nВ этом небольшом туториале я хочу показать вам, как разработать простой, но довольно-таки полноценный сервер для тестирования API.\r\nОсновной функционал нашего приложения будет...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"timeweb":{"alias":"timeweb","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Fb5b\u002F7e1\u002Fc48\u002Fb5b7e1c4819388606f1a3c7ed1d2373a.jpg","titleHtml":"Timeweb","descriptionHtml":"Хостинг, VDS и ИТ-инфраструктура","relatedData":null,"statistics":{"postsCount":304,"newsCount":3,"vacanciesCount":2,"employeesCount":36,"careerRating":null,"subscribersCount":512,"rating":1167.97,"invest":null},"foundationDate":{"year":"2006","month":"05","day":"25"},"location":{"city":{"id":"447733","title":"Санкт-Петербург"},"region":{"id":"1948","title":"Санкт-Петербург и область"},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Ftimeweb.com\u002Fru\u002F?utm_source=habr.com&utm_medium=smo","staffNumber":"201–500 человек","registrationDate":"2011-08-11T14:17:04+00:00","representativeUser":null,"contacts":[],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-52903813-5"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"Timeweb, Санкт-Петербург - Хостинг, VDS и ИТ-инфраструктура с 25 мая 2006 г.","title":"Timeweb, Санкт-Петербург - Хостинг, VDS и ИТ-инфраструктура с 25 мая 2006 г.","keywords":["Научно-популярное","Программирование","Читальный зал","JavaScript","Разработка веб-сайтов"],"descriptionHtml":"304 статьи от авторов компании Timeweb","description":"304 статьи от авторов компании Timeweb"},"aDeskSettings":null,"careerAlias":"hrtimewebru","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

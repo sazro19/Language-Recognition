@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Как я портировал игру с Visual Basic 6 на С++, сделав её кросс-платформенной / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582566\/"},"headline":"Как я портировал игру с Visual Basic 6 на С++, сделав её кросс-платформенной","datePublished":"2021-10-09T21:59:20+03:00","dateModified":"2021-10-14T15:02:30+03:00","author":{"@type":"Person","name":"Виталий Новичков"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими труднос...","url":"https:\/\/habr.com\/ru\/post\/582566\/#post-content-body","about":["h_cpp","h_gamedev","h_games","f_develop","f_popsci"],"image":["https:\/\/habr.com\/share\/publication\/582566\/650e235e21c851fb9ac1e5c9292f6b78\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/204\/b12\/71a\/204b1271adfcb9b51051852d03de0afc.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/517\/6e8\/6b3\/5176e86b36dfe60f52b74423bb625ce9.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/539\/b51\/3bf\/539b513bf7554c3427cd8c8096086ddf.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/871\/b6d\/c3a\/871b6dc3a654f340efebb943581006a0.gif","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/670\/962\/bfd\/670962bfd93ee720101463272e8156e1.gif","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b67\/bc7\/117\/b67bc7117f191acc6cb6331e33328961.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/456\/0a5\/4e6\/4560a54e69e7c554a2a6dc52997ac7fe.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Как я портировал игру с Visual Basic 6 на С++, сделав её кросс-платформенной" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Как я портировал игру с Visual Basic 6 на С++, сделав её кросс-платформенной" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Как я портировал игру с Visual Basic 6 на С++, сделав её кросс-платформенной" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/b84/34d/e10/b8434de10fe3c2069bea42427273f279.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/b84/34d/e10/b8434de10fe3c2069bea42427273f279.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/b84/34d/e10/b8434de10fe3c2069bea42427273f279.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/b84/34d/e10/b8434de10fe3c2069bea42427273f279.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/b84/34d/e10/b8434de10fe3c2069bea42427273f279.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582566" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-09T18:59:20.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582566/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582566/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/b84/34d/e10/b8434de10fe3c2069bea42427273f279.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582566/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Wohlstand/" title="Wohlstand" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/859/5e3/100/8595e3100bc38b0275dd5fb55d62484c.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Wohlstand/" class="tm-user-info__username">
+      Wohlstand
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-09T18:59:20.000Z" title="2021-10-09, 21:59">9  октября   в 21:59</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Как я портировал игру с Visual Basic 6 на С++, сделав её кросс-платформенной</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/gamedev/" class="tm-article-snippet__hubs-item-link"><span>Разработка игр</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/games/" class="tm-article-snippet__hubs-item-link"><span>Игры и игровые приставки</span> <!----></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Из песочницы
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания порта.</p><h2>Немного об оригинальной игре</h2><p><strong>Super Mario Bros. X</strong> (или коротко SMBX) - это фанатская игра по мотивам вселенной Марио, созданная в 2009 году американцем Эндрю Спинксом (который позже прославился как создатель игры Terraria). Эта фанатская игра была его первым опытом в разработке игр. В ней он познавал азы игростроя. Игра создавалась с использованием Visual Basic 6.</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Главное меню игры Super Mario Bros. X версии 1.3" title="Главное меню игры Super Mario Bros. X версии 1.3" height="638" data-src="https://habrastorage.org/getpro/habr/upload_files/204/b12/71a/204b1271adfcb9b51051852d03de0afc.png" data-width="816"/><figcaption>Главное меню игры Super Mario Bros. X версии 1.3</figcaption></figure><p>В игре имеется возможность играть за одного из пятерых персонажей: Марио, Луиджи, Пич, Тоад и Линк. Можно играть в одиночку, можно играть вдвоём в кооперативном режиме. Также имеется режим битвы, в котором игроки должны побить друг друга, пользуясь различными подручными средствами. Сама игра является неким подобием песочницы для сообщества, в которой игроки могут создавать свои уровни и целые эпизоды, используя предложенные элементы во встроенном редакторе. Также можно добавлять в игру собственные ресурсы (картинки и музыку).</p><p>Даже не смотря на полное прекращение разработки игры в 2011 году, она была востребована, и продолжала широко использовалаться сообществом. Игра также привлекла внимание разработчиков-энтузиастов и хакеров, которые создавали для неё вспомогательные инструменты, а также делали попытки модифицировать и расширить игру. Самыми известными из них являются набор разработки из тулкита Moondust Project (изначально называвшимся PGE Project), а также, библиотека LunaLua (изначально известная как LunaDll), расширяющая функционал игры посредством dll-инъекции.</p><p>Исходный код игры долгое время был закрытым. Однако, всё изменилось, когда 2 февраля 2020 года на форуме были опубликованы исходные коды игры.</p><h2>Начало работ</h2><p>Слухи о возможной публикации исходных кодов игры были ещё в 2016м году, однако, этого не произошло. Это дало мне идею переписать игру на C++, чтобы с ней удобно было возиться. Но, поскольку, исходников не было, идея слегла в долгий ящик. С выходом исходников в феврале 2020-го года, я буквально достал эту идею из глубокой ямы забвения. Первым делом, я запустил свою виртуальную машину с Windows XP, где я и развернул среду VB6, в которой затем я открыл проект игры, и, после нескольких исправлений ошибок компиляции, успешно запустил игру из исходного кода. </p><p>Работы начались с исследования устройства кода игры и его структуры, а также с замены кода воспроизведения аудио с древнего MCI на мою специальную сборку SDL Mixer X, созданную для работы в VB6-проектах. Таким образом, я решил проблему работы игры на Linux под Wine, а также значительно ускорил загрузку игры и уменьшил потребление ею памяти.</p><h2>Инструментарий</h2><p>Сначала я использовал <a href="https://gist.github.com/Wohlstand/3895db6a738aebce296c2f284cb163a7" rel="noopener noreferrer nofollow">самописный кусок кода на JavaScript</a>, которым я через регулярные выражения парсил определения переменных, массивов и функций. Затем, я использовал бесплатную версию "VB to C++ Converter" от Tangible Software Solutions, чтобы относительно точно преобразовывать куски кода в C++ (Я пользовался режимом Snifit, поскольку конвертер был ориентирован на VB.NET, значительно отличавшийся от VB6. Также не обошлось без огромного числа дополнительных ручных манипуляций и макросов). Часть кода была переписана мною вручную, особенно на начальных этапах. Много модулей я писал с нуля (либо заимствовал из других моих проектов), чтобы обеспечить конечный проект всей необходимой функциональностью. Весь процесс разработки я вёл на Linux Mint, используя среду разработки Qt Creator, параллельно с CLion. Также, я использовал виртуальные машины с Windows XP и Windows 7 для запуска некоторых зависимых инструментов, а также VisualStudio Code для просмотра VB6-проекта игры из под Linux-системы.</p><h2>Особенности Visual Basic и различия с C++</h2><p>Кроме явного синтаксического и функционального различия между языками, имеется огромное число тонких не интуитивных различий, которых невозможно заметить без прямого взаимодействия и без чтения документации. Я сам лично мало работал с Visual Basic, и большую часть знаний о нём я узнал из поведения написанных программ и MSDN-документации (для Visual Basic 6, нужно качать редакцию 2001 года, к счастью, она присутствует на archive.org в свободном доступе).</p><p>Благодарю <a class="mention" href="/users/firehacker">@firehacker</a> за уточнения и за расширенные объяснения.</p><h3>Видимость переменных и функций</h3><p>Первый этап начался с создания файла globals.h, который описывал все глобальные переменные игры и все типы (массивы, структуры, константы, и т.п.). Всё дело в том, что по своей архитектуре, Visual Basic подразумевает, что ко всем публично доступным переменным и функциям (отмеченных соответствующим образом), можно обращаться напрямую без предварительных включений или импортов второго модуля в коде первого. </p><p>Потом, под каждый модуль, отдельно создавал списки прототипов функций и заголовочные файлы к ним. Затем, я включал эти заголовки между всеми модулям, чтобы обеспечить и полную видимость всех важных объектов кода, и навести некоторый порядок по файлам.</p><h3>Структуры</h3><p>Отдельной проблемой стало то, что Visual Basic прямо позволяет именовать структуры и переменные одинаково, буква-в-букву:</p><pre><code class="vbscript">' Определение структуры
+Public Type Controls
+    Up As Boolean
+    Down As Boolean
+    Left As Boolean
+    Right As Boolean
+    Jump As Boolean
+    AltJump As Boolean
+    Run As Boolean
+    AltRun As Boolean
+    Drop As Boolean
+    Start As Boolean
+End Type
+
+' Определение одноимённой переменной
+Controls As Controls</code></pre><p>С одной стороны, такое возможно и в C/C++ тоже (если не забывать указывать ключевое слово struct перед именем структуры). Однако, одноимённые, но разнотипные, объекты сильно вредят наглядности, а также создают неоднозначности в некоторых ситуациях, например, при попытке определить локальную переменную <code>Controls ko</code> без ключевого слова struct, вылезет ошибка компиляции <u>error: expected ‘;’ before ‘ko’</u>. При использовании <code>sizeof(Controls)</code> также создаётся неоднозначность, хотим ли мы узнать размер переменной Controls, или размер типа структуры Controls.</p><p>Из-за этого, я решил добавлять всем именам структур окончание "_t", чтобы устранить все неоднозначности:</p><pre><code class="cpp">struct Controls_t
+{
+    bool Up = false;
+    bool Down = false;
+    bool Left = false;
+    bool Right = false;
+    bool Jump = false;
+    bool AltJump = false;
+    bool Run = false;
+    bool AltRun = false;
+    bool Drop = false;
+    bool Start = false;
+};
+
+extern Controls_t Controls;</code></pre><h3>Массивы с явным диапазоном</h3><p>В Visual Basic предусмотрена возможность создавать массивы с различными диапазонами индексов, и не обязательно от 0 до N-1, а например, от 1 до 5, от -1000 до +1000, и т.п.:</p><pre><code class="vbscript">Public BlockSwitch(1 To 4) As Boolean</code></pre><p>В C++ такого нету. Однако, мне не помешало создать реализацию такой концепции, получился вот такой шаблон:</p><pre><code class="cpp">template &lt;class T, long begin, long end>
+class RangeArr
+{
+    static constexpr long range_diff = begin - end;
+    static constexpr size_t size = (range_diff &lt; 0 ? -range_diff : range_diff) + 1;
+    static const long offset = -begin;
+    T array[size];
+
+public:
+    RangeArr()
+    {}
+
+    ~RangeArr()
+    {}
+
+    RangeArr(const RangeArr &amp;o)
+    {
+        for(size_t i = 0; i &lt; size; i++)
+            array[i] = o.array[i];
+    }
+
+    RangeArr&amp; operator=(const RangeArr &amp;o)
+    {
+        for(size_t i = 0; i &lt; size; i++)
+            array[i] = o.array[i];
+        return *this;
+    }
+
+    void fill(const T &amp;o)
+    {
+        for(size_t i = 0; i &lt; size; i++)
+            array[i] = o;
+    }
+
+    T&amp; operator[](long index)
+    {
+        assert(index &lt;= end);
+        assert(index >= begin);
+        assert(offset + index &lt; static_cast&lt;long>(size));
+        assert(offset + index >= 0);
+        return array[offset + index];
+    }
+};</code></pre><p>А также вариант шаблона специально для целочисленных типов с предварительной инициализацией:</p><pre><code class="cpp">template &lt;class T, long begin, long end, T defaultValue>
+class RangeArrI
+{
+    static constexpr long range_diff = begin - end;
+    static constexpr size_t size = (range_diff &lt; 0 ? -range_diff : range_diff) + 1;
+    static const long offset = -begin;
+    T array[size];
+
+public:
+    RangeArrI()
+    {
+        for(size_t i = 0; i &lt; size; i++)
+            array[i] = defaultValue;
+    }
+
+    ~RangeArrI()
+    {}
+
+    RangeArrI(const RangeArrI &amp;o)
+    {
+        for(size_t i = 0; i &lt; size; i++)
+            array[i] = o.array[i];
+    }
+
+    RangeArrI&amp; operator=(const RangeArrI &amp;o)
+    {
+        for(size_t i = 0; i &lt; size; i++)
+            array[i] = o.array[i];
+        return *this;
+    }
+
+    void fill(const T &amp;o)
+    {
+        for(size_t i = 0; i &lt; size; i++)
+            array[i] = o;
+    }
+
+    T&amp; operator[](long index)
+    {
+        assert(index &lt;= end);
+        assert(index >= begin);
+        assert(offset + index &lt; static_cast&lt;long>(size));
+        assert(offset + index >= 0);
+        return array[offset + index];
+    }
+};</code></pre><p>Таким образом, выше представленный пример на C++ будет определён следующим образом:</p><pre><code class="cpp">extern RangeArrI&lt;bool, 1, 4, false> BlockSwitch;</code></pre><p>К счастью (или к сожалению), Эндрю не использовал в своём коде динамических массивов, хотя, с другой стороны, по сравнению с std::vector в С++, динамические массивы в Visual Basic 6 были не очень удобными в работе.</p><p>В моих шаблонах я также применил assert-ы, поскольку они позволяют отлавливать ошибки выхода за пределы диапазона массива в коде (в Visual Basic 6 типичная ошибка это "Runtime Error 9: Subscript out of range"). И тем самым, иметь возможность легко отлаживать их, не допуская последующей порчи памяти и возникновения SIGSEGV.</p><p><strong>Upd:</strong> В комментариях, <a class="mention" href="/users/izaron">@Izaron</a>-ом <a href="https://habr.com/ru/post/582566/#comment_23573508" rel="noopener noreferrer nofollow">предложена</a> альтернативная реализация шаблона, используя std::array в качестве носителя:</p><pre><code class="cpp">template&lt;class T, long Begin, long End>
+class range_arr : public std::array&lt;T, End - Begin + 1> {
+public:
+    using underlying_t = std::array&lt;T, End - Begin + 1>;
+    using typename underlying_t::reference;
+    
+    constexpr reference operator[](long pos) {
+        return underlying_t::operator[](pos - Begin);
+    }
+    constexpr reference operator[](long pos) const {
+        return underlying_t::operator[](pos - Begin);
+    }
+};</code></pre><h3>Опциональные аргументы-ссылки</h3><p>В Visual Basic, в функциях и процедурах, по умолчанию (если явно не указать <code>ByVal</code> или <code>ByRef</code>), аргументы передаются по принципу ссылок: их можно изменить непосредственно из кода функции:</p><pre><code class="vbscript">Public Sub addValue(number As Integer)
+  number = 42
+End Sub</code></pre><p>В C++, по умолчанию, аргументы передаются по значению. Нужно явно указывать, что аргумент передаётся по ссылке:</p><pre><code class="cpp">void addValue(int &amp;number)
+{
+  number = 42;
+}</code></pre><p>При портировании кода с Visual Basic 6 я столкнулся со следующим явлением:</p><pre><code class="vbscript">Public Sub addValue(step As Integer, Optional number As Integer = 0)
+  number = step
+End Sub</code></pre><p>Это т.н. опциональная ссылка. Её можно использовать, а можно не использовать, тогда записанное в неё значение просто потеряется.</p><p>В C++ из-за того, что я упустил тот факт, что аргументы в VB это ссылки, словил баг, что значение, переданное по опциональному аргументу, не обновилось в соответствии с кодом:</p><pre><code class="cpp">void addValue(int step, int number = 0)
+{
+  number = step;
+}</code></pre><p>В итоге, я сначала решил сделать аргумент number указателем, однако потом до меня дошло, что я могу с лёгкостью использовать перегрузку функций, и получить желанную опциональную ссылку:</p><pre><code class="cpp">void addValue(int step, int &amp;number)
+{
+  number = step;
+}
+
+void addValue(int step)
+{
+  int dummy = 0;
+  addValue(step, dummy);
+}</code></pre><p><strong>Upd:</strong> В комментариях, <a class="mention" href="/users/izaron">@Izaron</a>-ом <a href="https://habr.com/ru/post/582566/#comment_23573508" rel="noopener noreferrer nofollow">предложена</a> альтернативная реализация концепции через шаблоны:</p><pre><code class="cpp">template&lt;typename T>
+T dummy;
+
+template&lt;typename T>
+T&amp; dummy_ref(T value) {
+    dummy&lt;T> = value;
+    return dummy&lt;T>;
+}
+
+void addValue(int step, int&amp; number = dummy_ref&lt;int>(0)) {
+    number = step;
+}</code></pre><p>Таким образом, можно проще создавать создавать такие функции без излишних дублирующих определений.</p><h3>Округление чисел</h3><p>В Visual Basic принципиально отличается политика округления чисел, чем от C++:</p><ul><li><p>Попытка присвоить число с плавающей точкой целочисленной переменной, всегда округляет своё значение. В C++ идёт приведение типа с отсечением дробной части.</p></li><li><p>Округление идёт нестандартным образом, через x86-инструкцию FRNDINT, которая округляет серединные значения по типу 0.5 к ближайшему чётному целому. То есть, было 15.5, округление будет в 16, если было 42.5, то округлится к 42м.</p></li></ul><p>Почему я обратил на это внимание? Потому что физика в игре во многом зависит от частей кода, использующего округление. Если округление делать не правильно (не так, как оно делалось в Visual Basic), то в итоге, физика будет искажена (Например, будет искажено движение пресса-давилки на уровне "Dungeon of Pain" в эпизоде "The Invasion 2").</p><p>Чтобы полностью решить проблему округления, я реализовал соответствующий велосипед:</p><pre><code class="cpp">const double power10[] =
+{
+    1.0,
+    10.0,
+    100.0,
+    1000.0,
+    10000.0,
+
+    100000.0,
+    1000000.0,
+    10000000.0,
+    100000000.0,
+    1000000000.0,
+
+    10000000000.0,
+    100000000000.0,
+    1000000000000.0,
+    10000000000000.0,
+    100000000000000.0,
+
+    1000000000000000.0,
+    10000000000000000.0,
+    100000000000000000.0,
+    1000000000000000000.0,
+    10000000000000000000.0,
+
+    100000000000000000000.0,
+    1000000000000000000000.0
+};
+
+double vb6round(double x, int deimals);
+
+int vb6Round(double x)
+{
+    return static_cast&lt;int>(vb6Round(x, 0));
+}
+
+static SDL_INLINE double toNearest(double x)
+{
+    int round_old = std::fegetround();
+    if(round_old == FE_TONEAREST)
+        return std::nearbyint(x);
+    else
+    {
+        std::fesetround(FE_TONEAREST);
+        x = std::nearbyint(x);
+        std::fesetround(round_old);
+        return x;
+    }
+}
+
+double vb6Round(double x, int decimals)
+{
+    double res = x, decmul;
+
+    if(decimals &lt; 0 || decimals > 22)
+        decimals = 0;
+
+    if(SDL_fabs(x) &lt; 1.0e16)
+    {
+        decmul = power10[decimals];
+        res = toNearest(x * decmul) / decmul;
+    }
+
+    return res;
+}</code></pre><p>Таким образом, получилась весьма точная реализация округления, соответствующая поведению Visual Basic 6.</p><h3>Таймеры</h3><p>В игре использовались встроенные функции и глобальные переменные, отвечающие за время: глобальная функция Timer, возвращающая <strong>Single</strong>-значение (аналог float в C++) секунд, прошедших с полуночи, и WinAPI-функция Sleep для различных задержек.</p><pre><code class="vbscript">Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)</code></pre><p>К счастью, SDL2 легко заменяет эти функции на собственные SDL_GetTicks() и SDL_Delay(). Однако, имеется вопрос более серьёзный, чем просто выжидание времени и задержка: игра старается жёстко выдерживать частоту обновления в 65 кадров в секунду. Если специально не стараться, игра будет работать с частотой 67 кадров в секунду без вертикальной синхронизации. Это большая проблема для спидраннеров, использующих внешние таймеры для честного измерения времени прохождения игры.</p><p>Чтобы исправить проблему, я нашёл код, который выдерживает определённую частоту, и доработал его. Получился <a href="https://github.com/Wohlstand/TheXTech/blob/42508590c1d18d9c79c0965077ec7a0d31099451/src/frame_timer.cpp" rel="noopener noreferrer nofollow">целый модуль</a>, реализующий логику жёсткой выдержки частоты в 65 кадров в секунду. Пришлось отдельно повозиться, поскольку в Linux и macOS уже были нужные функции, считающие нановремя, а в Windows с этим большая проблема. Однако, спустя время я нашёл универсальное решение, которое будет идеально работать и на миллисекундах.</p><h3>Боль логических выражений</h3><p>Ещё одна особенность, которая заключается в том, что Visual Basic 6 и C++ по разному обрабатывают логические выражения:</p><ul><li><p>В C++ присутствуют раздельные логические операторы <code>&amp;&amp;</code>, <code>||</code>, <code>!</code>, <code>!=</code> и побитовые операторы <code>&amp;</code>, <code>|</code>, <code>~</code>, <code>^</code>. Булевый тип соответствует 0 (false) и 1 (true).</p></li><li><p>В Visual Basic, операторы <code>And</code>, <code>Or</code>, <code>Not</code>, <code>Xor</code>, побитовые и прямо эквивалентны операторам <code>&amp;</code>, <code>|</code>, <code>~</code>, <code>^</code>. Булевый тип представлен в виде полной инверсии целого числа: 0x0000 в качестве <strong>True</strong> и 0xFFFF в качестве <strong>False</strong>.</p></li><li><p>В следсвии использования логически операторов, в С++ происходит постепенный расчёт значений и постепенное наложение. То есть, мы имеем выражение <code>if(A &lt; 5 &amp;&amp; Array[A] == 1)</code>, и в случае, когда выражение <code>A &lt; 5</code> ложное, выражение <code>Array[A] == 1</code> рассчитываться не будет.</p></li><li><p>В Visual Basic, члены выражения рассчитываются сразу, поскольку выполняется побитовый рассчёт всей формулы. То есть, в логическом выражении <code>if A &lt; 5 And Array(A) = 1 Then</code> будут всегда рассчитываться оба члена (Код эквивалентен <code>if((A &lt; 5 ? 0xFFFF : 0) &amp; (Array[A] == 1 ? 0xFFFF : 0)</code>). Здесь произойдёт ошибка из-за того, что индекс A выходит за пределы размера массива. Таким образом, при портировании на C++ я случайно исправил баг, рушивший игру. Из-за этой особенности языка в коде можно встретить большое число лазаний из <code>if() { if {} if { .... } }</code>, которая вместе с тем, что выглядит неуклюже, является необходимым костылём над особенностью обработки логических выражений в Visual Basic.</p></li><li><p>При преобразовании сложных логических выражений из Visual Basic в C++ может возникнуть путаница там, где не использовались скобки, а также всплывать предупреждения компилятора. Решается легко добавлением скобок вокруг ключевых логических групп. Также нужно учитывать, что в логических выражениях на VB очень легко перепутать побитовый рассчёт между логическим выражением, из-за чего можно исказить конечный результат: получить один бит вместо целочисленного значения.</p></li></ul><p>Также было явно заметно, что Эндрю на тот момент абсолютно не имел никакого понятия о <code>Select Case</code> (аналога оператора <code>switch()</code>), и поэтому в его коде было чрезвычайное злоупотребление конструкциями <code>if else if else if else...</code> .</p><h3>Кошмарный спагетти-полиморфизм</h3><figure class="full-width "><img src="/img/image-loader.svg" alt="Фрагмент спагетти-кода, отвечающего за логику НИП разных типов" title="Фрагмент спагетти-кода, отвечающего за логику НИП разных типов" height="803" data-src="https://habrastorage.org/getpro/habr/upload_files/517/6e8/6b3/5176e86b36dfe60f52b74423bb625ce9.png" data-width="1227"/><figcaption>Фрагмент спагетти-кода, отвечающего за логику НИП разных типов</figcaption></figure><p>Ни для кого не секрет, что в Visual Basic реализация классов была сильно ограниченной и прямо завязанной на технологии COM. Эндрю решил не использовать её вовсе. Однако, Эндрю даже не стал создавать раздельные функции для разбиения логики разнотипных объектов. Вместо этого, он создал цепь громоздких божественных функций, каждая из которых содержала огромнейшие массивы кода, разбивающие логику разнотипных объектов через цепь <code>if else if else if else</code>. Ещё одна особенность кода игры, это очень и очень длинные однострочные логические и арифметические выражения, почти никакого переноса кода использовано не было. Также Эндрю не позаботился об использовании перечислений, чтобы наглядно именовать каждый тип элементов, а просто использовал сырые числовые значения, чтобы обозначить тот или иной элемент (а их там сотни разных!). Большую часть кода я преобразовал достаточно точно, сохранив исходную логику. Часть этого всего "спагетти" мне пришлось разбить на секторы, вынося в отдельные функции, чтобы тем самым сохранить наглядность.</p><h3>Поддержка текста и преобразований строк в числа</h3><p>Visual Basic 6, даже не смотря на использование юникода в своём ядре, и даже на то, что строки базируются на COM-типе <a href="https://docs.microsoft.com/en-us/previous-versions/windows/desktop/automat/bstr" rel="noopener noreferrer nofollow">BSTR</a> с юникодом, стандартными функциями работы с файловой системой, отображения в интерфейсе, и чтения-записи текстовых строк (если открывать файл как текстовый), по факту, не умеет ничего, кроме локалезависимых ANSI-кодировок и очень ограниченной поддержки UTF16 из-за того, что средам VB4-VB6 и программам, собранных на них, требовалось работать на Windows 9x, не поддерживающих юникод. Из-за этого возникают серьёзные проблемы при работе игры на компьютерах по всему миру. Поэтому, нельзя именовать игровые файлы на кириллице, иначе игра не заработает на компьютере в Китае. И наоборот. Я решил использовать в игре UTF8, поскольку эта кодировка является универсальной и повсеместной, хоть и очень неудобной для задач посимвольной обработки текста, требующих сканировать всю строку. Большинство операционных систем используют именно её в своих файловых системах. Отличается лишь Windows, которая предпочитает использовать локалезависимые ANSI-кодировки (на уровне ядер 9x) и UTF16 (на уровне ядер NT). Из-за чего, в функциях взаимодействия с Windows я применил прямое преобразование между UTF8 и UTF16, чтобы продолжать использовать UTF8 внутри игры, и UTF16 при обращении к функциям самой Windows.</p><p>Что касается преобразований строк в числа, здесь они тоже локалезависимы: Эндрю, как положено по американским стандартам, использовал точку в качестве разделителя целой и десятичной частями чисел. Из-за этого, если в полях файлов присутствовали числа с плавающей точкой, игра падала, выдавая ошибку "<u>Runtime Error 13</u>" лишь потому, что по локальному стандарту (например, в России, в Германии и других странах), в качестве десятичного разделителя требуется запятая. Эта проблема требовала от игроков менять настройки стандартов, чтобы указывать точку, либо убирать числа с плавающей точкой из игровых файлов. В итоге, мне пришлось реализовать обёртку, которая позволяет преобразовать числа как с точкой, так и с запятой, чтобы обеспечить полную совместимость со всеми.</p><h3>Графика</h3><p>Для работы основной игры была создана форма, на которой собственно и происходила отрисовка всей игры. Для работы с графикой использовалась библиотека GDI напрямую:</p><pre><code class="vbscript">Public Declare Function BitBlt Lib "gdi32" (ByVal hDestDC As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hSrcDC As Long, ByVal xSrc As Long, ByVal ySrc As Long, ByVal dwRop As Long) As Long
+Public Declare Function StretchBlt Lib "gdi32" (ByVal hdc As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hSrcDC As Long, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long
+Public Declare Function CreateCompatibleBitmap Lib "gdi32" (ByVal hdc As Long, ByVal nWidth As Long, ByVal nHeight As Long) As Long
+Public Declare Function CreateCompatibleDC Lib "gdi32" (ByVal hdc As Long) As Long
+Public Declare Function GetDC Lib "user32" (ByVal hWnd As Long) As Long
+Public Declare Function SelectObject Lib "gdi32" (ByVal hdc As Long, ByVal hObject As Long) As Long
+Public Declare Function DeleteObject Lib "gdi32" (ByVal hObject As Long) As Long
+Public Declare Function DeleteDC Lib "gdi32" (ByVal hdc As Long) As Long
+Public Declare Function GetWindowDC Lib "user32.dll" (ByVal hWnd As Long) As Long</code></pre><figure class="full-width "><img src="/img/image-loader.svg" alt="Главная форма игры и код, рисующий на ней игровую сцену из текстуры." title="Главная форма игры и код, рисующий на ней игровую сцену из текстуры." height="923" data-src="https://habrastorage.org/getpro/habr/upload_files/539/b51/3bf/539b513bf7554c3427cd8c8096086ddf.png" data-width="1913"/><figcaption>Главная форма игры и код, рисующий на ней игровую сцену из текстуры.</figcaption></figure><p>Игра позволяла работать с форматами GIF, JPEG и BMP. К несчастью, отрисовать с нормальной прозрачностью через GDI была сложная задача, Эндрю решил её методом битовой маски. То есть, простыми словами, картинка разбивается на две части: основная и маска. Основная часть это обычная картинка, но с полностью чёрным фоном.</p><figure class=""><img src="/img/image-loader.svg" alt="Фронтальная часть картинки - обязательный чёрный фон, который превратится в фон через ИЛИ" title="Фронтальная часть картинки - обязательный чёрный фон, который превратится в фон через ИЛИ" height="106" data-src="https://habrastorage.org/getpro/habr/upload_files/871/b6d/c3a/871b6dc3a654f340efebb943581006a0.gif" data-width="96"/><figcaption>Фронтальная часть картинки - обязательный чёрный фон, который превратится в фон через ИЛИ</figcaption></figure><p>Маска - это чёрно-белая карта, отображающая пиксели с прозрачностью и без.</p><figure class=""><img src="/img/image-loader.svg" alt="Битовая маска, там где пиксели белые - прозрачность, там где чёрные - будут закрашены" title="Битовая маска, там где пиксели белые - прозрачность, там где чёрные - будут закрашены" height="106" data-src="https://habrastorage.org/getpro/habr/upload_files/670/962/bfd/670962bfd93ee720101463272e8156e1.gif" data-width="96"/><figcaption>Битовая маска, там где пиксели белые - прозрачность, там где чёрные - будут закрашены</figcaption></figure><p>Сам процесс отрисовки состоит из двух этапов:</p><pre><code class="vbscript">' Отрисовка маски, используя побитовое И 
+' между каждым пикселем целевой поверхности и маски.
+' Белые пиксели оставят фон нетронутым, чёрные закрасят его
+BitBlt targetDCSurface, X, Y, W, H, mask.hdc, 0, 0, vbSrcAnd
+
+' Отрисовка переднего плана поверх маски на ту же поверхность,
+' используя побитовое ИЛИ между каждым пикселем поверхности и маски.
+' Там где чёрные пиксели, цвет не изменится, а там где цветные, будут побитого
+' смешаны с фоном. Если на фоне уже нарисован чёрный силует, то передний план
+' отрисуется поверх него без цветовых искажений.
+BitBlt targetDCSurface, X, Y, W, H, front.hdc, 0, 0, vbSrcPaint</code></pre><p>Такой метод отрисовки не смотря на свою простоту использования, имеет множество ограничений:</p><ul><li><p>Отсутствует понятие полупрозрачности. Попытки изобразить полупрозрачность приводят к цветовым искажениям пикселей и артефактам.</p></li><li><p>Требуется предварительно подготавливать текстуру, сохраняя передний план и маску правильно.</p></li><li><p>В памяти находятся две части одного и того же изображения вместо одной.</p></li></ul><p>Передо мной встала задача создать альтернативу для всего этого, и я применил библиотеку SDL2, которая мне полюбилась уже давно. Первым делом я создал класс-обёртку, названный "FrmMain", в честь главной формы игры. В этой "форме" я реализовал прямое взаимодействие с SDL2 по части графики, управления, событий и т.п.</p><p>Я у себя решил отказаться от концепции битовой маски в пользу альфа-канала, который полноценно поддерживался на стороне многих аппаратных графических интерфейсов, и на стороне SDL2, даже в режиме программной отрисовки. Чтобы сохранить совместимость старой графики, созданной сообществом для игры, я реализовал функцию, которая преобразует пару перед+маска в полноценную RGBA-картинку:</p><pre><code class="cpp">void bitmask_to_rgba(FIBITMAP *front, FIBITMAP *mask)
+{
+    unsigned int x, y, ym, img_w, img_h, mask_w, mask_h, img_pitch, mask_pitch;
+
+    BYTE *img_bits, *mask_bits, *FPixP, *SPixP;
+    RGBQUAD Npix = {0x00, 0x00, 0x00, 0xFF};   /* Цвет целевого пикселя */
+    BYTE Bpix[] = {0x00, 0x0, 0x00, 0xFF};   /* Чёрный пиксель-заглушка */
+    unsigned short newAlpha = 0xFF; /* Рассчитанное значение альфа-канала */
+
+    BOOL endOfY = FALSE;
+
+    if(!mask)
+        return; /* Ничего не делать */
+
+    img_w  = FreeImage_GetWidth(front);
+    img_h  = FreeImage_GetHeight(front);
+    img_pitch = FreeImage_GetPitch(front);
+    mask_w = FreeImage_GetWidth(mask);
+    mask_h = FreeImage_GetHeight(mask);
+    mask_pitch = FreeImage_GetPitch(mask);
+
+    img_bits  = FreeImage_GetBits(front);
+    mask_bits = FreeImage_GetBits(mask);
+    FPixP = img_bits;
+    SPixP = mask_bits;
+
+    ym = mask_h - 1;
+    y = img_h - 1;
+
+    while(1)
+    {
+        FPixP = img_bits + (img_pitch * y);
+        if(!endOfY)
+            SPixP = mask_bits + (mask_pitch * ym);
+
+        for(x = 0; (x &lt; img_w); x++)
+        {
+            Npix.rgbBlue = ((SPixP[FI_RGBA_BLUE] &amp; 0x7F) | FPixP[FI_RGBA_BLUE]);
+            Npix.rgbGreen = ((SPixP[FI_RGBA_GREEN] &amp; 0x7F) | FPixP[FI_RGBA_GREEN]);
+            Npix.rgbRed = ((SPixP[FI_RGBA_RED] &amp; 0x7F) | FPixP[FI_RGBA_RED]);
+            newAlpha = 255 - (((unsigned short)(SPixP[FI_RGBA_RED]) +
+                               (unsigned short)(SPixP[FI_RGBA_GREEN]) +
+                               (unsigned short)(SPixP[FI_RGBA_BLUE])) / 3);
+
+            if((SPixP[FI_RGBA_RED] > 240u) // Почти белый
+               &amp;&amp; (SPixP[FI_RGBA_GREEN] > 240u)
+               &amp;&amp; (SPixP[FI_RGBA_BLUE] > 240u))
+                newAlpha = 0;
+
+            newAlpha += (((unsigned short)(FPixP[FI_RGBA_RED]) +
+                          (unsigned short)(FPixP[FI_RGBA_GREEN]) +
+                          (unsigned short)(FPixP[FI_RGBA_BLUE])) / 3);
+
+            if(newAlpha > 255)
+                newAlpha = 255;
+
+            FPixP[FI_RGBA_BLUE]  = Npix.rgbBlue;
+            FPixP[FI_RGBA_GREEN] = Npix.rgbGreen;
+            FPixP[FI_RGBA_RED]   = Npix.rgbRed;
+            FPixP[FI_RGBA_ALPHA] = (BYTE)(newAlpha);
+            FPixP += 4;
+
+            if(x >= mask_w - 1 || endOfY)
+                SPixP = Bpix;
+            else
+                SPixP += 4;
+        }
+
+        if(ym == 0)
+        {
+            endOfY = TRUE;
+            SPixP = Bpix;
+        }
+        else
+            ym--;
+
+        if(y == 0)
+            break;
+        y--;
+    }
+}</code></pre><p><strong>На заметку:</strong> Я использовал библиотеку FreeImage (а конкретно <a href="https://github.com/WohlSoft/libFreeImage" rel="noopener noreferrer nofollow">FreeImageLite</a>, мой усечённый форк) для загрузки и предварительной обработки графики у себя.</p><p>Отдельная проблема у игры касалась её чрезвычайно долгой загрузки из-за обилия графических ресурсов. Чтобы решить эту проблему, я реализовал систему ленивой распаковки. То есть, я загружаю картинки с диска, но, я их не декодирую до тех пор, пока графический движок не запросит их отрисовку. Такая концепция позволила мне загружать игру почти мгновенно (в зависимости от мощности компьютера), а также значительно уменьшить потребление оперативной памяти с почти 600 мегабайт до 80~120 мегабайт. Однако, у этой концепции есть и недостаток: если диск или графический интерфейс недостаточно быстрые, игра будет слегка притормаживать при подгрузке каждой отдельной текстуры, впервые отрисовывающейся на экране, чего особенно хорошо заметно в главном меню, где воспроизводится демка с участием пятерых игровых персонажей, часто сменяющих свои состояния.</p><p>Саму отрисовку я делаю с использованием SDL_Renderer, сделав конечный результат проще и гибче. SDL2 поддерживает множество интерфейсов графических ускорителей: и OpenGL, и DirectX, и Metal. Также сохраняется поддержка программной отрисовки в случае, если невозможно задействовать один из аппаратных методов отрисовки.</p><h3>Звук и музыка</h3><p>Игра использовала для воспроизведения музыки и звука старинный <a href="https://docs.microsoft.com/ru-ru/windows/win32/multimedia/mci" rel="noopener noreferrer nofollow">интерфейс MCI</a>, существующий ещё со времён Windows 3.1.</p><pre><code class="vbscript">Public Declare Function mciSendString Lib "winmm.dll" Alias "mciSendStringA" (ByVal lpstrCommand As String, ByVal lpstrReturnString As String, ByVal uReturnLength As Integer, ByVal hwndCallback As Integer) As Integer</code></pre><p>Этот интерфейс позволял с помощью одной функции посылать текстовые команды системе для открытия аудио-файлов и управления ими: воспроизведение, приостановка, повтор, громкость, и т.п. Самый большой недостаток подобного интерфейса заключался в том, что требовалось доустанавливать в систему дополнительные пакеты кодеков. Из-за того, что игра открывает десятки аудиофайлов через MCI, во время работы игры, системный трей засорялся значками FFDshow и подобными (если не было отключено в настройках соответствующих кодеков). Также сам процесс подобной загрузки был чрезвычайно долгим. По факту, через интерфейс работали форматы MP3, WAV, WMA, а также криво-косо MIDI.</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Системный лоток, засорённый значками кодека Lav" title="Системный лоток, засорённый значками кодека Lav" height="734" data-src="https://habrastorage.org/getpro/habr/upload_files/b67/bc7/117/b67bc7117f191acc6cb6331e33328961.png" data-width="678"/><figcaption>Системный лоток, засорённый значками кодека Lav</figcaption></figure><p>Я решил избавиться от такого недоразумения как MCI ещё 5 лет назад. Мною, на базе хакерского расширения LunaLua, было реализовано использование библиотеки SDL2_mixer (а затем форка <a href="https://github.com/WohlSoft/SDL-Mixer-X" rel="noopener noreferrer nofollow">SDL Mixer X</a>), которая работала с музыкой и звуковыми эффектами намного лучше, а также совершенно не требовала установки каких либо внешних кодеков, поскольку все нужные библиотеки уже были включены в её состав. Вместе с этим была добавлена поддержка большого числа новых форматов: и OGG Vorbis, и FLAC, и огромного числа форматов трекерной музыки, и улучшенная поддерка MIDI. Также появилась возможность играть дублирующие звуковые эффекты параллельно.</p><h3>Файловая система</h3><p>В Visual Basic было много функций, непосредственно работающих с файловой системой: была возможность проверять файл на существование, перечислять директории, переименовывать и удалять файлы и т.п. Поскольку у меня была цель сделать проект кроссплатформенным, я применил несколько своих обёрток (<a href="https://github.com/WohlSoft/DirManager/" rel="noopener noreferrer nofollow">одна из них</a> для работы с директориями), которыми я полностью обеспечил потребности кода в функциях работы с файловой системой. </p><p>Отдельно большая проблема - это регистрозависимые файловые системы. Из-за того, что для игры частенько можно встретить эпизоды, где полная каша в именах файлов (чаще всего, начинается с заглавной буквы вместо маленькой, либо расширение имени файла записано большими буквами, а не маленькими). Из-за этого, мне пришлось реализовать обёртку, которая прочёсывала директории, и приводила имена файлов и пути в соответствии с регистром в системе, обеспечивая видимость всем тем криво-именованным файлам на регистрозависимых файловых системах.</p><h3>Клавиатура, мышь, геймпады</h3><p>Для работы с клавиатурой, в игре использовались функции WinAPI на базе Virtual Key. Из-за этого возникали проблемы при переключении раскладок, а также возникали трудности на клавиатурах QWERTZ и AZERTY, популярных в Германии и Франции. Чтобы решить все эти проблемы, я применил возможности библиотеки SDL2, переориентировав игровое управление на сканкоды. Они привязаны к физическим клавишам и абсолютно не зависимы от текущей раскладки.</p><p>Для поддержки геймпадов в игре использовались возможности библиотеки WinMM:</p><pre><code class="vbscript">Public Declare Function joyGetPosEx Lib "winmm.dll" (ByVal uJoyID As Integer, pji As JOYINFOEX) As Integer
+Public Declare Function joyGetDevCapsA Lib "winmm.dll" (ByVal uJoyID As Integer, pjc As JOYCAPS, ByVal cjc As Integer) As Integer
+Public Type JOYCAPS
+    wMid As Long
+    wPid As Long
+    szPname As String * 32
+    wXmin As Long
+    wXmax As Long
+    wYmin As Long
+    wYmax As Long
+    wZmin As Long
+    wZmax As Long
+    wNumButtons As Long
+    wPeriodMin As Long
+    wPeriodMax As Long
+    wRmin As Long
+    wRmax As Long
+    wUmin As Long
+    wUmax As Long
+    wVmin As Long
+    wVmax As Long
+    wCaps As Long
+    wMaxAxes As Long
+    wNumAxes As Long
+    wMaxButtons As Long
+    szRegKey As String * 32
+    szOEMVxD As String * 260
+End Type
+Public Type JOYINFOEX
+    dwSize As Long
+    dwFlags As Long
+    dwXpos As Long
+    dwYpos As Long
+    dwZpos As Long
+    dwRpos As Long
+    dwUpos As Long
+    dwVpos As Long
+    dwButtons As Long
+    dwButtonNumber As Long
+    dwPOV As Long
+    dwReserved1 As Long
+    dwReserved2 As Long
+End Type
+Public JoyNum As Long
+Public MYJOYEX As JOYINFOEX
+Public MYJOYCAPS As JOYCAPS
+Public CenterX(0 To 7) As Long
+Public CenterY(0 To 7) As Long
+Public JoyButtons(-15 To 15) As Boolean
+Public CurrentJoyX As Long
+Public CurrentJoyY As Long
+Public CurrentJoyPOV As Long</code></pre><p>К счастью, в библиотеке SDL2 есть значительно более мощные подсистемы SDL Joystick и SDL GameController, которые позволяют использовать тысячи различных моделей геймпадов через всевозможные интерфейсы, работает и на Linux, и на macOS, и на Android. Также поддерживается горячее подключение и отключение игровых контроллеров прямо во время игры.</p><p>Что касается мыши, использовались стандартные события главной формы Form_MouseDown, Form_MouseMove и Form_MouseUp с последующей записью состояния кнопок и координат указателя в глобальные переменные, используемые в коде самой игры. В обновлённой игре, я делаю аналогичное, но через SDL_PollEvent().</p><h2>Итог</h2><p>В результате проделанной работы, в течении первых двух-трёх недель после выпуска исходных кодов игры, получилась полноценная и кроссплатформенная реплика игры, крайне похожая по поведению на оригинал (настолько, что люди до сих пор находят в ней баги 10-летней давности). Однако, вместе со старыми багами, местами появились и новые, в результате ошибок, допущенных при преобразовании кода или из-за упущенных различий в работе VB6 и C++, либо из-за опечаток. Большая часть подобных ошибок уже была исправлена мною в течении месяца, и после, в марте 2020го года я представил обновлённую и стабильную игру вместе со всеми исходными кодами. Далее, в течении последнего года, дорабатывал игру, исправляя баги и улучшая функционал.</p><p>Проект движка я назвал TheXTech по принципу: "<strong>The</strong> <u>Super Mario Bros. </u><strong><u>X</u></strong> <strong>Tech</strong>".</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Главное меню игры Super Mario Bros. X на базе TheXTech 1.3.5.2" title="Главное меню игры Super Mario Bros. X на базе TheXTech 1.3.5.2" height="622" data-src="https://habrastorage.org/getpro/habr/upload_files/456/0a5/4e6/4560a54e69e7c554a2a6dc52997ac7fe.png" data-width="802"/><figcaption>Главное меню игры Super Mario Bros. X на базе TheXTech 1.3.5.2</figcaption></figure><p>В итоге, игра, изначально созданная жёстко под Windows на платформозависимом языке и на процессорах x86, превратилась в кроссплатформенную игру, которая работает не только на других операционных системах (Windows, Linux, macOS, Haiku, Android, Emscripten), но и на других процессорах (ARM, PowerPC, MIPS, и др.). Вместе с этим, игра наконец получила полноценную поддержку 64-битных процессоров и ARM-архитектуры. Энтузиасты также портируют игру на консоли (уже есть примеры, реализованные на <a href="https://github.com/ds-sloth/TheXTech3DS" rel="noopener noreferrer nofollow">3DS</a> и <a href="https://github.com/Wohlstand/TheXTech/tree/wip-vita-support" rel="noopener noreferrer nofollow">PS Vita</a>).</p><p>В новом движке игры я не стал реализовывать встроенный редактор, и не стал реализовывать начальную форму для запуска игры или редактора, где показывалась веб-страница с новостями проекта (ныне просто сайт Nintendo), а также, была возможность отключить звук и пропуск кадров. Вместо этого, я решил реализовать интерфейс для настройки игры через аргументы командной строки, а также выделить <a href="https://github.com/Wohlstand/TheXTech/wiki/thextech.ini---Tune-game-settings" rel="noopener noreferrer nofollow">конфигурационный INI-файл</a>, который легко отредактировать, чтобы настроить игру под себя. А для <a href="https://github.com/Wohlstand/TheXTech/wiki/Create-levels-and-episodes-for-TheXTech" rel="noopener noreferrer nofollow">создания новых уровней и эпизодов</a> я решил рекомендовать девкит из набора Moondust Project, редактор которого я доработал, чтобы обеспечить его тесной интеграцией с игрой (поддержка специфичных полей, прямой запуск теста уровня, и т.п.).</p><p>Созданный проект я продолжаю развивать, улучшать, добавлять новые функции, стабилизировать.</p><h2>Материалы</h2><p><a href="https://github.com/smbx/smbx-legacy-source" rel="noopener noreferrer nofollow">Исходный код оригинальной игры как есть</a></p><p><a href="https://github.com/Wohlstand/smbx-experiments" rel="noopener noreferrer nofollow">Мой полигон, мод оригинала</a></p><p><a href="https://github.com/Wohlstand/TheXTech" rel="noopener noreferrer nofollow">Репозиторий с кодом созданной игры</a></p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BVB6%5D" class="tm-tags-list__link">VB6</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BC%2B%2B%5D" class="tm-tags-list__link">C++</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BVisualBasic%206%5D" class="tm-tags-list__link">VisualBasic 6</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0%20%D0%B8%D0%B3%D1%80%D1%8B%5D" class="tm-tags-list__link">разработка игры</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%BE%D1%80%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">портирование</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/gamedev/" class="tm-hubs-list__link">
+    Разработка игр
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/games/" class="tm-hubs-list__link">
+    Игры и игровые приставки
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 74: ↑73 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 74: ↑73 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+72</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">10K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    52
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Wohlstand/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/859/5e3/100/8595e3100bc38b0275dd5fb55d62484c.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 27 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    24.7
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">72.2</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Виталий Новичков</span> <a href="/ru/users/Wohlstand/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Wohlstand
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Инженер-Программист С++</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://github.com/Wohlstand/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Github
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582566/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 61 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582566/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582566/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582566":{"id":"582566","timePublished":"2021-10-09T18:59:20+00:00","isCorporative":false,"lang":"ru","titleHtml":"Как я портировал игру с Visual Basic 6 на С++, сделав её кросс-платформенной","leadData":{"textHtml":"\u003Cp\u003EВсем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания порта.\u003C\u002Fp\u003E\u003Cp\u003EЭта статья рассказывает о портировании Super Mario Bros. X, фанатской игры Эндрю Спинкса, созданную им в 2009 году, которую он затем бросил 2011 году в пользу более серьёзного и масштабного проекта в лице Terraria.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb84\u002F34d\u002Fe10\u002Fb8434de10fe3c2069bea42427273f279.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb84\u002F34d\u002Fe10\u002Fb8434de10fe3c2069bea42427273f279.png","fit":"cover","positionY":3.6363636363636,"positionX":50.384615384615}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"sandbox","data":null}],"author":{"scoreStats":{"score":24.7,"votesCount":27},"rating":72.2,"relatedData":null,"contacts":[{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002FWohlstand\u002F","value":"Wohlstand"}],"authorContacts":[{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002FWohlstand\u002F","value":"Wohlstand"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"354897","alias":"Wohlstand","fullname":"Виталий Новичков","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F859\u002F5e3\u002F100\u002F8595e3100bc38b0275dd5fb55d62484c.png","speciality":"Инженер-Программист С++"},"statistics":{"commentsCount":61,"favoritesCount":52,"readingCount":10238,"score":72,"votesCount":74},"hubs":[{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true},{"relatedData":null,"id":"7773","alias":"gamedev","type":"collective","title":"Разработка игр","titleHtml":"Разработка игр","isProfiled":true},{"relatedData":null,"id":"21980","alias":"games","type":"collective","title":"Игры и игровые приставки","titleHtml":"Игры и игровые приставки","isProfiled":false}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EВсем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания порта.\u003C\u002Fp\u003E\u003Ch2\u003EНемного об оригинальной игре\u003C\u002Fh2\u003E\u003Cp\u003E\u003Cstrong\u003ESuper Mario Bros. X\u003C\u002Fstrong\u003E (или коротко SMBX) - это фанатская игра по мотивам вселенной Марио, созданная в 2009 году американцем Эндрю Спинксом (который позже прославился как создатель игры Terraria). Эта фанатская игра была его первым опытом в разработке игр. В ней он познавал азы игростроя. Игра создавалась с использованием Visual Basic 6.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Главное меню игры Super Mario Bros. X версии 1.3\" title=\"Главное меню игры Super Mario Bros. X версии 1.3\" height=\"638\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F204\u002Fb12\u002F71a\u002F204b1271adfcb9b51051852d03de0afc.png\" data-width=\"816\"\u002F\u003E\u003Cfigcaption\u003EГлавное меню игры Super Mario Bros. X версии 1.3\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВ игре имеется возможность играть за одного из пятерых персонажей: Марио, Луиджи, Пич, Тоад и Линк. Можно играть в одиночку, можно играть вдвоём в кооперативном режиме. Также имеется режим битвы, в котором игроки должны побить друг друга, пользуясь различными подручными средствами. Сама игра является неким подобием песочницы для сообщества, в которой игроки могут создавать свои уровни и целые эпизоды, используя предложенные элементы во встроенном редакторе. Также можно добавлять в игру собственные ресурсы (картинки и музыку).\u003C\u002Fp\u003E\u003Cp\u003EДаже не смотря на полное прекращение разработки игры в 2011 году, она была востребована, и продолжала широко использовалаться сообществом. Игра также привлекла внимание разработчиков-энтузиастов и хакеров, которые создавали для неё вспомогательные инструменты, а также делали попытки модифицировать и расширить игру. Самыми известными из них являются набор разработки из тулкита Moondust Project (изначально называвшимся PGE Project), а также, библиотека LunaLua (изначально известная как LunaDll), расширяющая функционал игры посредством dll-инъекции.\u003C\u002Fp\u003E\u003Cp\u003EИсходный код игры долгое время был закрытым. Однако, всё изменилось, когда 2 февраля 2020 года на форуме были опубликованы исходные коды игры.\u003C\u002Fp\u003E\u003Ch2\u003EНачало работ\u003C\u002Fh2\u003E\u003Cp\u003EСлухи о возможной публикации исходных кодов игры были ещё в 2016м году, однако, этого не произошло. Это дало мне идею переписать игру на C++, чтобы с ней удобно было возиться. Но, поскольку, исходников не было, идея слегла в долгий ящик. С выходом исходников в феврале 2020-го года, я буквально достал эту идею из глубокой ямы забвения. Первым делом, я запустил свою виртуальную машину с Windows XP, где я и развернул среду VB6, в которой затем я открыл проект игры, и, после нескольких исправлений ошибок компиляции, успешно запустил игру из исходного кода. \u003C\u002Fp\u003E\u003Cp\u003EРаботы начались с исследования устройства кода игры и его структуры, а также с замены кода воспроизведения аудио с древнего MCI на мою специальную сборку SDL Mixer X, созданную для работы в VB6-проектах. Таким образом, я решил проблему работы игры на Linux под Wine, а также значительно ускорил загрузку игры и уменьшил потребление ею памяти.\u003C\u002Fp\u003E\u003Ch2\u003EИнструментарий\u003C\u002Fh2\u003E\u003Cp\u003EСначала я использовал \u003Ca href=\"https:\u002F\u002Fgist.github.com\u002FWohlstand\u002F3895db6a738aebce296c2f284cb163a7\" rel=\"noopener noreferrer nofollow\"\u003Eсамописный кусок кода на JavaScript\u003C\u002Fa\u003E, которым я через регулярные выражения парсил определения переменных, массивов и функций. Затем, я использовал бесплатную версию \"VB to C++ Converter\" от Tangible Software Solutions, чтобы относительно точно преобразовывать куски кода в C++ (Я пользовался режимом Snifit, поскольку конвертер был ориентирован на VB.NET, значительно отличавшийся от VB6. Также не обошлось без огромного числа дополнительных ручных манипуляций и макросов). Часть кода была переписана мною вручную, особенно на начальных этапах. Много модулей я писал с нуля (либо заимствовал из других моих проектов), чтобы обеспечить конечный проект всей необходимой функциональностью. Весь процесс разработки я вёл на Linux Mint, используя среду разработки Qt Creator, параллельно с CLion. Также, я использовал виртуальные машины с Windows XP и Windows 7 для запуска некоторых зависимых инструментов, а также VisualStudio Code для просмотра VB6-проекта игры из под Linux-системы.\u003C\u002Fp\u003E\u003Ch2\u003EОсобенности Visual Basic и различия с C++\u003C\u002Fh2\u003E\u003Cp\u003EКроме явного синтаксического и функционального различия между языками, имеется огромное число тонких не интуитивных различий, которых невозможно заметить без прямого взаимодействия и без чтения документации. Я сам лично мало работал с Visual Basic, и большую часть знаний о нём я узнал из поведения написанных программ и MSDN-документации (для Visual Basic 6, нужно качать редакцию 2001 года, к счастью, она присутствует на archive.org в свободном доступе).\u003C\u002Fp\u003E\u003Cp\u003EБлагодарю \u003Ca class=\"mention\" href=\"\u002Fusers\u002Ffirehacker\"\u003E@firehacker\u003C\u002Fa\u003E за уточнения и за расширенные объяснения.\u003C\u002Fp\u003E\u003Ch3\u003EВидимость переменных и функций\u003C\u002Fh3\u003E\u003Cp\u003EПервый этап начался с создания файла globals.h, который описывал все глобальные переменные игры и все типы (массивы, структуры, константы, и т.п.). Всё дело в том, что по своей архитектуре, Visual Basic подразумевает, что ко всем публично доступным переменным и функциям (отмеченных соответствующим образом), можно обращаться напрямую без предварительных включений или импортов второго модуля в коде первого. \u003C\u002Fp\u003E\u003Cp\u003EПотом, под каждый модуль, отдельно создавал списки прототипов функций и заголовочные файлы к ним. Затем, я включал эти заголовки между всеми модулям, чтобы обеспечить и полную видимость всех важных объектов кода, и навести некоторый порядок по файлам.\u003C\u002Fp\u003E\u003Ch3\u003EСтруктуры\u003C\u002Fh3\u003E\u003Cp\u003EОтдельной проблемой стало то, что Visual Basic прямо позволяет именовать структуры и переменные одинаково, буква-в-букву:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003E' Определение структуры\nPublic Type Controls\n    Up As Boolean\n    Down As Boolean\n    Left As Boolean\n    Right As Boolean\n    Jump As Boolean\n    AltJump As Boolean\n    Run As Boolean\n    AltRun As Boolean\n    Drop As Boolean\n    Start As Boolean\nEnd Type\n\n' Определение одноимённой переменной\nControls As Controls\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EС одной стороны, такое возможно и в C\u002FC++ тоже (если не забывать указывать ключевое слово struct перед именем структуры). Однако, одноимённые, но разнотипные, объекты сильно вредят наглядности, а также создают неоднозначности в некоторых ситуациях, например, при попытке определить локальную переменную \u003Ccode\u003EControls ko\u003C\u002Fcode\u003E без ключевого слова struct, вылезет ошибка компиляции \u003Cu\u003Eerror: expected ‘;’ before ‘ko’\u003C\u002Fu\u003E. При использовании \u003Ccode\u003Esizeof(Controls)\u003C\u002Fcode\u003E также создаётся неоднозначность, хотим ли мы узнать размер переменной Controls, или размер типа структуры Controls.\u003C\u002Fp\u003E\u003Cp\u003EИз-за этого, я решил добавлять всем именам структур окончание \"_t\", чтобы устранить все неоднозначности:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estruct Controls_t\n{\n    bool Up = false;\n    bool Down = false;\n    bool Left = false;\n    bool Right = false;\n    bool Jump = false;\n    bool AltJump = false;\n    bool Run = false;\n    bool AltRun = false;\n    bool Drop = false;\n    bool Start = false;\n};\n\nextern Controls_t Controls;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EМассивы с явным диапазоном\u003C\u002Fh3\u003E\u003Cp\u003EВ Visual Basic предусмотрена возможность создавать массивы с различными диапазонами индексов, и не обязательно от 0 до N-1, а например, от 1 до 5, от -1000 до +1000, и т.п.:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003EPublic BlockSwitch(1 To 4) As Boolean\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ C++ такого нету. Однако, мне не помешало создать реализацию такой концепции, получился вот такой шаблон:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class T, long begin, long end\u003E\nclass RangeArr\n{\n    static constexpr long range_diff = begin - end;\n    static constexpr size_t size = (range_diff &lt; 0 ? -range_diff : range_diff) + 1;\n    static const long offset = -begin;\n    T array[size];\n\npublic:\n    RangeArr()\n    {}\n\n    ~RangeArr()\n    {}\n\n    RangeArr(const RangeArr &amp;o)\n    {\n        for(size_t i = 0; i &lt; size; i++)\n            array[i] = o.array[i];\n    }\n\n    RangeArr&amp; operator=(const RangeArr &amp;o)\n    {\n        for(size_t i = 0; i &lt; size; i++)\n            array[i] = o.array[i];\n        return *this;\n    }\n\n    void fill(const T &amp;o)\n    {\n        for(size_t i = 0; i &lt; size; i++)\n            array[i] = o;\n    }\n\n    T&amp; operator[](long index)\n    {\n        assert(index &lt;= end);\n        assert(index \u003E= begin);\n        assert(offset + index &lt; static_cast&lt;long\u003E(size));\n        assert(offset + index \u003E= 0);\n        return array[offset + index];\n    }\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА также вариант шаблона специально для целочисленных типов с предварительной инициализацией:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class T, long begin, long end, T defaultValue\u003E\nclass RangeArrI\n{\n    static constexpr long range_diff = begin - end;\n    static constexpr size_t size = (range_diff &lt; 0 ? -range_diff : range_diff) + 1;\n    static const long offset = -begin;\n    T array[size];\n\npublic:\n    RangeArrI()\n    {\n        for(size_t i = 0; i &lt; size; i++)\n            array[i] = defaultValue;\n    }\n\n    ~RangeArrI()\n    {}\n\n    RangeArrI(const RangeArrI &amp;o)\n    {\n        for(size_t i = 0; i &lt; size; i++)\n            array[i] = o.array[i];\n    }\n\n    RangeArrI&amp; operator=(const RangeArrI &amp;o)\n    {\n        for(size_t i = 0; i &lt; size; i++)\n            array[i] = o.array[i];\n        return *this;\n    }\n\n    void fill(const T &amp;o)\n    {\n        for(size_t i = 0; i &lt; size; i++)\n            array[i] = o;\n    }\n\n    T&amp; operator[](long index)\n    {\n        assert(index &lt;= end);\n        assert(index \u003E= begin);\n        assert(offset + index &lt; static_cast&lt;long\u003E(size));\n        assert(offset + index \u003E= 0);\n        return array[offset + index];\n    }\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТаким образом, выше представленный пример на C++ будет определён следующим образом:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eextern RangeArrI&lt;bool, 1, 4, false\u003E BlockSwitch;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EК счастью (или к сожалению), Эндрю не использовал в своём коде динамических массивов, хотя, с другой стороны, по сравнению с std::vector в С++, динамические массивы в Visual Basic 6 были не очень удобными в работе.\u003C\u002Fp\u003E\u003Cp\u003EВ моих шаблонах я также применил assert-ы, поскольку они позволяют отлавливать ошибки выхода за пределы диапазона массива в коде (в Visual Basic 6 типичная ошибка это \"Runtime Error 9: Subscript out of range\"). И тем самым, иметь возможность легко отлаживать их, не допуская последующей порчи памяти и возникновения SIGSEGV.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EUpd:\u003C\u002Fstrong\u003E В комментариях, \u003Ca class=\"mention\" href=\"\u002Fusers\u002Fizaron\"\u003E@Izaron\u003C\u002Fa\u003E-ом \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582566\u002F#comment_23573508\" rel=\"noopener noreferrer nofollow\"\u003Eпредложена\u003C\u002Fa\u003E альтернативная реализация шаблона, используя std::array в качестве носителя:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate&lt;class T, long Begin, long End\u003E\nclass range_arr : public std::array&lt;T, End - Begin + 1\u003E {\npublic:\n    using underlying_t = std::array&lt;T, End - Begin + 1\u003E;\n    using typename underlying_t::reference;\n    \n    constexpr reference operator[](long pos) {\n        return underlying_t::operator[](pos - Begin);\n    }\n    constexpr reference operator[](long pos) const {\n        return underlying_t::operator[](pos - Begin);\n    }\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EОпциональные аргументы-ссылки\u003C\u002Fh3\u003E\u003Cp\u003EВ Visual Basic, в функциях и процедурах, по умолчанию (если явно не указать \u003Ccode\u003EByVal\u003C\u002Fcode\u003E или \u003Ccode\u003EByRef\u003C\u002Fcode\u003E), аргументы передаются по принципу ссылок: их можно изменить непосредственно из кода функции:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003EPublic Sub addValue(number As Integer)\n  number = 42\nEnd Sub\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ C++, по умолчанию, аргументы передаются по значению. Нужно явно указывать, что аргумент передаётся по ссылке:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid addValue(int &amp;number)\n{\n  number = 42;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПри портировании кода с Visual Basic 6 я столкнулся со следующим явлением:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003EPublic Sub addValue(step As Integer, Optional number As Integer = 0)\n  number = step\nEnd Sub\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭто т.н. опциональная ссылка. Её можно использовать, а можно не использовать, тогда записанное в неё значение просто потеряется.\u003C\u002Fp\u003E\u003Cp\u003EВ C++ из-за того, что я упустил тот факт, что аргументы в VB это ссылки, словил баг, что значение, переданное по опциональному аргументу, не обновилось в соответствии с кодом:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid addValue(int step, int number = 0)\n{\n  number = step;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ итоге, я сначала решил сделать аргумент number указателем, однако потом до меня дошло, что я могу с лёгкостью использовать перегрузку функций, и получить желанную опциональную ссылку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid addValue(int step, int &amp;number)\n{\n  number = step;\n}\n\nvoid addValue(int step)\n{\n  int dummy = 0;\n  addValue(step, dummy);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EUpd:\u003C\u002Fstrong\u003E В комментариях, \u003Ca class=\"mention\" href=\"\u002Fusers\u002Fizaron\"\u003E@Izaron\u003C\u002Fa\u003E-ом \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582566\u002F#comment_23573508\" rel=\"noopener noreferrer nofollow\"\u003Eпредложена\u003C\u002Fa\u003E альтернативная реализация концепции через шаблоны:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate&lt;typename T\u003E\nT dummy;\n\ntemplate&lt;typename T\u003E\nT&amp; dummy_ref(T value) {\n    dummy&lt;T\u003E = value;\n    return dummy&lt;T\u003E;\n}\n\nvoid addValue(int step, int&amp; number = dummy_ref&lt;int\u003E(0)) {\n    number = step;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТаким образом, можно проще создавать создавать такие функции без излишних дублирующих определений.\u003C\u002Fp\u003E\u003Ch3\u003EОкругление чисел\u003C\u002Fh3\u003E\u003Cp\u003EВ Visual Basic принципиально отличается политика округления чисел, чем от C++:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EПопытка присвоить число с плавающей точкой целочисленной переменной, всегда округляет своё значение. В C++ идёт приведение типа с отсечением дробной части.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EОкругление идёт нестандартным образом, через x86-инструкцию FRNDINT, которая округляет серединные значения по типу 0.5 к ближайшему чётному целому. То есть, было 15.5, округление будет в 16, если было 42.5, то округлится к 42м.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EПочему я обратил на это внимание? Потому что физика в игре во многом зависит от частей кода, использующего округление. Если округление делать не правильно (не так, как оно делалось в Visual Basic), то в итоге, физика будет искажена (Например, будет искажено движение пресса-давилки на уровне \"Dungeon of Pain\" в эпизоде \"The Invasion 2\").\u003C\u002Fp\u003E\u003Cp\u003EЧтобы полностью решить проблему округления, я реализовал соответствующий велосипед:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Econst double power10[] =\n{\n    1.0,\n    10.0,\n    100.0,\n    1000.0,\n    10000.0,\n\n    100000.0,\n    1000000.0,\n    10000000.0,\n    100000000.0,\n    1000000000.0,\n\n    10000000000.0,\n    100000000000.0,\n    1000000000000.0,\n    10000000000000.0,\n    100000000000000.0,\n\n    1000000000000000.0,\n    10000000000000000.0,\n    100000000000000000.0,\n    1000000000000000000.0,\n    10000000000000000000.0,\n\n    100000000000000000000.0,\n    1000000000000000000000.0\n};\n\ndouble vb6round(double x, int deimals);\n\nint vb6Round(double x)\n{\n    return static_cast&lt;int\u003E(vb6Round(x, 0));\n}\n\nstatic SDL_INLINE double toNearest(double x)\n{\n    int round_old = std::fegetround();\n    if(round_old == FE_TONEAREST)\n        return std::nearbyint(x);\n    else\n    {\n        std::fesetround(FE_TONEAREST);\n        x = std::nearbyint(x);\n        std::fesetround(round_old);\n        return x;\n    }\n}\n\ndouble vb6Round(double x, int decimals)\n{\n    double res = x, decmul;\n\n    if(decimals &lt; 0 || decimals \u003E 22)\n        decimals = 0;\n\n    if(SDL_fabs(x) &lt; 1.0e16)\n    {\n        decmul = power10[decimals];\n        res = toNearest(x * decmul) \u002F decmul;\n    }\n\n    return res;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТаким образом, получилась весьма точная реализация округления, соответствующая поведению Visual Basic 6.\u003C\u002Fp\u003E\u003Ch3\u003EТаймеры\u003C\u002Fh3\u003E\u003Cp\u003EВ игре использовались встроенные функции и глобальные переменные, отвечающие за время: глобальная функция Timer, возвращающая \u003Cstrong\u003ESingle\u003C\u002Fstrong\u003E-значение (аналог float в C++) секунд, прошедших с полуночи, и WinAPI-функция Sleep для различных задержек.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003EPublic Declare Sub Sleep Lib \"kernel32\" (ByVal dwMilliseconds As Long)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EК счастью, SDL2 легко заменяет эти функции на собственные SDL_GetTicks() и SDL_Delay(). Однако, имеется вопрос более серьёзный, чем просто выжидание времени и задержка: игра старается жёстко выдерживать частоту обновления в 65 кадров в секунду. Если специально не стараться, игра будет работать с частотой 67 кадров в секунду без вертикальной синхронизации. Это большая проблема для спидраннеров, использующих внешние таймеры для честного измерения времени прохождения игры.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы исправить проблему, я нашёл код, который выдерживает определённую частоту, и доработал его. Получился \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlstand\u002FTheXTech\u002Fblob\u002F42508590c1d18d9c79c0965077ec7a0d31099451\u002Fsrc\u002Fframe_timer.cpp\" rel=\"noopener noreferrer nofollow\"\u003Eцелый модуль\u003C\u002Fa\u003E, реализующий логику жёсткой выдержки частоты в 65 кадров в секунду. Пришлось отдельно повозиться, поскольку в Linux и macOS уже были нужные функции, считающие нановремя, а в Windows с этим большая проблема. Однако, спустя время я нашёл универсальное решение, которое будет идеально работать и на миллисекундах.\u003C\u002Fp\u003E\u003Ch3\u003EБоль логических выражений\u003C\u002Fh3\u003E\u003Cp\u003EЕщё одна особенность, которая заключается в том, что Visual Basic 6 и C++ по разному обрабатывают логические выражения:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EВ C++ присутствуют раздельные логические операторы \u003Ccode\u003E&amp;&amp;\u003C\u002Fcode\u003E, \u003Ccode\u003E||\u003C\u002Fcode\u003E, \u003Ccode\u003E!\u003C\u002Fcode\u003E, \u003Ccode\u003E!=\u003C\u002Fcode\u003E и побитовые операторы \u003Ccode\u003E&amp;\u003C\u002Fcode\u003E, \u003Ccode\u003E|\u003C\u002Fcode\u003E, \u003Ccode\u003E~\u003C\u002Fcode\u003E, \u003Ccode\u003E^\u003C\u002Fcode\u003E. Булевый тип соответствует 0 (false) и 1 (true).\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ Visual Basic, операторы \u003Ccode\u003EAnd\u003C\u002Fcode\u003E, \u003Ccode\u003EOr\u003C\u002Fcode\u003E, \u003Ccode\u003ENot\u003C\u002Fcode\u003E, \u003Ccode\u003EXor\u003C\u002Fcode\u003E, побитовые и прямо эквивалентны операторам \u003Ccode\u003E&amp;\u003C\u002Fcode\u003E, \u003Ccode\u003E|\u003C\u002Fcode\u003E, \u003Ccode\u003E~\u003C\u002Fcode\u003E, \u003Ccode\u003E^\u003C\u002Fcode\u003E. Булевый тип представлен в виде полной инверсии целого числа: 0x0000 в качестве \u003Cstrong\u003ETrue\u003C\u002Fstrong\u003E и 0xFFFF в качестве \u003Cstrong\u003EFalse\u003C\u002Fstrong\u003E.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ следсвии использования логически операторов, в С++ происходит постепенный расчёт значений и постепенное наложение. То есть, мы имеем выражение \u003Ccode\u003Eif(A &lt; 5 &amp;&amp; Array[A] == 1)\u003C\u002Fcode\u003E, и в случае, когда выражение \u003Ccode\u003EA &lt; 5\u003C\u002Fcode\u003E ложное, выражение \u003Ccode\u003EArray[A] == 1\u003C\u002Fcode\u003E рассчитываться не будет.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ Visual Basic, члены выражения рассчитываются сразу, поскольку выполняется побитовый рассчёт всей формулы. То есть, в логическом выражении \u003Ccode\u003Eif A &lt; 5 And Array(A) = 1 Then\u003C\u002Fcode\u003E будут всегда рассчитываться оба члена (Код эквивалентен \u003Ccode\u003Eif((A &lt; 5 ? 0xFFFF : 0) &amp; (Array[A] == 1 ? 0xFFFF : 0)\u003C\u002Fcode\u003E). Здесь произойдёт ошибка из-за того, что индекс A выходит за пределы размера массива. Таким образом, при портировании на C++ я случайно исправил баг, рушивший игру. Из-за этой особенности языка в коде можно встретить большое число лазаний из \u003Ccode\u003Eif() { if {} if { .... } }\u003C\u002Fcode\u003E, которая вместе с тем, что выглядит неуклюже, является необходимым костылём над особенностью обработки логических выражений в Visual Basic.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПри преобразовании сложных логических выражений из Visual Basic в C++ может возникнуть путаница там, где не использовались скобки, а также всплывать предупреждения компилятора. Решается легко добавлением скобок вокруг ключевых логических групп. Также нужно учитывать, что в логических выражениях на VB очень легко перепутать побитовый рассчёт между логическим выражением, из-за чего можно исказить конечный результат: получить один бит вместо целочисленного значения.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EТакже было явно заметно, что Эндрю на тот момент абсолютно не имел никакого понятия о \u003Ccode\u003ESelect Case\u003C\u002Fcode\u003E (аналога оператора \u003Ccode\u003Eswitch()\u003C\u002Fcode\u003E), и поэтому в его коде было чрезвычайное злоупотребление конструкциями \u003Ccode\u003Eif else if else if else...\u003C\u002Fcode\u003E .\u003C\u002Fp\u003E\u003Ch3\u003EКошмарный спагетти-полиморфизм\u003C\u002Fh3\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Фрагмент спагетти-кода, отвечающего за логику НИП разных типов\" title=\"Фрагмент спагетти-кода, отвечающего за логику НИП разных типов\" height=\"803\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F517\u002F6e8\u002F6b3\u002F5176e86b36dfe60f52b74423bb625ce9.png\" data-width=\"1227\"\u002F\u003E\u003Cfigcaption\u003EФрагмент спагетти-кода, отвечающего за логику НИП разных типов\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EНи для кого не секрет, что в Visual Basic реализация классов была сильно ограниченной и прямо завязанной на технологии COM. Эндрю решил не использовать её вовсе. Однако, Эндрю даже не стал создавать раздельные функции для разбиения логики разнотипных объектов. Вместо этого, он создал цепь громоздких божественных функций, каждая из которых содержала огромнейшие массивы кода, разбивающие логику разнотипных объектов через цепь \u003Ccode\u003Eif else if else if else\u003C\u002Fcode\u003E. Ещё одна особенность кода игры, это очень и очень длинные однострочные логические и арифметические выражения, почти никакого переноса кода использовано не было. Также Эндрю не позаботился об использовании перечислений, чтобы наглядно именовать каждый тип элементов, а просто использовал сырые числовые значения, чтобы обозначить тот или иной элемент (а их там сотни разных!). Большую часть кода я преобразовал достаточно точно, сохранив исходную логику. Часть этого всего \"спагетти\" мне пришлось разбить на секторы, вынося в отдельные функции, чтобы тем самым сохранить наглядность.\u003C\u002Fp\u003E\u003Ch3\u003EПоддержка текста и преобразований строк в числа\u003C\u002Fh3\u003E\u003Cp\u003EVisual Basic 6, даже не смотря на использование юникода в своём ядре, и даже на то, что строки базируются на COM-типе \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fprevious-versions\u002Fwindows\u002Fdesktop\u002Fautomat\u002Fbstr\" rel=\"noopener noreferrer nofollow\"\u003EBSTR\u003C\u002Fa\u003E с юникодом, стандартными функциями работы с файловой системой, отображения в интерфейсе, и чтения-записи текстовых строк (если открывать файл как текстовый), по факту, не умеет ничего, кроме локалезависимых ANSI-кодировок и очень ограниченной поддержки UTF16 из-за того, что средам VB4-VB6 и программам, собранных на них, требовалось работать на Windows 9x, не поддерживающих юникод. Из-за этого возникают серьёзные проблемы при работе игры на компьютерах по всему миру. Поэтому, нельзя именовать игровые файлы на кириллице, иначе игра не заработает на компьютере в Китае. И наоборот. Я решил использовать в игре UTF8, поскольку эта кодировка является универсальной и повсеместной, хоть и очень неудобной для задач посимвольной обработки текста, требующих сканировать всю строку. Большинство операционных систем используют именно её в своих файловых системах. Отличается лишь Windows, которая предпочитает использовать локалезависимые ANSI-кодировки (на уровне ядер 9x) и UTF16 (на уровне ядер NT). Из-за чего, в функциях взаимодействия с Windows я применил прямое преобразование между UTF8 и UTF16, чтобы продолжать использовать UTF8 внутри игры, и UTF16 при обращении к функциям самой Windows.\u003C\u002Fp\u003E\u003Cp\u003EЧто касается преобразований строк в числа, здесь они тоже локалезависимы: Эндрю, как положено по американским стандартам, использовал точку в качестве разделителя целой и десятичной частями чисел. Из-за этого, если в полях файлов присутствовали числа с плавающей точкой, игра падала, выдавая ошибку \"\u003Cu\u003ERuntime Error 13\u003C\u002Fu\u003E\" лишь потому, что по локальному стандарту (например, в России, в Германии и других странах), в качестве десятичного разделителя требуется запятая. Эта проблема требовала от игроков менять настройки стандартов, чтобы указывать точку, либо убирать числа с плавающей точкой из игровых файлов. В итоге, мне пришлось реализовать обёртку, которая позволяет преобразовать числа как с точкой, так и с запятой, чтобы обеспечить полную совместимость со всеми.\u003C\u002Fp\u003E\u003Ch3\u003EГрафика\u003C\u002Fh3\u003E\u003Cp\u003EДля работы основной игры была создана форма, на которой собственно и происходила отрисовка всей игры. Для работы с графикой использовалась библиотека GDI напрямую:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003EPublic Declare Function BitBlt Lib \"gdi32\" (ByVal hDestDC As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hSrcDC As Long, ByVal xSrc As Long, ByVal ySrc As Long, ByVal dwRop As Long) As Long\nPublic Declare Function StretchBlt Lib \"gdi32\" (ByVal hdc As Long, ByVal X As Long, ByVal Y As Long, ByVal nWidth As Long, ByVal nHeight As Long, ByVal hSrcDC As Long, ByVal xSrc As Long, ByVal ySrc As Long, ByVal nSrcWidth As Long, ByVal nSrcHeight As Long, ByVal dwRop As Long) As Long\nPublic Declare Function CreateCompatibleBitmap Lib \"gdi32\" (ByVal hdc As Long, ByVal nWidth As Long, ByVal nHeight As Long) As Long\nPublic Declare Function CreateCompatibleDC Lib \"gdi32\" (ByVal hdc As Long) As Long\nPublic Declare Function GetDC Lib \"user32\" (ByVal hWnd As Long) As Long\nPublic Declare Function SelectObject Lib \"gdi32\" (ByVal hdc As Long, ByVal hObject As Long) As Long\nPublic Declare Function DeleteObject Lib \"gdi32\" (ByVal hObject As Long) As Long\nPublic Declare Function DeleteDC Lib \"gdi32\" (ByVal hdc As Long) As Long\nPublic Declare Function GetWindowDC Lib \"user32.dll\" (ByVal hWnd As Long) As Long\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Главная форма игры и код, рисующий на ней игровую сцену из текстуры.\" title=\"Главная форма игры и код, рисующий на ней игровую сцену из текстуры.\" height=\"923\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F539\u002Fb51\u002F3bf\u002F539b513bf7554c3427cd8c8096086ddf.png\" data-width=\"1913\"\u002F\u003E\u003Cfigcaption\u003EГлавная форма игры и код, рисующий на ней игровую сцену из текстуры.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EИгра позволяла работать с форматами GIF, JPEG и BMP. К несчастью, отрисовать с нормальной прозрачностью через GDI была сложная задача, Эндрю решил её методом битовой маски. То есть, простыми словами, картинка разбивается на две части: основная и маска. Основная часть это обычная картинка, но с полностью чёрным фоном.\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Фронтальная часть картинки - обязательный чёрный фон, который превратится в фон через ИЛИ\" title=\"Фронтальная часть картинки - обязательный чёрный фон, который превратится в фон через ИЛИ\" height=\"106\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F871\u002Fb6d\u002Fc3a\u002F871b6dc3a654f340efebb943581006a0.gif\" data-width=\"96\"\u002F\u003E\u003Cfigcaption\u003EФронтальная часть картинки - обязательный чёрный фон, который превратится в фон через ИЛИ\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EМаска - это чёрно-белая карта, отображающая пиксели с прозрачностью и без.\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Битовая маска, там где пиксели белые - прозрачность, там где чёрные - будут закрашены\" title=\"Битовая маска, там где пиксели белые - прозрачность, там где чёрные - будут закрашены\" height=\"106\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F670\u002F962\u002Fbfd\u002F670962bfd93ee720101463272e8156e1.gif\" data-width=\"96\"\u002F\u003E\u003Cfigcaption\u003EБитовая маска, там где пиксели белые - прозрачность, там где чёрные - будут закрашены\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EСам процесс отрисовки состоит из двух этапов:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003E' Отрисовка маски, используя побитовое И \n' между каждым пикселем целевой поверхности и маски.\n' Белые пиксели оставят фон нетронутым, чёрные закрасят его\nBitBlt targetDCSurface, X, Y, W, H, mask.hdc, 0, 0, vbSrcAnd\n\n' Отрисовка переднего плана поверх маски на ту же поверхность,\n' используя побитовое ИЛИ между каждым пикселем поверхности и маски.\n' Там где чёрные пиксели, цвет не изменится, а там где цветные, будут побитого\n' смешаны с фоном. Если на фоне уже нарисован чёрный силует, то передний план\n' отрисуется поверх него без цветовых искажений.\nBitBlt targetDCSurface, X, Y, W, H, front.hdc, 0, 0, vbSrcPaint\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТакой метод отрисовки не смотря на свою простоту использования, имеет множество ограничений:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EОтсутствует понятие полупрозрачности. Попытки изобразить полупрозрачность приводят к цветовым искажениям пикселей и артефактам.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EТребуется предварительно подготавливать текстуру, сохраняя передний план и маску правильно.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ памяти находятся две части одного и того же изображения вместо одной.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EПередо мной встала задача создать альтернативу для всего этого, и я применил библиотеку SDL2, которая мне полюбилась уже давно. Первым делом я создал класс-обёртку, названный \"FrmMain\", в честь главной формы игры. В этой \"форме\" я реализовал прямое взаимодействие с SDL2 по части графики, управления, событий и т.п.\u003C\u002Fp\u003E\u003Cp\u003EЯ у себя решил отказаться от концепции битовой маски в пользу альфа-канала, который полноценно поддерживался на стороне многих аппаратных графических интерфейсов, и на стороне SDL2, даже в режиме программной отрисовки. Чтобы сохранить совместимость старой графики, созданной сообществом для игры, я реализовал функцию, которая преобразует пару перед+маска в полноценную RGBA-картинку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid bitmask_to_rgba(FIBITMAP *front, FIBITMAP *mask)\n{\n    unsigned int x, y, ym, img_w, img_h, mask_w, mask_h, img_pitch, mask_pitch;\n\n    BYTE *img_bits, *mask_bits, *FPixP, *SPixP;\n    RGBQUAD Npix = {0x00, 0x00, 0x00, 0xFF};   \u002F* Цвет целевого пикселя *\u002F\n    BYTE Bpix[] = {0x00, 0x0, 0x00, 0xFF};   \u002F* Чёрный пиксель-заглушка *\u002F\n    unsigned short newAlpha = 0xFF; \u002F* Рассчитанное значение альфа-канала *\u002F\n\n    BOOL endOfY = FALSE;\n\n    if(!mask)\n        return; \u002F* Ничего не делать *\u002F\n\n    img_w  = FreeImage_GetWidth(front);\n    img_h  = FreeImage_GetHeight(front);\n    img_pitch = FreeImage_GetPitch(front);\n    mask_w = FreeImage_GetWidth(mask);\n    mask_h = FreeImage_GetHeight(mask);\n    mask_pitch = FreeImage_GetPitch(mask);\n\n    img_bits  = FreeImage_GetBits(front);\n    mask_bits = FreeImage_GetBits(mask);\n    FPixP = img_bits;\n    SPixP = mask_bits;\n\n    ym = mask_h - 1;\n    y = img_h - 1;\n\n    while(1)\n    {\n        FPixP = img_bits + (img_pitch * y);\n        if(!endOfY)\n            SPixP = mask_bits + (mask_pitch * ym);\n\n        for(x = 0; (x &lt; img_w); x++)\n        {\n            Npix.rgbBlue = ((SPixP[FI_RGBA_BLUE] &amp; 0x7F) | FPixP[FI_RGBA_BLUE]);\n            Npix.rgbGreen = ((SPixP[FI_RGBA_GREEN] &amp; 0x7F) | FPixP[FI_RGBA_GREEN]);\n            Npix.rgbRed = ((SPixP[FI_RGBA_RED] &amp; 0x7F) | FPixP[FI_RGBA_RED]);\n            newAlpha = 255 - (((unsigned short)(SPixP[FI_RGBA_RED]) +\n                               (unsigned short)(SPixP[FI_RGBA_GREEN]) +\n                               (unsigned short)(SPixP[FI_RGBA_BLUE])) \u002F 3);\n\n            if((SPixP[FI_RGBA_RED] \u003E 240u) \u002F\u002F Почти белый\n               &amp;&amp; (SPixP[FI_RGBA_GREEN] \u003E 240u)\n               &amp;&amp; (SPixP[FI_RGBA_BLUE] \u003E 240u))\n                newAlpha = 0;\n\n            newAlpha += (((unsigned short)(FPixP[FI_RGBA_RED]) +\n                          (unsigned short)(FPixP[FI_RGBA_GREEN]) +\n                          (unsigned short)(FPixP[FI_RGBA_BLUE])) \u002F 3);\n\n            if(newAlpha \u003E 255)\n                newAlpha = 255;\n\n            FPixP[FI_RGBA_BLUE]  = Npix.rgbBlue;\n            FPixP[FI_RGBA_GREEN] = Npix.rgbGreen;\n            FPixP[FI_RGBA_RED]   = Npix.rgbRed;\n            FPixP[FI_RGBA_ALPHA] = (BYTE)(newAlpha);\n            FPixP += 4;\n\n            if(x \u003E= mask_w - 1 || endOfY)\n                SPixP = Bpix;\n            else\n                SPixP += 4;\n        }\n\n        if(ym == 0)\n        {\n            endOfY = TRUE;\n            SPixP = Bpix;\n        }\n        else\n            ym--;\n\n        if(y == 0)\n            break;\n        y--;\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cstrong\u003EНа заметку:\u003C\u002Fstrong\u003E Я использовал библиотеку FreeImage (а конкретно \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlSoft\u002FlibFreeImage\" rel=\"noopener noreferrer nofollow\"\u003EFreeImageLite\u003C\u002Fa\u003E, мой усечённый форк) для загрузки и предварительной обработки графики у себя.\u003C\u002Fp\u003E\u003Cp\u003EОтдельная проблема у игры касалась её чрезвычайно долгой загрузки из-за обилия графических ресурсов. Чтобы решить эту проблему, я реализовал систему ленивой распаковки. То есть, я загружаю картинки с диска, но, я их не декодирую до тех пор, пока графический движок не запросит их отрисовку. Такая концепция позволила мне загружать игру почти мгновенно (в зависимости от мощности компьютера), а также значительно уменьшить потребление оперативной памяти с почти 600 мегабайт до 80~120 мегабайт. Однако, у этой концепции есть и недостаток: если диск или графический интерфейс недостаточно быстрые, игра будет слегка притормаживать при подгрузке каждой отдельной текстуры, впервые отрисовывающейся на экране, чего особенно хорошо заметно в главном меню, где воспроизводится демка с участием пятерых игровых персонажей, часто сменяющих свои состояния.\u003C\u002Fp\u003E\u003Cp\u003EСаму отрисовку я делаю с использованием SDL_Renderer, сделав конечный результат проще и гибче. SDL2 поддерживает множество интерфейсов графических ускорителей: и OpenGL, и DirectX, и Metal. Также сохраняется поддержка программной отрисовки в случае, если невозможно задействовать один из аппаратных методов отрисовки.\u003C\u002Fp\u003E\u003Ch3\u003EЗвук и музыка\u003C\u002Fh3\u003E\u003Cp\u003EИгра использовала для воспроизведения музыки и звука старинный \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fru-ru\u002Fwindows\u002Fwin32\u002Fmultimedia\u002Fmci\" rel=\"noopener noreferrer nofollow\"\u003Eинтерфейс MCI\u003C\u002Fa\u003E, существующий ещё со времён Windows 3.1.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003EPublic Declare Function mciSendString Lib \"winmm.dll\" Alias \"mciSendStringA\" (ByVal lpstrCommand As String, ByVal lpstrReturnString As String, ByVal uReturnLength As Integer, ByVal hwndCallback As Integer) As Integer\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭтот интерфейс позволял с помощью одной функции посылать текстовые команды системе для открытия аудио-файлов и управления ими: воспроизведение, приостановка, повтор, громкость, и т.п. Самый большой недостаток подобного интерфейса заключался в том, что требовалось доустанавливать в систему дополнительные пакеты кодеков. Из-за того, что игра открывает десятки аудиофайлов через MCI, во время работы игры, системный трей засорялся значками FFDshow и подобными (если не было отключено в настройках соответствующих кодеков). Также сам процесс подобной загрузки был чрезвычайно долгим. По факту, через интерфейс работали форматы MP3, WAV, WMA, а также криво-косо MIDI.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Системный лоток, засорённый значками кодека Lav\" title=\"Системный лоток, засорённый значками кодека Lav\" height=\"734\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb67\u002Fbc7\u002F117\u002Fb67bc7117f191acc6cb6331e33328961.png\" data-width=\"678\"\u002F\u003E\u003Cfigcaption\u003EСистемный лоток, засорённый значками кодека Lav\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЯ решил избавиться от такого недоразумения как MCI ещё 5 лет назад. Мною, на базе хакерского расширения LunaLua, было реализовано использование библиотеки SDL2_mixer (а затем форка \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlSoft\u002FSDL-Mixer-X\" rel=\"noopener noreferrer nofollow\"\u003ESDL Mixer X\u003C\u002Fa\u003E), которая работала с музыкой и звуковыми эффектами намного лучше, а также совершенно не требовала установки каких либо внешних кодеков, поскольку все нужные библиотеки уже были включены в её состав. Вместе с этим была добавлена поддержка большого числа новых форматов: и OGG Vorbis, и FLAC, и огромного числа форматов трекерной музыки, и улучшенная поддерка MIDI. Также появилась возможность играть дублирующие звуковые эффекты параллельно.\u003C\u002Fp\u003E\u003Ch3\u003EФайловая система\u003C\u002Fh3\u003E\u003Cp\u003EВ Visual Basic было много функций, непосредственно работающих с файловой системой: была возможность проверять файл на существование, перечислять директории, переименовывать и удалять файлы и т.п. Поскольку у меня была цель сделать проект кроссплатформенным, я применил несколько своих обёрток (\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlSoft\u002FDirManager\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eодна из них\u003C\u002Fa\u003E для работы с директориями), которыми я полностью обеспечил потребности кода в функциях работы с файловой системой. \u003C\u002Fp\u003E\u003Cp\u003EОтдельно большая проблема - это регистрозависимые файловые системы. Из-за того, что для игры частенько можно встретить эпизоды, где полная каша в именах файлов (чаще всего, начинается с заглавной буквы вместо маленькой, либо расширение имени файла записано большими буквами, а не маленькими). Из-за этого, мне пришлось реализовать обёртку, которая прочёсывала директории, и приводила имена файлов и пути в соответствии с регистром в системе, обеспечивая видимость всем тем криво-именованным файлам на регистрозависимых файловых системах.\u003C\u002Fp\u003E\u003Ch3\u003EКлавиатура, мышь, геймпады\u003C\u002Fh3\u003E\u003Cp\u003EДля работы с клавиатурой, в игре использовались функции WinAPI на базе Virtual Key. Из-за этого возникали проблемы при переключении раскладок, а также возникали трудности на клавиатурах QWERTZ и AZERTY, популярных в Германии и Франции. Чтобы решить все эти проблемы, я применил возможности библиотеки SDL2, переориентировав игровое управление на сканкоды. Они привязаны к физическим клавишам и абсолютно не зависимы от текущей раскладки.\u003C\u002Fp\u003E\u003Cp\u003EДля поддержки геймпадов в игре использовались возможности библиотеки WinMM:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"vbscript\"\u003EPublic Declare Function joyGetPosEx Lib \"winmm.dll\" (ByVal uJoyID As Integer, pji As JOYINFOEX) As Integer\nPublic Declare Function joyGetDevCapsA Lib \"winmm.dll\" (ByVal uJoyID As Integer, pjc As JOYCAPS, ByVal cjc As Integer) As Integer\nPublic Type JOYCAPS\n    wMid As Long\n    wPid As Long\n    szPname As String * 32\n    wXmin As Long\n    wXmax As Long\n    wYmin As Long\n    wYmax As Long\n    wZmin As Long\n    wZmax As Long\n    wNumButtons As Long\n    wPeriodMin As Long\n    wPeriodMax As Long\n    wRmin As Long\n    wRmax As Long\n    wUmin As Long\n    wUmax As Long\n    wVmin As Long\n    wVmax As Long\n    wCaps As Long\n    wMaxAxes As Long\n    wNumAxes As Long\n    wMaxButtons As Long\n    szRegKey As String * 32\n    szOEMVxD As String * 260\nEnd Type\nPublic Type JOYINFOEX\n    dwSize As Long\n    dwFlags As Long\n    dwXpos As Long\n    dwYpos As Long\n    dwZpos As Long\n    dwRpos As Long\n    dwUpos As Long\n    dwVpos As Long\n    dwButtons As Long\n    dwButtonNumber As Long\n    dwPOV As Long\n    dwReserved1 As Long\n    dwReserved2 As Long\nEnd Type\nPublic JoyNum As Long\nPublic MYJOYEX As JOYINFOEX\nPublic MYJOYCAPS As JOYCAPS\nPublic CenterX(0 To 7) As Long\nPublic CenterY(0 To 7) As Long\nPublic JoyButtons(-15 To 15) As Boolean\nPublic CurrentJoyX As Long\nPublic CurrentJoyY As Long\nPublic CurrentJoyPOV As Long\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EК счастью, в библиотеке SDL2 есть значительно более мощные подсистемы SDL Joystick и SDL GameController, которые позволяют использовать тысячи различных моделей геймпадов через всевозможные интерфейсы, работает и на Linux, и на macOS, и на Android. Также поддерживается горячее подключение и отключение игровых контроллеров прямо во время игры.\u003C\u002Fp\u003E\u003Cp\u003EЧто касается мыши, использовались стандартные события главной формы Form_MouseDown, Form_MouseMove и Form_MouseUp с последующей записью состояния кнопок и координат указателя в глобальные переменные, используемые в коде самой игры. В обновлённой игре, я делаю аналогичное, но через SDL_PollEvent().\u003C\u002Fp\u003E\u003Ch2\u003EИтог\u003C\u002Fh2\u003E\u003Cp\u003EВ результате проделанной работы, в течении первых двух-трёх недель после выпуска исходных кодов игры, получилась полноценная и кроссплатформенная реплика игры, крайне похожая по поведению на оригинал (настолько, что люди до сих пор находят в ней баги 10-летней давности). Однако, вместе со старыми багами, местами появились и новые, в результате ошибок, допущенных при преобразовании кода или из-за упущенных различий в работе VB6 и C++, либо из-за опечаток. Большая часть подобных ошибок уже была исправлена мною в течении месяца, и после, в марте 2020го года я представил обновлённую и стабильную игру вместе со всеми исходными кодами. Далее, в течении последнего года, дорабатывал игру, исправляя баги и улучшая функционал.\u003C\u002Fp\u003E\u003Cp\u003EПроект движка я назвал TheXTech по принципу: \"\u003Cstrong\u003EThe\u003C\u002Fstrong\u003E \u003Cu\u003ESuper Mario Bros. \u003C\u002Fu\u003E\u003Cstrong\u003E\u003Cu\u003EX\u003C\u002Fu\u003E\u003C\u002Fstrong\u003E \u003Cstrong\u003ETech\u003C\u002Fstrong\u003E\".\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Главное меню игры Super Mario Bros. X на базе TheXTech 1.3.5.2\" title=\"Главное меню игры Super Mario Bros. X на базе TheXTech 1.3.5.2\" height=\"622\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F456\u002F0a5\u002F4e6\u002F4560a54e69e7c554a2a6dc52997ac7fe.png\" data-width=\"802\"\u002F\u003E\u003Cfigcaption\u003EГлавное меню игры Super Mario Bros. X на базе TheXTech 1.3.5.2\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВ итоге, игра, изначально созданная жёстко под Windows на платформозависимом языке и на процессорах x86, превратилась в кроссплатформенную игру, которая работает не только на других операционных системах (Windows, Linux, macOS, Haiku, Android, Emscripten), но и на других процессорах (ARM, PowerPC, MIPS, и др.). Вместе с этим, игра наконец получила полноценную поддержку 64-битных процессоров и ARM-архитектуры. Энтузиасты также портируют игру на консоли (уже есть примеры, реализованные на \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fds-sloth\u002FTheXTech3DS\" rel=\"noopener noreferrer nofollow\"\u003E3DS\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlstand\u002FTheXTech\u002Ftree\u002Fwip-vita-support\" rel=\"noopener noreferrer nofollow\"\u003EPS Vita\u003C\u002Fa\u003E).\u003C\u002Fp\u003E\u003Cp\u003EВ новом движке игры я не стал реализовывать встроенный редактор, и не стал реализовывать начальную форму для запуска игры или редактора, где показывалась веб-страница с новостями проекта (ныне просто сайт Nintendo), а также, была возможность отключить звук и пропуск кадров. Вместо этого, я решил реализовать интерфейс для настройки игры через аргументы командной строки, а также выделить \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlstand\u002FTheXTech\u002Fwiki\u002Fthextech.ini---Tune-game-settings\" rel=\"noopener noreferrer nofollow\"\u003Eконфигурационный INI-файл\u003C\u002Fa\u003E, который легко отредактировать, чтобы настроить игру под себя. А для \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlstand\u002FTheXTech\u002Fwiki\u002FCreate-levels-and-episodes-for-TheXTech\" rel=\"noopener noreferrer nofollow\"\u003Eсоздания новых уровней и эпизодов\u003C\u002Fa\u003E я решил рекомендовать девкит из набора Moondust Project, редактор которого я доработал, чтобы обеспечить его тесной интеграцией с игрой (поддержка специфичных полей, прямой запуск теста уровня, и т.п.).\u003C\u002Fp\u003E\u003Cp\u003EСозданный проект я продолжаю развивать, улучшать, добавлять новые функции, стабилизировать.\u003C\u002Fp\u003E\u003Ch2\u003EМатериалы\u003C\u002Fh2\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fsmbx\u002Fsmbx-legacy-source\" rel=\"noopener noreferrer nofollow\"\u003EИсходный код оригинальной игры как есть\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlstand\u002Fsmbx-experiments\" rel=\"noopener noreferrer nofollow\"\u003EМой полигон, мод оригинала\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FWohlstand\u002FTheXTech\" rel=\"noopener noreferrer nofollow\"\u003EРепозиторий с кодом созданной игры\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"VB6"},{"titleHtml":"C++"},{"titleHtml":"VisualBasic 6"},{"titleHtml":"разработка игры"},{"titleHtml":"портирование"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb84\u002F34d\u002Fe10\u002Fb8434de10fe3c2069bea42427273f279.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb84\u002F34d\u002Fe10\u002Fb8434de10fe3c2069bea42427273f279.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582566\\\u002F\"},\"headline\":\"Как я портировал игру с Visual Basic 6 на С++, сделав её кросс-платформенной\",\"datePublished\":\"2021-10-09T21:59:20+03:00\",\"dateModified\":\"2021-10-14T15:02:30+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Виталий Новичков\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими труднос...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582566\\\u002F#post-content-body\",\"about\":[\"h_cpp\",\"h_gamedev\",\"h_games\",\"f_develop\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582566\\\u002F650e235e21c851fb9ac1e5c9292f6b78\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F204\\\u002Fb12\\\u002F71a\\\u002F204b1271adfcb9b51051852d03de0afc.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F517\\\u002F6e8\\\u002F6b3\\\u002F5176e86b36dfe60f52b74423bb625ce9.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F539\\\u002Fb51\\\u002F3bf\\\u002F539b513bf7554c3427cd8c8096086ddf.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F871\\\u002Fb6d\\\u002Fc3a\\\u002F871b6dc3a654f340efebb943581006a0.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F670\\\u002F962\\\u002Fbfd\\\u002F670962bfd93ee720101463272e8156e1.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb67\\\u002Fbc7\\\u002F117\\\u002Fb67bc7117f191acc6cb6331e33328961.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F456\\\u002F0a5\\\u002F4e6\\\u002F4560a54e69e7c554a2a6dc52997ac7fe.png\"]}","metaDescription":"Всем доброго времени суток! Это моя история о том, как я портировал исходный код одной фанатской Windows-игры о Марио с Visual Basic 6 на C++, и с какими трудностями я столкнулся в процессе создания...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"cpp,gamedev,games"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

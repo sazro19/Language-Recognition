@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>OTA обновление устройств с Linux / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582554\/"},"headline":"OTA обновление устройств с Linux","datePublished":"2021-10-10T09:00:01+03:00","dateModified":"2021-10-10T09:00:01+03:00","author":{"@type":"Person","name":"bao-eng"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"TL;DR:OTA A\/B обновление образа rootfs для IoT устройств с Linux при помощи проекта Mender.ВступлениеНедавно у меня возникла задача обновлять удалённо некоторое...","url":"https:\/\/habr.com\/ru\/post\/582554\/#post-content-body","about":["h_linux","h_linux_dev","h_iot_dev","h_raspberrypi","h_internet_of_things","f_develop","f_admin","f_popsci"],"image":["https:\/\/habr.com\/share\/publication\/582554\/0767f11569001ca2857d15e4869306e8\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f95\/c20\/98d\/f95c2098d93001b8cfa0230d3d0bd970.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/33a\/bce\/e73\/33abcee73fc95a9542ef35c1056aa6c9.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/03f\/97d\/aab\/03f97daab69e030663d73b00e06b67fe.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/2fa\/6ef\/582\/2fa6ef582fbe04fedf6ef5eb05233947.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/63e\/1bd\/c58\/63e1bdc58a8d97a2768f327fa0343e8b.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="OTA обновление устройств с Linux" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="OTA обновление устройств с Linux" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="OTA обновление устройств с Linux" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="TL;DR:OTA A/B обновление образа rootfs для IoT устройств с Linux при помощи проекта Mender.ВступлениеНедавно у меня возникла задача обновлять удалённо некоторое двузначное число IoT-устройств с Linux..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="TL;DR:OTA A/B обновление образа rootfs для IoT устройств с Linux при помощи проекта Mender.ВступлениеНедавно у меня возникла задача обновлять удалённо некоторое двузначное число IoT-устройств с Linux..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="TL;DR:OTA A/B обновление образа rootfs для IoT устройств с Linux при помощи проекта Mender.ВступлениеНедавно у меня возникла задача обновлять удалённо некоторое двузначное число IoT-устройств с Linux..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="TL;DR:OTA A/B обновление образа rootfs для IoT устройств с Linux при помощи проекта Mender.ВступлениеНедавно у меня возникла задача обновлять удалённо некоторое двузначное число IoT-устройств с Linux..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="TL;DR:OTA A/B обновление образа rootfs для IoT устройств с Linux при помощи проекта Mender.ВступлениеНедавно у меня возникла задача обновлять удалённо некоторое двузначное число IoT-устройств с Linux..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/54f/85c/92c/54f85c92c0d8fb65d31bf82ad0629cbd.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/54f/85c/92c/54f85c92c0d8fb65d31bf82ad0629cbd.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/54f/85c/92c/54f85c92c0d8fb65d31bf82ad0629cbd.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/54f/85c/92c/54f85c92c0d8fb65d31bf82ad0629cbd.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/54f/85c/92c/54f85c92c0d8fb65d31bf82ad0629cbd.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582554" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-10T06:00:01.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582554/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582554/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/54f/85c/92c/54f85c92c0d8fb65d31bf82ad0629cbd.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582554/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/bao-eng/" title="bao-eng" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_pink"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/bao-eng/" class="tm-user-info__username">
+      bao-eng
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-10T06:00:01.000Z" title="2021-10-10, 09:00">10  октября   в 09:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>OTA обновление устройств с Linux</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux/" class="tm-article-snippet__hubs-item-link"><span>Настройка Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка под Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/iot_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка для интернета вещей</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/raspberrypi/" class="tm-article-snippet__hubs-item-link"><span>Разработка на Raspberry Pi</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/internet_of_things/" class="tm-article-snippet__hubs-item-link"><span>Интернет вещей</span> <!----></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="440" data-src="https://habrastorage.org/getpro/habr/upload_files/f95/c20/98d/f95c2098d93001b8cfa0230d3d0bd970.png" data-width="780"/><figcaption></figcaption></figure><h2>TL;DR:</h2><p><abbr title="Обновление по воздуху (англ. over-the-air, OTA)">OTA</abbr> A/B обновление образа rootfs для IoT устройств с Linux при помощи проекта <a href="https://mender.io/" rel="noopener noreferrer nofollow">Mender</a>.</p><h2>Вступление</h2><p>Недавно у меня возникла задача обновлять удалённо некоторое двузначное число IoT-устройств с Linux через интернет. Задачу нужно было решить быстро. Времени и желания изобретать что-то своё не было совсем. Устанавливать обновления вручную по ssh — нереально. Автоматизировать установку по ssh тоже, устройства могут неожиданно выключаться или терять сеть. </p><p>Поиск решений по обновлению IoT устройств показал, что, судя по всему, мне больше всего подходит Mender:</p><ul><li><p>end-to-end решение — клиент + сервер + инструменты</p></li><li><p>A/B обновление rootfs — на устройстве есть два одинаковых раздела rootfs A и B. Система загружается с активного раздела A, устанавливает обновление на раздел B, загружается с раздела B и в случае успеха делает его активным. В случае неудачного обновления активным остаётся раздел A.</p></li><li><p>работает с debian и yocto</p></li><li><p>не использует контейнеры</p></li><li><p>есть open-source версия под лицензией Apache v2</p></li></ul><p>На сайте проекта можно почитать как всё это <a href="https://mender.io/how-it-works" rel="noopener noreferrer nofollow">работает</a>.</p><p>Кстати, Mender уже упоминался на хабре в <a href="https://habr.com/ru/company/deutschetelekomitsolutions/blog/520406/" rel="noopener noreferrer nofollow">статье</a> <a class="mention" href="/users/moooom">@MooooM</a>, но внедрить его тогда не получилось.</p><h2>Workflow</h2><p>Я продемонстрирую процесс обновления системы на примере Raspberry Pi 3B c Raspberry Pi OS. Карта памяти от 8 ГБ и выше.</p><p>В качестве сервера Mender будем использовать бесплатный демо-сервер <a href="https://hosted.mender.io" rel="noopener noreferrer nofollow">hosted.mender.io</a> (не более 10 устройств и 12 месяцев работы). </p><p>Подготовка образов будет производится на компьютере с Ubuntu 20.04. </p><p>В своей документации Mender рекомендуют примерно такой <a href="https://docs.mender.io/3.0/system-updates-debian-family/convert-a-mender-debian-image#recommended-workflow" rel="noopener noreferrer nofollow">подход</a> для устройств с debian:</p><ol><li><p>Установка чистой ОС</p></li><li><p>Подготовка эталонного образа</p></li><li><p>Копирование эталонного образа на ПК</p></li><li><p>Преобразование эталонного образа при помощи mender-convert</p></li><li><p>Подготовка устройства (provisioning)</p></li><li><p>Авторизация устройства</p></li><li><p>Подготовка пакета обновления (artifact)</p></li><li><p>Развёртывание обновления (deploy)</p></li></ol><h3>0. Сервер</h3><p>Регистрируемся на <a href="https://hosted.mender.io" rel="noopener noreferrer nofollow">hosted.mender.io</a>.</p><h3>1. Установка чистой ОС</h3><p>Устанавливаем последнюю <a href="https://www.raspberrypi.org/software/operating-systems/" rel="noopener noreferrer nofollow">Raspberry Pi OS Lite</a> по <a href="https://www.raspberrypi.org/documentation/computers/getting-started.html#installing-images-on-linux" rel="noopener noreferrer nofollow">инструкции</a>.</p><p>Включаем последовательную консоль <code>/boot/config.txt</code>: <code>enable_uart=1</code></p><h3>2. Подготовка эталонного (golden) образа</h3><p>Вставляем SD-карту в устройство(Raspberry Pi 3B) и подключаемся по uart при помощи minicom.</p><p>Меняем стандартный пароль при помощи <code>raspi-config</code>. </p><p>Настройте и проверьте подключение к интернету. Я подключил свою Raspberry по ethernet (не совсем over-the-air, знаю).</p><p>Создадим директорию <code>/data</code>, в которой будут храниться данные, которые должны сохраняться при обновлении образа системы.</p><p>Положим туда текстовый файл <code>important_file.txt</code> содержащий одну строку <code>hello_habr</code>.</p><h3>3. Копирование эталонного образа</h3><p>Выключаем устройство и вставляем SD-карту в компьютер:</p><p>Выводим список разделов:</p><pre><code class="bash">lsblk -p
+/dev/sda           8:0    1   7,4G  0 disk
+├─/dev/sda1        8:1    1   256M  0 part
+└─/dev/sda2        8:2    1   7,1G  0 part </code></pre><p>Размонтируем разделы:</p><pre><code class="bash">umount /dev/sdX1
+umount /dev/sdX2</code></pre><p>Считываем образ с карты:</p><pre><code class="bash">sudo dd if=/dev/sdX of=golden-image-1.img bs=4M status=progress</code></pre><h3>4. Преобразование эталонного образа при помощи mender-convert</h3><p>Для подготовки образа нам понадобится <a href="https://github.com/mendersoftware/mender-convert" rel="noopener noreferrer nofollow">mender-convert</a> и <a href="https://docs.mender.io/system-updates-debian-family/convert-a-mender-debian-image#docker" rel="noopener noreferrer nofollow">Docker</a>.</p><pre><code class="bash">git clone -b 2.5.0 https://github.com/mendersoftware/mender-convert.git
+cd mender-convert
+./docker-build</code></pre><p>Проверяем ёмкость SD-карты, на которую будем устанавливать систему:</p><pre><code class="bash">sudo fdisk -l
+Disk /dev/sda: 7,38 GiB, 7910457344 bytes, 15450112 sectors</code></pre><p>Переводим байты в мегабайты: 7910457344 / 1024 / 1024 = 7544 MB</p><p>Создаём файл с конфигурацией mender-convert <code>./configs/raspberrypi3_custom_config</code> с вот таким содержимым:</p><pre><code>RASPBERRYPI_CONFIG="raspberrypi3"
+RASPBERRYPI_KERNEL_IMAGE="kernel7.img"
+MENDER_KERNEL_IMAGETYPE="zImage"
+MENDER_DEVICE_TYPE="raspberrypi3"
+MENDER_STORAGE_TOTAL_SIZE_MB="7500"
+MENDER_DATA_PART_SIZE_MB="1000"
+IMAGE_ROOTFS_SIZE="-1"
+MENDER_ADDON_CONNECT_INSTALL="y"
+
+source configs/raspberrypi_config</code></pre><p><code>MENDER_STORAGE_TOTAL_SIZE_MB</code> — общий размер SD полученный ранее</p><p><code>MENDER_DATA_PART_SIZE_MB</code> — размер раздела /data</p><p><code>MENDER_ADDON_CONNECT_INSTALL</code> — флаг установки <a href="https://docs.mender.io/add-ons/overview" rel="noopener noreferrer nofollow">mender-connect</a> (позволит запускать командную строку на удалённом устройстве и передавать файлы)</p><p>Создаём директорию <code>./rootfs_overlay/etc/mender</code>. Это оверлей файловой системы который будет записан на наш эталонный образ при запуске mender-convert.</p><p>Создаём файл конфигурации mender-client <code>./rootfs_overlay/etc/mender/mender.conf</code>:</p><pre><code class="json">{
+  "ServerURL": "https://hosted.mender.io/",
+  "TenantToken": "XXXX",
+  "UpdatePollIntervalSeconds": 300,
+  "InventoryPollIntervalSeconds":  300
+}</code></pre><p><code>TenantToken</code> - токен который нужно <a href="https://hosted.mender.io/ui/#/settings/organization-and-billing" rel="noopener noreferrer nofollow">посмотреть</a> в hosted.mender.io (Settings->Organization and billing->Organization token).</p><p>Создаём файл конфигурации mender-connect <code>./rootfs_overlay/etc/mender/mender-connect.conf</code>:</p><pre><code class="json">{
+  "ShellCommand": "/bin/bash",
+  "User": "pi"
+}</code></pre><p>Создаём директорию <code>./input</code> и кладём в неё образ <code>golden-image-1.img</code> полученный ранее.</p><p>Запускаем mender-convert.  </p><pre><code class="bash">sudo MENDER_ARTIFACT_NAME=release-1 ./docker-mender-convert --disk-image input/golden-image-1.img --config configs/raspberrypi3_custom_config --overlay rootfs_overlay/</code></pre><p><code>MENDER_ARTIFACT_NAME</code> — название релиза, которое будет отображаться в hosted.mender.io.</p><p>Дальше происходит магия:</p><ul><li><p>в образ устанавливается U-Boot</p></li><li><p>в Raspberry OS доустанавливается mender-client и mender-connect</p></li><li><p>создаются A и B разделы rootfs исходя из общего размера SD-карты, а также размера раздела data</p></li><li><p>данные из директории <code>/data</code> автоматически переносятся на новый раздел, который не будет перезаписываться при обновлении системы</p></li></ul><p>Подробнее можно посмотреть в <code>./logs/convert.log.XXXX</code>.</p><p>На выходе получаем:</p><p><code>./deploy/golden-image-1-raspberrypi3-mender.img</code> - преобразованный образ системы для записи на SD-карту</p><p><code>./deploy/golden-image-1-raspberrypi3-mender.mender</code> - архив с обновлением, который загружается на сервер Mender(519МБ) и потом скачивается устройствами.</p><h3>5. Подготовка устройства (provisioning)</h3><p>Записываем образ <code>golden-image-1-raspberrypi3-mender.img</code> на SD-карту:</p><pre><code class="bash">sudo dd if=./deploy/golden-image-1-raspberrypi3-mender.img of=/dev/sdX bs=4M oflag=sync status=progress</code></pre><p>Теперь разделы выглядят так:</p><pre><code>/dev/sda           8:0    1   7,4G  0 disk
+├─/dev/sda1        8:1    1   256M  0 part
+├─/dev/sda2        8:2    1     3G  0 part
+├─/dev/sda3        8:3    1     3G  0 part
+└─/dev/sda4        8:4    1  1000M  0 part</code></pre><details class="spoiler"><summary>Вывод uart при загрузке (у нас теперь есть U-Boot): </summary><div class="spoiler__content"><pre><code>U-Boot 2020.01-g83cf4883ec (Jul 09 2021 - 14:23:27 +0000)
+
+DRAM:  948 MiB
+RPI 3 Model B (0xa02082)
+MMC:   mmc@7e202000: 0, sdhci@7e300000: 1
+Loading Environment from MMC... OK
+In:    serial
+Out:   serial
+Err:   serial
+Net:   No ethernet found.
+Hit any key to stop autoboot:  0
+switch to partitions #0, OK
+mmc0 is current device
+Scanning mmc 0:1...
+Found U-Boot script /boot.scr
+568 bytes read in 10 ms (54.7 KiB/s)
+## Executing script at 02400000
+switch to partitions #0, OK
+mmc0 is current device
+6320888 bytes read in 538 ms (11.2 MiB/s)
+Kernel image @ 0x080000 [ 0x000000 - 0x6072f8 ]
+## Flattened Device Tree blob at 2eff8c00
+   Booting using the fdt blob at 0x2eff8c00
+   Using Device Tree in place at 2eff8c00, end 2f002f2b
+
+Starting kernel ...
+
+[    0.000000] Booting Linux on physical CPU 0x0</code></pre></div></details><h3>6. Авторизация устройства</h3><p>Через пару минут после включения устройства на главной странице hosted.mender.io должно появиться сообщение о том, что новое устройство ожидает аутентификации. После подтверждения статус устройства поменяется с pending на accepted.</p><figure class="full-width "><img src="/img/image-loader.svg" height="653" data-src="https://habrastorage.org/getpro/habr/upload_files/33a/bce/e73/33abcee73fc95a9542ef35c1056aa6c9.png" data-width="1194"/><figcaption></figcaption></figure><p>Через раздел Troubleshoot можно запустить удалённый терминал на устройстве (работает через mender-connect). При этом, на устройстве не включен ssh-сервер. Есть возможность передавать файлы через вкладку File transfer.</p><figure class="full-width "><img src="/img/image-loader.svg" height="842" data-src="https://habrastorage.org/getpro/habr/upload_files/03f/97d/aab/03f97daab69e030663d73b00e06b67fe.png" data-width="1504"/><figcaption></figcaption></figure><p>Теперь мы можем обновлять устройство по воздуху и физический доступ к нему больше не понадобится.</p><h3>7. Подготовка пакета обновления (artifact)</h3><p>Возвращаемся к нашему эталонному образу (golden-image-1.img). Загружаем ОС и вносим необходимые изменения. Я, например, сделаю MQTT-клиента, который шлёт на брокер температуру процессора (под спойлером).</p><details class="spoiler"><summary>MQTT-клиент</summary><div class="spoiler__content"><p>Устанавливаем пакеты:</p><pre><code>sudo apt-get update
+sudo apt install -y mosquitto mosquitto-clients</code></pre><p>Создаём systemd таймер: <code>/etc/systemd/system/mqtt.timer</code></p><pre><code>[Unit]
+Description=run mqtt.service every minute
+
+[Timer]
+AccuracySec=1
+OnCalendar=*:*:0/30
+Unit=mqtt.service
+
+[Install]
+WantedBy=multi-user.target</code></pre><p>Создаём сервис, который будет вызываться таймером mqtt.timer: <code>/etc/systemd/system/mqtt.service</code></p><pre><code>[Unit]
+Description=mqtt publisher service
+
+[Service]
+Type=simple
+ExecStart=/home/pi/mosquitto_pub.sh
+
+[Install]
+WantedBy=multi-user.target</code></pre><p>Скрипт, который будет вызываться сервисом mqtt.service: <code>/home/pi/mosquitto_pub.sh</code></p><pre><code class="bash">#!/bin/bash
+tcpu=$(&lt;/sys/class/thermal/thermal_zone0/temp)
+mosquitto_pub -h test.mosquitto.org -t "habr/$(cat /data/important_file.txt)" -m "{\"tcpu\": $((tcpu/1000))}"</code></pre><p>Делаем скрипт исполняемым:</p><pre><code class="bash">chmod +x /home/pi/mosquitto_pub.sh</code></pre><p>Запускаем таймер:</p><pre><code>sudo systemctl enable mqtt.timer
+sudo systemctl start mqtt.timer</code></pre></div></details><p>После внесения изменений снова считываем образ с карты:</p><pre><code class="bash">sudo dd if=/dev/sda of=golden-image-2.img bs=4M status=progress</code></pre><p>Преобразовываем образ при помощи mender-convert:</p><pre><code class="bash">sudo MENDER_ARTIFACT_NAME=release-2 ./docker-mender-convert --disk-image input/golden-image-2.img --config configs/raspberrypi3_custom_config --overlay rootfs_overlay/</code></pre><p>Загружаем в hosted.mender.io новый релиз golden-image-2-raspberrypi3-mender.mender. Заодно можно загрузить первый релиз, если захотим откатиться.</p><h3>8. Deploy</h3><p>Развёртывание (deploy) можно создать для отдельного устройства, группы устройств или сразу для всех. После создания развёртывания в течении пяти минут устройство проверит есть ли для него доступное обновление и начнёт загрузку.</p><figure class="full-width "><img src="/img/image-loader.svg" height="870" data-src="https://habrastorage.org/getpro/habr/upload_files/2fa/6ef/582/2fa6ef582fbe04fedf6ef5eb05233947.png" data-width="1295"/><figcaption></figcaption></figure><p>После обновления проверим, начало ли устройство отправлять сообщения по MQTT (под спойлером):</p><details class="spoiler"><summary>MQTT Explorer</summary><div class="spoiler__content"><p>Установите <a href="http://mqtt-explorer.com/" rel="noopener noreferrer nofollow">MQTT Explorer</a>.</p><p>Создайте подключение к mqtt://test.mosquitto.org, порт: 1883.</p><p>Подпишитесь на топик habr/#</p></div></details><p>Наблюдаем, как устройство остывает после недавнего апдейта:</p><figure class="full-width "><img src="/img/image-loader.svg" height="515" data-src="https://habrastorage.org/getpro/habr/upload_files/63e/1bd/c58/63e1bdc58a8d97a2768f327fa0343e8b.png" data-width="840"/><figcaption></figcaption></figure><h2>Выводы</h2><p>Mender позволяет довольно легко добавить функцию обновления образа системы по воздуху в существующее устройство.</p><p>Внедрение Mender никак не повлияло на процесс разарботки эталонного образа и последующих обновлений. Эталонный образ служит лишь источником для создания пакетов обновления.</p><p>Open-source версия Mender позволяет делать намного больше, чем показано в этой статье, например, <a href="https://docs.mender.io/artifact-creation/state-scripts" rel="noopener noreferrer nofollow">state-scripts</a>, <a href="https://docs.mender.io/client-installation/identity" rel="noopener noreferrer nofollow">identy</a> и <a href="https://docs.mender.io/client-installation/inventory" rel="noopener noreferrer nofollow">inventory</a> устройств и т.д. Open-source версию сервера Mender можно самостоятельно развернуть в облаке используя <a href="https://docs.mender.io/3.0/server-installation/production-installation-with-kubernetes" rel="noopener noreferrer nofollow">Kubernetes</a>.</p><p>Рекомендую внимательно изучить <a href="https://mender.io/plans/features" rel="noopener noreferrer nofollow">список фич</a> доступных в open-source и коммерческих версиях. Open-source версия вполне работоспособна, но её может не хватить для того чтобы закрыть все потребности крупного проекта (нет автоматического перезапуска процесса обновления, <a href="https://docs.mender.io/3.0/overview/delta-update" rel="noopener noreferrer nofollow">дельта-апдейтов</a>, мониторинга сервисов и т.д.).</p><p>Было бы интересно сравнить Mender c <a href="https://github.com/rauc/rauc" rel="noopener noreferrer nofollow">RAUC</a> или <a href="https://github.com/sbabic/swupdate" rel="noopener noreferrer nofollow">swupdate</a> в качестве клиента и <a href="https://github.com/eclipse/hawkbit" rel="noopener noreferrer nofollow">hawkBit</a> в качестве бэкенда.</p><p>На этом все, спасибо за внимание.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmender%5D" class="tm-tags-list__link">mender</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bota%5D" class="tm-tags-list__link">ota</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Blinux%5D" class="tm-tags-list__link">linux</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Biot%5D" class="tm-tags-list__link">iot</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D0%BD%D0%B5%D1%82%20%D0%B2%D0%B5%D1%89%D0%B5%D0%B9%5D" class="tm-tags-list__link">интернет вещей</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B5%20%D0%BF%D0%BE%20%D0%B2%D0%BE%D0%B7%D0%B4%D1%83%D1%85%D1%83%5D" class="tm-tags-list__link">обновление по воздуху</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Braspberry%5D" class="tm-tags-list__link">raspberry</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/linux/" class="tm-hubs-list__link">
+    Настройка Linux
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/linux_dev/" class="tm-hubs-list__link">
+    Разработка под Linux
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/iot_dev/" class="tm-hubs-list__link">
+    Разработка для интернета вещей
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/raspberrypi/" class="tm-hubs-list__link">
+    Разработка на Raspberry Pi
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/internet_of_things/" class="tm-hubs-list__link">
+    Интернет вещей
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 17: ↑17 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 17: ↑17 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+17</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">5.5K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    61
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/bao-eng/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_pink"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 19 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    19
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">17</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/bao-eng/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @bao-eng
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582554/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 4 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582554/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582554/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582554":{"id":"582554","timePublished":"2021-10-10T06:00:01+00:00","isCorporative":false,"lang":"ru","titleHtml":"OTA обновление устройств с Linux","leadData":{"textHtml":"\u003Cp\u003E\u003Cabbr title=\"Обновление по воздуху (англ. over-the-air, OTA)\"\u003EOTA\u003C\u002Fabbr\u003E A\u002FB обновление образа rootfs для IoT устройств с Linux при помощи проекта \u003Ca href=\"https:\u002F\u002Fmender.io\u002F\" rel=\"noopener noreferrer nofollow\"\u003EMender\u003C\u002Fa\u003E. Как обновить образ системы на множестве удалённых устройств. Демонстрация на примере Raspberry Pi.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F54f\u002F85c\u002F92c\u002F54f85c92c0d8fb65d31bf82ad0629cbd.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F54f\u002F85c\u002F92c\u002F54f85c92c0d8fb65d31bf82ad0629cbd.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":19,"votesCount":19},"rating":17,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2359769","alias":"bao-eng","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":4,"favoritesCount":61,"readingCount":5475,"score":17,"votesCount":17},"hubs":[{"relatedData":null,"id":"36","alias":"linux","type":"collective","title":"Настройка Linux","titleHtml":"Настройка Linux","isProfiled":true},{"relatedData":null,"id":"19727","alias":"linux_dev","type":"collective","title":"Разработка под Linux","titleHtml":"Разработка под Linux","isProfiled":true},{"relatedData":null,"id":"19739","alias":"iot_dev","type":"collective","title":"Разработка для интернета вещей","titleHtml":"Разработка для интернета вещей","isProfiled":true},{"relatedData":null,"id":"21476","alias":"raspberrypi","type":"collective","title":"Разработка на Raspberry Pi","titleHtml":"Разработка на Raspberry Pi","isProfiled":true},{"relatedData":null,"id":"21970","alias":"internet_of_things","type":"collective","title":"Интернет вещей","titleHtml":"Интернет вещей","isProfiled":false}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"440\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff95\u002Fc20\u002F98d\u002Ff95c2098d93001b8cfa0230d3d0bd970.png\" data-width=\"780\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003ETL;DR:\u003C\u002Fh2\u003E\u003Cp\u003E\u003Cabbr title=\"Обновление по воздуху (англ. over-the-air, OTA)\"\u003EOTA\u003C\u002Fabbr\u003E A\u002FB обновление образа rootfs для IoT устройств с Linux при помощи проекта \u003Ca href=\"https:\u002F\u002Fmender.io\u002F\" rel=\"noopener noreferrer nofollow\"\u003EMender\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Ch2\u003EВступление\u003C\u002Fh2\u003E\u003Cp\u003EНедавно у меня возникла задача обновлять удалённо некоторое двузначное число IoT-устройств с Linux через интернет. Задачу нужно было решить быстро. Времени и желания изобретать что-то своё не было совсем. Устанавливать обновления вручную по ssh — нереально. Автоматизировать установку по ssh тоже, устройства могут неожиданно выключаться или терять сеть. \u003C\u002Fp\u003E\u003Cp\u003EПоиск решений по обновлению IoT устройств показал, что, судя по всему, мне больше всего подходит Mender:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eend-to-end решение — клиент + сервер + инструменты\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EA\u002FB обновление rootfs — на устройстве есть два одинаковых раздела rootfs A и B. Система загружается с активного раздела A, устанавливает обновление на раздел B, загружается с раздела B и в случае успеха делает его активным. В случае неудачного обновления активным остаётся раздел A.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eработает с debian и yocto\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eне использует контейнеры\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eесть open-source версия под лицензией Apache v2\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EНа сайте проекта можно почитать как всё это \u003Ca href=\"https:\u002F\u002Fmender.io\u002Fhow-it-works\" rel=\"noopener noreferrer nofollow\"\u003Eработает\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EКстати, Mender уже упоминался на хабре в \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fdeutschetelekomitsolutions\u002Fblog\u002F520406\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eстатье\u003C\u002Fa\u003E \u003Ca class=\"mention\" href=\"\u002Fusers\u002Fmoooom\"\u003E@MooooM\u003C\u002Fa\u003E, но внедрить его тогда не получилось.\u003C\u002Fp\u003E\u003Ch2\u003EWorkflow\u003C\u002Fh2\u003E\u003Cp\u003EЯ продемонстрирую процесс обновления системы на примере Raspberry Pi 3B c Raspberry Pi OS. Карта памяти от 8 ГБ и выше.\u003C\u002Fp\u003E\u003Cp\u003EВ качестве сервера Mender будем использовать бесплатный демо-сервер \u003Ca href=\"https:\u002F\u002Fhosted.mender.io\" rel=\"noopener noreferrer nofollow\"\u003Ehosted.mender.io\u003C\u002Fa\u003E (не более 10 устройств и 12 месяцев работы). \u003C\u002Fp\u003E\u003Cp\u003EПодготовка образов будет производится на компьютере с Ubuntu 20.04. \u003C\u002Fp\u003E\u003Cp\u003EВ своей документации Mender рекомендуют примерно такой \u003Ca href=\"https:\u002F\u002Fdocs.mender.io\u002F3.0\u002Fsystem-updates-debian-family\u002Fconvert-a-mender-debian-image#recommended-workflow\" rel=\"noopener noreferrer nofollow\"\u003Eподход\u003C\u002Fa\u003E для устройств с debian:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EУстановка чистой ОС\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПодготовка эталонного образа\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EКопирование эталонного образа на ПК\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПреобразование эталонного образа при помощи mender-convert\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПодготовка устройства (provisioning)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EАвторизация устройства\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПодготовка пакета обновления (artifact)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EРазвёртывание обновления (deploy)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Ch3\u003E0. Сервер\u003C\u002Fh3\u003E\u003Cp\u003EРегистрируемся на \u003Ca href=\"https:\u002F\u002Fhosted.mender.io\" rel=\"noopener noreferrer nofollow\"\u003Ehosted.mender.io\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Ch3\u003E1. Установка чистой ОС\u003C\u002Fh3\u003E\u003Cp\u003EУстанавливаем последнюю \u003Ca href=\"https:\u002F\u002Fwww.raspberrypi.org\u002Fsoftware\u002Foperating-systems\u002F\" rel=\"noopener noreferrer nofollow\"\u003ERaspberry Pi OS Lite\u003C\u002Fa\u003E по \u003Ca href=\"https:\u002F\u002Fwww.raspberrypi.org\u002Fdocumentation\u002Fcomputers\u002Fgetting-started.html#installing-images-on-linux\" rel=\"noopener noreferrer nofollow\"\u003Eинструкции\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EВключаем последовательную консоль \u003Ccode\u003E\u002Fboot\u002Fconfig.txt\u003C\u002Fcode\u003E: \u003Ccode\u003Eenable_uart=1\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Ch3\u003E2. Подготовка эталонного (golden) образа\u003C\u002Fh3\u003E\u003Cp\u003EВставляем SD-карту в устройство(Raspberry Pi 3B) и подключаемся по uart при помощи minicom.\u003C\u002Fp\u003E\u003Cp\u003EМеняем стандартный пароль при помощи \u003Ccode\u003Eraspi-config\u003C\u002Fcode\u003E. \u003C\u002Fp\u003E\u003Cp\u003EНастройте и проверьте подключение к интернету. Я подключил свою Raspberry по ethernet (не совсем over-the-air, знаю).\u003C\u002Fp\u003E\u003Cp\u003EСоздадим директорию \u003Ccode\u003E\u002Fdata\u003C\u002Fcode\u003E, в которой будут храниться данные, которые должны сохраняться при обновлении образа системы.\u003C\u002Fp\u003E\u003Cp\u003EПоложим туда текстовый файл \u003Ccode\u003Eimportant_file.txt\u003C\u002Fcode\u003E содержащий одну строку \u003Ccode\u003Ehello_habr\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Ch3\u003E3. Копирование эталонного образа\u003C\u002Fh3\u003E\u003Cp\u003EВыключаем устройство и вставляем SD-карту в компьютер:\u003C\u002Fp\u003E\u003Cp\u003EВыводим список разделов:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Elsblk -p\n\u002Fdev\u002Fsda           8:0    1   7,4G  0 disk\n├─\u002Fdev\u002Fsda1        8:1    1   256M  0 part\n└─\u002Fdev\u002Fsda2        8:2    1   7,1G  0 part \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EРазмонтируем разделы:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eumount \u002Fdev\u002FsdX1\numount \u002Fdev\u002FsdX2\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСчитываем образ с карты:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo dd if=\u002Fdev\u002FsdX of=golden-image-1.img bs=4M status=progress\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003E4. Преобразование эталонного образа при помощи mender-convert\u003C\u002Fh3\u003E\u003Cp\u003EДля подготовки образа нам понадобится \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fmendersoftware\u002Fmender-convert\" rel=\"noopener noreferrer nofollow\"\u003Emender-convert\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fdocs.mender.io\u002Fsystem-updates-debian-family\u002Fconvert-a-mender-debian-image#docker\" rel=\"noopener noreferrer nofollow\"\u003EDocker\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Egit clone -b 2.5.0 https:\u002F\u002Fgithub.com\u002Fmendersoftware\u002Fmender-convert.git\ncd mender-convert\n.\u002Fdocker-build\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПроверяем ёмкость SD-карты, на которую будем устанавливать систему:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo fdisk -l\nDisk \u002Fdev\u002Fsda: 7,38 GiB, 7910457344 bytes, 15450112 sectors\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПереводим байты в мегабайты: 7910457344 \u002F 1024 \u002F 1024 = 7544 MB\u003C\u002Fp\u003E\u003Cp\u003EСоздаём файл с конфигурацией mender-convert \u003Ccode\u003E.\u002Fconfigs\u002Fraspberrypi3_custom_config\u003C\u002Fcode\u003E с вот таким содержимым:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003ERASPBERRYPI_CONFIG=\"raspberrypi3\"\nRASPBERRYPI_KERNEL_IMAGE=\"kernel7.img\"\nMENDER_KERNEL_IMAGETYPE=\"zImage\"\nMENDER_DEVICE_TYPE=\"raspberrypi3\"\nMENDER_STORAGE_TOTAL_SIZE_MB=\"7500\"\nMENDER_DATA_PART_SIZE_MB=\"1000\"\nIMAGE_ROOTFS_SIZE=\"-1\"\nMENDER_ADDON_CONNECT_INSTALL=\"y\"\n\nsource configs\u002Fraspberrypi_config\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003EMENDER_STORAGE_TOTAL_SIZE_MB\u003C\u002Fcode\u003E — общий размер SD полученный ранее\u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003EMENDER_DATA_PART_SIZE_MB\u003C\u002Fcode\u003E — размер раздела \u002Fdata\u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003EMENDER_ADDON_CONNECT_INSTALL\u003C\u002Fcode\u003E — флаг установки \u003Ca href=\"https:\u002F\u002Fdocs.mender.io\u002Fadd-ons\u002Foverview\" rel=\"noopener noreferrer nofollow\"\u003Emender-connect\u003C\u002Fa\u003E (позволит запускать командную строку на удалённом устройстве и передавать файлы)\u003C\u002Fp\u003E\u003Cp\u003EСоздаём директорию \u003Ccode\u003E.\u002Frootfs_overlay\u002Fetc\u002Fmender\u003C\u002Fcode\u003E. Это оверлей файловой системы который будет записан на наш эталонный образ при запуске mender-convert.\u003C\u002Fp\u003E\u003Cp\u003EСоздаём файл конфигурации mender-client \u003Ccode\u003E.\u002Frootfs_overlay\u002Fetc\u002Fmender\u002Fmender.conf\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"ServerURL\": \"https:\u002F\u002Fhosted.mender.io\u002F\",\n  \"TenantToken\": \"XXXX\",\n  \"UpdatePollIntervalSeconds\": 300,\n  \"InventoryPollIntervalSeconds\":  300\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003ETenantToken\u003C\u002Fcode\u003E - токен который нужно \u003Ca href=\"https:\u002F\u002Fhosted.mender.io\u002Fui\u002F#\u002Fsettings\u002Forganization-and-billing\" rel=\"noopener noreferrer nofollow\"\u003Eпосмотреть\u003C\u002Fa\u003E в hosted.mender.io (Settings-\u003EOrganization and billing-\u003EOrganization token).\u003C\u002Fp\u003E\u003Cp\u003EСоздаём файл конфигурации mender-connect \u003Ccode\u003E.\u002Frootfs_overlay\u002Fetc\u002Fmender\u002Fmender-connect.conf\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"json\"\u003E{\n  \"ShellCommand\": \"\u002Fbin\u002Fbash\",\n  \"User\": \"pi\"\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСоздаём директорию \u003Ccode\u003E.\u002Finput\u003C\u002Fcode\u003E и кладём в неё образ \u003Ccode\u003Egolden-image-1.img\u003C\u002Fcode\u003E полученный ранее.\u003C\u002Fp\u003E\u003Cp\u003EЗапускаем mender-convert.  \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo MENDER_ARTIFACT_NAME=release-1 .\u002Fdocker-mender-convert --disk-image input\u002Fgolden-image-1.img --config configs\u002Fraspberrypi3_custom_config --overlay rootfs_overlay\u002F\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003EMENDER_ARTIFACT_NAME\u003C\u002Fcode\u003E — название релиза, которое будет отображаться в hosted.mender.io.\u003C\u002Fp\u003E\u003Cp\u003EДальше происходит магия:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eв образ устанавливается U-Boot\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eв Raspberry OS доустанавливается mender-client и mender-connect\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eсоздаются A и B разделы rootfs исходя из общего размера SD-карты, а также размера раздела data\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eданные из директории \u003Ccode\u003E\u002Fdata\u003C\u002Fcode\u003E автоматически переносятся на новый раздел, который не будет перезаписываться при обновлении системы\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EПодробнее можно посмотреть в \u003Ccode\u003E.\u002Flogs\u002Fconvert.log.XXXX\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EНа выходе получаем:\u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003E.\u002Fdeploy\u002Fgolden-image-1-raspberrypi3-mender.img\u003C\u002Fcode\u003E - преобразованный образ системы для записи на SD-карту\u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003E.\u002Fdeploy\u002Fgolden-image-1-raspberrypi3-mender.mender\u003C\u002Fcode\u003E - архив с обновлением, который загружается на сервер Mender(519МБ) и потом скачивается устройствами.\u003C\u002Fp\u003E\u003Ch3\u003E5. Подготовка устройства (provisioning)\u003C\u002Fh3\u003E\u003Cp\u003EЗаписываем образ \u003Ccode\u003Egolden-image-1-raspberrypi3-mender.img\u003C\u002Fcode\u003E на SD-карту:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo dd if=.\u002Fdeploy\u002Fgolden-image-1-raspberrypi3-mender.img of=\u002Fdev\u002FsdX bs=4M oflag=sync status=progress\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь разделы выглядят так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E\u002Fdev\u002Fsda           8:0    1   7,4G  0 disk\n├─\u002Fdev\u002Fsda1        8:1    1   256M  0 part\n├─\u002Fdev\u002Fsda2        8:2    1     3G  0 part\n├─\u002Fdev\u002Fsda3        8:3    1     3G  0 part\n└─\u002Fdev\u002Fsda4        8:4    1  1000M  0 part\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EВывод uart при загрузке (у нас теперь есть U-Boot): \u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode\u003EU-Boot 2020.01-g83cf4883ec (Jul 09 2021 - 14:23:27 +0000)\n\nDRAM:  948 MiB\nRPI 3 Model B (0xa02082)\nMMC:   mmc@7e202000: 0, sdhci@7e300000: 1\nLoading Environment from MMC... OK\nIn:    serial\nOut:   serial\nErr:   serial\nNet:   No ethernet found.\nHit any key to stop autoboot:  0\nswitch to partitions #0, OK\nmmc0 is current device\nScanning mmc 0:1...\nFound U-Boot script \u002Fboot.scr\n568 bytes read in 10 ms (54.7 KiB\u002Fs)\n## Executing script at 02400000\nswitch to partitions #0, OK\nmmc0 is current device\n6320888 bytes read in 538 ms (11.2 MiB\u002Fs)\nKernel image @ 0x080000 [ 0x000000 - 0x6072f8 ]\n## Flattened Device Tree blob at 2eff8c00\n   Booting using the fdt blob at 0x2eff8c00\n   Using Device Tree in place at 2eff8c00, end 2f002f2b\n\nStarting kernel ...\n\n[    0.000000] Booting Linux on physical CPU 0x0\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Ch3\u003E6. Авторизация устройства\u003C\u002Fh3\u003E\u003Cp\u003EЧерез пару минут после включения устройства на главной странице hosted.mender.io должно появиться сообщение о том, что новое устройство ожидает аутентификации. После подтверждения статус устройства поменяется с pending на accepted.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"653\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F33a\u002Fbce\u002Fe73\u002F33abcee73fc95a9542ef35c1056aa6c9.png\" data-width=\"1194\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЧерез раздел Troubleshoot можно запустить удалённый терминал на устройстве (работает через mender-connect). При этом, на устройстве не включен ssh-сервер. Есть возможность передавать файлы через вкладку File transfer.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"842\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F03f\u002F97d\u002Faab\u002F03f97daab69e030663d73b00e06b67fe.png\" data-width=\"1504\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EТеперь мы можем обновлять устройство по воздуху и физический доступ к нему больше не понадобится.\u003C\u002Fp\u003E\u003Ch3\u003E7. Подготовка пакета обновления (artifact)\u003C\u002Fh3\u003E\u003Cp\u003EВозвращаемся к нашему эталонному образу (golden-image-1.img). Загружаем ОС и вносим необходимые изменения. Я, например, сделаю MQTT-клиента, который шлёт на брокер температуру процессора (под спойлером).\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EMQTT-клиент\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003EУстанавливаем пакеты:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Esudo apt-get update\nsudo apt install -y mosquitto mosquitto-clients\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСоздаём systemd таймер: \u003Ccode\u003E\u002Fetc\u002Fsystemd\u002Fsystem\u002Fmqtt.timer\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E[Unit]\nDescription=run mqtt.service every minute\n\n[Timer]\nAccuracySec=1\nOnCalendar=*:*:0\u002F30\nUnit=mqtt.service\n\n[Install]\nWantedBy=multi-user.target\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСоздаём сервис, который будет вызываться таймером mqtt.timer: \u003Ccode\u003E\u002Fetc\u002Fsystemd\u002Fsystem\u002Fmqtt.service\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E[Unit]\nDescription=mqtt publisher service\n\n[Service]\nType=simple\nExecStart=\u002Fhome\u002Fpi\u002Fmosquitto_pub.sh\n\n[Install]\nWantedBy=multi-user.target\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСкрипт, который будет вызываться сервисом mqtt.service: \u003Ccode\u003E\u002Fhome\u002Fpi\u002Fmosquitto_pub.sh\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#!\u002Fbin\u002Fbash\ntcpu=$(&lt;\u002Fsys\u002Fclass\u002Fthermal\u002Fthermal_zone0\u002Ftemp)\nmosquitto_pub -h test.mosquitto.org -t \"habr\u002F$(cat \u002Fdata\u002Fimportant_file.txt)\" -m \"{\\\"tcpu\\\": $((tcpu\u002F1000))}\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДелаем скрипт исполняемым:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Echmod +x \u002Fhome\u002Fpi\u002Fmosquitto_pub.sh\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗапускаем таймер:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Esudo systemctl enable mqtt.timer\nsudo systemctl start mqtt.timer\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EПосле внесения изменений снова считываем образ с карты:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo dd if=\u002Fdev\u002Fsda of=golden-image-2.img bs=4M status=progress\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПреобразовываем образ при помощи mender-convert:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esudo MENDER_ARTIFACT_NAME=release-2 .\u002Fdocker-mender-convert --disk-image input\u002Fgolden-image-2.img --config configs\u002Fraspberrypi3_custom_config --overlay rootfs_overlay\u002F\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗагружаем в hosted.mender.io новый релиз golden-image-2-raspberrypi3-mender.mender. Заодно можно загрузить первый релиз, если захотим откатиться.\u003C\u002Fp\u003E\u003Ch3\u003E8. Deploy\u003C\u002Fh3\u003E\u003Cp\u003EРазвёртывание (deploy) можно создать для отдельного устройства, группы устройств или сразу для всех. После создания развёртывания в течении пяти минут устройство проверит есть ли для него доступное обновление и начнёт загрузку.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"870\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F2fa\u002F6ef\u002F582\u002F2fa6ef582fbe04fedf6ef5eb05233947.png\" data-width=\"1295\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПосле обновления проверим, начало ли устройство отправлять сообщения по MQTT (под спойлером):\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EMQTT Explorer\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003EУстановите \u003Ca href=\"http:\u002F\u002Fmqtt-explorer.com\u002F\" rel=\"noopener noreferrer nofollow\"\u003EMQTT Explorer\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EСоздайте подключение к mqtt:\u002F\u002Ftest.mosquitto.org, порт: 1883.\u003C\u002Fp\u003E\u003Cp\u003EПодпишитесь на топик habr\u002F#\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EНаблюдаем, как устройство остывает после недавнего апдейта:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"515\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F63e\u002F1bd\u002Fc58\u002F63e1bdc58a8d97a2768f327fa0343e8b.png\" data-width=\"840\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EВыводы\u003C\u002Fh2\u003E\u003Cp\u003EMender позволяет довольно легко добавить функцию обновления образа системы по воздуху в существующее устройство.\u003C\u002Fp\u003E\u003Cp\u003EВнедрение Mender никак не повлияло на процесс разарботки эталонного образа и последующих обновлений. Эталонный образ служит лишь источником для создания пакетов обновления.\u003C\u002Fp\u003E\u003Cp\u003EOpen-source версия Mender позволяет делать намного больше, чем показано в этой статье, например, \u003Ca href=\"https:\u002F\u002Fdocs.mender.io\u002Fartifact-creation\u002Fstate-scripts\" rel=\"noopener noreferrer nofollow\"\u003Estate-scripts\u003C\u002Fa\u003E, \u003Ca href=\"https:\u002F\u002Fdocs.mender.io\u002Fclient-installation\u002Fidentity\" rel=\"noopener noreferrer nofollow\"\u003Eidenty\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fdocs.mender.io\u002Fclient-installation\u002Finventory\" rel=\"noopener noreferrer nofollow\"\u003Einventory\u003C\u002Fa\u003E устройств и т.д. Open-source версию сервера Mender можно самостоятельно развернуть в облаке используя \u003Ca href=\"https:\u002F\u002Fdocs.mender.io\u002F3.0\u002Fserver-installation\u002Fproduction-installation-with-kubernetes\" rel=\"noopener noreferrer nofollow\"\u003EKubernetes\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EРекомендую внимательно изучить \u003Ca href=\"https:\u002F\u002Fmender.io\u002Fplans\u002Ffeatures\" rel=\"noopener noreferrer nofollow\"\u003Eсписок фич\u003C\u002Fa\u003E доступных в open-source и коммерческих версиях. Open-source версия вполне работоспособна, но её может не хватить для того чтобы закрыть все потребности крупного проекта (нет автоматического перезапуска процесса обновления, \u003Ca href=\"https:\u002F\u002Fdocs.mender.io\u002F3.0\u002Foverview\u002Fdelta-update\" rel=\"noopener noreferrer nofollow\"\u003Eдельта-апдейтов\u003C\u002Fa\u003E, мониторинга сервисов и т.д.).\u003C\u002Fp\u003E\u003Cp\u003EБыло бы интересно сравнить Mender c \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Frauc\u002Frauc\" rel=\"noopener noreferrer nofollow\"\u003ERAUC\u003C\u002Fa\u003E или \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fsbabic\u002Fswupdate\" rel=\"noopener noreferrer nofollow\"\u003Eswupdate\u003C\u002Fa\u003E в качестве клиента и \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Feclipse\u002Fhawkbit\" rel=\"noopener noreferrer nofollow\"\u003EhawkBit\u003C\u002Fa\u003E в качестве бэкенда.\u003C\u002Fp\u003E\u003Cp\u003EНа этом все, спасибо за внимание.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"mender"},{"titleHtml":"ota"},{"titleHtml":"linux"},{"titleHtml":"iot"},{"titleHtml":"интернет вещей"},{"titleHtml":"обновление по воздуху"},{"titleHtml":"raspberry"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F54f\u002F85c\u002F92c\u002F54f85c92c0d8fb65d31bf82ad0629cbd.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F54f\u002F85c\u002F92c\u002F54f85c92c0d8fb65d31bf82ad0629cbd.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582554\\\u002F\"},\"headline\":\"OTA обновление устройств с Linux\",\"datePublished\":\"2021-10-10T09:00:01+03:00\",\"dateModified\":\"2021-10-10T09:00:01+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"bao-eng\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"TL;DR:OTA A\\\u002FB обновление образа rootfs для IoT устройств с Linux при помощи проекта Mender.ВступлениеНедавно у меня возникла задача обновлять удалённо некоторое...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582554\\\u002F#post-content-body\",\"about\":[\"h_linux\",\"h_linux_dev\",\"h_iot_dev\",\"h_raspberrypi\",\"h_internet_of_things\",\"f_develop\",\"f_admin\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582554\\\u002F0767f11569001ca2857d15e4869306e8\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff95\\\u002Fc20\\\u002F98d\\\u002Ff95c2098d93001b8cfa0230d3d0bd970.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F33a\\\u002Fbce\\\u002Fe73\\\u002F33abcee73fc95a9542ef35c1056aa6c9.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F03f\\\u002F97d\\\u002Faab\\\u002F03f97daab69e030663d73b00e06b67fe.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F2fa\\\u002F6ef\\\u002F582\\\u002F2fa6ef582fbe04fedf6ef5eb05233947.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F63e\\\u002F1bd\\\u002Fc58\\\u002F63e1bdc58a8d97a2768f327fa0343e8b.png\"]}","metaDescription":"TL;DR:OTA A\u002FB обновление образа rootfs для IoT устройств с Linux при помощи проекта Mender.ВступлениеНедавно у меня возникла задача обновлять удалённо некоторое двузначное число IoT-устройств с Linux...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"linux,linux_dev,iot_dev,raspberrypi,internet_of_things"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

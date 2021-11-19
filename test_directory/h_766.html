@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Подробное руководство по инверсии зависимостей. Часть 1 / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582588\/"},"headline":"Подробное руководство по инверсии зависимостей. Часть 1","datePublished":"2021-10-10T10:08:43+03:00","dateModified":"2021-10-10T15:44:14+03:00","author":{"@type":"Person","name":"Андрей Алексеев"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые ра...","url":"https:\/\/habr.com\/ru\/post\/582588\/#post-content-body","about":["h_programming","h_java","h_analysis_design","h_refactoring","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582588\/2de2dbcd7b3df138990e52bf7b3245a7\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b75\/15e\/bff\/b7515ebff277ad2c6903f43991792da0.jpg"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Подробное руководство по инверсии зависимостей. Часть 1" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Подробное руководство по инверсии зависимостей. Часть 1" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Подробное руководство по инверсии зависимостей. Часть 1" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/874/d22/2a9/874d222a9f29d03e6ab0428dbf7f3d0b.jpg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/874/d22/2a9/874d222a9f29d03e6ab0428dbf7f3d0b.jpg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/874/d22/2a9/874d222a9f29d03e6ab0428dbf7f3d0b.jpg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/874/d22/2a9/874d222a9f29d03e6ab0428dbf7f3d0b.jpg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/874/d22/2a9/874d222a9f29d03e6ab0428dbf7f3d0b.jpg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582588" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-10T07:08:43.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582588/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582588/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/874/d22/2a9/874d222a9f29d03e6ab0428dbf7f3d0b.jpg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582588/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/aa0ndrey/" title="aa0ndrey" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/077/99f/a77/07799fa77542720dfb96f45e235b1aae.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/aa0ndrey/" class="tm-user-info__username">
+      aa0ndrey
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-10T07:08:43.000Z" title="2021-10-10, 10:08">10  октября   в 10:08</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Подробное руководство по инверсии зависимостей. Часть 1</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/java/" class="tm-article-snippet__hubs-item-link"><span>Java</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/analysis_design/" class="tm-article-snippet__hubs-item-link"><span>Анализ и проектирование систем</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/refactoring/" class="tm-article-snippet__hubs-item-link"><span>Проектирование и рефакторинг</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Из песочницы
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/b75/15e/bff/b7515ebff277ad2c6903f43991792da0.jpg" width="780" height="442" data-src="https://habrastorage.org/getpro/habr/upload_files/b75/15e/bff/b7515ebff277ad2c6903f43991792da0.jpg" data-blurred="true"/><figcaption></figcaption></figure><p>Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как его применять. И, возможно, читатель уже знаком с ними. Но в рамках данной статьи будет продемонстрирован подробный разбор "тактических" приемов для успешного использования инверсии зависимостей и, возможно, в этом смысле даже искушенный читатель сможет найти для себя что-то новое. Примеры представлены на языке программирования Java с соответствующим окружением, но при этом для чтения достаточно понимания похожих языков программирования.</p><h3>0. Проблема взаимодействия изолируемого модуля с инфраструктурным</h3><p>Пусть необходимо автоматизировать процесс, который позволяет создавать от пользователя заказы на покупку товара. И в рамках этого процесса необходимо проверять баланс пользователя. Баланс должен быть больше, чем стоимость товара.</p><p>В начале рассмотрим классы-данных, соответствующие процессу:</p><p><code>CreateOrderRequest</code> - класс-данных запроса, который отправляет пользователь для создания заказа на товар</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_0.core.order;
+
+public class CreateOrderRequest {
+    private UUID userId;
+    private UUID productId;
+}
+</code></pre><p><code>User</code> - класс-данных пользователя</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_0.core.user;
+
+public class User {
+    private UUID id;
+    private String name;
+    private int balance;
+}
+</code></pre><p><code>Product</code> - класс-данных товара</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_0.core.product;
+
+public class Product {
+    private UUID id;
+    private String title;
+    private int price;
+}
+</code></pre><p><code>Order</code> - класс-данных заказа</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_0.core.order;
+
+public class Order {
+    private UUID id;
+    private UUID userId;
+    private UUID productId;
+}
+</code></pre><p>Для работы с базой данных понадобятся классы репозиториев, которые позволят сохранять и получать данные:</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_0.postgres.user;
+
+public class UserRepositoryImpl {
+    public User find(UUID id) {
+        //реализация select * from user where user.id = ?
+    }
+}
+</code></pre><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_0.postgres.product;
+
+public class ProductRepositoryImpl {
+    public Product find(UUID id) {
+        //реализация select * from product where product.id = ?
+    }
+}
+</code></pre><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_0.postgres.order;
+
+public class OrderRepositoryImpl {
+    public void create(Order order) {
+        //реализация insert into order (id, user_id, product_id) values (?, ?, ?)
+    }
+}
+</code></pre><p>И в заключении рассмотрим класс сервиса, который будет содержать в себе основную логику, описанную ранее</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_0.core.order;
+
+import aa0ndrey.dependency_inversion_guide.step_0.postgres.order.OrderRepositoryImpl;
+import aa0ndrey.dependency_inversion_guide.step_0.postgres.product.ProductRepositoryImpl;
+import aa0ndrey.dependency_inversion_guide.step_0.postgres.user.UserRepositoryImpl;
+
+public class OrderService {
+    private final UserRepositoryImpl userRepository;
+    private final ProductRepositoryImpl productRepository;
+    private final OrderRepositoryImpl orderRepository;
+
+    public void create(CreateOrderRequest request) {
+        var user = userRepository.find(request.getUserId());
+        var product = productRepository.find(request.getProductId());
+
+        if (user.getBalance() &lt; product.getPrice()) {
+            throw new RuntimeException("Недостаточно средств");
+        }
+
+        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());
+        orderRepository.create(order);
+    }
+}
+</code></pre><p>Теперь предположим, что необходимо разложить представленные классы по двум модулям: core и postgres. Ожидается, что модуль core будет содержать в себе основную логику приложения, которую необходимо изолировать от инфраструктурных зависимостей. В свою очередь в postgres модуле ожидается, что будет размещен весь код, связанный с работой с базой данных postgres.</p><p>Важным нюансом является то, что postgres модуль должен зависеть от core модуля, а core модуль <strong>не должен</strong> зависеть от postgres модуля. Postgres и core модули будут собраны с помощью maven как отдельные maven модули. <a href="https://maven.apache.org/what-is-maven.html" rel="noopener noreferrer nofollow">Maven</a> - это инструмент, предназначенный для сборки проекта и управления зависимостями в проекте. Ниже будут представлены конфигурационные pom.xml файлы для core и postgres модуля.</p><p>Файл pom.xml, содержащий конфигурацию core модуля</p><pre><code class="xml">&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    &lt;modelVersion>4.0.0&lt;/modelVersion>
+
+    &lt;groupId>aa0ndrey&lt;/groupId>
+    &lt;artifactId>dependency-inversion-guide-step-0-core&lt;/artifactId>
+    &lt;version>1.0-SNAPSHOT&lt;/version>
+&lt;/project>
+</code></pre><p>Файл pom.xml, содержащий конфигурацию postgres модуля</p><pre><code class="xml">&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    &lt;modelVersion>4.0.0&lt;/modelVersion>
+
+    &lt;groupId>aa0ndrey&lt;/groupId>
+    &lt;artifactId>dependency-inversion-guide-step-0-postgres&lt;/artifactId>
+    &lt;version>1.0-SNAPSHOT&lt;/version>
+
+    &lt;dependencies>
+        &lt;dependency>
+            &lt;groupId>aa0ndrey&lt;/groupId>
+            &lt;artifactId>dependency-inversion-guide-step-0-core&lt;/artifactId> &lt;!--(1)-->
+            &lt;version>1.0-SNAPSHOT&lt;/version>
+        &lt;/dependency>
+    &lt;/dependencies>
+&lt;/project>
+</code></pre><p>Если вы не знакомы с maven, то важным, на что необходимо обратить внимание, является блок <code>&lt;dependencies>&lt;/dependecies></code>. В postgres модуле есть ссылка на core модуль. А в core модуле нет блока <code>&lt;dependencies>&lt;/dependecies></code> совсем, что в частности означает что нет зависимости на модуль postgres. Важно отметить, что maven не позволит скомпилировать модуль, ссылающийся на код модуля, которого нет в зависимостях. Также в maven запрещены циклические зависимости, то есть, если postgres модуль зависит от core модуля, то core модуль не может зависеть от postgres модуля.</p><p>В файле конфигурации pom.xml для postgres модуля есть комментарий <code>&lt;!--(1)--></code> здесь и далее комментарии будут использованы, в том числе для указания ссылок на код. При этом ссылка на код оформляется в блоке кода с помощью круглых скобок, внутри которых указана цифра. На эту цифру в основном тексте будет ссылка. Например, так: в файле pom.xml для postgres модуля в <code>(1)</code> указана зависимость на core модуль.</p><p>Теперь разложим рассмотренные ранее классы по модулям core и postgres.</p><p>Файловая структура core модуля</p><pre><code>├── order
+│   ├── CreateOrderRequest.java
+│   ├── Order.java
+│   └── OrderService.java
+├── product
+│   └── Product.java
+└── user
+    └── User.java
+</code></pre><p>Файловая структура postgres модуля</p><pre><code>├── order
+│   └── OrderRepositoryImpl.java
+├── product
+│   └── ProductRepositoryImpl.java
+└── user
+    └── UserRepositoryImpl.java
+</code></pre><p>На самом деле как разложены классы внутри модулей, можно было понять ранее. В примерах кода всюду указаны пакеты <code>package</code>. При именовании пакетов после <code>aa0ndrey.dependency_inversion_guide</code> указывается номер рассматриваемого примера, в данном случае <code>step-0</code>, и затем указывается имя модуля, в котором расположен класс. Например, класс, с указанным <code>package aa0ndrey.dependency_inversion_guide.step_0.core.order</code>, находится в модуле core.</p><p>Если попробовать собрать эти два модуля, то при сборке модуля core возникнет ошибка, связанная с тем, что в классе <code>OrderService</code> используются <code>OrderRepositoryImpl</code>, <code>ProductRepositoryImpl</code> и <code>UserRepositoryImpl</code>, которых нет в модуле core и в подключаемых зависимостях, потому что классы этих репозиториев находятся в модуле postgres, на который невозможно и, что самое главное <strong>не нужно</strong> создавать зависимость в модуле core. И тут становится понятна проблема, которая возникает при желании изолировать модуль от другого инфраструктурного модуля, из которого по коду необходимо получать и в который необходимо отправлять данные. Так как же это сделать? Решение будет рассмотрено в следующем разделе.</p><h3>1. Инверсия зависимостей с помощью интерфейсов</h3><p>Чтобы решить проблему, обозначенную в предыдущем разделе, достаточно в core модуле создать интерфейсы для репозиториев, а сами репозитории из postgres модуля заставить реализовывать указанные интерфейсы.<br/>Добавим интерфейсы репозиториев в core модуль</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_1.core.user;
+
+public interface UserRepository {
+    User find(UUID id);
+}
+</code></pre><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_1.core.product;
+
+public interface ProductRepository {
+    Product find(UUID id);
+}
+</code></pre><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_1.core.order;
+
+public interface OrderRepository {
+    void create(Order order);
+}
+</code></pre><p>Затем укажем реализацию этих репозиториев в postgres модуле</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_1.postgres.user;
+
+public class UserRepositoryImpl implements UserRepository {
+    @Override
+    public User find(UUID id) {
+        //реализация select * from user where user.id = ?
+    }
+}
+</code></pre><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_1.postgres.product;
+
+public class ProductRepositoryImpl implements ProductRepository {
+    @Override
+    public Product find(UUID id) {
+        //реализация select * from product where product.id = ?
+    }
+}
+</code></pre><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_1.postgres.order;
+
+public class OrderRepositoryImpl implements OrderRepository {
+    @Override
+    public void create(Order order) {
+        //реализация insert into order (id, user_id, product_id) values (?, ?, ?)
+    }
+}
+</code></pre><p>И в заключении перепишем логику в OrderService так, чтобы он начал использовать вместо UserRepositoryImpl, ProductRepositoryImpl и OrderRepositoryImpl их интерфейсы, которые расположены в модуле core.</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_1.core.order;
+
+public class OrderService {
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
+
+    public void create(CreateOrderRequest request) {
+        var user = userRepository.find(request.getUserId());
+        var product = productRepository.find(request.getProductId());
+
+        if (user.getBalance() &lt; product.getPrice()) {
+            throw new RuntimeException("Недостаточно средств");
+        }
+
+        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());
+        orderRepository.create(order);
+    }
+}
+</code></pre><p>Файловая структура core модуля</p><pre><code>├── order
+│   ├── CreateOrderRequest.java
+│   ├── Order.java
+│   ├── OrderRepository.java (1)
+│   └── OrderService.java
+├── product
+│   ├── Product.java
+│   └── ProductRepository.java (2)
+└── user
+    ├── User.java
+    └── UserRepository.java (3)
+</code></pre><p>Файловая структура postgres модуля</p><pre><code>├── order
+│   └── OrderRepositoryImpl.java (4)
+├── product
+│   └── ProductRepositoryImpl.java (5)
+└── user
+    └── UserRepositoryImpl.java (6)
+</code></pre><p>Этими изменениями удалось достигнуть того, что core модуль перестал использовать какие-либо классы из postgres модуля. И теперь оба модуля могут быть скомпилированы. Вместо использования прямых зависимостей на классы из инфраструктурного модуля (postgres) <code>(4)</code>, <code>(5)</code>, <code>(6)</code> можно создавать интерфейсы <code>(1)</code>, <code>(2)</code>, <code>(3)</code> на эти классы в изолируемом модуле (core), которые должны быть реализованы в инфраструктурном модуле (postgres). При этом нет никаких проблем в том, что классы из инфраструктурного модуля (postgres) зависят от классов из изолируемого модуля (core).</p><pre><code>  ┌────────────────┐
+  │      Core      │
+  │┌──────────────┐│
+  ││UserRepository│◄───────┐
+  │└──────────────┘│       │
+  └────────────────┘       │
+┌────────────────────┐     │
+│      Postgres      │     │
+│┌──────────────────┐│     │
+││UserRepositoryImpl│┼─────┘
+│└──────────────────┘│
+└────────────────────┘
+</code></pre><p>Важно понимать и идейную составляющую данного приема. Она заключается в том, что изолируемый модуль (core) предъявляет требования к реализации с помощью интерфейса. То есть "главным" в этом отношении является интерфейс, под который подстраивается реализация.</p><p>Возможно, на этом моменте другие руководства по инверсии зависимостей подходят к завершению. Но в рамках данного руководства это только начало.</p><h3>2. Проблема использования интерфейсов, раскрывающих инфраструктуру</h3><p>Прежде чем перейти к рассмотрению следующей проблемы, стоит отметить, что здесь и далее большинство приведенных примеров очень сильно упрощены, особенно с точки зрения технической реализации. Это сделано намерено для того, чтобы не засорят ненужными деталями рассматриваемые примеры.</p><p>Предположим теперь, что есть необходимость управлять транзакциями. И пусть для этого достаточно уметь открывать и фиксировать транзакцию. И также пусть необходимо открыть транзакцию перед получением любых данных из базы данных, а зафиксировать транзакцию необходимо только после последнего обращения к базе данных.</p><p>Тогда можно в модуле core создать интерфейс, который позволяет управлять транзакциями.</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_2.core.transaction_manager;
+
+public interface TransactionManager {
+    void begin();
+
+    void commit();
+}
+</code></pre><p>В свою очередь реализацию этого интерфейса стоит поместить в модуль postgres</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_2.postgres.transaction_manager;
+
+public class TransactionManagerImpl implements TransactionManager {
+    public void begin() {
+        //реализация начала транзакции
+    }
+
+    public void commit() {
+        //реализация фиксации транзакции
+    }
+}
+</code></pre><p>И теперь появляется возможность добавить использование интерфейса <code>TransactionManager</code> в класс с основной логикой <code>OrderService</code>.</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_2.core.order;
+
+public class OrderService {
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
+    private final TransactionManager transactionManager;
+
+    public void create(CreateOrderRequest request) {
+        transactionManager.begin(); //(1)
+
+        var user = userRepository.find(request.getUserId());
+        var product = productRepository.find(request.getProductId());
+
+        if (user.getBalance() &lt; product.getPrice()) {
+            throw new RuntimeException("Недостаточно средств");
+        }
+
+        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());
+        orderRepository.create(order);
+
+        transactionManager.commit(); //(2)
+    }
+}
+</code></pre><p>В классе <code>OrderService</code> в <code>(1)</code> транзакция открывается, а в <code>(2)</code> происходит ее фиксация. Вообще говоря, код из <code>(2)</code> нужно было бы написать в конструкции try-catch-finally, также при этом используя rollback в случае исключения, но напомню, что примеры намерено упрощены. А еще лучше было бы использовать аннотацию <code>@Transactional</code> из какого-либо фреймворка, но это не является предметом для обсуждения в данной статье. Использование упрощенной версии интерфейса <code>TransactionManager</code> мотивировано тем, что он хорошо известен, по крайней мере Java-разработчикам, и с его участием удобно рассматривать большинство примеров.</p><p>Проблема данного решения заключается в том, что управление транзакциями достаточно специфичный механизм по отношению к основной логике. Несмотря на то, что детали реализации скрываются с помощью интерфейса, сам интерфейс рассказывает о каких-то инфраструктурных особенностях. По этой причине наличие такого интерфейса крайне нежелательно.</p><p>Тут важно понимать мотивацию, зачем необходимо избегать подобных интерфейсов в построении изолируемого модуля (core). Представим, что есть какая-то конкретная библиотека, например, для работы с mysql. Тогда можно взять и создать на каждый класс для этой библиотеки интерфейс в изолируемом модуле и использовать эти интерфейсы в основной логике внутри изолируемого модуля (core). Но в этом случае потеряются все преимущества от того, что используются интерфейсы.</p><p>Например, одной из причин для изолирования модуля от инфраструктуры является обобщение и упрощение использования сложных инфраструктурных модулей для того, чтобы не утопать в их деталях при написании основного кода. Но так как интерфейсы один в один будут повторять классы библиотеки, то в этом смысле не получится добиться какого-либо упрощения.</p><p>Также интерфейсы используются для того, чтобы иметь потенциальную возможность подменять решения из группы альтернатив. Но это будет возможно только, если альтернативу можно будет адаптировать к уже существующим интерфейсам. А если они являются точной копией другой используемой библиотеки, то, скорее всего, пропадает всякая возможность замены.</p><p>Несмотря на то, что для представленного интерфейса <code>TransactionManager</code> можно было бы создать реализацию для большого множества баз данных, данный интерфейс раскрывает детали реализации взаимодействия с базой данных и в этом смысле является чужеродным по отношению к основной логике в изолируемом модуле (core). И поэтому от него необходимо избавиться.</p><h3>3. Инверсия зависимостей с помощью шаблона проектирования наблюдатель</h3><p>В данном разделе будет предложено решение проблемы из предыдущего раздела. Вместо того чтобы использовать интерфейсы, раскрывающие инфраструктурные особенности, можно использовать шаблон проектирования наблюдатель (observer). Идея заключается в том, чтобы для класса <code>OrderService</code> создать общий интерфейс для наблюдателей, которые смогут обрабатывать общие события. При этом сами события будут отправляться в те моменты, когда должен был быть вызван нежелательный раскрывающий детали интерфейс (в данном случае <code>TransactionManager</code>).</p><p>Создадим для начала классы событий: <code>CreateOrderEvents.Start</code> и <code>CreateOrderEvents.End</code></p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_3.core.order;
+
+public class CreateOrderEvents {
+    public static class Start {
+        private CreateOrderRequest request; //(1)
+    }
+
+    public static class End {
+        private CreateOrderRequest request; //(2)
+        private User user; //(3)
+        private Product product; //(4)
+        private Order order; //(5)
+    }
+}
+</code></pre><p>При выборе названия события можно отталкиваться от названия места по ходу выполнения основной логики в OrderService. Например, событие <code>CreateOrderEvents.Start</code> будет отправляться в самом начале метода при создании заказа. Поэтому оно называется Start. В свою очередь событие <code>CreateOrderEvents.End</code> отправляется в конце метода и поэтому оно называется End. Если бы понадобилось отправлять событие перед проверкой баланса пользователя, то можно было бы назвать событие BeforeCheckUserBalance.</p><p>Тут важным является не дать название событием так, чтобы по названию можно было бы понять, какая обработка ожидает эти события. Иначе тем самым будут раскрыты детали реализации. Например, такие названия событий не подойдут: <code>OnTransactionBegin</code> и <code>OnTransactionCommit</code>.</p><p>Также стоит отметить, что события необходимо наполнить не конкретными данными, которые будут необходимы конкретному наблюдателю. А общими данными, которые доступны в момент отправки события. Поэтому для события <code>CreateOrderEvents.Start</code> указывается только поле с запросом <code>(1)</code>, так как только оно доступно в начале метода. В свою очередь в конце выполнения метода доступны: исходный запрос <code>(2)</code>, полученный пользователь <code>(3)</code>, полученный продукт <code>(4)</code>, а также созданный заказ <code>(5)</code>.</p><p>Это все делается для того, чтобы потенциально наблюдателем этих событий мог быть какой угодно другой инфраструктурный модуль. Причем это может быть необязательно возможная альтернатива текущему модулю. Например, одно и то же событие может обрабатываться модулем базы данных для того, чтобы начать транзакцию, и модулем HTTP клиента, для того, чтобы осуществить получение токена авторизации.</p><p>Далее можно создать общий интерфейс для наблюдателя:</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_3.core.order;
+
+public interface CreateOrderObserver {
+    void onStart(CreateOrderEvents.Start event);
+
+    void onEnd(CreateOrderEvents.End event);
+}
+</code></pre><p>И затем можно изменить класс <code>OrderService</code></p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_3.core.order;
+
+public class OrderService {
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
+    private final List&lt;CreateOrderObserver> observers; //(6)
+
+    public void create(CreateOrderRequest request) {
+        var startEvent = new CreateOrderEvents.Start(request); //(7)
+        observers.forEach(observer -> observer.onStart(startEvent)); //(8)
+
+        var user = userRepository.find(request.getUserId());
+        var product = productRepository.find(request.getProductId());
+
+        if (user.getBalance() &lt; product.getPrice()) {
+            throw new RuntimeException("Недостаточно средств");
+        }
+
+        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());
+        orderRepository.create(order);
+
+        var endEvent = new CreateOrderEvents.End( //(9)
+                request,
+                user,
+                product,
+                order
+        );
+        observers.forEach(observer -> observer.onEnd(endEvent)); //(10)
+    }
+}
+</code></pre><p>На что стоит обратить внимание? Было удалено всякое использование интерфейса <code>TransactionManager</code> более того, он был удален из модуля core. Вместо него теперь используется <code>CreateOrderObserver</code> в <code>(6)</code>. Для этого в начале метода создаётся событие <code>CreateOrderEvents.Start</code> в <code>(7)</code> и затем оно отправляется наблюдателям в <code>(8)</code>. Аналогично в конце метода создаётся событие <code>CreateOrderEvents.End</code> в <code>(9)</code> и отправляется в <code>(10)</code>.</p><p>И затем можно добавить реализацию наблюдателя в postgres модуль</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_3.postgres.order;
+
+public class CreateOrderObserverImpl implements CreateOrderObserver {
+    private final TransactionManagerImpl transactionManagerImpl;
+
+    @Override
+    public void onStart(CreateOrderEvents.Start event) {
+        transactionManagerImpl.begin();
+    }
+
+    @Override
+    public void onEnd(CreateOrderEvents.End event) {
+        transactionManagerImpl.commit();
+    }
+}
+</code></pre><p>Стоит обратить внимание на то, что внутри уже реализации наблюдателя происходит обращение к <code>TransactionManagerImpl</code> для того, чтобы решить задачу по управлению транзакциями.</p><p>Теперь приведём текущую файловую структуру модуля core</p><pre><code>├── order
+│   ├── CreateOrderEvents.java
+│   ├── CreateOrderRequest.java
+│   ├── CreateOrderObserver.java
+│   ├── Order.java
+│   ├── OrderRepository.java
+│   └── OrderService.java
+├── product
+│   ├── Product.java
+│   └── ProductRepository.java
+└── user
+    ├── User.java
+    └── UserRepository.java
+</code></pre><p>И модуля postgres</p><pre><code>├── order
+│   ├── CreateOrderObserverImpl.java
+│   └── OrderRepositoryImpl.java
+├── product
+│   └── ProductRepositoryImpl.java
+├── transaction_manager
+│   └── TransactionManagerImpl.java
+└── user
+    └── UserRepositoryImpl.java
+</code></pre><p>Чего в итоге удалось добиться? Удалось полностью избавиться от интерфейса <code>TranasactionManager</code>, который частично раскрывал детали реализации инфраструктурного модуля (postgres). И удалось это сделать за счет добавления отправки событий. Стоит отметить, что таких отправок событий можно добавить сколько угодно по ходу метода. И тем самым у разработчика появляется общий механизм для расширения основной логики находящейся в (core) модуле. И с помощью этого можно внедрять произвольную логику, находящуюся в инфраструктурном модуле (postgres). Важно отметить, что такие отправки событий можно использовать не обязательно только в начале и конце метода, но и где-то посередине. Эту особенность стоит запомнить, так как в будущих разделах, когда будет рассмотрен промежуточный модуль (application), будут предложены другие решения, которые не позволяют внедрить какое-либо расширение посередине метода.</p><p>Интересно также отметить то, что на самом деле данное решение является небольшой модификацией стандартной инверсии зависимостей. В стандартном решении используется конкретный интерфейс, например, <code>TransactionManager</code> и вызываются его конкретные методы <code>begin</code> и <code>commit</code>, и передаются конкретные данные, но для методов <code>begin</code> и <code>commit</code> их просто нет. В решении через использование шаблона наблюдатель, интерфейс обобщается в смысле названия и в данном случае это <code>CreateOrderObserver</code>. И также обобщаются его методы и передаваемые данные. Методы становятся <code>onStart</code> и <code>onEnd</code>, а передаваемые данные, то есть события, как это было показано ранее, содержат общие для всех наблюдателей поля.</p><h3>4. Использование контекста вместо событий</h3><p>Предположим теперь, что реализация TransactionManagerImpl изменилась.</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_4.postgres.transaction_manager;
+
+public class TransactionManagerImpl {
+    public long begin() { //(1)
+        //реализация начала транзакции
+    }
+
+    public void commit(long transactionId) { //(2)
+        //реализация фиксации транзакции
+    }
+}
+</code></pre><p>Теперь в <code>(1)</code> метод <code>begin</code> возвращает id текущей транзакции. В свою очередь, в <code>(2)</code> метод <code>commit</code> принимает id транзакции, которую необходимо зафиксировать. То есть теперь появилась потребность передать данные от одного инфраструктурного вызова к другому. Но как это сделать, если теперь эти вызовы осуществляются изолировано в рамках обработки событий по шаблону проектирования наблюдатель? Если проблема не стала ясна, то для понимания рекомендуется вернуться к классам <code>OrderService</code> и <code>CreateOrderObserverImpl</code> из предыдущего раздела 3 и попытаться представить решение, которое позволит передать id транзакции от метода <code>begin</code> в метод <code>commit</code>.</p><p>Стоит отметить, что подобная проблема не возникла, если бы не было принято решение отказаться от интерфейса <code>TransactionManager</code>. Правда, в этом случае в методе с основной логикой в изолируемом модуле (core) начала бы появляться дополнительная логика по работе с транзакциями. То есть основной код начал бы сильнее обрастать инфраструктурными деталями, так как в него была бы добавлена еще и логика по запоминанию id транзакции, чтобы затем использовать этот id для фиксации транзакции.</p><p>Как же решить возникшую проблему? Для этого можно воспользоваться контекстом. Контекст - это класс-данных, который содержит необходимую информацию о выполняющемся процессе. Ниже приведен пример контекста, который соответствует процессу создания заказа.</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_4.core.order;
+
+public class CreateOrderContext {
+    private CreateOrderRequest request; //(3)
+    private User user; //(4)
+    private Product product; //(5)
+    private Order createdOrder; //(6)
+
+    private Map&lt;String, Object> data; //(7)
+}
+</code></pre><p><code>CreateOrderContext</code> содержит в <code>(3)</code> поле исходного запроса, в <code>(4)</code> найденного пользователя, в <code>(5)</code> найденный продукт, в <code>(6)</code> созданный заказ. Состав полей очень похож на событие <code>CreateOrderEvents.End</code> за исключением поля <code>(7)</code>. Это поле как раз сейчас и понадобится.</p><p>Идея в том, что все поля, которые известны основному процессу, находящемуся в изолируемом модуле (core), имеют строгий формат в контексте с конкретными именами, потому что они известны этому процессу. В свою очередь поле <code>data</code> в <code>(7)</code> представлено ассоциативным массивом, где в качестве ключа используется строка, а в качестве значения используется Object, то есть самый общий тип данных в Java, наследниками которого являются все остальные классы. Это позволяет в поле <code>data</code> записывать совершенно произвольные данные в динамическом формате не фиксируя структуру. А это значит, что записывая туда какие-либо инфраструктурные данные, не создается зависимости в основном коде от инфраструктуры, до тех пор пока в нем, в основном коде, не используется поле <code>data</code>, что делать не рекомендуется.</p><p>Теперь изменим интерфейс <code>CreateOrderObserver</code> таким образом, чтобы вместо событий методы принимали контекст.</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_4.core.order;
+
+public interface CreateOrderObserver {
+    void onStart(CreateOrderContext context);
+
+    void onEnd(CreateOrderContext context);
+}
+</code></pre><p>На самом деле можно считать, что события существуют, только они все одинаковые и имеют лишь одно поле и это поле всегда контекст. Поэтому, возможно, не имеет смысла явно создавать отдельные классы для каждого такого события.</p><p>Теперь изменим логику в <code>OrderService</code> так, чтобы использовался контекст</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_4.core.order;
+
+public class OrderService {
+    private final UserRepository userRepository;
+    private final ProductRepository productRepository;
+    private final OrderRepository orderRepository;
+    private final List&lt;CreateOrderObserver> observers;
+
+    public void create(CreateOrderContext context) {
+        observers.forEach(observer -> observer.onStart(context));
+
+        var request = context.getRequest();
+        var user = userRepository.find(request.getUserId());
+        context.setUser(user); //(8)
+        var product = productRepository.find(request.getProductId());
+        context.setProduct(product); //(9)
+
+        if (user.getBalance() &lt; product.getPrice()) {
+            throw new RuntimeException("Недостаточно средств");
+        }
+
+        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());
+        orderRepository.create(order);
+        context.setCreatedOrder(order); //(10)
+
+        observers.forEach(observer -> observer.onEnd(context));
+    }
+}
+</code></pre><p>Необходимо отметить, что каждый раз когда появляются новые <strong>важные</strong> объекты, в методе <code>create</code> они обязательно добавляются в контекст в <code>(8)</code>, <code>(9)</code>, <code>(10)</code>. Зачем это делается? А это на самом деле делается аналогично использованию событий. При разработке основной логики нет знания о том, как наблюдатель будет реагировать на то или иное событие. И потенциально ему для работы могут понадобиться данные, которые появляются в основной логике.</p><p>И теперь можно перейти к самому важному, к изменению реализации интерфейса <code>CreateOrderObserver</code>, то есть к классу <code>CreateOrderObserverImpl</code>.</p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_4.postgres.order;
+
+public class CreateOrderObserverImpl implements CreateOrderObserver {
+    private final TransactionManagerImpl transactionManagerImpl;
+
+    @Override
+    public void onStart(CreateOrderContext context) {
+        var transactionId = transactionManagerImpl.begin();
+        context.getData().put("transaction-id", transactionId); //(11) 
+    }
+
+    @Override
+    public void onEnd(CreateOrderContext context) {
+        var transactionId = (Long) context.getData().get("transaction-id"); //(12)
+        transactionManagerImpl.commit(transactionId);
+    }
+}
+</code></pre><p>Тут все устроено следующем образом. При открытии транзакции в методе <br/><code>onStart</code> в <code>(11)</code> id транзакции сохраняется в контексте в поле <code>data</code> по ключу <code>transaction-id</code>. Затем уже в методе <code>onEnd</code>, когда необходимо зафиксировать транзакцию, в <code>(12)</code> из контекста по этому же самому ключу извлекается id транзакции, который затем используется для её фиксации.</p><p>Чего в итоге удалось добиться? За счет использования контекста между двумя изолированными методами для обработки событий внутри инфраструктурного модуля удалось передать данные. При этом за счёт обобщенного поля <code>data</code> внутри контекста детали реализации инфраструктурного модуля не проникли в изолируемый модуль (core). Тут является очень важным, что в контексте не появилось конкретного поля, такого как <code>long transactionId</code>, которое раскрывало бы детали реализации.</p><h2>5. Альтернативы полю data из контекста</h2><p>В данном разделе будут обсуждаться альтернативы полю <code>data</code> из контекста для того, чтобы передавать данные из одного инфраструктурного метода в другой. В Java есть механизм, позволяющий привязать данные к потоку. Разрабатываемое приложение может быть построено так, что для каждого обрабатываемого запроса выделяется отдельный поток. И этот поток может эксклюзивно использоваться логикой обработки, до тех пор пока она не завершится. В этом случае можно использовать <code>ThreadLocal</code> в качестве альтернативы полю <code>data</code>.</p><p>Рассмотрим, как можно изменить <code>CreateOrderObserverImpl</code> для того, чтобы использовать <code>ThreadLocal</code> вместо <code>data</code></p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_5.postgres.order;
+
+public class CreateOrderObserverImpl implements CreateOrderObserver {
+    private final TransactionManagerImpl transactionManagerImpl;
+    private final ThreadLocal&lt;Long> transactionId = new ThreadLocal&lt;>(); //(1)
+
+    @Override
+    public void onStart(CreateOrderContext context) {
+        transactionId.set(transactionManagerImpl.begin());
+    }
+
+    @Override
+    public void onEnd(CreateOrderContext context) {
+        transactionManagerImpl.commit(transactionId.get());
+    }
+}
+</code></pre><p>Для этого достаточно завести поле <code>transactionId</code>, как это сделано в <code>(1)</code>. И затем можно рассмотреть, что происходит в самих методах. При вызове метода <code>onStart</code> происходит запись id транзакции в поле <code>transactionId</code>, а в методе <code>onEnd</code> значение извлекается из поля <code>transactionId</code> для того, чтобы зафиксировать транзакцию. Сигнатуры методов <code>onStart</code> и <code>onEnd</code> остались без изменений и все также принимают контекст, но в данном случае контекст совсем не используется.</p><p>Может возникнуть вопрос, а почему ранее нельзя было создать переменную <code>long transactionId</code> и использовать ее аналогично? Предполагалось, что каждый класс сервиса, репозитория и наблюдателя имеет по одному экземпляру в работающем приложении, то есть они реализуют шаблон одиночка (singleton). И в этом случае один и тот же экземпляр класса может параллельно использоваться в нескольких потоках, и потоки могут друг другу мешать, конкурируя за единственное поле. Поэтому прямое использование переменной типа <code>long</code> не подойдёт. В свою очередь, тип <code>ThreadLocal</code> будет гарантировать, что каждый поток будет работать со своим значением.</p><p>Суть данного примера не в том, чтобы показать, как именно в Java через <code>ThreadLocal</code> можно решить поставленную проблему, а в том, что, если в используемом фреймворке или библиотеке или языке программирования есть механизм, позволяющий привязать данные к процессу обработки, то это можно использовать для того, чтобы передавать данные между изолированными инфраструктурными методами такими как <code>onStart</code> и  <code>onEnd</code> в <code>CreateOrderObserverImpl</code>.</p><p>Но если говорить конкретно про Java и <code>ThreadLocal</code>, то тут необходимо быть осторожным и всегда рассматривать альтернативу с полем <code>data</code> из контекста. <code>ThreadLocal</code> может доставить неудобства, если понадобится в рамках обработки дополнительно создать потоки. Также некоторые новые реактивные фреймворки могут не давать гарантии того, что вся логика будет обрабатываться одним потоком для одного запроса. Передавая все в контексте, разработчик получает полный контроль над данными.</p><h3>6. Передача данных от инфраструктурного модуля в изолируемый модуль</h3><p>Что если теперь потребуется отправлять данные не только из изолируемого модуля (core) в инфраструктурный модуль (postgres), но и обратно из инфраструктурного в изолируемый. Такая необходимость тоже может возникнуть. Но в рамках данного раздела будут предъявлены самые ультимативные требования. Пусть в основной логике в классе <code>OrderService</code> необходимо отказаться от использования всех интерфейсов репозиториев. Для этого на самом деле уже все есть. В данном случае достаточно использовать уже созданный ранее контекст со всеми его полями.</p><p>Для начала рассмотрим изменения, внесенные в класс <code>OrderService</code></p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_6.core.order;
+
+public class OrderService {
+    private final List&lt;CreateOrderObserver> observers;
+
+    public void create(CreateOrderContext context) {
+        observers.forEach(observer -> observer.onStart(context));
+
+        var user = context.getUser(); //(1)
+        var product = context.getProduct(); //(2)
+
+        if (user.getBalance() &lt; product.getPrice()) {
+            throw new RuntimeException("Недостаточно средств");
+        }
+
+        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());
+        context.setCreatedOrder(order); //(3)
+
+        observers.forEach(observer -> observer.onEnd(context));
+    }
+}
+</code></pre><p>Теперь вместо использования репозиториев напрямую для получения данных, необходимых для выполнения основной логики, используется контекст. То есть теперь в <code>(1)</code> и <code>(2)</code> информация о пользователе и продукте извлекается из контекста. В свою очередь вместо вызова метода репозитория для сохранения созданного заказа используется контекст, в который добавляется только что созданный заказ в <code>(3)</code>. Стоит отметить, что метод <code>create</code> стал меньше и проще.</p><p>Но чтобы это работало, необходимо внести изменения в класс <code>CreateOrderObserverImpl</code></p><pre><code class="java">package aa0ndrey.dependency_inversion_guide.step_6.postgres.order;
+
+public class CreateOrderObserverImpl implements CreateOrderObserver {
+    private final TransactionManagerImpl transactionManagerImpl;
+    private final ThreadLocal&lt;Long> transactionId = new ThreadLocal&lt;>();
+    private final UserRepositoryImpl userRepository;
+    private final ProductRepositoryImpl productRepository;
+    private final OrderRepositoryImpl orderRepository;
+
+    @Override
+    public void onStart(CreateOrderContext context) {
+        transactionId.set(transactionManagerImpl.begin());
+        var request = context.getRequest();
+        context.setUser(userRepository.find(request.getUserId())); //(4)
+        context.setProduct(productRepository.find(request.getProductId())); //(5)
+    }
+
+    @Override
+    public void onEnd(CreateOrderContext context) {
+        transactionManagerImpl.commit(transactionId.get());
+        orderRepository.create(context.getCreatedOrder()); //(6)
+    }
+}
+</code></pre><p>И здесь как раз в <code>(4)</code>, <code>(5)</code> и <code>(6)</code> добавляются все вызовы репозиториев, которые были вынесены из <code>OrderService</code>.</p><p>В итоге с помощью внесенных изменений удалось получить возможность передачи данных от инфраструктурного модуля (postgres) в изолируемый модуль (core). Тут стоит обратить внимание, что для этого использовались именно конкретные поля контекста, такие как <code>user</code> и <code>product</code>, а не обобщенное поле <code>data</code>. Это связано стем, что, во-первых, основной логике известны сущности <code>user</code> и <code>product</code>, а, во-вторых, в основной логике не должно использоваться поле <code>data</code>.</p><p>Подведем итог. С помощью шаблона наблюдатель с использованием контекста вместо отдельных событий, возможно передавать данные по всем трем направлениям:</p><ul><li><p>из изолируемого модуля (core) в инфраструктурный модуль (postgres)</p></li><li><p>из инфраструктурного модуля (postgres) в изолируемый модуль (core)</p></li><li><p>между методами обработки событий инфраструктурного модуля.</p></li></ul><p>При этом для отправки из изолируемого модуля (core) в инфраструктурный модуль (postgres) и обратно используются конкретные поля, а для организации взаимодействия между методами обработки событий инфраструктурного модуля используется обобщенное поле <code>data</code>, либо механизмы, обеспечивающие привязку данных к процессу выполнения, такие как <code>ThreadLocal</code>. И не стоит также забывать о том, что точек для отправки событий с использованием контекста можно добавить сколько угодно в метод с основной логикой, даже посередине, а не только в начале и конце. При этом не придется даже создавать отдельные события, так как всю необходимую информацию о процессе содержит сам контекст.</p><p>После рассмотрения предыдущих разделов какие можно сделать выводы, уточнения и предостережения?</p><p>Во-первых, стоит отметить, что предложенные примеры являются искусственными, и не следует их воспринимать буквально. То есть не стоит отказываться от интерфейсов для репозиториев в пользу использования контекста с шаблоном наблюдатель, как это было сделано в последнем разделе, если для этого нет каких-либо дополнительных причин. </p><p>Во-вторых, не стоит прибегать к реализации использования <code>TransactionManager</code>, как это было продемонстрировано ранее, потому что это и не самый удачный подход конкретно для <code>TransactionManager</code>. Это можно будет увидеть в следующих разделах, когда будет продемонстрировано использование промежуточного модуля (application). <code>TransactionManager</code> был использован в примерах только потому, что с ним можно было продемонстрировать все возможные приемы, сохраняя при этом размеры примеров и обоснования для использования относительно небольшими и почти реалистичными.</p><p>Что является ценным из предыдущих разделов, так это сами приемы. Для типичной ситуации инверсии зависимостей, достаточно использования интерфейса для репозитория или клиента, помещаемого в изолируемый модуль (core). Если в основной логике возникает потребность вызова методов из инфраструктурных модулей, которые раскрывают детали реализации даже при использовании интерфейсов, то именно в этом случае стоит использовать шаблон наблюдатель. И далее в зависимости от того, в каком направлении необходимо организовать передачу данных, можно использовать то или иное решение. Универсальным, но не всегда оптимальным, механизмом для передачи данных является использование контекста.</p><p>Итоговый список приемов:</p><ul><li><p>интерфейс, отделенный от реализации - стандартный прием инверсии зависимостей, для случаев, когда интерфейс скрывает прямое использование общих классов, которые <em>не богаты</em> инфраструктурными деталями, таких как репозитории для базы данных или http клиенты и другие.</p></li><li><p>шаблон наблюдатель - прием инверсии зависимостей, который скрывает прямое использование классов и их методов. Возможны следующие варианты использования шаблона:</p><ul><li><p>стандартный с событиями - передача данных только от изолируемого модуля в инфраструктурный модуль.</p></li><li><p>с контекстом без поля <code>data</code> - передача данных от изолируемого модуля в инфраструктурный модуль и обратно</p></li><li><p>с привязкой данных к процессу выполнения - передача данных между изолируемыми инфраструктурными методами обработки событий</p></li><li><p>с контекстом с полем <code>data</code> - передача данных от изолируемого модуля в инфраструктурный модуль и обратно, а также между изолируемыми инфраструктурными методами обработки событий</p></li></ul></li></ul><p>В следующей части (или следующих частях) руководства будет продемонстрировано использование промежуточного модуля (application) и будет определена область его ответственности. Также будет представлен способ организации кода, позволяющий достичь того, что методы основной логики из изолируемого модуля (core) будут удовлетворять критериям "чистых" функций. И также будет представлен способ разделения процесса на этапы, в частности для организации взаимодействия через очередь сообщений.</p><p>В заключении для лучшего погружения в материал читателю предлагается решить задачу.</p><p><strong>Задача</strong></p><p>Пусть для каждого запроса при взаимодействии с базой данных необходимо также передавать id транзакции, который появляется при вызове метода <code>begin</code> из <code>TransactionManagerImpl</code>. То есть необходимо внести некоторые изменения, как минимум, в классы <code>UserRepositoryImpl</code>, <code>ProductRepositoryImpl</code>, <code>OrderRepositoryImpl</code>. Какие приемы и как их применить для того, чтобы удовлетворить поставленному требованию, при этом не добавив лишних инфраструктурных зависимостей в основную логику в изолируемый модуль (core)? Приведите как можно больше возможных вариантов решения поставленной задачи.</p><p><strong>Возможные решения</strong></p><p>Заметим, что данные необходимо передавать между изолированными инфраструктурными методами.</p><ol><li><p>Использовать механизм привязки данных к выполняющемуся процессу, например, <code>ThreadLocal</code>. При этом сам id транзакции будет некорректно хранить внутри <code>CreateOrderObserverImpl</code>, так как репозитории потенциально могут быть переиспользованы в нескольких местах и поэтому они не могут быть привязаны к конкретному наблюдателю. Для этого достаточно завести отдельный класс, который будет хранить информацию о транзакции. Например, <code>TransactionInfo</code> с полем <code>ThreadLocal&lt;Long> transactionId</code>. При этом в реализации <code>TransactionManagerImpl</code> можно затребовать, чтобы id транзакции сохранялся в <code>TransactionInfo</code> при вызове метода <code>begin</code>, а каждый репозиторий при выполнении запроса будет обращаться к <code>TransactionInfo</code> за получением id транзакции.</p></li><li><p>Использовать контекст с полем <code>data</code>. Для этого создать интерфейс <code>DynamicContext</code>, который будет содержать метод <code>getData()</code>. Также необходимо указать, что <code>CreateOrderContext</code> реализует данный интерфейс. Идея в том, что все методы репозиториев должны будут принимать <code>DynamicContext</code> в качестве дополнительного параметра, из которого они смогут получить доступ к полю <code>data</code>, в котором будет находиться id транзакции. Интерфейс <code>DynamicContext</code> нужен для того, чтобы была возможность переиспользовать репозитории в других местах, поэтому нельзя напрямую использовать тип <code>CreateOrderContext</code> в сигнатуре методов.</p></li><li><p>Отказаться от использования репозиториев в основной логике в изолируемом модуле (core) и перенести их в наблюдателя <code>CreateOrderObserverImpl</code>, как это было продемонстрировано в последнем разделе. Тогда нет никаких препятствий к тому, чтобы в сигнатуры методов каждого репозитория добавить параметр <code>long transactionId</code>, так как теперь эти методы никогда не будут использоваться в изолируемом модуле (core). Тогда в самом наблюдателе <code>CreateOrderObserverImpl</code> при вызове методов репозиториев появляется возможность передавать напрямую id транзакции.</p></li></ol><p>Ссылка на github <a href="https://github.com/aa0ndrey/dependency-inversion-guide/tree/habr" rel="noopener noreferrer nofollow">репозиторий</a> со всеми примерами.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B8%D0%BD%D0%B2%D0%B5%D1%80%D1%81%D0%B8%D1%8F%20%D0%B7%D0%B0%D0%B2%D0%B8%D1%81%D0%B8%D0%BC%D0%BE%D1%81%D1%82%D0%B5%D0%B9%5D" class="tm-tags-list__link">инверсия зависимостей</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D1%80%D1%85%D0%B8%D1%82%D0%B5%D0%BA%D1%82%D1%83%D1%80%D0%B0%5D" class="tm-tags-list__link">архитектура</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D1%80%D1%85%D0%B8%D1%82%D0%B5%D0%BA%D1%82%D1%83%D1%80%D0%B0%20%D0%BF%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D0%B9%5D" class="tm-tags-list__link">архитектура приложений</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%B0%D1%82%D1%82%D0%B5%D1%80%D0%BD%D1%8B%5D" class="tm-tags-list__link">паттерны</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%B0%D1%82%D1%82%D0%B5%D1%80%D0%BD%D1%8B%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F%5D" class="tm-tags-list__link">паттерны проектирования</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bclean%20code%5D" class="tm-tags-list__link">clean code</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdependency%20inversion%5D" class="tm-tags-list__link">dependency inversion</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bclean%20architecture%5D" class="tm-tags-list__link">clean architecture</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Barchitectural%20patterns%5D" class="tm-tags-list__link">architectural patterns</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Barchitecture%5D" class="tm-tags-list__link">architecture</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/java/" class="tm-hubs-list__link">
+    Java
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/analysis_design/" class="tm-hubs-list__link">
+    Анализ и проектирование систем
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/refactoring/" class="tm-hubs-list__link">
+    Проектирование и рефакторинг
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 11: ↑9 и ↓2</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 11: ↑9 и ↓2" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+7</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">9.6K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    91
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/aa0ndrey/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/077/99f/a77/07799fa77542720dfb96f45e235b1aae.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 6 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    4
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">7</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Андрей Алексеев</span> <a href="/ru/users/aa0ndrey/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @aa0ndrey
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://vk.com/aa0ndrey" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://github.com/aa0ndrey/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Github
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582588/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 134 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582588/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582588/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582588":{"id":"582588","timePublished":"2021-10-10T07:08:43+00:00","isCorporative":false,"lang":"ru","titleHtml":"Подробное руководство по инверсии зависимостей. Часть 1","leadData":{"textHtml":"\u003Cp\u003EИнверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как его применять. И, возможно, читатель уже знаком с ними. Но в рамках данной статьи будет продемонстрирован подробный разбор \"тактических\" приемов для успешного использования инверсии зависимостей и, возможно, в этом смысле даже искушенный читатель сможет найти для себя что-то новое. Примеры представлены на языке программирования Java с соответствующим окружением, но при этом для чтения достаточно понимания похожих языков программирования.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F874\u002Fd22\u002F2a9\u002F874d222a9f29d03e6ab0428dbf7f3d0b.jpg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F874\u002Fd22\u002F2a9\u002F874d222a9f29d03e6ab0428dbf7f3d0b.jpg","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"sandbox","data":null}],"author":{"scoreStats":{"score":4,"votesCount":6},"rating":7,"relatedData":null,"contacts":[{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Faa0ndrey","value":"aa0ndrey"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Faa0ndrey\u002F","value":"aa0ndrey"}],"authorContacts":[{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Faa0ndrey","value":"aa0ndrey"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Faa0ndrey\u002F","value":"aa0ndrey"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2743681","alias":"aa0ndrey","fullname":"Андрей Алексеев","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F077\u002F99f\u002Fa77\u002F07799fa77542720dfb96f45e235b1aae.jpg","speciality":null},"statistics":{"commentsCount":134,"favoritesCount":91,"readingCount":9617,"score":7,"votesCount":11},"hubs":[{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"375","alias":"java","type":"collective","title":"Java","titleHtml":"Java","isProfiled":true},{"relatedData":null,"id":"397","alias":"analysis_design","type":"collective","title":"Анализ и проектирование систем","titleHtml":"Анализ и проектирование систем","isProfiled":true},{"relatedData":null,"id":"7504","alias":"refactoring","type":"collective","title":"Проектирование и рефакторинг","titleHtml":"Проектирование и рефакторинг","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb75\u002F15e\u002Fbff\u002Fb7515ebff277ad2c6903f43991792da0.jpg\" width=\"780\" height=\"442\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb75\u002F15e\u002Fbff\u002Fb7515ebff277ad2c6903f43991792da0.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EИнверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как его применять. И, возможно, читатель уже знаком с ними. Но в рамках данной статьи будет продемонстрирован подробный разбор \"тактических\" приемов для успешного использования инверсии зависимостей и, возможно, в этом смысле даже искушенный читатель сможет найти для себя что-то новое. Примеры представлены на языке программирования Java с соответствующим окружением, но при этом для чтения достаточно понимания похожих языков программирования.\u003C\u002Fp\u003E\u003Ch3\u003E0. Проблема взаимодействия изолируемого модуля с инфраструктурным\u003C\u002Fh3\u003E\u003Cp\u003EПусть необходимо автоматизировать процесс, который позволяет создавать от пользователя заказы на покупку товара. И в рамках этого процесса необходимо проверять баланс пользователя. Баланс должен быть больше, чем стоимость товара.\u003C\u002Fp\u003E\u003Cp\u003EВ начале рассмотрим классы-данных, соответствующие процессу:\u003C\u002Fp\u003E\u003Cp\u003E\u003Ccode\u003ECreateOrderRequest\u003C\u002Fcode\u003E - класс-данных запроса, который отправляет пользователь для создания заказа на товар\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.core.order;\n\npublic class CreateOrderRequest {\n    private UUID userId;\n    private UUID productId;\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003EUser\u003C\u002Fcode\u003E - класс-данных пользователя\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.core.user;\n\npublic class User {\n    private UUID id;\n    private String name;\n    private int balance;\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003EProduct\u003C\u002Fcode\u003E - класс-данных товара\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.core.product;\n\npublic class Product {\n    private UUID id;\n    private String title;\n    private int price;\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003EOrder\u003C\u002Fcode\u003E - класс-данных заказа\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.core.order;\n\npublic class Order {\n    private UUID id;\n    private UUID userId;\n    private UUID productId;\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля работы с базой данных понадобятся классы репозиториев, которые позволят сохранять и получать данные:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.postgres.user;\n\npublic class UserRepositoryImpl {\n    public User find(UUID id) {\n        \u002F\u002Fреализация select * from user where user.id = ?\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.postgres.product;\n\npublic class ProductRepositoryImpl {\n    public Product find(UUID id) {\n        \u002F\u002Fреализация select * from product where product.id = ?\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.postgres.order;\n\npublic class OrderRepositoryImpl {\n    public void create(Order order) {\n        \u002F\u002Fреализация insert into order (id, user_id, product_id) values (?, ?, ?)\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ в заключении рассмотрим класс сервиса, который будет содержать в себе основную логику, описанную ранее\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.core.order;\n\nimport aa0ndrey.dependency_inversion_guide.step_0.postgres.order.OrderRepositoryImpl;\nimport aa0ndrey.dependency_inversion_guide.step_0.postgres.product.ProductRepositoryImpl;\nimport aa0ndrey.dependency_inversion_guide.step_0.postgres.user.UserRepositoryImpl;\n\npublic class OrderService {\n    private final UserRepositoryImpl userRepository;\n    private final ProductRepositoryImpl productRepository;\n    private final OrderRepositoryImpl orderRepository;\n\n    public void create(CreateOrderRequest request) {\n        var user = userRepository.find(request.getUserId());\n        var product = productRepository.find(request.getProductId());\n\n        if (user.getBalance() &lt; product.getPrice()) {\n            throw new RuntimeException(\"Недостаточно средств\");\n        }\n\n        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());\n        orderRepository.create(order);\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь предположим, что необходимо разложить представленные классы по двум модулям: core и postgres. Ожидается, что модуль core будет содержать в себе основную логику приложения, которую необходимо изолировать от инфраструктурных зависимостей. В свою очередь в postgres модуле ожидается, что будет размещен весь код, связанный с работой с базой данных postgres.\u003C\u002Fp\u003E\u003Cp\u003EВажным нюансом является то, что postgres модуль должен зависеть от core модуля, а core модуль \u003Cstrong\u003Eне должен\u003C\u002Fstrong\u003E зависеть от postgres модуля. Postgres и core модули будут собраны с помощью maven как отдельные maven модули. \u003Ca href=\"https:\u002F\u002Fmaven.apache.org\u002Fwhat-is-maven.html\" rel=\"noopener noreferrer nofollow\"\u003EMaven\u003C\u002Fa\u003E - это инструмент, предназначенный для сборки проекта и управления зависимостями в проекте. Ниже будут представлены конфигурационные pom.xml файлы для core и postgres модуля.\u003C\u002Fp\u003E\u003Cp\u003EФайл pom.xml, содержащий конфигурацию core модуля\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?\u003E\n&lt;project xmlns=\"http:\u002F\u002Fmaven.apache.org\u002FPOM\u002F4.0.0\"\n         xmlns:xsi=\"http:\u002F\u002Fwww.w3.org\u002F2001\u002FXMLSchema-instance\"\n         xsi:schemaLocation=\"http:\u002F\u002Fmaven.apache.org\u002FPOM\u002F4.0.0 http:\u002F\u002Fmaven.apache.org\u002Fxsd\u002Fmaven-4.0.0.xsd\"\u003E\n    &lt;modelVersion\u003E4.0.0&lt;\u002FmodelVersion\u003E\n\n    &lt;groupId\u003Eaa0ndrey&lt;\u002FgroupId\u003E\n    &lt;artifactId\u003Edependency-inversion-guide-step-0-core&lt;\u002FartifactId\u003E\n    &lt;version\u003E1.0-SNAPSHOT&lt;\u002Fversion\u003E\n&lt;\u002Fproject\u003E\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФайл pom.xml, содержащий конфигурацию postgres модуля\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E&lt;?xml version=\"1.0\" encoding=\"UTF-8\"?\u003E\n&lt;project xmlns=\"http:\u002F\u002Fmaven.apache.org\u002FPOM\u002F4.0.0\"\n         xmlns:xsi=\"http:\u002F\u002Fwww.w3.org\u002F2001\u002FXMLSchema-instance\"\n         xsi:schemaLocation=\"http:\u002F\u002Fmaven.apache.org\u002FPOM\u002F4.0.0 http:\u002F\u002Fmaven.apache.org\u002Fxsd\u002Fmaven-4.0.0.xsd\"\u003E\n    &lt;modelVersion\u003E4.0.0&lt;\u002FmodelVersion\u003E\n\n    &lt;groupId\u003Eaa0ndrey&lt;\u002FgroupId\u003E\n    &lt;artifactId\u003Edependency-inversion-guide-step-0-postgres&lt;\u002FartifactId\u003E\n    &lt;version\u003E1.0-SNAPSHOT&lt;\u002Fversion\u003E\n\n    &lt;dependencies\u003E\n        &lt;dependency\u003E\n            &lt;groupId\u003Eaa0ndrey&lt;\u002FgroupId\u003E\n            &lt;artifactId\u003Edependency-inversion-guide-step-0-core&lt;\u002FartifactId\u003E &lt;!--(1)--\u003E\n            &lt;version\u003E1.0-SNAPSHOT&lt;\u002Fversion\u003E\n        &lt;\u002Fdependency\u003E\n    &lt;\u002Fdependencies\u003E\n&lt;\u002Fproject\u003E\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЕсли вы не знакомы с maven, то важным, на что необходимо обратить внимание, является блок \u003Ccode\u003E&lt;dependencies\u003E&lt;\u002Fdependecies\u003E\u003C\u002Fcode\u003E. В postgres модуле есть ссылка на core модуль. А в core модуле нет блока \u003Ccode\u003E&lt;dependencies\u003E&lt;\u002Fdependecies\u003E\u003C\u002Fcode\u003E совсем, что в частности означает что нет зависимости на модуль postgres. Важно отметить, что maven не позволит скомпилировать модуль, ссылающийся на код модуля, которого нет в зависимостях. Также в maven запрещены циклические зависимости, то есть, если postgres модуль зависит от core модуля, то core модуль не может зависеть от postgres модуля.\u003C\u002Fp\u003E\u003Cp\u003EВ файле конфигурации pom.xml для postgres модуля есть комментарий \u003Ccode\u003E&lt;!--(1)--\u003E\u003C\u002Fcode\u003E здесь и далее комментарии будут использованы, в том числе для указания ссылок на код. При этом ссылка на код оформляется в блоке кода с помощью круглых скобок, внутри которых указана цифра. На эту цифру в основном тексте будет ссылка. Например, так: в файле pom.xml для postgres модуля в \u003Ccode\u003E(1)\u003C\u002Fcode\u003E указана зависимость на core модуль.\u003C\u002Fp\u003E\u003Cp\u003EТеперь разложим рассмотренные ранее классы по модулям core и postgres.\u003C\u002Fp\u003E\u003Cp\u003EФайловая структура core модуля\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E├── order\n│   ├── CreateOrderRequest.java\n│   ├── Order.java\n│   └── OrderService.java\n├── product\n│   └── Product.java\n└── user\n    └── User.java\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФайловая структура postgres модуля\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E├── order\n│   └── OrderRepositoryImpl.java\n├── product\n│   └── ProductRepositoryImpl.java\n└── user\n    └── UserRepositoryImpl.java\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа самом деле как разложены классы внутри модулей, можно было понять ранее. В примерах кода всюду указаны пакеты \u003Ccode\u003Epackage\u003C\u002Fcode\u003E. При именовании пакетов после \u003Ccode\u003Eaa0ndrey.dependency_inversion_guide\u003C\u002Fcode\u003E указывается номер рассматриваемого примера, в данном случае \u003Ccode\u003Estep-0\u003C\u002Fcode\u003E, и затем указывается имя модуля, в котором расположен класс. Например, класс, с указанным \u003Ccode\u003Epackage aa0ndrey.dependency_inversion_guide.step_0.core.order\u003C\u002Fcode\u003E, находится в модуле core.\u003C\u002Fp\u003E\u003Cp\u003EЕсли попробовать собрать эти два модуля, то при сборке модуля core возникнет ошибка, связанная с тем, что в классе \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E используются \u003Ccode\u003EOrderRepositoryImpl\u003C\u002Fcode\u003E, \u003Ccode\u003EProductRepositoryImpl\u003C\u002Fcode\u003E и \u003Ccode\u003EUserRepositoryImpl\u003C\u002Fcode\u003E, которых нет в модуле core и в подключаемых зависимостях, потому что классы этих репозиториев находятся в модуле postgres, на который невозможно и, что самое главное \u003Cstrong\u003Eне нужно\u003C\u002Fstrong\u003E создавать зависимость в модуле core. И тут становится понятна проблема, которая возникает при желании изолировать модуль от другого инфраструктурного модуля, из которого по коду необходимо получать и в который необходимо отправлять данные. Так как же это сделать? Решение будет рассмотрено в следующем разделе.\u003C\u002Fp\u003E\u003Ch3\u003E1. Инверсия зависимостей с помощью интерфейсов\u003C\u002Fh3\u003E\u003Cp\u003EЧтобы решить проблему, обозначенную в предыдущем разделе, достаточно в core модуле создать интерфейсы для репозиториев, а сами репозитории из postgres модуля заставить реализовывать указанные интерфейсы.\u003Cbr\u002F\u003EДобавим интерфейсы репозиториев в core модуль\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_1.core.user;\n\npublic interface UserRepository {\n    User find(UUID id);\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_1.core.product;\n\npublic interface ProductRepository {\n    Product find(UUID id);\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_1.core.order;\n\npublic interface OrderRepository {\n    void create(Order order);\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗатем укажем реализацию этих репозиториев в postgres модуле\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_1.postgres.user;\n\npublic class UserRepositoryImpl implements UserRepository {\n    @Override\n    public User find(UUID id) {\n        \u002F\u002Fреализация select * from user where user.id = ?\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_1.postgres.product;\n\npublic class ProductRepositoryImpl implements ProductRepository {\n    @Override\n    public Product find(UUID id) {\n        \u002F\u002Fреализация select * from product where product.id = ?\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_1.postgres.order;\n\npublic class OrderRepositoryImpl implements OrderRepository {\n    @Override\n    public void create(Order order) {\n        \u002F\u002Fреализация insert into order (id, user_id, product_id) values (?, ?, ?)\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ в заключении перепишем логику в OrderService так, чтобы он начал использовать вместо UserRepositoryImpl, ProductRepositoryImpl и OrderRepositoryImpl их интерфейсы, которые расположены в модуле core.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_1.core.order;\n\npublic class OrderService {\n    private final UserRepository userRepository;\n    private final ProductRepository productRepository;\n    private final OrderRepository orderRepository;\n\n    public void create(CreateOrderRequest request) {\n        var user = userRepository.find(request.getUserId());\n        var product = productRepository.find(request.getProductId());\n\n        if (user.getBalance() &lt; product.getPrice()) {\n            throw new RuntimeException(\"Недостаточно средств\");\n        }\n\n        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());\n        orderRepository.create(order);\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФайловая структура core модуля\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E├── order\n│   ├── CreateOrderRequest.java\n│   ├── Order.java\n│   ├── OrderRepository.java (1)\n│   └── OrderService.java\n├── product\n│   ├── Product.java\n│   └── ProductRepository.java (2)\n└── user\n    ├── User.java\n    └── UserRepository.java (3)\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EФайловая структура postgres модуля\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E├── order\n│   └── OrderRepositoryImpl.java (4)\n├── product\n│   └── ProductRepositoryImpl.java (5)\n└── user\n    └── UserRepositoryImpl.java (6)\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭтими изменениями удалось достигнуть того, что core модуль перестал использовать какие-либо классы из postgres модуля. И теперь оба модуля могут быть скомпилированы. Вместо использования прямых зависимостей на классы из инфраструктурного модуля (postgres) \u003Ccode\u003E(4)\u003C\u002Fcode\u003E, \u003Ccode\u003E(5)\u003C\u002Fcode\u003E, \u003Ccode\u003E(6)\u003C\u002Fcode\u003E можно создавать интерфейсы \u003Ccode\u003E(1)\u003C\u002Fcode\u003E, \u003Ccode\u003E(2)\u003C\u002Fcode\u003E, \u003Ccode\u003E(3)\u003C\u002Fcode\u003E на эти классы в изолируемом модуле (core), которые должны быть реализованы в инфраструктурном модуле (postgres). При этом нет никаких проблем в том, что классы из инфраструктурного модуля (postgres) зависят от классов из изолируемого модуля (core).\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E  ┌────────────────┐\n  │      Core      │\n  │┌──────────────┐│\n  ││UserRepository│◄───────┐\n  │└──────────────┘│       │\n  └────────────────┘       │\n┌────────────────────┐     │\n│      Postgres      │     │\n│┌──────────────────┐│     │\n││UserRepositoryImpl│┼─────┘\n│└──────────────────┘│\n└────────────────────┘\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВажно понимать и идейную составляющую данного приема. Она заключается в том, что изолируемый модуль (core) предъявляет требования к реализации с помощью интерфейса. То есть \"главным\" в этом отношении является интерфейс, под который подстраивается реализация.\u003C\u002Fp\u003E\u003Cp\u003EВозможно, на этом моменте другие руководства по инверсии зависимостей подходят к завершению. Но в рамках данного руководства это только начало.\u003C\u002Fp\u003E\u003Ch3\u003E2. Проблема использования интерфейсов, раскрывающих инфраструктуру\u003C\u002Fh3\u003E\u003Cp\u003EПрежде чем перейти к рассмотрению следующей проблемы, стоит отметить, что здесь и далее большинство приведенных примеров очень сильно упрощены, особенно с точки зрения технической реализации. Это сделано намерено для того, чтобы не засорят ненужными деталями рассматриваемые примеры.\u003C\u002Fp\u003E\u003Cp\u003EПредположим теперь, что есть необходимость управлять транзакциями. И пусть для этого достаточно уметь открывать и фиксировать транзакцию. И также пусть необходимо открыть транзакцию перед получением любых данных из базы данных, а зафиксировать транзакцию необходимо только после последнего обращения к базе данных.\u003C\u002Fp\u003E\u003Cp\u003EТогда можно в модуле core создать интерфейс, который позволяет управлять транзакциями.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_2.core.transaction_manager;\n\npublic interface TransactionManager {\n    void begin();\n\n    void commit();\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ свою очередь реализацию этого интерфейса стоит поместить в модуль postgres\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_2.postgres.transaction_manager;\n\npublic class TransactionManagerImpl implements TransactionManager {\n    public void begin() {\n        \u002F\u002Fреализация начала транзакции\n    }\n\n    public void commit() {\n        \u002F\u002Fреализация фиксации транзакции\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ теперь появляется возможность добавить использование интерфейса \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E в класс с основной логикой \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_2.core.order;\n\npublic class OrderService {\n    private final UserRepository userRepository;\n    private final ProductRepository productRepository;\n    private final OrderRepository orderRepository;\n    private final TransactionManager transactionManager;\n\n    public void create(CreateOrderRequest request) {\n        transactionManager.begin(); \u002F\u002F(1)\n\n        var user = userRepository.find(request.getUserId());\n        var product = productRepository.find(request.getProductId());\n\n        if (user.getBalance() &lt; product.getPrice()) {\n            throw new RuntimeException(\"Недостаточно средств\");\n        }\n\n        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());\n        orderRepository.create(order);\n\n        transactionManager.commit(); \u002F\u002F(2)\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ классе \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E в \u003Ccode\u003E(1)\u003C\u002Fcode\u003E транзакция открывается, а в \u003Ccode\u003E(2)\u003C\u002Fcode\u003E происходит ее фиксация. Вообще говоря, код из \u003Ccode\u003E(2)\u003C\u002Fcode\u003E нужно было бы написать в конструкции try-catch-finally, также при этом используя rollback в случае исключения, но напомню, что примеры намерено упрощены. А еще лучше было бы использовать аннотацию \u003Ccode\u003E@Transactional\u003C\u002Fcode\u003E из какого-либо фреймворка, но это не является предметом для обсуждения в данной статье. Использование упрощенной версии интерфейса \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E мотивировано тем, что он хорошо известен, по крайней мере Java-разработчикам, и с его участием удобно рассматривать большинство примеров.\u003C\u002Fp\u003E\u003Cp\u003EПроблема данного решения заключается в том, что управление транзакциями достаточно специфичный механизм по отношению к основной логике. Несмотря на то, что детали реализации скрываются с помощью интерфейса, сам интерфейс рассказывает о каких-то инфраструктурных особенностях. По этой причине наличие такого интерфейса крайне нежелательно.\u003C\u002Fp\u003E\u003Cp\u003EТут важно понимать мотивацию, зачем необходимо избегать подобных интерфейсов в построении изолируемого модуля (core). Представим, что есть какая-то конкретная библиотека, например, для работы с mysql. Тогда можно взять и создать на каждый класс для этой библиотеки интерфейс в изолируемом модуле и использовать эти интерфейсы в основной логике внутри изолируемого модуля (core). Но в этом случае потеряются все преимущества от того, что используются интерфейсы.\u003C\u002Fp\u003E\u003Cp\u003EНапример, одной из причин для изолирования модуля от инфраструктуры является обобщение и упрощение использования сложных инфраструктурных модулей для того, чтобы не утопать в их деталях при написании основного кода. Но так как интерфейсы один в один будут повторять классы библиотеки, то в этом смысле не получится добиться какого-либо упрощения.\u003C\u002Fp\u003E\u003Cp\u003EТакже интерфейсы используются для того, чтобы иметь потенциальную возможность подменять решения из группы альтернатив. Но это будет возможно только, если альтернативу можно будет адаптировать к уже существующим интерфейсам. А если они являются точной копией другой используемой библиотеки, то, скорее всего, пропадает всякая возможность замены.\u003C\u002Fp\u003E\u003Cp\u003EНесмотря на то, что для представленного интерфейса \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E можно было бы создать реализацию для большого множества баз данных, данный интерфейс раскрывает детали реализации взаимодействия с базой данных и в этом смысле является чужеродным по отношению к основной логике в изолируемом модуле (core). И поэтому от него необходимо избавиться.\u003C\u002Fp\u003E\u003Ch3\u003E3. Инверсия зависимостей с помощью шаблона проектирования наблюдатель\u003C\u002Fh3\u003E\u003Cp\u003EВ данном разделе будет предложено решение проблемы из предыдущего раздела. Вместо того чтобы использовать интерфейсы, раскрывающие инфраструктурные особенности, можно использовать шаблон проектирования наблюдатель (observer). Идея заключается в том, чтобы для класса \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E создать общий интерфейс для наблюдателей, которые смогут обрабатывать общие события. При этом сами события будут отправляться в те моменты, когда должен был быть вызван нежелательный раскрывающий детали интерфейс (в данном случае \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E).\u003C\u002Fp\u003E\u003Cp\u003EСоздадим для начала классы событий: \u003Ccode\u003ECreateOrderEvents.Start\u003C\u002Fcode\u003E и \u003Ccode\u003ECreateOrderEvents.End\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_3.core.order;\n\npublic class CreateOrderEvents {\n    public static class Start {\n        private CreateOrderRequest request; \u002F\u002F(1)\n    }\n\n    public static class End {\n        private CreateOrderRequest request; \u002F\u002F(2)\n        private User user; \u002F\u002F(3)\n        private Product product; \u002F\u002F(4)\n        private Order order; \u002F\u002F(5)\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПри выборе названия события можно отталкиваться от названия места по ходу выполнения основной логики в OrderService. Например, событие \u003Ccode\u003ECreateOrderEvents.Start\u003C\u002Fcode\u003E будет отправляться в самом начале метода при создании заказа. Поэтому оно называется Start. В свою очередь событие \u003Ccode\u003ECreateOrderEvents.End\u003C\u002Fcode\u003E отправляется в конце метода и поэтому оно называется End. Если бы понадобилось отправлять событие перед проверкой баланса пользователя, то можно было бы назвать событие BeforeCheckUserBalance.\u003C\u002Fp\u003E\u003Cp\u003EТут важным является не дать название событием так, чтобы по названию можно было бы понять, какая обработка ожидает эти события. Иначе тем самым будут раскрыты детали реализации. Например, такие названия событий не подойдут: \u003Ccode\u003EOnTransactionBegin\u003C\u002Fcode\u003E и \u003Ccode\u003EOnTransactionCommit\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EТакже стоит отметить, что события необходимо наполнить не конкретными данными, которые будут необходимы конкретному наблюдателю. А общими данными, которые доступны в момент отправки события. Поэтому для события \u003Ccode\u003ECreateOrderEvents.Start\u003C\u002Fcode\u003E указывается только поле с запросом \u003Ccode\u003E(1)\u003C\u002Fcode\u003E, так как только оно доступно в начале метода. В свою очередь в конце выполнения метода доступны: исходный запрос \u003Ccode\u003E(2)\u003C\u002Fcode\u003E, полученный пользователь \u003Ccode\u003E(3)\u003C\u002Fcode\u003E, полученный продукт \u003Ccode\u003E(4)\u003C\u002Fcode\u003E, а также созданный заказ \u003Ccode\u003E(5)\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EЭто все делается для того, чтобы потенциально наблюдателем этих событий мог быть какой угодно другой инфраструктурный модуль. Причем это может быть необязательно возможная альтернатива текущему модулю. Например, одно и то же событие может обрабатываться модулем базы данных для того, чтобы начать транзакцию, и модулем HTTP клиента, для того, чтобы осуществить получение токена авторизации.\u003C\u002Fp\u003E\u003Cp\u003EДалее можно создать общий интерфейс для наблюдателя:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_3.core.order;\n\npublic interface CreateOrderObserver {\n    void onStart(CreateOrderEvents.Start event);\n\n    void onEnd(CreateOrderEvents.End event);\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ затем можно изменить класс \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_3.core.order;\n\npublic class OrderService {\n    private final UserRepository userRepository;\n    private final ProductRepository productRepository;\n    private final OrderRepository orderRepository;\n    private final List&lt;CreateOrderObserver\u003E observers; \u002F\u002F(6)\n\n    public void create(CreateOrderRequest request) {\n        var startEvent = new CreateOrderEvents.Start(request); \u002F\u002F(7)\n        observers.forEach(observer -\u003E observer.onStart(startEvent)); \u002F\u002F(8)\n\n        var user = userRepository.find(request.getUserId());\n        var product = productRepository.find(request.getProductId());\n\n        if (user.getBalance() &lt; product.getPrice()) {\n            throw new RuntimeException(\"Недостаточно средств\");\n        }\n\n        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());\n        orderRepository.create(order);\n\n        var endEvent = new CreateOrderEvents.End( \u002F\u002F(9)\n                request,\n                user,\n                product,\n                order\n        );\n        observers.forEach(observer -\u003E observer.onEnd(endEvent)); \u002F\u002F(10)\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа что стоит обратить внимание? Было удалено всякое использование интерфейса \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E более того, он был удален из модуля core. Вместо него теперь используется \u003Ccode\u003ECreateOrderObserver\u003C\u002Fcode\u003E в \u003Ccode\u003E(6)\u003C\u002Fcode\u003E. Для этого в начале метода создаётся событие \u003Ccode\u003ECreateOrderEvents.Start\u003C\u002Fcode\u003E в \u003Ccode\u003E(7)\u003C\u002Fcode\u003E и затем оно отправляется наблюдателям в \u003Ccode\u003E(8)\u003C\u002Fcode\u003E. Аналогично в конце метода создаётся событие \u003Ccode\u003ECreateOrderEvents.End\u003C\u002Fcode\u003E в \u003Ccode\u003E(9)\u003C\u002Fcode\u003E и отправляется в \u003Ccode\u003E(10)\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EИ затем можно добавить реализацию наблюдателя в postgres модуль\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_3.postgres.order;\n\npublic class CreateOrderObserverImpl implements CreateOrderObserver {\n    private final TransactionManagerImpl transactionManagerImpl;\n\n    @Override\n    public void onStart(CreateOrderEvents.Start event) {\n        transactionManagerImpl.begin();\n    }\n\n    @Override\n    public void onEnd(CreateOrderEvents.End event) {\n        transactionManagerImpl.commit();\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСтоит обратить внимание на то, что внутри уже реализации наблюдателя происходит обращение к \u003Ccode\u003ETransactionManagerImpl\u003C\u002Fcode\u003E для того, чтобы решить задачу по управлению транзакциями.\u003C\u002Fp\u003E\u003Cp\u003EТеперь приведём текущую файловую структуру модуля core\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E├── order\n│   ├── CreateOrderEvents.java\n│   ├── CreateOrderRequest.java\n│   ├── CreateOrderObserver.java\n│   ├── Order.java\n│   ├── OrderRepository.java\n│   └── OrderService.java\n├── product\n│   ├── Product.java\n│   └── ProductRepository.java\n└── user\n    ├── User.java\n    └── UserRepository.java\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ модуля postgres\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E├── order\n│   ├── CreateOrderObserverImpl.java\n│   └── OrderRepositoryImpl.java\n├── product\n│   └── ProductRepositoryImpl.java\n├── transaction_manager\n│   └── TransactionManagerImpl.java\n└── user\n    └── UserRepositoryImpl.java\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЧего в итоге удалось добиться? Удалось полностью избавиться от интерфейса \u003Ccode\u003ETranasactionManager\u003C\u002Fcode\u003E, который частично раскрывал детали реализации инфраструктурного модуля (postgres). И удалось это сделать за счет добавления отправки событий. Стоит отметить, что таких отправок событий можно добавить сколько угодно по ходу метода. И тем самым у разработчика появляется общий механизм для расширения основной логики находящейся в (core) модуле. И с помощью этого можно внедрять произвольную логику, находящуюся в инфраструктурном модуле (postgres). Важно отметить, что такие отправки событий можно использовать не обязательно только в начале и конце метода, но и где-то посередине. Эту особенность стоит запомнить, так как в будущих разделах, когда будет рассмотрен промежуточный модуль (application), будут предложены другие решения, которые не позволяют внедрить какое-либо расширение посередине метода.\u003C\u002Fp\u003E\u003Cp\u003EИнтересно также отметить то, что на самом деле данное решение является небольшой модификацией стандартной инверсии зависимостей. В стандартном решении используется конкретный интерфейс, например, \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E и вызываются его конкретные методы \u003Ccode\u003Ebegin\u003C\u002Fcode\u003E и \u003Ccode\u003Ecommit\u003C\u002Fcode\u003E, и передаются конкретные данные, но для методов \u003Ccode\u003Ebegin\u003C\u002Fcode\u003E и \u003Ccode\u003Ecommit\u003C\u002Fcode\u003E их просто нет. В решении через использование шаблона наблюдатель, интерфейс обобщается в смысле названия и в данном случае это \u003Ccode\u003ECreateOrderObserver\u003C\u002Fcode\u003E. И также обобщаются его методы и передаваемые данные. Методы становятся \u003Ccode\u003EonStart\u003C\u002Fcode\u003E и \u003Ccode\u003EonEnd\u003C\u002Fcode\u003E, а передаваемые данные, то есть события, как это было показано ранее, содержат общие для всех наблюдателей поля.\u003C\u002Fp\u003E\u003Ch3\u003E4. Использование контекста вместо событий\u003C\u002Fh3\u003E\u003Cp\u003EПредположим теперь, что реализация TransactionManagerImpl изменилась.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_4.postgres.transaction_manager;\n\npublic class TransactionManagerImpl {\n    public long begin() { \u002F\u002F(1)\n        \u002F\u002Fреализация начала транзакции\n    }\n\n    public void commit(long transactionId) { \u002F\u002F(2)\n        \u002F\u002Fреализация фиксации транзакции\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь в \u003Ccode\u003E(1)\u003C\u002Fcode\u003E метод \u003Ccode\u003Ebegin\u003C\u002Fcode\u003E возвращает id текущей транзакции. В свою очередь, в \u003Ccode\u003E(2)\u003C\u002Fcode\u003E метод \u003Ccode\u003Ecommit\u003C\u002Fcode\u003E принимает id транзакции, которую необходимо зафиксировать. То есть теперь появилась потребность передать данные от одного инфраструктурного вызова к другому. Но как это сделать, если теперь эти вызовы осуществляются изолировано в рамках обработки событий по шаблону проектирования наблюдатель? Если проблема не стала ясна, то для понимания рекомендуется вернуться к классам \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E и \u003Ccode\u003ECreateOrderObserverImpl\u003C\u002Fcode\u003E из предыдущего раздела 3 и попытаться представить решение, которое позволит передать id транзакции от метода \u003Ccode\u003Ebegin\u003C\u002Fcode\u003E в метод \u003Ccode\u003Ecommit\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EСтоит отметить, что подобная проблема не возникла, если бы не было принято решение отказаться от интерфейса \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E. Правда, в этом случае в методе с основной логикой в изолируемом модуле (core) начала бы появляться дополнительная логика по работе с транзакциями. То есть основной код начал бы сильнее обрастать инфраструктурными деталями, так как в него была бы добавлена еще и логика по запоминанию id транзакции, чтобы затем использовать этот id для фиксации транзакции.\u003C\u002Fp\u003E\u003Cp\u003EКак же решить возникшую проблему? Для этого можно воспользоваться контекстом. Контекст - это класс-данных, который содержит необходимую информацию о выполняющемся процессе. Ниже приведен пример контекста, который соответствует процессу создания заказа.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_4.core.order;\n\npublic class CreateOrderContext {\n    private CreateOrderRequest request; \u002F\u002F(3)\n    private User user; \u002F\u002F(4)\n    private Product product; \u002F\u002F(5)\n    private Order createdOrder; \u002F\u002F(6)\n\n    private Map&lt;String, Object\u003E data; \u002F\u002F(7)\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Ccode\u003ECreateOrderContext\u003C\u002Fcode\u003E содержит в \u003Ccode\u003E(3)\u003C\u002Fcode\u003E поле исходного запроса, в \u003Ccode\u003E(4)\u003C\u002Fcode\u003E найденного пользователя, в \u003Ccode\u003E(5)\u003C\u002Fcode\u003E найденный продукт, в \u003Ccode\u003E(6)\u003C\u002Fcode\u003E созданный заказ. Состав полей очень похож на событие \u003Ccode\u003ECreateOrderEvents.End\u003C\u002Fcode\u003E за исключением поля \u003Ccode\u003E(7)\u003C\u002Fcode\u003E. Это поле как раз сейчас и понадобится.\u003C\u002Fp\u003E\u003Cp\u003EИдея в том, что все поля, которые известны основному процессу, находящемуся в изолируемом модуле (core), имеют строгий формат в контексте с конкретными именами, потому что они известны этому процессу. В свою очередь поле \u003Ccode\u003Edata\u003C\u002Fcode\u003E в \u003Ccode\u003E(7)\u003C\u002Fcode\u003E представлено ассоциативным массивом, где в качестве ключа используется строка, а в качестве значения используется Object, то есть самый общий тип данных в Java, наследниками которого являются все остальные классы. Это позволяет в поле \u003Ccode\u003Edata\u003C\u002Fcode\u003E записывать совершенно произвольные данные в динамическом формате не фиксируя структуру. А это значит, что записывая туда какие-либо инфраструктурные данные, не создается зависимости в основном коде от инфраструктуры, до тех пор пока в нем, в основном коде, не используется поле \u003Ccode\u003Edata\u003C\u002Fcode\u003E, что делать не рекомендуется.\u003C\u002Fp\u003E\u003Cp\u003EТеперь изменим интерфейс \u003Ccode\u003ECreateOrderObserver\u003C\u002Fcode\u003E таким образом, чтобы вместо событий методы принимали контекст.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_4.core.order;\n\npublic interface CreateOrderObserver {\n    void onStart(CreateOrderContext context);\n\n    void onEnd(CreateOrderContext context);\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа самом деле можно считать, что события существуют, только они все одинаковые и имеют лишь одно поле и это поле всегда контекст. Поэтому, возможно, не имеет смысла явно создавать отдельные классы для каждого такого события.\u003C\u002Fp\u003E\u003Cp\u003EТеперь изменим логику в \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E так, чтобы использовался контекст\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_4.core.order;\n\npublic class OrderService {\n    private final UserRepository userRepository;\n    private final ProductRepository productRepository;\n    private final OrderRepository orderRepository;\n    private final List&lt;CreateOrderObserver\u003E observers;\n\n    public void create(CreateOrderContext context) {\n        observers.forEach(observer -\u003E observer.onStart(context));\n\n        var request = context.getRequest();\n        var user = userRepository.find(request.getUserId());\n        context.setUser(user); \u002F\u002F(8)\n        var product = productRepository.find(request.getProductId());\n        context.setProduct(product); \u002F\u002F(9)\n\n        if (user.getBalance() &lt; product.getPrice()) {\n            throw new RuntimeException(\"Недостаточно средств\");\n        }\n\n        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());\n        orderRepository.create(order);\n        context.setCreatedOrder(order); \u002F\u002F(10)\n\n        observers.forEach(observer -\u003E observer.onEnd(context));\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНеобходимо отметить, что каждый раз когда появляются новые \u003Cstrong\u003Eважные\u003C\u002Fstrong\u003E объекты, в методе \u003Ccode\u003Ecreate\u003C\u002Fcode\u003E они обязательно добавляются в контекст в \u003Ccode\u003E(8)\u003C\u002Fcode\u003E, \u003Ccode\u003E(9)\u003C\u002Fcode\u003E, \u003Ccode\u003E(10)\u003C\u002Fcode\u003E. Зачем это делается? А это на самом деле делается аналогично использованию событий. При разработке основной логики нет знания о том, как наблюдатель будет реагировать на то или иное событие. И потенциально ему для работы могут понадобиться данные, которые появляются в основной логике.\u003C\u002Fp\u003E\u003Cp\u003EИ теперь можно перейти к самому важному, к изменению реализации интерфейса \u003Ccode\u003ECreateOrderObserver\u003C\u002Fcode\u003E, то есть к классу \u003Ccode\u003ECreateOrderObserverImpl\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_4.postgres.order;\n\npublic class CreateOrderObserverImpl implements CreateOrderObserver {\n    private final TransactionManagerImpl transactionManagerImpl;\n\n    @Override\n    public void onStart(CreateOrderContext context) {\n        var transactionId = transactionManagerImpl.begin();\n        context.getData().put(\"transaction-id\", transactionId); \u002F\u002F(11) \n    }\n\n    @Override\n    public void onEnd(CreateOrderContext context) {\n        var transactionId = (Long) context.getData().get(\"transaction-id\"); \u002F\u002F(12)\n        transactionManagerImpl.commit(transactionId);\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТут все устроено следующем образом. При открытии транзакции в методе \u003Cbr\u002F\u003E\u003Ccode\u003EonStart\u003C\u002Fcode\u003E в \u003Ccode\u003E(11)\u003C\u002Fcode\u003E id транзакции сохраняется в контексте в поле \u003Ccode\u003Edata\u003C\u002Fcode\u003E по ключу \u003Ccode\u003Etransaction-id\u003C\u002Fcode\u003E. Затем уже в методе \u003Ccode\u003EonEnd\u003C\u002Fcode\u003E, когда необходимо зафиксировать транзакцию, в \u003Ccode\u003E(12)\u003C\u002Fcode\u003E из контекста по этому же самому ключу извлекается id транзакции, который затем используется для её фиксации.\u003C\u002Fp\u003E\u003Cp\u003EЧего в итоге удалось добиться? За счет использования контекста между двумя изолированными методами для обработки событий внутри инфраструктурного модуля удалось передать данные. При этом за счёт обобщенного поля \u003Ccode\u003Edata\u003C\u002Fcode\u003E внутри контекста детали реализации инфраструктурного модуля не проникли в изолируемый модуль (core). Тут является очень важным, что в контексте не появилось конкретного поля, такого как \u003Ccode\u003Elong transactionId\u003C\u002Fcode\u003E, которое раскрывало бы детали реализации.\u003C\u002Fp\u003E\u003Ch2\u003E5. Альтернативы полю data из контекста\u003C\u002Fh2\u003E\u003Cp\u003EВ данном разделе будут обсуждаться альтернативы полю \u003Ccode\u003Edata\u003C\u002Fcode\u003E из контекста для того, чтобы передавать данные из одного инфраструктурного метода в другой. В Java есть механизм, позволяющий привязать данные к потоку. Разрабатываемое приложение может быть построено так, что для каждого обрабатываемого запроса выделяется отдельный поток. И этот поток может эксклюзивно использоваться логикой обработки, до тех пор пока она не завершится. В этом случае можно использовать \u003Ccode\u003EThreadLocal\u003C\u002Fcode\u003E в качестве альтернативы полю \u003Ccode\u003Edata\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EРассмотрим, как можно изменить \u003Ccode\u003ECreateOrderObserverImpl\u003C\u002Fcode\u003E для того, чтобы использовать \u003Ccode\u003EThreadLocal\u003C\u002Fcode\u003E вместо \u003Ccode\u003Edata\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_5.postgres.order;\n\npublic class CreateOrderObserverImpl implements CreateOrderObserver {\n    private final TransactionManagerImpl transactionManagerImpl;\n    private final ThreadLocal&lt;Long\u003E transactionId = new ThreadLocal&lt;\u003E(); \u002F\u002F(1)\n\n    @Override\n    public void onStart(CreateOrderContext context) {\n        transactionId.set(transactionManagerImpl.begin());\n    }\n\n    @Override\n    public void onEnd(CreateOrderContext context) {\n        transactionManagerImpl.commit(transactionId.get());\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля этого достаточно завести поле \u003Ccode\u003EtransactionId\u003C\u002Fcode\u003E, как это сделано в \u003Ccode\u003E(1)\u003C\u002Fcode\u003E. И затем можно рассмотреть, что происходит в самих методах. При вызове метода \u003Ccode\u003EonStart\u003C\u002Fcode\u003E происходит запись id транзакции в поле \u003Ccode\u003EtransactionId\u003C\u002Fcode\u003E, а в методе \u003Ccode\u003EonEnd\u003C\u002Fcode\u003E значение извлекается из поля \u003Ccode\u003EtransactionId\u003C\u002Fcode\u003E для того, чтобы зафиксировать транзакцию. Сигнатуры методов \u003Ccode\u003EonStart\u003C\u002Fcode\u003E и \u003Ccode\u003EonEnd\u003C\u002Fcode\u003E остались без изменений и все также принимают контекст, но в данном случае контекст совсем не используется.\u003C\u002Fp\u003E\u003Cp\u003EМожет возникнуть вопрос, а почему ранее нельзя было создать переменную \u003Ccode\u003Elong transactionId\u003C\u002Fcode\u003E и использовать ее аналогично? Предполагалось, что каждый класс сервиса, репозитория и наблюдателя имеет по одному экземпляру в работающем приложении, то есть они реализуют шаблон одиночка (singleton). И в этом случае один и тот же экземпляр класса может параллельно использоваться в нескольких потоках, и потоки могут друг другу мешать, конкурируя за единственное поле. Поэтому прямое использование переменной типа \u003Ccode\u003Elong\u003C\u002Fcode\u003E не подойдёт. В свою очередь, тип \u003Ccode\u003EThreadLocal\u003C\u002Fcode\u003E будет гарантировать, что каждый поток будет работать со своим значением.\u003C\u002Fp\u003E\u003Cp\u003EСуть данного примера не в том, чтобы показать, как именно в Java через \u003Ccode\u003EThreadLocal\u003C\u002Fcode\u003E можно решить поставленную проблему, а в том, что, если в используемом фреймворке или библиотеке или языке программирования есть механизм, позволяющий привязать данные к процессу обработки, то это можно использовать для того, чтобы передавать данные между изолированными инфраструктурными методами такими как \u003Ccode\u003EonStart\u003C\u002Fcode\u003E и  \u003Ccode\u003EonEnd\u003C\u002Fcode\u003E в \u003Ccode\u003ECreateOrderObserverImpl\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EНо если говорить конкретно про Java и \u003Ccode\u003EThreadLocal\u003C\u002Fcode\u003E, то тут необходимо быть осторожным и всегда рассматривать альтернативу с полем \u003Ccode\u003Edata\u003C\u002Fcode\u003E из контекста. \u003Ccode\u003EThreadLocal\u003C\u002Fcode\u003E может доставить неудобства, если понадобится в рамках обработки дополнительно создать потоки. Также некоторые новые реактивные фреймворки могут не давать гарантии того, что вся логика будет обрабатываться одним потоком для одного запроса. Передавая все в контексте, разработчик получает полный контроль над данными.\u003C\u002Fp\u003E\u003Ch3\u003E6. Передача данных от инфраструктурного модуля в изолируемый модуль\u003C\u002Fh3\u003E\u003Cp\u003EЧто если теперь потребуется отправлять данные не только из изолируемого модуля (core) в инфраструктурный модуль (postgres), но и обратно из инфраструктурного в изолируемый. Такая необходимость тоже может возникнуть. Но в рамках данного раздела будут предъявлены самые ультимативные требования. Пусть в основной логике в классе \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E необходимо отказаться от использования всех интерфейсов репозиториев. Для этого на самом деле уже все есть. В данном случае достаточно использовать уже созданный ранее контекст со всеми его полями.\u003C\u002Fp\u003E\u003Cp\u003EДля начала рассмотрим изменения, внесенные в класс \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_6.core.order;\n\npublic class OrderService {\n    private final List&lt;CreateOrderObserver\u003E observers;\n\n    public void create(CreateOrderContext context) {\n        observers.forEach(observer -\u003E observer.onStart(context));\n\n        var user = context.getUser(); \u002F\u002F(1)\n        var product = context.getProduct(); \u002F\u002F(2)\n\n        if (user.getBalance() &lt; product.getPrice()) {\n            throw new RuntimeException(\"Недостаточно средств\");\n        }\n\n        var order = new Order(UUID.randomUUID(), user.getId(), product.getId());\n        context.setCreatedOrder(order); \u002F\u002F(3)\n\n        observers.forEach(observer -\u003E observer.onEnd(context));\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь вместо использования репозиториев напрямую для получения данных, необходимых для выполнения основной логики, используется контекст. То есть теперь в \u003Ccode\u003E(1)\u003C\u002Fcode\u003E и \u003Ccode\u003E(2)\u003C\u002Fcode\u003E информация о пользователе и продукте извлекается из контекста. В свою очередь вместо вызова метода репозитория для сохранения созданного заказа используется контекст, в который добавляется только что созданный заказ в \u003Ccode\u003E(3)\u003C\u002Fcode\u003E. Стоит отметить, что метод \u003Ccode\u003Ecreate\u003C\u002Fcode\u003E стал меньше и проще.\u003C\u002Fp\u003E\u003Cp\u003EНо чтобы это работало, необходимо внести изменения в класс \u003Ccode\u003ECreateOrderObserverImpl\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"java\"\u003Epackage aa0ndrey.dependency_inversion_guide.step_6.postgres.order;\n\npublic class CreateOrderObserverImpl implements CreateOrderObserver {\n    private final TransactionManagerImpl transactionManagerImpl;\n    private final ThreadLocal&lt;Long\u003E transactionId = new ThreadLocal&lt;\u003E();\n    private final UserRepositoryImpl userRepository;\n    private final ProductRepositoryImpl productRepository;\n    private final OrderRepositoryImpl orderRepository;\n\n    @Override\n    public void onStart(CreateOrderContext context) {\n        transactionId.set(transactionManagerImpl.begin());\n        var request = context.getRequest();\n        context.setUser(userRepository.find(request.getUserId())); \u002F\u002F(4)\n        context.setProduct(productRepository.find(request.getProductId())); \u002F\u002F(5)\n    }\n\n    @Override\n    public void onEnd(CreateOrderContext context) {\n        transactionManagerImpl.commit(transactionId.get());\n        orderRepository.create(context.getCreatedOrder()); \u002F\u002F(6)\n    }\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ здесь как раз в \u003Ccode\u003E(4)\u003C\u002Fcode\u003E, \u003Ccode\u003E(5)\u003C\u002Fcode\u003E и \u003Ccode\u003E(6)\u003C\u002Fcode\u003E добавляются все вызовы репозиториев, которые были вынесены из \u003Ccode\u003EOrderService\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EВ итоге с помощью внесенных изменений удалось получить возможность передачи данных от инфраструктурного модуля (postgres) в изолируемый модуль (core). Тут стоит обратить внимание, что для этого использовались именно конкретные поля контекста, такие как \u003Ccode\u003Euser\u003C\u002Fcode\u003E и \u003Ccode\u003Eproduct\u003C\u002Fcode\u003E, а не обобщенное поле \u003Ccode\u003Edata\u003C\u002Fcode\u003E. Это связано стем, что, во-первых, основной логике известны сущности \u003Ccode\u003Euser\u003C\u002Fcode\u003E и \u003Ccode\u003Eproduct\u003C\u002Fcode\u003E, а, во-вторых, в основной логике не должно использоваться поле \u003Ccode\u003Edata\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EПодведем итог. С помощью шаблона наблюдатель с использованием контекста вместо отдельных событий, возможно передавать данные по всем трем направлениям:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eиз изолируемого модуля (core) в инфраструктурный модуль (postgres)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eиз инфраструктурного модуля (postgres) в изолируемый модуль (core)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eмежду методами обработки событий инфраструктурного модуля.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EПри этом для отправки из изолируемого модуля (core) в инфраструктурный модуль (postgres) и обратно используются конкретные поля, а для организации взаимодействия между методами обработки событий инфраструктурного модуля используется обобщенное поле \u003Ccode\u003Edata\u003C\u002Fcode\u003E, либо механизмы, обеспечивающие привязку данных к процессу выполнения, такие как \u003Ccode\u003EThreadLocal\u003C\u002Fcode\u003E. И не стоит также забывать о том, что точек для отправки событий с использованием контекста можно добавить сколько угодно в метод с основной логикой, даже посередине, а не только в начале и конце. При этом не придется даже создавать отдельные события, так как всю необходимую информацию о процессе содержит сам контекст.\u003C\u002Fp\u003E\u003Cp\u003EПосле рассмотрения предыдущих разделов какие можно сделать выводы, уточнения и предостережения?\u003C\u002Fp\u003E\u003Cp\u003EВо-первых, стоит отметить, что предложенные примеры являются искусственными, и не следует их воспринимать буквально. То есть не стоит отказываться от интерфейсов для репозиториев в пользу использования контекста с шаблоном наблюдатель, как это было сделано в последнем разделе, если для этого нет каких-либо дополнительных причин. \u003C\u002Fp\u003E\u003Cp\u003EВо-вторых, не стоит прибегать к реализации использования \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E, как это было продемонстрировано ранее, потому что это и не самый удачный подход конкретно для \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E. Это можно будет увидеть в следующих разделах, когда будет продемонстрировано использование промежуточного модуля (application). \u003Ccode\u003ETransactionManager\u003C\u002Fcode\u003E был использован в примерах только потому, что с ним можно было продемонстрировать все возможные приемы, сохраняя при этом размеры примеров и обоснования для использования относительно небольшими и почти реалистичными.\u003C\u002Fp\u003E\u003Cp\u003EЧто является ценным из предыдущих разделов, так это сами приемы. Для типичной ситуации инверсии зависимостей, достаточно использования интерфейса для репозитория или клиента, помещаемого в изолируемый модуль (core). Если в основной логике возникает потребность вызова методов из инфраструктурных модулей, которые раскрывают детали реализации даже при использовании интерфейсов, то именно в этом случае стоит использовать шаблон наблюдатель. И далее в зависимости от того, в каком направлении необходимо организовать передачу данных, можно использовать то или иное решение. Универсальным, но не всегда оптимальным, механизмом для передачи данных является использование контекста.\u003C\u002Fp\u003E\u003Cp\u003EИтоговый список приемов:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eинтерфейс, отделенный от реализации - стандартный прием инверсии зависимостей, для случаев, когда интерфейс скрывает прямое использование общих классов, которые \u003Cem\u003Eне богаты\u003C\u002Fem\u003E инфраструктурными деталями, таких как репозитории для базы данных или http клиенты и другие.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eшаблон наблюдатель - прием инверсии зависимостей, который скрывает прямое использование классов и их методов. Возможны следующие варианты использования шаблона:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eстандартный с событиями - передача данных только от изолируемого модуля в инфраструктурный модуль.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eс контекстом без поля \u003Ccode\u003Edata\u003C\u002Fcode\u003E - передача данных от изолируемого модуля в инфраструктурный модуль и обратно\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eс привязкой данных к процессу выполнения - передача данных между изолируемыми инфраструктурными методами обработки событий\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eс контекстом с полем \u003Ccode\u003Edata\u003C\u002Fcode\u003E - передача данных от изолируемого модуля в инфраструктурный модуль и обратно, а также между изолируемыми инфраструктурными методами обработки событий\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EВ следующей части (или следующих частях) руководства будет продемонстрировано использование промежуточного модуля (application) и будет определена область его ответственности. Также будет представлен способ организации кода, позволяющий достичь того, что методы основной логики из изолируемого модуля (core) будут удовлетворять критериям \"чистых\" функций. И также будет представлен способ разделения процесса на этапы, в частности для организации взаимодействия через очередь сообщений.\u003C\u002Fp\u003E\u003Cp\u003EВ заключении для лучшего погружения в материал читателю предлагается решить задачу.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EЗадача\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EПусть для каждого запроса при взаимодействии с базой данных необходимо также передавать id транзакции, который появляется при вызове метода \u003Ccode\u003Ebegin\u003C\u002Fcode\u003E из \u003Ccode\u003ETransactionManagerImpl\u003C\u002Fcode\u003E. То есть необходимо внести некоторые изменения, как минимум, в классы \u003Ccode\u003EUserRepositoryImpl\u003C\u002Fcode\u003E, \u003Ccode\u003EProductRepositoryImpl\u003C\u002Fcode\u003E, \u003Ccode\u003EOrderRepositoryImpl\u003C\u002Fcode\u003E. Какие приемы и как их применить для того, чтобы удовлетворить поставленному требованию, при этом не добавив лишних инфраструктурных зависимостей в основную логику в изолируемый модуль (core)? Приведите как можно больше возможных вариантов решения поставленной задачи.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EВозможные решения\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EЗаметим, что данные необходимо передавать между изолированными инфраструктурными методами.\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EИспользовать механизм привязки данных к выполняющемуся процессу, например, \u003Ccode\u003EThreadLocal\u003C\u002Fcode\u003E. При этом сам id транзакции будет некорректно хранить внутри \u003Ccode\u003ECreateOrderObserverImpl\u003C\u002Fcode\u003E, так как репозитории потенциально могут быть переиспользованы в нескольких местах и поэтому они не могут быть привязаны к конкретному наблюдателю. Для этого достаточно завести отдельный класс, который будет хранить информацию о транзакции. Например, \u003Ccode\u003ETransactionInfo\u003C\u002Fcode\u003E с полем \u003Ccode\u003EThreadLocal&lt;Long\u003E transactionId\u003C\u002Fcode\u003E. При этом в реализации \u003Ccode\u003ETransactionManagerImpl\u003C\u002Fcode\u003E можно затребовать, чтобы id транзакции сохранялся в \u003Ccode\u003ETransactionInfo\u003C\u002Fcode\u003E при вызове метода \u003Ccode\u003Ebegin\u003C\u002Fcode\u003E, а каждый репозиторий при выполнении запроса будет обращаться к \u003Ccode\u003ETransactionInfo\u003C\u002Fcode\u003E за получением id транзакции.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EИспользовать контекст с полем \u003Ccode\u003Edata\u003C\u002Fcode\u003E. Для этого создать интерфейс \u003Ccode\u003EDynamicContext\u003C\u002Fcode\u003E, который будет содержать метод \u003Ccode\u003EgetData()\u003C\u002Fcode\u003E. Также необходимо указать, что \u003Ccode\u003ECreateOrderContext\u003C\u002Fcode\u003E реализует данный интерфейс. Идея в том, что все методы репозиториев должны будут принимать \u003Ccode\u003EDynamicContext\u003C\u002Fcode\u003E в качестве дополнительного параметра, из которого они смогут получить доступ к полю \u003Ccode\u003Edata\u003C\u002Fcode\u003E, в котором будет находиться id транзакции. Интерфейс \u003Ccode\u003EDynamicContext\u003C\u002Fcode\u003E нужен для того, чтобы была возможность переиспользовать репозитории в других местах, поэтому нельзя напрямую использовать тип \u003Ccode\u003ECreateOrderContext\u003C\u002Fcode\u003E в сигнатуре методов.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EОтказаться от использования репозиториев в основной логике в изолируемом модуле (core) и перенести их в наблюдателя \u003Ccode\u003ECreateOrderObserverImpl\u003C\u002Fcode\u003E, как это было продемонстрировано в последнем разделе. Тогда нет никаких препятствий к тому, чтобы в сигнатуры методов каждого репозитория добавить параметр \u003Ccode\u003Elong transactionId\u003C\u002Fcode\u003E, так как теперь эти методы никогда не будут использоваться в изолируемом модуле (core). Тогда в самом наблюдателе \u003Ccode\u003ECreateOrderObserverImpl\u003C\u002Fcode\u003E при вызове методов репозиториев появляется возможность передавать напрямую id транзакции.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EСсылка на github \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Faa0ndrey\u002Fdependency-inversion-guide\u002Ftree\u002Fhabr\" rel=\"noopener noreferrer nofollow\"\u003Eрепозиторий\u003C\u002Fa\u003E со всеми примерами.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"инверсия зависимостей"},{"titleHtml":"архитектура"},{"titleHtml":"архитектура приложений"},{"titleHtml":"паттерны"},{"titleHtml":"паттерны проектирования"},{"titleHtml":"clean code"},{"titleHtml":"dependency inversion"},{"titleHtml":"clean architecture"},{"titleHtml":"architectural patterns"},{"titleHtml":"architecture"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F874\u002Fd22\u002F2a9\u002F874d222a9f29d03e6ab0428dbf7f3d0b.jpg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F874\u002Fd22\u002F2a9\u002F874d222a9f29d03e6ab0428dbf7f3d0b.jpg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582588\\\u002F\"},\"headline\":\"Подробное руководство по инверсии зависимостей. Часть 1\",\"datePublished\":\"2021-10-10T10:08:43+03:00\",\"dateModified\":\"2021-10-10T15:44:14+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Андрей Алексеев\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые ра...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582588\\\u002F#post-content-body\",\"about\":[\"h_programming\",\"h_java\",\"h_analysis_design\",\"h_refactoring\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582588\\\u002F2de2dbcd7b3df138990e52bf7b3245a7\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb75\\\u002F15e\\\u002Fbff\\\u002Fb7515ebff277ad2c6903f43991792da0.jpg\"]}","metaDescription":"Инверсия зависимостей - один из принципов SOLID, который лежит в основе построения гексагональной архитектуры приложения. Существует множество статей, которые раскрывают суть принципа и объясняют как...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"programming,java,analysis_design,refactoring"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

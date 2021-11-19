@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Лезем в сорцы компилятора — как работает goscheduler (Часть II) / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/first\/blog\/582144\/"},"headline":"Лезем в сорцы компилятора — как работает goscheduler (Часть II)","datePublished":"2021-10-11T10:00:02+03:00","dateModified":"2021-10-11T10:22:33+03:00","author":{"@type":"Person","name":"FirstJohn"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Чтение рекомендуется начать с первой части, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность &mdash;...","url":"https:\/\/habr.com\/ru\/company\/first\/blog\/582144\/#post-content-body","about":["c_first","h_programming","h_analysis_design","h_system_programming","h_compilers","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582144\/7bb2b967b36d0c68d6805dd34eb6f234\/","https:\/\/habrastorage.org\/webt\/ux\/ak\/lj\/uxakljao57bebvasvv3goinkgo0.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/a44\/9ea\/e90\/a449eae90733a7ebe0b30520010462e4.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Лезем в сорцы компилятора — как работает goscheduler (Часть II)" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Лезем в сорцы компилятора — как работает goscheduler (Часть II)" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Лезем в сорцы компилятора — как работает goscheduler (Часть II)" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Чтение рекомендуется начать с первой части, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Чтение рекомендуется начать с первой части, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Чтение рекомендуется начать с первой части, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Чтение рекомендуется начать с первой части, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Чтение рекомендуется начать с первой части, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/ux/ak/lj/uxakljao57bebvasvv3goinkgo0.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/ux/ak/lj/uxakljao57bebvasvv3goinkgo0.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/ux/ak/lj/uxakljao57bebvasvv3goinkgo0.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/ux/ak/lj/uxakljao57bebvasvv3goinkgo0.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/ux/ak/lj/uxakljao57bebvasvv3goinkgo0.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582144" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-11T07:00:02.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582144/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/first/blog/582144/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/ux/ak/lj/uxakljao57bebvasvv3goinkgo0.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="first" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/first/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/81e/a2b/70e/81ea2b70ebe0942cdf523ca6af7a3e2b.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">356.96</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/first/profile/" class="tm-company-card__name">
+        FirstVDS
+      </a> <div class="tm-company-card__description">Виртуальные и выделенные серверы в ДЦ в Москве</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/FirstJohn/" title="FirstJohn" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/1ab/252/b0f/1ab252b0f00f4ad780e63e0c040abf7e.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/FirstJohn/" class="tm-user-info__username">
+      FirstJohn
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-11T07:00:02.000Z" title="2021-10-11, 10:00">11  октября   в 10:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Лезем в сорцы компилятора — как работает goscheduler (Часть II)</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/first/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании FirstVDS</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/analysis_design/" class="tm-article-snippet__hubs-item-link"><span>Анализ и проектирование систем</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/system_programming/" class="tm-article-snippet__hubs-item-link"><span>Системное программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/compilers/" class="tm-article-snippet__hubs-item-link"><span>Компиляторы</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ux/ak/lj/uxakljao57bebvasvv3goinkgo0.png"/></div><br/>
+Чтение рекомендуется начать с <a href="https://habr.com/ru/company/first/blog/581158/">первой части</a>, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно многопоточность.<a name="habracut"></a><br/>
+<br/>
+Лезем в <a href="https://github.com/golang/go/blob/master/src/runtime/proc.go">сорцы </a>и видим объяснение всем нашим G, P и М.<br/>
+<br/>
+<ul>
+<li>G — горутина, которую мы будем запускать. </li>
+<li>М — машина, то есть поток, который будет запускаться на процессоре и выполнять ваши задачи.</li>
+<li>Р — процессор, который будет выполнять работу.</li>
+</ul><br/>
+Когда вы запускаете программу, написанную на голанге, среда исполнения читает GOMAXPROC для того, чтобы узнать, сколько реальных процессорных ядер существует в системе. Хотя нет, звучит как-то неправильно. Редко кто выставляет GOMAXPROC перед запуском программ на голанге, и ничего, работает на мультипроцессорных системах.<br/>
+<br/>
+Давайте посмотрим в сорец. На строке <a href="https://github.com/golang/go/blob/master/src/runtime/proc.go#L706">706 в proc.go</a> находим следующее:<br/>
+<br/>
+<pre><code class="go">procs := ncpu
+if n, ok := atoi32(gogetenv("GOMAXPROCS")); ok &amp;&amp; n > 0 {
+	procs = n
+}</code></pre><br/>
+Это всё происходит в функции schedinit, которая как раз занимается запуском планировщика задач. Смотрим на комментарий к этой функции и выясняем:<br/>
+<br/>
+<pre><code class="go">// The bootstrap sequence is:
+//
+//    call osinit
+//    call schedinit
+//    make &amp; queue new G
+//    call runtime·mstart
+//
+// The new G calls runtime main.</code></pre><br/>
+Ага, то есть мы не просто запускаем планировщик, мы стартуем нашу программу. Для начала включается osinit и как раз в секции инициализации операционной системы делаем вот что:<br/>
+<br/>
+<code>cpuinit() // must run before alginit</code><br/>
+<br/>
+Кстати, прямо перед этим мы выставляем sched.maxmcount = 10000. То есть изначально мы зачем-то ограничиваем максимальное количество машин до 10000. Запомним это и пойдём дальше.<br/>
+<br/>
+Cpuinit вместе с osinit с помощью приличного количества ассемблера и вызова функций из стандартных библиотек OC выясняют количество ядер, доступных на конечной машине. Исходники данных функций разные для разных процессоров и ОС, посему здесь мы в детали лезть не будем, ибо их очень уж много.<br/>
+<br/>
+Как бы то ни было, мы выставляем количество процессоров, основываясь на данных из ОС, а ПОСЛЕ этого перегружаем количество процессоров тем, что хранится в GOMAXPROCS. А если в GOMAXPROCS записана белиберда, то мы на неё забиваем и просто продолжаем работать с количеством процессоров, которое дано системой.<br/>
+<br/>
+Но и тут у нас есть первая возможность серьёзно ошибиться. Выставляя GOMAXPROCS в определённое значение, вы берёте на себя ответственность за понимание того, как работает планировщик. Если выставить GOMAXPROCS в значение больше того, что на самом деле есть в ОС, то можно серьёзно запороть скорость выполнения своей программы.<br/>
+<br/>
+Кстати, читая документацию и роясь чуть глубже, находим, что maxmcount можно изменить вызовом <code>debug.SetMaxThreads</code>. В документации этой функции мы видим, что ограничение произвольное, но позволяет предотвратить убийство операционной системы созданием неограниченного количества потоков. Функция эта предназначена в основном для отладки. Среда исполнения упадёт в тот момент, когда мы попытаемся создать больше потоков (М, машин), чем это значение.<br/>
+<br/>
+Смотрим, что делает func main, помимо инициализации планировщика. Лирическое отступление: видим повсюду, что если мы запускаем программу на wasm, то никаких потоков не создаётся и все горутины запускаются на одной машине. Поэтому будьте осторожны при переносе вашего кода в wasm. С параллелизмом могут быть проблемы.<br/>
+<br/>
+Далее мы найдём основную горутину, которую нужно будет исполнять, и привяжем её к первому потоку, запущенному ОС. Большинству программ это не особо важно, но есть некоторые ситуации, в которых необходимо, чтобы ваша горутина работала именно на первом потоке ОС.<br/>
+<br/>
+Теперь вернёмся в мир теории ненадолго. Дано:<br/>
+<br/>
+<ul>
+<li>P, G, M. </li>
+<li>Список процессоров в системе. </li>
+<li>Список машин (потоков), которые мы запускаем на этой системе. </li>
+<li>Список задач G, которые мы пытаемся запустить на всём этом добре. Куда и как?</li>
+<li>Список Р достаточно простой. Это массив структур, описывающих процессоры. А вот с М немного интереснее будет.</li>
+</ul><br/>
+М — это наш поток выполнения. М — это то, за что сражается операционная система, как мы видели раньше. Чем меньше работающих М, тем легче живётся в стране планирования задач ОС и тем быстрее гарцует процессор. Но при слишком маленьком количестве М у нас накапливается невероятное количество незаконченных горутин.<br/>
+<br/>
+Посему М можно парковать. Если на данный момент работы нет, то и держать М в активном состоянии не нужно. Его можно отправить в резерв.<br/>
+<br/>
+<h2><font color="#076184">Парковка и запуск</font></h2><br/>
+Тут важен баланс количества запущенных и припаркованных процессов (М), чтобы правильно использовать все возможные ресурсы системы. Опять же, много потоков — нагружаем процессор, мало потоков — простаиваем. Балансировать тут непросто как минимум по двум причинам:<br/>
+<br/>
+<ol>
+<li>Сам планировщик распределённый. Очереди работы (готовые к выполнению горутины) хранятся отдельно для каждого процессора. Так что вычислить, в какой последовательности выполнять все имеющиеся горутины прямо сейчас, невозможно.</li>
+<li>Плюс, как мы видели ранее, ОС и процессор играют в ту ещё чехарду, когда приходится снимать процессы с исполнения. Так что если у нас на подходе есть горутина, но прямо вот сейчас она не готова, то парковать поток исполнения будет глупо, проще подождать 200 циклов и запустить её в уже имеющемся потоке.</li>
+</ol><br/>
+Вариантов решения этой проблемы много. Вот, например, неправильные варианты:<br/>
+<br/>
+<ol>
+<li>Централизовать планировщик задач. Хотя, понятное дело, с таким подходом у нас будут проблемы с увеличением нагрузки. Планировщик будет бутылочным горлышком.</li>
+<li>Запускать новый поток исполнения, как только появляется новая горутина. Пример — однопоточная программа запускает go(). В таком случае мы можем подобрать новый поток, запустить его на незанятом Р (процессоре) и жить себе поживать. При этом поток, который только что запустил эту горутину, может закончить исполнение, и его самого придётся парковать. Плюс контекст исполнения (переменные, память и кеши) хранится в потоке. Если мы запускаем горутину в новом потоке, то всё это надо будет копировать.</li>
+<li>Можно просто перезапускать новый процесс М, без запуска свежесозданной горутины на этом процессе. При этом у нас появляется возможность запустить ещё больше горутин, если вдруг потребуется. Но если не понадобится, то придётся запускать и парковать поток впустую.</li>
+</ol><br/>
+Тут как раз мы понимаем, что переключение контекста — это не просто смена указателя текущей инструкции выполнения программы. С контекстом надо переключить стек. А в стеке могут храниться данные. Например, у нас есть функция 1, которая запускает функцию 2. Функция 2 не будет особо париться и использует адресное пространство потока, в котором запущена функция 1. Исполнение-то у нас не параллельное. Сохраняем текущий указатель стека, прибавляем к нему немного, ровняем это всё по границе памяти и работаем себе спокойно. Когда пришло время возвращать значение, запихиваем его куда надо и кладём обратно положение стека функции 1. Всё! Простота! На ассемблере такое писать можно в три строчки:<br/>
+<br/>
+<pre><code class="perl">push     rbp
+mov      rbp, rsp
+sub      rsp, 32</code></pre><br/>
+Теперь представим, что функция 1 и функция 2 — это горутины, которые исполняются в разных машинах М. Тут со стеком вообще чудеса происходят. Возвращать значения через регистры не получится, писать всё надо в память. А если функция 2 пытается воспользоваться данными из функции 1, то и того веселее. Программист сел и написал замыкание, в котором захватил кучу переменных. Их надо будет либо копировать в стек, либо класть в общедоступную память.<br/>
+<br/>
+Вспомним картинку об устройстве процессора:<br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" alt="image" data-src="https://habrastorage.org/getpro/habr/upload_files/a44/9ea/e90/a449eae90733a7ebe0b30520010462e4.png"/></div><br/>
+<br/>
+Кеша у нас не то чтобы очень много. Что если одна горутина запускается на первом ядре, а её дочерний процесс на третьем? Потоки исполнения работают на разных ядрах, и второй горутине надо будет ждать, пока данные из памяти попадут в кеш.<br/>
+<br/>
+Что уж там. Задержки небольшие, волноваться не стоит. Хотя нет, всё-таки стоит. Если нагрузка большая, а ваши горутины маленькие, то как раз таки волноваться очень даже стоит. Каждый раз, когда вы пытаетесь сделать тривиальные вычисления с 4 килобайтами памяти миллиард раз в разных потоках, то проблем может быть много.<br/>
+<br/>
+Это, кстати, объясняет почему создание бесконечного количества процессов в ОС не помогает. Нам не только нужны параллельные вычисления, они ещё должны быть быстрыми.<br/>
+<br/>
+И по ходу дела мы можем понять, зачем же и почему нам нужны М. Ведь мы могли бы просто запускать горутины на реальном процессоре Р, без привязки к машинам М. Но теперь всё понятно, ведь М содержит в себе этот контекст исполнения и её легче таскать за собой, если понадобится.<br/>
+<br/>
+Посему вот вам описание того, как работа распределяется в голанге на данный момент.<br/>
+<br/>
+Для начала надо понять, что поток исполнения может находиться на холостом ходу. В английской версии это называется spinning. Если вы когда-либо были на текстильных предприятиях, то вы возможно видели нитки, которые снимаются с бобин, и бобины, которые иногда крутятся вхолостую. Посему будем называть это холостым ходом.<br/>
+<br/>
+Поток исполнения М будет отмечен как работающий вхолостую (m.spinning = true), если у нас произошло следующее:<br/>
+<br/>
+<ol>
+<li>Поток М закончил все горутины в очереди исполнения.</li>
+<li>В глобальной очереди исполнения тоже пусто и нет никаких новых горутин.</li>
+<li>В очереди исполнения завершённых таймеров. Если вы запустили Sleep в вашей горутине, то она уходит в спячку, пока ее время тикает. Как только время истекло, эта рутина попадает в специальную очередь выполнения, где ждут подобные горутины.</li>
+<li>В очереди исполнения сетевого стека тоже всё пусто и печально. (Про эту очередь я расскажу чуть дальше по тексту)</li>
+</ol><br/>
+Поток поочерёдно осматривает эти очереди, и если в них есть что-либо для исполнения, то он берётся за работу. Если же поток не нашёл никакой приличной работы, то он автоматически припаркуется. (То есть его снимут с процессора и положат в корзинку — подождать).<br/>
+<br/>
+Все вновь созданные потоки создаются в этом холостом состоянии.<br/>
+<br/>
+При появлении новой работы (какой-либо горутины) мы запустим новый <b>М</b>, если у нас есть простаивающие процессоры <b>Р </b>и у нас нет потоков <b>М</b>, которые стоят на холостом ходу. Если же у нас есть один поток на холостом ходу, то мы просто передаём работу этому потоку. При этом есть ещё один прикол. Каждый раз, когда какой-либо поток на холостом ходу находит работу и начинает её исполнять, он проверит, есть ли в системе другие потоки на холостом ходу. Если таковых не осталось, то он запустит новый поток и оставит его на холостом ходу.<br/>
+<br/>
+При таком подходе случайная работа по старту и парковке потоков существенно уменьшается и ресурсы системы используются более правильно.<br/>
+<br/>
+<h5><font color="#163C51">Итого, дано:</font></h5><br/>
+<b><font color="#163C51">Процессоры</font></b>, столько-то штук.<br/>
+<br/>
+<b><font color="#163C51">Рабочие потоки:</font></b> В зависимости от нагрузки, по потоку на процессор. Можно запустить и больше при выставлении переменных руками, но это создаст проблемы.<br/>
+<br/>
+<b><font color="#163C51">Задачи для выполнения:</font></b> тьма. В зависимости от того, что случилось в системе. Либо программист вызывает новую задачу, либо таймер тикает, либо пора собирать мусор. Сборщик мусора мог подкинуть задачи для обработки в бэкграунде. Хотя, судя по сорцам, сейчас это отключено <a href="https://github.com/golang/go/blob/master/src/runtime/proc.go#L108">(строка 108).</a><br/>
+<br/>
+<pre><code class="1c">// * Idle-priority GC: The GC wakes a stopped idle thread to contribute to
+// background GC work (note: currently disabled per golang.org/issue/19112).
+// Also see golang.org/issue/44313, as this should be extended to all GC
+// workers.</code></pre><br/>
+Задачи запускаются на потоках, выполняются и завершаются. Идиллия. Хотя нет, как мы видим, они не всегда завершаются, но при этом могут быть сняты с выполнения. Как, например, то, что мы видели в таймерах. Но есть и другие причины, по которым задачи могут быть не выполнены.<br/>
+<br/>
+<h2><font color="#076184">Ввод/вывод информации</font></h2><br/>
+Ваша горутина всегда может вызвать что-то такое неприличное, что полностью заблокирует поток исполнения. Например, запросить данные с жёсткого диска. Не SSD, а обычного винчестера. Да ещё и с такого, какой операционная система положила поспать, и для того, чтобы включиться, ему потребуется 5 секунд. Непозволительная трата ресурсов. Ведь в таком виде ваш поток исполнения будет простаивать 5 секунд. <br/>
+<br/>
+10 лет назад Майкрософт решила бороться с подобной проблемой в Windows 8 путём создания новых API, в которых все подобные обращения к дискам или сетевым ресурсам были асинхронными по умолчанию. Каждый раз, когда вы обращались к диску, вам надо было писать замыкание или коллбэк для обработки результата. Конечно, идея была простая, все программисты просто возьмут и перейдут на новые API, правильно? Ха. Прямо вот так все и спохватились. <br/>
+<br/>
+Сама идея ввода-вывода в голанге решена просто. У нас нет API для асинхронного ввода и вывода. Всё, что вам нужно сделать асинхронно — делайте сами через горутины. Казалось-бы странное решение. Другие платформы из кожи вон лезут, пытаясь предоставить асинхронные системы, а мы в голанге просто на всё это забиваем и ничего предоставлять не будем. Но всё как раз наоборот. Создавая хорошо продуманную среду исполнения, мы делаем так, что вам не нужно будет париться по поводу работы с асинхронными системами ввода/вывода. <br/>
+<br/>
+Ну и на самом-то деле. Синхронные системы намного проще использовать. Как вам такое — создавать новый поток в пуле на каждую операцию чтения/записи? А современные извращения, которые используются в Javascript/Java и С# вообще стоят отдельного упоминания. Ведь мы в шарпах уже навернули полный круг и пришли к async/await операциям.<br/>
+<br/>
+Теперь вместо создания нового потока можно просто писать:<br/>
+<br/>
+<code>var text = await File.ReadAllLinesAsync(...);</code><br/>
+<br/>
+В голанге подобное не нужно. Просто пишите синхронные операции ввода/вывода и, когда надо, запускайте их в горутинах. А среда исполнения как раз подчистит все неприятные моменты, которые могут быть с этим связаны.<br/>
+<br/>
+Системные вызовы бывают разными. Некоторые бывают очень быстрыми, например, когда нам надо узнать текущее время, некоторые могут заблокировать поток исполнения. В любом случае при выполнении системного вызова процессор становится непригодным для выполнения нашего кода, поскольку мы должны переключить процессор в пространство ядра, а там наш код будет недоступен, пока ОС не вернёт нам значение.<br/>
+<br/>
+Как же мы будем работать с горутиной, которая попытается совершить системный вызов и запросит запретные данные, создавая беспощадные задержки, которые приведут к лагам программы? <br/>
+<br/>
+Если мы решаем проблему в лоб, то мы можем просто запустить программу на потоке М и прямо после того, как этот поток совершит системный вызов на процессоре Р, мы отвяжем М от этого Р и переведём его выполнение на другое свободное ядро. После того как мы получаем данные нашего системного вызова и считаем его завершённым, мы попытаемся приземлить поток выполнения М на наш процессор Р. А если мы сняли поток исполнения процессора и узнали, что у нас нет дополнительных процессоров, на которые этот поток можно приземлить, то мы просто припаркуем эту горутину в глобальной очереди исполнения. Пусть она посидит и подождёт, ничего с ней не сделается.<br/>
+<br/>
+Но тут вот в чём прикол. В мире документации мы можем увидеть, что все системные вызовы в теории блокирующие и переводящие процессор в режим исполнения ядра. Хотя на самом деле это не так. У нас давно появились <a href="https://en.wikipedia.org/wiki/VDSO#:~:text=vDSO%20(virtual%20dynamic%20shared%20object,to%20kernel%20mode%20that%20is">vDSO</a>, которые позволяют запрашивать некоторые данные без блокировок. <br/>
+<br/>
+Просто если уж нам и хочется совершить системный вызов — уж очень это муторно — снимать поток исполнения с процессора и искать новый процессор для продолжения выполнения того, что можно. Слишком много усилий надо прикладывать для того, чтобы скопировать все структуры данных, которые идут в комплекте с этими машинами М и процессорами Р. Да и в дополнение ко всему, если мы попадаем в ситуацию, когда у нас не хватает процессоров для обработки всех существующих горутин, которые готовы выполнятся, то исходя из такого планирования обработки системных вызовов, нам придётся парковать горутину, которая сделала этот вызов. Вся эта волокита просто бесполезна, если ваши системные вызовы завершаются быстро или вообще не ходят в систему и получают ответ за наносекунды из vDSO.<br/>
+<br/>
+Посему в голанге у нас есть два варианта исполнения этих горутин: пессимистичный и оптимистичный. <br/>
+<br/>
+При пессимистичном варианте исполнения среда просто сдаётся, вешает плечи и говорит “Ну вас нафиг, не могу я уже больше”, отпускает текущий процессор Р перед системным вызовом и попытается получить этот процессор обратно, когда вызов завершён. <br/>
+<br/>
+При оптимистичном варианте среда говорит: «а что уж там, просто пометим этот процессор флагом» — “занят выполнением системного вызова” и забивает на все проблемы. При этом поток М с процессора не снимается, но потоки могут захватить работу из очереди выполнения данного потока, если они, в свою очередь, попали в состояния простоя на холостом ходу. <br/>
+<br/>
+Давайте пойдём дальше и найдём строчку:<br/>
+<br/>
+<code><a href="https://github.com/golang/go/blob/master/src/runtime/proc.go#L5244">5244: func sysmon() {</a></code><br/>
+<br/>
+А вот и один из главных героев того, что происходит в рантайме. Эта горутина работает постоянно. Под капотом можно найти много интересного, включая обработку состояния процессоров, которые ожидают выполнения системного вызова. В частности, sysmon пытается “забрать” ядра, которые заняты выполнением системных вызовов: <br/>
+<br/>
+<pre><code class="go">// retake P's blocked in syscalls    
+// and preempt long running G's
+
+if retake(now) != 0 {
+    idle = 0
+} else {
+    idle++
+}</code></pre><br/>
+Смотрим глубже в то, что происходит внутри retake:<br/>
+<br/>
+<pre><code class="go">if s == _Psyscall {
+
+    // Retake P from syscall if it's there for more than 1 sysmon tick (at least 20us).
+    t := int64(_p_.syscalltick)
+    if !sysretake &amp;&amp; int64(pd.syscalltick) != t {
+        pd.syscalltick = uint32(t)
+        pd.syscallwhen = now
+        continue
+    }
+
+    // On the one hand we don't want to retake Ps if there is no other work to do,
+    // but on the other hand we want to retake them eventually
+    // because they can prevent the sysmon thread from deep sleep.
+    if runqempty(_p_) &amp;&amp; atomic.Load(&amp;sched.nmspinning)+atomic.Load(&amp;sched.npidle) > 0 &amp;&amp; pd.syscallwhen+10*1000*1000 > now {
+        continue
+    }</code></pre><br/>
+Ага, то есть мы попытаемся освободить процессор, который занят ожиданием выполнения системного вызова. Но при всём при этом мы не будем уж слишком жадничать. Если у нас в текущий момент нет работы, то мы их оставим в покое и дадим им поработать над этими системными вызовами. В какой-то момент мы всё равно освободим эти процессоры, потому что они крутились уж очень долго, но это в далёком будущем. <br/>
+<br/>
+Когда мы всё-таки получаем возвращаемое значение из системного вызова, мы сможем проверить, освободили ли бы этот процессор. Говоря другими словами, мы проверим, если мы “забрали” ковёр из-под ног горутины G и она сидит без процессора, то мы либо дадим этой горутине новый процессор Р, или просто отправим её в глобальную очередь выполнения, где её в конечном итоге подберёт процессор, которому нечего делать. <br/>
+<br/>
+Если в мире всё чики-пуки и наш системный вызов занял какие-то наносекунды, у нас получается очень небольшой оверхед, мы просто делаем пару проверок и наша горутина просто продолжает работать на том же процессоре без каких-либо изменений. В случае если дела пошли вкось, то горутина, которая застряла на выполнении системного вызова, будет снята с процессора через 20 микросекунд. Если мы находимся в состоянии, когда у нас полно горутин и нет свободных процессоров для их выполнения, то мы жертвуем этими 20 микросекундами. <br/>
+<br/>
+Это код расчёта задержки, с которой запускается sysmon:<br/>
+<br/>
+<pre><code class="go">if idle == 0 { // start with 20us sleep...
+    delay = 20
+} else if idle > 50 { // start doubling the sleep after 1ms...
+    delay *= 2
+}
+
+if delay > 10*1000 { // up to 10ms
+    delay = 10 * 1000
+}</code></pre><br/>
+Так что, в принципе, система очень даже себе честная и не создаёт большого количества проблем. <br/>
+<br/>
+<h2><font color="#076184">netpoll</font></h2><br/>
+А пока мы смотрели, как sysmon выполняет системные вызовы, мы наткнулись на вот этот код:<br/>
+<br/>
+<pre><code class="go">// poll network if not polled for more than 10ms
+lastpoll := int64(atomic.Load64(&amp;sched.lastpoll))
+if netpollinited() &amp;&amp; lastpoll != 0 &amp;&amp; lastpoll+10*1000*1000 &lt; now {
+    atomic.Cas64(&amp;sched.lastpoll, uint64(lastpoll), uint64(now))
+    list := netpoll(0) // non-blocking - returns list of goroutines
+
+    if !list.empty() {
+        // Need to decrement number of idle locked M's
+        // (pretending that one more is running) before injectglist.
+        // Otherwise it can lead to the following situation:
+        // injectglist grabs all P's but before it starts M's to run the P's,
+        // another M returns from syscall, finishes running its G,
+        // observes that there is no work to do and no other running M's
+        // and reports deadlock.
+        incidlelocked(-1)
+        injectglist(&amp;list)
+        incidlelocked(1)
+    }
+}</code></pre><br/>
+Ну и это последняя остановка в нашем сегодняшнем погружении. Работа с сетью выведена в отдельную систему под названием netpoll. <br/>
+<br/>
+В переводе с английского слово poll означает опрос. Это наш сетевой опросчик, который проверяет, пришли ли к нам ответы по сети. <br/>
+<br/>
+Эта подсистема создана для конвертирования неблокирующего сетевого ввода/вывода в тёплый, ламповый блокирующий вывод. Sysmon постоянно запускает netpoll для того, чтобы проверить, не пришло ли время передать выполнение горутинам, которые желают получать данные из сети. <br/>
+<br/>
+netpoll состоит из двух частей. У нас есть <a href="https://github.com/golang/go/blob/cf2fe5d6f12f075f265ba067869fc5f0e3b23ff0/src/runtime/netpoll.go">платформно-независимая часть</a>. После этого всё остальное дополняется платформно-зависимой частью. Вот эта версия для <a href="https://github.com/golang/go/blob/cf2fe5d6f12f075f265ba067869fc5f0e3b23ff0/src/runtime/netpoll_windows.go#L83">Windows</a>, а вот эта для <a href="https://github.com/golang/go/blob/cf2fe5d6f12f075f265ba067869fc5f0e3b23ff0/src/runtime/netpoll_epoll.go#L107">Linux</a>. Эти, кстати, небольшие, всего по 200 строк. Windows-код использует API IoCompletionPort для получения этих данных, в имплементации для Linux используется epoll, а BSD — kqueue.<br/>
+<br/>
+Каждый раз, когда вы открываете соединение в голанге, вы получаете дескриптор файла, который привязан к этому соединению. Этот дескриптор работает в неблокирующем режиме. Если вы пытаетесь сделать операцию ввода/вывода, но дескриптор для этого ещё не готов, то вы получите ошибку. Когда вы запускаете горутину для чтения/записи в сетевой поток, управление передаётся netpoll, который будет выполнять эту операцию до того момента, как она будет закончена. Сама горутина снимается с процессора и приостанавливает своё выполнение. После этого netpoll вернёт sysmon горутину, в которой операция ввода/вывода завершена. Эта горутина возобновит своё выполнение. <br/>
+<br/>
+Самое интересное происходит в этих двух функциях:<br/>
+<br/>
+<pre><code class="go">// returns true if IO is ready, or false if timedout or closed
+// waitio - wait only for completed IO, ignore errors
+func netpollblock(pd *pollDesc, mode int32, waitio bool) bool {
+    gpp := &amp;pd.rg
+    if mode == 'w' {
+        gpp = &amp;pd.wg
+    }
+
+    // set the gpp semaphore to pdWait
+    for {
+        old := *gpp
+        if old == pdReady {
+            *gpp = 0
+            return true
+        }
+        if old != 0 {
+            throw("runtime: double wait")
+        }
+
+        if atomic.Casuintptr(gpp, 0, pdWait) {
+            break
+        }
+    }
+
+    // need to recheck error states after setting gpp to pdWait
+    // this is necessary because runtime_pollUnblock/runtime_pollSetDeadline/deadlineimpl
+    // do the opposite: store to closing/rd/wd, membarrier, load of rg/wg
+    if waitio || netpollcheckerr(pd, mode) == pollNoError {
+        gopark(netpollblockcommit, unsafe.Pointer(gpp), waitReasonIOWait, traceEvGoBlockNet, 5)
+    }
+
+  // be careful to not lose concurrent pdReady notification
+    old := atomic.Xchguintptr(gpp, 0)
+    if old > pdWait {
+        throw("runtime: corrupted polldesc")
+    }
+    return old == pdReady
+}
+
+func netpollunblock(pd *pollDesc, mode int32, ioready bool) *g {
+    gpp := &amp;pd.rg
+    if mode == 'w' {
+        gpp = &amp;pd.wg
+    }
+
+    for {
+        old := *gpp
+        if old == pdReady {
+            return nil
+        }
+
+        if old == 0 &amp;&amp; !ioready {
+            // Only set pdReady for ioready. runtime_pollWait
+            // will check for timeout/cancel before waiting.
+            return nil
+        }
+
+        var new uintptr
+        if ioready {
+            new = pdReady
+        }
+
+        if atomic.Casuintptr(gpp, old, new) {
+            if old == pdWait {
+                old = 0
+            }
+
+            return (*g)(unsafe.Pointer(old))
+        }
+    }
+}</code></pre><br/>
+Именно эти две функции добавляют и удаляют горутины из очереди выполнения netpoll. А после этого sysmon сидит и делает уже платформно-зависимый netpoll для того, чтобы узнать, какую горутину можно отправить обратно на выполнение путём передачи оной в очередь завершённых горутин netpoll.<br/>
+<br/>
+Ну что же, на этом можно начинать подводить итоги. <br/>
+<br/>
+<h2><font color="#076184">Заключение</font></h2><br/>
+Мы изучили среду исполнения, в которой код не пестрит невнятными и невероятными конструкциями для “упрощения” операций ввода-вывода. Ваш код выглядит просто, но при этом вы не жертвуете правильными подходами для реализации этого многопоточного ввода/вывода. <br/>
+<br/>
+Мы также видим, что планировщик задач среды исполнения (неважно, голанг или другой среды, мы наверняка найдём подобный подход в других средах) и планировщик ОС — это две совершенно разные вещи. <br/>
+<br/>
+Написание правильного многопоточного приложения не подразумевает простое создание тысяч потоков. Наоборот, подобное приложение подразумевает наличие хорошо отточенного и проработанного подхода в том, как среда исполнения использует ОС для эффективного запуска и обработки задач. <br/>
+<br/>
+Разные среды выполнения предоставляют вам разные подходы. Например, в .NET Framework применяется достаточно консервативный режим, который позволяет вам работать как с потоками напрямую, так и с системами пула потоков. В то же время в rust отсутствует сама идея того, что ваша среда исполнения будет как-либо работать за вас. Посему, если вам приспичило использовать какой-либо тредпул, то вам придётся воспользоваться сторонними компонентами, типа <a href="https://github.com/tokio-rs/Tokio">Tokio</a>. <br/>
+<br/>
+Голанг представляет вам абсолютно новый подход к исполнению своих приложений. Всё выглядит так, что вам не приходится задумываться о том, как правильно выполнять многопоточные приложения, но за кулисами происходит очень много. Вы сможете воспользоваться замечательными инструментами среды исполнения, не заморачиваясь тем, как всё это реализовано. <br/>
+<br/>
+В заключение я хотел бы пересказать одну историю Скота Хансельмана:<br/>
+<blockquote>Моя свояченица эммигрировала в США из Зимбабве. Ей 30, и она учитель. Она никогда не водила машину (а в США без машины туго). Я посадил её в наш Приус и мы поехали на парковку, где мы с ней тренировались несколько дней. Дело дошло до параллельной парковки, и вот это как раз то, что до неё не доходило ни в каком виде. Я ей сказал: “Ну, представь, как поворачиваются передние колёса, когда ты вращаешь руль”.<br/>
+<br/>
+“Передние?” — переспросила она — “А какая разница, какие колёса поворачиваются?” Выяснилось, что она не понимала, что поворачиваются передние колёса. Ей казалось, что ВСЕ ЧЕТЫРЕ колеса автомобиля поворачиваются при развороте автомобиля. Я, естественно, настаивал на своём, мол, нет, только передние. Она мне не верила, пока не вылезла из машины и не посмотрела, как я паркуюсь. Она была удивлена тем, что задние колёса на поворачивались и машина следовала положению передних колёс. <br/>
+<br/>
+ — Ты этого не знала? — спросил я.<br/>
+<br/>
+ — Я просто о таком не думала. Я подразумевала, что они все поворачивались, и никогда не задавалась вопросами по этому поводу. <br/>
+<br/>
+Очевидно, это “подразумевание” превратилось в проблему, когда мы пытались раздебажить её умение парковаться.</blockquote>Есть в мире программисты, которые гордо могут сказать: “Мне не нужно знать, как работает среда исполнения в моём языке программирования.” Это звучит, скажем так, недалёко, и в один прекрасный момент вы найдёте себя в состоянии психического срыва, пытаясь понять, почему ваш новый проект беспощадно тормозит на новом сервере. <br/>
+<br/>
+Надеюсь, эта информация поможет вам разобраться и понять, как работает среда исполнения голанга и в чём именно заключается принципиальное отличие голанга от других языков программирования.</div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bgo%5D" class="tm-tags-list__link">go</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bgolang%5D" class="tm-tags-list__link">golang</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B3%D0%BE%D0%BB%D0%B0%D0%BD%D0%B3%5D" class="tm-tags-list__link">голанг</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BA%D0%BE%D0%BC%D0%BF%D0%B8%D0%BB%D1%8F%D1%82%D0%BE%D1%80%D1%8B%5D" class="tm-tags-list__link">компиляторы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%83%D1%81%D1%82%D1%80%D0%BE%D0%B9%D1%81%D1%82%D0%B2%D0%BE%20%D0%BA%D0%BE%D0%BC%D0%BF%D0%B8%D0%BB%D1%8F%D1%82%D0%BE%D1%80%D0%B0%5D" class="tm-tags-list__link">устройство компилятора</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%81%D0%BE%D0%B3%D0%BB%D0%B0%D1%81%D0%BE%D0%B2%D0%B0%D0%BD%D0%BD%D0%BE%D1%81%D1%82%D1%8C%5D" class="tm-tags-list__link">согласованность</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%BD%D0%BE%D0%B3%D0%BE%D0%BF%D0%BE%D1%82%D0%BE%D1%87%D0%BD%D0%BE%D1%81%D1%82%D1%8C%5D" class="tm-tags-list__link">многопоточность</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BFirstVDS%5D" class="tm-tags-list__link">FirstVDS</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BFirstDEDIC%5D" class="tm-tags-list__link">FirstDEDIC</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/first/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании FirstVDS
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/analysis_design/" class="tm-hubs-list__link">
+    Анализ и проектирование систем
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/system_programming/" class="tm-hubs-list__link">
+    Системное программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/compilers/" class="tm-hubs-list__link">
+    Компиляторы
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 19: ↑19 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 19: ↑19 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+19</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.7K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    34
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/first/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/81e/a2b/70e/81ea2b70ebe0942cdf523ca6af7a3e2b.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/first/profile/" class="tm-company-snippet__title">FirstVDS</a> <div class="tm-company-snippet__description">Виртуальные и выделенные серверы в ДЦ в Москве</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://firstvds.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://1dedic.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://facebook.com/FirstVDS" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://vk.com/firstvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/FirstJohn/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/1ab/252/b0f/1ab252b0f00f4ad780e63e0c040abf7e.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 95 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    37
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">126.9</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/FirstJohn/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @FirstJohn
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Корпоративный аккаунт авторов FirstVDS</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/first/blog/582144/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 3 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2002-12-05T21:00:00.000Z" title="2002-12-06, 00:00">6  декабря  2002</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="http://firstvds.ru/?aid=20152" target="_blank" class="tm-company-basic-info__link">
+      firstvds.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    51–100 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2012-09-13T06:50:30.000Z" title="2012-09-13, 10:50">13  сентября  2012</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/FirstJohn/" class="tm-company-basic-info__link">
+      FirstJohn
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/first/blog/582144/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/first/blog/582144/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582144":{"id":"582144","timePublished":"2021-10-11T07:00:02+00:00","isCorporative":true,"lang":"ru","titleHtml":"Лезем в сорцы компилятора — как работает goscheduler (Часть II)","leadData":{"textHtml":"\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fux\u002Fak\u002Flj\u002Fuxakljao57bebvasvv3goinkgo0.png\"\u003E\u003C\u002Fdiv\u003E\u003Cbr\u003E\r\nЧтение рекомендуется начать с \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Ffirst\u002Fblog\u002F581158\u002F\"\u003Eпервой части\u003C\u002Fa\u003E, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно многопоточность.","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":37,"votesCount":95},"rating":126.9,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"676149","alias":"FirstJohn","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F1ab\u002F252\u002Fb0f\u002F1ab252b0f00f4ad780e63e0c040abf7e.png","speciality":"Корпоративный аккаунт авторов FirstVDS"},"statistics":{"commentsCount":3,"favoritesCount":34,"readingCount":1690,"score":19,"votesCount":19},"hubs":[{"relatedData":null,"id":"17832","alias":"first","type":"corporative","title":"Блог компании FirstVDS","titleHtml":"Блог компании FirstVDS","isProfiled":false},{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"397","alias":"analysis_design","type":"collective","title":"Анализ и проектирование систем","titleHtml":"Анализ и проектирование систем","isProfiled":true},{"relatedData":null,"id":"5767","alias":"system_programming","type":"collective","title":"Системное программирование","titleHtml":"Системное программирование","isProfiled":true},{"relatedData":null,"id":"17188","alias":"compilers","type":"collective","title":"Компиляторы","titleHtml":"Компиляторы","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fux\u002Fak\u002Flj\u002Fuxakljao57bebvasvv3goinkgo0.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nЧтение рекомендуется начать с \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Ffirst\u002Fblog\u002F581158\u002F\"\u003Eпервой части\u003C\u002Fa\u003E, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно многопоточность.\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЛезем в \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgolang\u002Fgo\u002Fblob\u002Fmaster\u002Fsrc\u002Fruntime\u002Fproc.go\"\u003Eсорцы \u003C\u002Fa\u003Eи видим объяснение всем нашим G, P и М.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EG — горутина, которую мы будем запускать. \u003C\u002Fli\u003E\r\n\u003Cli\u003EМ — машина, то есть поток, который будет запускаться на процессоре и выполнять ваши задачи.\u003C\u002Fli\u003E\r\n\u003Cli\u003EР — процессор, который будет выполнять работу.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nКогда вы запускаете программу, написанную на голанге, среда исполнения читает GOMAXPROC для того, чтобы узнать, сколько реальных процессорных ядер существует в системе. Хотя нет, звучит как-то неправильно. Редко кто выставляет GOMAXPROC перед запуском программ на голанге, и ничего, работает на мультипроцессорных системах.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДавайте посмотрим в сорец. На строке \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgolang\u002Fgo\u002Fblob\u002Fmaster\u002Fsrc\u002Fruntime\u002Fproc.go#L706\"\u003E706 в proc.go\u003C\u002Fa\u003E находим следующее:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"go\"\u003Eprocs := ncpu\nif n, ok := atoi32(gogetenv(\"GOMAXPROCS\")); ok &amp;&amp; n \u003E 0 {\n\tprocs = n\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЭто всё происходит в функции schedinit, которая как раз занимается запуском планировщика задач. Смотрим на комментарий к этой функции и выясняем:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"go\"\u003E\u002F\u002F The bootstrap sequence is:\n\u002F\u002F\n\u002F\u002F    call osinit\n\u002F\u002F    call schedinit\n\u002F\u002F    make &amp; queue new G\n\u002F\u002F    call runtime·mstart\n\u002F\u002F\n\u002F\u002F The new G calls runtime main.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nАга, то есть мы не просто запускаем планировщик, мы стартуем нашу программу. Для начала включается osinit и как раз в секции инициализации операционной системы делаем вот что:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ccode\u003Ecpuinit() \u002F\u002F must run before alginit\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКстати, прямо перед этим мы выставляем sched.maxmcount = 10000. То есть изначально мы зачем-то ограничиваем максимальное количество машин до 10000. Запомним это и пойдём дальше.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nCpuinit вместе с osinit с помощью приличного количества ассемблера и вызова функций из стандартных библиотек OC выясняют количество ядер, доступных на конечной машине. Исходники данных функций разные для разных процессоров и ОС, посему здесь мы в детали лезть не будем, ибо их очень уж много.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКак бы то ни было, мы выставляем количество процессоров, основываясь на данных из ОС, а ПОСЛЕ этого перегружаем количество процессоров тем, что хранится в GOMAXPROCS. А если в GOMAXPROCS записана белиберда, то мы на неё забиваем и просто продолжаем работать с количеством процессоров, которое дано системой.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо и тут у нас есть первая возможность серьёзно ошибиться. Выставляя GOMAXPROCS в определённое значение, вы берёте на себя ответственность за понимание того, как работает планировщик. Если выставить GOMAXPROCS в значение больше того, что на самом деле есть в ОС, то можно серьёзно запороть скорость выполнения своей программы.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКстати, читая документацию и роясь чуть глубже, находим, что maxmcount можно изменить вызовом \u003Ccode\u003Edebug.SetMaxThreads\u003C\u002Fcode\u003E. В документации этой функции мы видим, что ограничение произвольное, но позволяет предотвратить убийство операционной системы созданием неограниченного количества потоков. Функция эта предназначена в основном для отладки. Среда исполнения упадёт в тот момент, когда мы попытаемся создать больше потоков (М, машин), чем это значение.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСмотрим, что делает func main, помимо инициализации планировщика. Лирическое отступление: видим повсюду, что если мы запускаем программу на wasm, то никаких потоков не создаётся и все горутины запускаются на одной машине. Поэтому будьте осторожны при переносе вашего кода в wasm. С параллелизмом могут быть проблемы.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДалее мы найдём основную горутину, которую нужно будет исполнять, и привяжем её к первому потоку, запущенному ОС. Большинству программ это не особо важно, но есть некоторые ситуации, в которых необходимо, чтобы ваша горутина работала именно на первом потоке ОС.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТеперь вернёмся в мир теории ненадолго. Дано:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EP, G, M. \u003C\u002Fli\u003E\r\n\u003Cli\u003EСписок процессоров в системе. \u003C\u002Fli\u003E\r\n\u003Cli\u003EСписок машин (потоков), которые мы запускаем на этой системе. \u003C\u002Fli\u003E\r\n\u003Cli\u003EСписок задач G, которые мы пытаемся запустить на всём этом добре. Куда и как?\u003C\u002Fli\u003E\r\n\u003Cli\u003EСписок Р достаточно простой. Это массив структур, описывающих процессоры. А вот с М немного интереснее будет.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nМ — это наш поток выполнения. М — это то, за что сражается операционная система, как мы видели раньше. Чем меньше работающих М, тем легче живётся в стране планирования задач ОС и тем быстрее гарцует процессор. Но при слишком маленьком количестве М у нас накапливается невероятное количество незаконченных горутин.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосему М можно парковать. Если на данный момент работы нет, то и держать М в активном состоянии не нужно. Его можно отправить в резерв.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003EПарковка и запуск\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nТут важен баланс количества запущенных и припаркованных процессов (М), чтобы правильно использовать все возможные ресурсы системы. Опять же, много потоков — нагружаем процессор, мало потоков — простаиваем. Балансировать тут непросто как минимум по двум причинам:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EСам планировщик распределённый. Очереди работы (готовые к выполнению горутины) хранятся отдельно для каждого процессора. Так что вычислить, в какой последовательности выполнять все имеющиеся горутины прямо сейчас, невозможно.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПлюс, как мы видели ранее, ОС и процессор играют в ту ещё чехарду, когда приходится снимать процессы с исполнения. Так что если у нас на подходе есть горутина, но прямо вот сейчас она не готова, то парковать поток исполнения будет глупо, проще подождать 200 циклов и запустить её в уже имеющемся потоке.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nВариантов решения этой проблемы много. Вот, например, неправильные варианты:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EЦентрализовать планировщик задач. Хотя, понятное дело, с таким подходом у нас будут проблемы с увеличением нагрузки. Планировщик будет бутылочным горлышком.\u003C\u002Fli\u003E\r\n\u003Cli\u003EЗапускать новый поток исполнения, как только появляется новая горутина. Пример — однопоточная программа запускает go(). В таком случае мы можем подобрать новый поток, запустить его на незанятом Р (процессоре) и жить себе поживать. При этом поток, который только что запустил эту горутину, может закончить исполнение, и его самого придётся парковать. Плюс контекст исполнения (переменные, память и кеши) хранится в потоке. Если мы запускаем горутину в новом потоке, то всё это надо будет копировать.\u003C\u002Fli\u003E\r\n\u003Cli\u003EМожно просто перезапускать новый процесс М, без запуска свежесозданной горутины на этом процессе. При этом у нас появляется возможность запустить ещё больше горутин, если вдруг потребуется. Но если не понадобится, то придётся запускать и парковать поток впустую.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nТут как раз мы понимаем, что переключение контекста — это не просто смена указателя текущей инструкции выполнения программы. С контекстом надо переключить стек. А в стеке могут храниться данные. Например, у нас есть функция 1, которая запускает функцию 2. Функция 2 не будет особо париться и использует адресное пространство потока, в котором запущена функция 1. Исполнение-то у нас не параллельное. Сохраняем текущий указатель стека, прибавляем к нему немного, ровняем это всё по границе памяти и работаем себе спокойно. Когда пришло время возвращать значение, запихиваем его куда надо и кладём обратно положение стека функции 1. Всё! Простота! На ассемблере такое писать можно в три строчки:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"perl\"\u003Epush     rbp\nmov      rbp, rsp\nsub      rsp, 32\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nТеперь представим, что функция 1 и функция 2 — это горутины, которые исполняются в разных машинах М. Тут со стеком вообще чудеса происходят. Возвращать значения через регистры не получится, писать всё надо в память. А если функция 2 пытается воспользоваться данными из функции 1, то и того веселее. Программист сел и написал замыкание, в котором захватил кучу переменных. Их надо будет либо копировать в стек, либо класть в общедоступную память.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВспомним картинку об устройстве процессора:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fa44\u002F9ea\u002Fe90\u002Fa449eae90733a7ebe0b30520010462e4.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКеша у нас не то чтобы очень много. Что если одна горутина запускается на первом ядре, а её дочерний процесс на третьем? Потоки исполнения работают на разных ядрах, и второй горутине надо будет ждать, пока данные из памяти попадут в кеш.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧто уж там. Задержки небольшие, волноваться не стоит. Хотя нет, всё-таки стоит. Если нагрузка большая, а ваши горутины маленькие, то как раз таки волноваться очень даже стоит. Каждый раз, когда вы пытаетесь сделать тривиальные вычисления с 4 килобайтами памяти миллиард раз в разных потоках, то проблем может быть много.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭто, кстати, объясняет почему создание бесконечного количества процессов в ОС не помогает. Нам не только нужны параллельные вычисления, они ещё должны быть быстрыми.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИ по ходу дела мы можем понять, зачем же и почему нам нужны М. Ведь мы могли бы просто запускать горутины на реальном процессоре Р, без привязки к машинам М. Но теперь всё понятно, ведь М содержит в себе этот контекст исполнения и её легче таскать за собой, если понадобится.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосему вот вам описание того, как работа распределяется в голанге на данный момент.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля начала надо понять, что поток исполнения может находиться на холостом ходу. В английской версии это называется spinning. Если вы когда-либо были на текстильных предприятиях, то вы возможно видели нитки, которые снимаются с бобин, и бобины, которые иногда крутятся вхолостую. Посему будем называть это холостым ходом.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПоток исполнения М будет отмечен как работающий вхолостую (m.spinning = true), если у нас произошло следующее:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EПоток М закончил все горутины в очереди исполнения.\u003C\u002Fli\u003E\r\n\u003Cli\u003EВ глобальной очереди исполнения тоже пусто и нет никаких новых горутин.\u003C\u002Fli\u003E\r\n\u003Cli\u003EВ очереди исполнения завершённых таймеров. Если вы запустили Sleep в вашей горутине, то она уходит в спячку, пока ее время тикает. Как только время истекло, эта рутина попадает в специальную очередь выполнения, где ждут подобные горутины.\u003C\u002Fli\u003E\r\n\u003Cli\u003EВ очереди исполнения сетевого стека тоже всё пусто и печально. (Про эту очередь я расскажу чуть дальше по тексту)\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nПоток поочерёдно осматривает эти очереди, и если в них есть что-либо для исполнения, то он берётся за работу. Если же поток не нашёл никакой приличной работы, то он автоматически припаркуется. (То есть его снимут с процессора и положат в корзинку — подождать).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВсе вновь созданные потоки создаются в этом холостом состоянии.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри появлении новой работы (какой-либо горутины) мы запустим новый \u003Cb\u003EМ\u003C\u002Fb\u003E, если у нас есть простаивающие процессоры \u003Cb\u003EР \u003C\u002Fb\u003Eи у нас нет потоков \u003Cb\u003EМ\u003C\u002Fb\u003E, которые стоят на холостом ходу. Если же у нас есть один поток на холостом ходу, то мы просто передаём работу этому потоку. При этом есть ещё один прикол. Каждый раз, когда какой-либо поток на холостом ходу находит работу и начинает её исполнять, он проверит, есть ли в системе другие потоки на холостом ходу. Если таковых не осталось, то он запустит новый поток и оставит его на холостом ходу.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри таком подходе случайная работа по старту и парковке потоков существенно уменьшается и ресурсы системы используются более правильно.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch5\u003E\u003Cfont color=\"#163C51\"\u003EИтого, дано:\u003C\u002Ffont\u003E\u003C\u002Fh5\u003E\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#163C51\"\u003EПроцессоры\u003C\u002Ffont\u003E\u003C\u002Fb\u003E, столько-то штук.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#163C51\"\u003EРабочие потоки:\u003C\u002Ffont\u003E\u003C\u002Fb\u003E В зависимости от нагрузки, по потоку на процессор. Можно запустить и больше при выставлении переменных руками, но это создаст проблемы.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#163C51\"\u003EЗадачи для выполнения:\u003C\u002Ffont\u003E\u003C\u002Fb\u003E тьма. В зависимости от того, что случилось в системе. Либо программист вызывает новую задачу, либо таймер тикает, либо пора собирать мусор. Сборщик мусора мог подкинуть задачи для обработки в бэкграунде. Хотя, судя по сорцам, сейчас это отключено \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgolang\u002Fgo\u002Fblob\u002Fmaster\u002Fsrc\u002Fruntime\u002Fproc.go#L108\"\u003E(строка 108).\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"1c\"\u003E\u002F\u002F * Idle-priority GC: The GC wakes a stopped idle thread to contribute to\n\u002F\u002F background GC work (note: currently disabled per golang.org\u002Fissue\u002F19112).\n\u002F\u002F Also see golang.org\u002Fissue\u002F44313, as this should be extended to all GC\n\u002F\u002F workers.\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЗадачи запускаются на потоках, выполняются и завершаются. Идиллия. Хотя нет, как мы видим, они не всегда завершаются, но при этом могут быть сняты с выполнения. Как, например, то, что мы видели в таймерах. Но есть и другие причины, по которым задачи могут быть не выполнены.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003EВвод\u002Fвывод информации\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nВаша горутина всегда может вызвать что-то такое неприличное, что полностью заблокирует поток исполнения. Например, запросить данные с жёсткого диска. Не SSD, а обычного винчестера. Да ещё и с такого, какой операционная система положила поспать, и для того, чтобы включиться, ему потребуется 5 секунд. Непозволительная трата ресурсов. Ведь в таком виде ваш поток исполнения будет простаивать 5 секунд. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n10 лет назад Майкрософт решила бороться с подобной проблемой в Windows 8 путём создания новых API, в которых все подобные обращения к дискам или сетевым ресурсам были асинхронными по умолчанию. Каждый раз, когда вы обращались к диску, вам надо было писать замыкание или коллбэк для обработки результата. Конечно, идея была простая, все программисты просто возьмут и перейдут на новые API, правильно? Ха. Прямо вот так все и спохватились. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСама идея ввода-вывода в голанге решена просто. У нас нет API для асинхронного ввода и вывода. Всё, что вам нужно сделать асинхронно — делайте сами через горутины. Казалось-бы странное решение. Другие платформы из кожи вон лезут, пытаясь предоставить асинхронные системы, а мы в голанге просто на всё это забиваем и ничего предоставлять не будем. Но всё как раз наоборот. Создавая хорошо продуманную среду исполнения, мы делаем так, что вам не нужно будет париться по поводу работы с асинхронными системами ввода\u002Fвывода. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНу и на самом-то деле. Синхронные системы намного проще использовать. Как вам такое — создавать новый поток в пуле на каждую операцию чтения\u002Fзаписи? А современные извращения, которые используются в Javascript\u002FJava и С# вообще стоят отдельного упоминания. Ведь мы в шарпах уже навернули полный круг и пришли к async\u002Fawait операциям.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТеперь вместо создания нового потока можно просто писать:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ccode\u003Evar text = await File.ReadAllLinesAsync(...);\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ голанге подобное не нужно. Просто пишите синхронные операции ввода\u002Fвывода и, когда надо, запускайте их в горутинах. А среда исполнения как раз подчистит все неприятные моменты, которые могут быть с этим связаны.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСистемные вызовы бывают разными. Некоторые бывают очень быстрыми, например, когда нам надо узнать текущее время, некоторые могут заблокировать поток исполнения. В любом случае при выполнении системного вызова процессор становится непригодным для выполнения нашего кода, поскольку мы должны переключить процессор в пространство ядра, а там наш код будет недоступен, пока ОС не вернёт нам значение.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКак же мы будем работать с горутиной, которая попытается совершить системный вызов и запросит запретные данные, создавая беспощадные задержки, которые приведут к лагам программы? \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли мы решаем проблему в лоб, то мы можем просто запустить программу на потоке М и прямо после того, как этот поток совершит системный вызов на процессоре Р, мы отвяжем М от этого Р и переведём его выполнение на другое свободное ядро. После того как мы получаем данные нашего системного вызова и считаем его завершённым, мы попытаемся приземлить поток выполнения М на наш процессор Р. А если мы сняли поток исполнения процессора и узнали, что у нас нет дополнительных процессоров, на которые этот поток можно приземлить, то мы просто припаркуем эту горутину в глобальной очереди исполнения. Пусть она посидит и подождёт, ничего с ней не сделается.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо тут вот в чём прикол. В мире документации мы можем увидеть, что все системные вызовы в теории блокирующие и переводящие процессор в режим исполнения ядра. Хотя на самом деле это не так. У нас давно появились \u003Ca href=\"https:\u002F\u002Fen.wikipedia.org\u002Fwiki\u002FVDSO#:~:text=vDSO%20(virtual%20dynamic%20shared%20object,to%20kernel%20mode%20that%20is\"\u003EvDSO\u003C\u002Fa\u003E, которые позволяют запрашивать некоторые данные без блокировок. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПросто если уж нам и хочется совершить системный вызов — уж очень это муторно — снимать поток исполнения с процессора и искать новый процессор для продолжения выполнения того, что можно. Слишком много усилий надо прикладывать для того, чтобы скопировать все структуры данных, которые идут в комплекте с этими машинами М и процессорами Р. Да и в дополнение ко всему, если мы попадаем в ситуацию, когда у нас не хватает процессоров для обработки всех существующих горутин, которые готовы выполнятся, то исходя из такого планирования обработки системных вызовов, нам придётся парковать горутину, которая сделала этот вызов. Вся эта волокита просто бесполезна, если ваши системные вызовы завершаются быстро или вообще не ходят в систему и получают ответ за наносекунды из vDSO.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосему в голанге у нас есть два варианта исполнения этих горутин: пессимистичный и оптимистичный. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри пессимистичном варианте исполнения среда просто сдаётся, вешает плечи и говорит “Ну вас нафиг, не могу я уже больше”, отпускает текущий процессор Р перед системным вызовом и попытается получить этот процессор обратно, когда вызов завершён. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри оптимистичном варианте среда говорит: «а что уж там, просто пометим этот процессор флагом» — “занят выполнением системного вызова” и забивает на все проблемы. При этом поток М с процессора не снимается, но потоки могут захватить работу из очереди выполнения данного потока, если они, в свою очередь, попали в состояния простоя на холостом ходу. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДавайте пойдём дальше и найдём строчку:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ccode\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgolang\u002Fgo\u002Fblob\u002Fmaster\u002Fsrc\u002Fruntime\u002Fproc.go#L5244\"\u003E5244: func sysmon() {\u003C\u002Fa\u003E\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nА вот и один из главных героев того, что происходит в рантайме. Эта горутина работает постоянно. Под капотом можно найти много интересного, включая обработку состояния процессоров, которые ожидают выполнения системного вызова. В частности, sysmon пытается “забрать” ядра, которые заняты выполнением системных вызовов: \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"go\"\u003E\u002F\u002F retake P's blocked in syscalls    \n\u002F\u002F and preempt long running G's\n\nif retake(now) != 0 {\n    idle = 0\n} else {\n    idle++\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nСмотрим глубже в то, что происходит внутри retake:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"go\"\u003Eif s == _Psyscall {\n\n    \u002F\u002F Retake P from syscall if it's there for more than 1 sysmon tick (at least 20us).\n    t := int64(_p_.syscalltick)\n    if !sysretake &amp;&amp; int64(pd.syscalltick) != t {\n        pd.syscalltick = uint32(t)\n        pd.syscallwhen = now\n        continue\n    }\n\n    \u002F\u002F On the one hand we don't want to retake Ps if there is no other work to do,\n    \u002F\u002F but on the other hand we want to retake them eventually\n    \u002F\u002F because they can prevent the sysmon thread from deep sleep.\n    if runqempty(_p_) &amp;&amp; atomic.Load(&amp;sched.nmspinning)+atomic.Load(&amp;sched.npidle) \u003E 0 &amp;&amp; pd.syscallwhen+10*1000*1000 \u003E now {\n        continue\n    }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nАга, то есть мы попытаемся освободить процессор, который занят ожиданием выполнения системного вызова. Но при всём при этом мы не будем уж слишком жадничать. Если у нас в текущий момент нет работы, то мы их оставим в покое и дадим им поработать над этими системными вызовами. В какой-то момент мы всё равно освободим эти процессоры, потому что они крутились уж очень долго, но это в далёком будущем. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКогда мы всё-таки получаем возвращаемое значение из системного вызова, мы сможем проверить, освободили ли бы этот процессор. Говоря другими словами, мы проверим, если мы “забрали” ковёр из-под ног горутины G и она сидит без процессора, то мы либо дадим этой горутине новый процессор Р, или просто отправим её в глобальную очередь выполнения, где её в конечном итоге подберёт процессор, которому нечего делать. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли в мире всё чики-пуки и наш системный вызов занял какие-то наносекунды, у нас получается очень небольшой оверхед, мы просто делаем пару проверок и наша горутина просто продолжает работать на том же процессоре без каких-либо изменений. В случае если дела пошли вкось, то горутина, которая застряла на выполнении системного вызова, будет снята с процессора через 20 микросекунд. Если мы находимся в состоянии, когда у нас полно горутин и нет свободных процессоров для их выполнения, то мы жертвуем этими 20 микросекундами. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭто код расчёта задержки, с которой запускается sysmon:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"go\"\u003Eif idle == 0 { \u002F\u002F start with 20us sleep...\n    delay = 20\n} else if idle \u003E 50 { \u002F\u002F start doubling the sleep after 1ms...\n    delay *= 2\n}\n\nif delay \u003E 10*1000 { \u002F\u002F up to 10ms\n    delay = 10 * 1000\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nТак что, в принципе, система очень даже себе честная и не создаёт большого количества проблем. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003Enetpoll\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nА пока мы смотрели, как sysmon выполняет системные вызовы, мы наткнулись на вот этот код:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"go\"\u003E\u002F\u002F poll network if not polled for more than 10ms\nlastpoll := int64(atomic.Load64(&amp;sched.lastpoll))\nif netpollinited() &amp;&amp; lastpoll != 0 &amp;&amp; lastpoll+10*1000*1000 &lt; now {\n    atomic.Cas64(&amp;sched.lastpoll, uint64(lastpoll), uint64(now))\n    list := netpoll(0) \u002F\u002F non-blocking - returns list of goroutines\n\n    if !list.empty() {\n        \u002F\u002F Need to decrement number of idle locked M's\n        \u002F\u002F (pretending that one more is running) before injectglist.\n        \u002F\u002F Otherwise it can lead to the following situation:\n        \u002F\u002F injectglist grabs all P's but before it starts M's to run the P's,\n        \u002F\u002F another M returns from syscall, finishes running its G,\n        \u002F\u002F observes that there is no work to do and no other running M's\n        \u002F\u002F and reports deadlock.\n        incidlelocked(-1)\n        injectglist(&amp;list)\n        incidlelocked(1)\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНу и это последняя остановка в нашем сегодняшнем погружении. Работа с сетью выведена в отдельную систему под названием netpoll. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ переводе с английского слово poll означает опрос. Это наш сетевой опросчик, который проверяет, пришли ли к нам ответы по сети. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭта подсистема создана для конвертирования неблокирующего сетевого ввода\u002Fвывода в тёплый, ламповый блокирующий вывод. Sysmon постоянно запускает netpoll для того, чтобы проверить, не пришло ли время передать выполнение горутинам, которые желают получать данные из сети. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nnetpoll состоит из двух частей. У нас есть \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgolang\u002Fgo\u002Fblob\u002Fcf2fe5d6f12f075f265ba067869fc5f0e3b23ff0\u002Fsrc\u002Fruntime\u002Fnetpoll.go\"\u003Eплатформно-независимая часть\u003C\u002Fa\u003E. После этого всё остальное дополняется платформно-зависимой частью. Вот эта версия для \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgolang\u002Fgo\u002Fblob\u002Fcf2fe5d6f12f075f265ba067869fc5f0e3b23ff0\u002Fsrc\u002Fruntime\u002Fnetpoll_windows.go#L83\"\u003EWindows\u003C\u002Fa\u003E, а вот эта для \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgolang\u002Fgo\u002Fblob\u002Fcf2fe5d6f12f075f265ba067869fc5f0e3b23ff0\u002Fsrc\u002Fruntime\u002Fnetpoll_epoll.go#L107\"\u003ELinux\u003C\u002Fa\u003E. Эти, кстати, небольшие, всего по 200 строк. Windows-код использует API IoCompletionPort для получения этих данных, в имплементации для Linux используется epoll, а BSD — kqueue.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКаждый раз, когда вы открываете соединение в голанге, вы получаете дескриптор файла, который привязан к этому соединению. Этот дескриптор работает в неблокирующем режиме. Если вы пытаетесь сделать операцию ввода\u002Fвывода, но дескриптор для этого ещё не готов, то вы получите ошибку. Когда вы запускаете горутину для чтения\u002Fзаписи в сетевой поток, управление передаётся netpoll, который будет выполнять эту операцию до того момента, как она будет закончена. Сама горутина снимается с процессора и приостанавливает своё выполнение. После этого netpoll вернёт sysmon горутину, в которой операция ввода\u002Fвывода завершена. Эта горутина возобновит своё выполнение. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСамое интересное происходит в этих двух функциях:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"go\"\u003E\u002F\u002F returns true if IO is ready, or false if timedout or closed\n\u002F\u002F waitio - wait only for completed IO, ignore errors\nfunc netpollblock(pd *pollDesc, mode int32, waitio bool) bool {\n    gpp := &amp;pd.rg\n    if mode == 'w' {\n        gpp = &amp;pd.wg\n    }\n\n    \u002F\u002F set the gpp semaphore to pdWait\n    for {\n        old := *gpp\n        if old == pdReady {\n            *gpp = 0\n            return true\n        }\n        if old != 0 {\n            throw(\"runtime: double wait\")\n        }\n\n        if atomic.Casuintptr(gpp, 0, pdWait) {\n            break\n        }\n    }\n\n    \u002F\u002F need to recheck error states after setting gpp to pdWait\n    \u002F\u002F this is necessary because runtime_pollUnblock\u002Fruntime_pollSetDeadline\u002Fdeadlineimpl\n    \u002F\u002F do the opposite: store to closing\u002Frd\u002Fwd, membarrier, load of rg\u002Fwg\n    if waitio || netpollcheckerr(pd, mode) == pollNoError {\n        gopark(netpollblockcommit, unsafe.Pointer(gpp), waitReasonIOWait, traceEvGoBlockNet, 5)\n    }\n\n  \u002F\u002F be careful to not lose concurrent pdReady notification\n    old := atomic.Xchguintptr(gpp, 0)\n    if old \u003E pdWait {\n        throw(\"runtime: corrupted polldesc\")\n    }\n    return old == pdReady\n}\n\nfunc netpollunblock(pd *pollDesc, mode int32, ioready bool) *g {\n    gpp := &amp;pd.rg\n    if mode == 'w' {\n        gpp = &amp;pd.wg\n    }\n\n    for {\n        old := *gpp\n        if old == pdReady {\n            return nil\n        }\n\n        if old == 0 &amp;&amp; !ioready {\n            \u002F\u002F Only set pdReady for ioready. runtime_pollWait\n            \u002F\u002F will check for timeout\u002Fcancel before waiting.\n            return nil\n        }\n\n        var new uintptr\n        if ioready {\n            new = pdReady\n        }\n\n        if atomic.Casuintptr(gpp, old, new) {\n            if old == pdWait {\n                old = 0\n            }\n\n            return (*g)(unsafe.Pointer(old))\n        }\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИменно эти две функции добавляют и удаляют горутины из очереди выполнения netpoll. А после этого sysmon сидит и делает уже платформно-зависимый netpoll для того, чтобы узнать, какую горутину можно отправить обратно на выполнение путём передачи оной в очередь завершённых горутин netpoll.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНу что же, на этом можно начинать подводить итоги. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#076184\"\u003EЗаключение\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nМы изучили среду исполнения, в которой код не пестрит невнятными и невероятными конструкциями для “упрощения” операций ввода-вывода. Ваш код выглядит просто, но при этом вы не жертвуете правильными подходами для реализации этого многопоточного ввода\u002Fвывода. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМы также видим, что планировщик задач среды исполнения (неважно, голанг или другой среды, мы наверняка найдём подобный подход в других средах) и планировщик ОС — это две совершенно разные вещи. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНаписание правильного многопоточного приложения не подразумевает простое создание тысяч потоков. Наоборот, подобное приложение подразумевает наличие хорошо отточенного и проработанного подхода в том, как среда исполнения использует ОС для эффективного запуска и обработки задач. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nРазные среды выполнения предоставляют вам разные подходы. Например, в .NET Framework применяется достаточно консервативный режим, который позволяет вам работать как с потоками напрямую, так и с системами пула потоков. В то же время в rust отсутствует сама идея того, что ваша среда исполнения будет как-либо работать за вас. Посему, если вам приспичило использовать какой-либо тредпул, то вам придётся воспользоваться сторонними компонентами, типа \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftokio-rs\u002FTokio\"\u003ETokio\u003C\u002Fa\u003E. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nГоланг представляет вам абсолютно новый подход к исполнению своих приложений. Всё выглядит так, что вам не приходится задумываться о том, как правильно выполнять многопоточные приложения, но за кулисами происходит очень много. Вы сможете воспользоваться замечательными инструментами среды исполнения, не заморачиваясь тем, как всё это реализовано. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ заключение я хотел бы пересказать одну историю Скота Хансельмана:\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EМоя свояченица эммигрировала в США из Зимбабве. Ей 30, и она учитель. Она никогда не водила машину (а в США без машины туго). Я посадил её в наш Приус и мы поехали на парковку, где мы с ней тренировались несколько дней. Дело дошло до параллельной парковки, и вот это как раз то, что до неё не доходило ни в каком виде. Я ей сказал: “Ну, представь, как поворачиваются передние колёса, когда ты вращаешь руль”.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n“Передние?” — переспросила она — “А какая разница, какие колёса поворачиваются?” Выяснилось, что она не понимала, что поворачиваются передние колёса. Ей казалось, что ВСЕ ЧЕТЫРЕ колеса автомобиля поворачиваются при развороте автомобиля. Я, естественно, настаивал на своём, мол, нет, только передние. Она мне не верила, пока не вылезла из машины и не посмотрела, как я паркуюсь. Она была удивлена тем, что задние колёса на поворачивались и машина следовала положению передних колёс. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n — Ты этого не знала? — спросил я.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n — Я просто о таком не думала. Я подразумевала, что они все поворачивались, и никогда не задавалась вопросами по этому поводу. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОчевидно, это “подразумевание” превратилось в проблему, когда мы пытались раздебажить её умение парковаться.\u003C\u002Fblockquote\u003EЕсть в мире программисты, которые гордо могут сказать: “Мне не нужно знать, как работает среда исполнения в моём языке программирования.” Это звучит, скажем так, недалёко, и в один прекрасный момент вы найдёте себя в состоянии психического срыва, пытаясь понять, почему ваш новый проект беспощадно тормозит на новом сервере. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНадеюсь, эта информация поможет вам разобраться и понять, как работает среда исполнения голанга и в чём именно заключается принципиальное отличие голанга от других языков программирования.\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"go"},{"titleHtml":"golang"},{"titleHtml":"голанг"},{"titleHtml":"компиляторы"},{"titleHtml":"устройство компилятора"},{"titleHtml":"согласованность"},{"titleHtml":"многопоточность"},{"titleHtml":"FirstVDS"},{"titleHtml":"FirstDEDIC"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fux\u002Fak\u002Flj\u002Fuxakljao57bebvasvv3goinkgo0.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fux\u002Fak\u002Flj\u002Fuxakljao57bebvasvv3goinkgo0.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Ffirst\\\u002Fblog\\\u002F582144\\\u002F\"},\"headline\":\"Лезем в сорцы компилятора — как работает goscheduler (Часть II)\",\"datePublished\":\"2021-10-11T10:00:02+03:00\",\"dateModified\":\"2021-10-11T10:22:33+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"FirstJohn\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Чтение рекомендуется начать с первой части, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность &mdash;...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Ffirst\\\u002Fblog\\\u002F582144\\\u002F#post-content-body\",\"about\":[\"c_first\",\"h_programming\",\"h_analysis_design\",\"h_system_programming\",\"h_compilers\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582144\\\u002F7bb2b967b36d0c68d6805dd34eb6f234\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fux\\\u002Fak\\\u002Flj\\\u002Fuxakljao57bebvasvv3goinkgo0.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fa44\\\u002F9ea\\\u002Fe90\\\u002Fa449eae90733a7ebe0b30520010462e4.png\"]}","metaDescription":"Чтение рекомендуется начать с первой части, в которой мы терзаем ОС нереальным количеством потоков, смотрим, что из этого вышло, и видим, что согласованность — это не обязательно...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"first":{"alias":"first","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F81e\u002Fa2b\u002F70e\u002F81ea2b70ebe0942cdf523ca6af7a3e2b.png","titleHtml":"FirstVDS","descriptionHtml":"Виртуальные и выделенные серверы в ДЦ в Москве","relatedData":null,"statistics":{"postsCount":72,"newsCount":0,"vacanciesCount":0,"employeesCount":14,"careerRating":null,"subscribersCount":24212,"rating":356.96,"invest":null},"foundationDate":{"year":"2002","month":"12","day":"06"},"location":{"city":null,"region":null,"country":{"id":"168","title":"Россия"}},"siteUrl":"http:\u002F\u002Ffirstvds.ru\u002F?aid=20152","staffNumber":"51–100 человек","registrationDate":"2012-09-13T06:50:30+00:00","representativeUser":{"alias":"FirstJohn","fullname":null},"contacts":[{"title":"Сайт","url":"https:\u002F\u002Ffirstvds.ru"},{"title":"Сайт","url":"https:\u002F\u002F1dedic.ru"},{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002FFirstVDS"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Ffirstvds"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-10974470-14"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"FirstVDS, Россия - Виртуальные и выделенные серверы в ДЦ в Москве с 6 декабря 2002 г.","title":"FirstVDS, Россия - Виртуальные и выделенные серверы в ДЦ в Москве с 6 декабря 2002 г.","keywords":["Программирование","Системное администрирование","Хостинг","Разработка под Arduino","Компиляторы"],"descriptionHtml":"72 статьи от авторов компании FirstVDS","description":"72 статьи от авторов компании FirstVDS"},"aDeskSettings":null,"careerAlias":"firstvds","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

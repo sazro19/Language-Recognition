@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Сам себе РКН или родительский контроль с MikroTik (ч.1) / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/583866\/"},"headline":"Сам себе РКН или родительский контроль с MikroTik (ч.1)","datePublished":"2021-10-25T12:00:02+03:00","dateModified":"2021-10-25T13:59:42+03:00","author":{"@type":"Person","name":"olegtsss"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Подготовленный ранее цикл статей, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В...","url":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/583866\/#post-content-body","about":["c_ruvds","h_infosecurity","h_network_technologies","f_develop","f_admin"],"image":["https:\/\/habr.com\/share\/publication\/583866\/c81d617fa6933e8703b3f1abb2f36d63\/","https:\/\/habrastorage.org\/getpro\/habr\/post_images\/606\/2a9\/44a\/6062a944a625def9fe5876e4399edeb4.png","https:\/\/habrastorage.org\/webt\/h-\/gl\/4u\/h-gl4ukflrvajubyq8z9ciouv_w.jpeg","https:\/\/habrastorage.org\/webt\/up\/yp\/ld\/upypldkyejkipzx1nx2t3i9yykg.jpeg","https:\/\/habrastorage.org\/webt\/lp\/bp\/m-\/lpbpm-lo6ho0muev-ad1klydr38.jpeg","https:\/\/habrastorage.org\/webt\/zg\/wk\/wv\/zgwkwvojnovr5c2fhjpbswn8znu.jpeg","https:\/\/habrastorage.org\/webt\/lq\/54\/zh\/lq54zh5jlpf4iyvtljugtynn1m4.jpeg","https:\/\/habrastorage.org\/webt\/fx\/pd\/6w\/fxpd6wi6twnxbvtkccrephraa-8.jpeg","https:\/\/habrastorage.org\/webt\/ou\/g5\/kh\/oug5kh6sjydt9llengsiebnp40w.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Сам себе РКН или родительский контроль с MikroTik (ч.1)" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Сам себе РКН или родительский контроль с MikroTik (ч.1)" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Сам себе РКН или родительский контроль с MikroTik (ч.1)" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Подготовленный ранее цикл статей, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Подготовленный ранее цикл статей, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Подготовленный ранее цикл статей, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Подготовленный ранее цикл статей, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Подготовленный ранее цикл статей, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://hsto.org/webt/6q/s0/dn/6qs0dnetuhtifarerm8nyzrjwly.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://hsto.org/webt/6q/s0/dn/6qs0dnetuhtifarerm8nyzrjwly.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://hsto.org/webt/6q/s0/dn/6qs0dnetuhtifarerm8nyzrjwly.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://hsto.org/webt/6q/s0/dn/6qs0dnetuhtifarerm8nyzrjwly.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://hsto.org/webt/6q/s0/dn/6qs0dnetuhtifarerm8nyzrjwly.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583866" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-25T09:00:02.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583866/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/ruvds/blog/583866/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://hsto.org/webt/6q/s0/dn/6qs0dnetuhtifarerm8nyzrjwly.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="ruvds" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://ruvds.com/ru-rub"><img src="//habrastorage.org/getpro/habr/branding/b77/8d5/a41/b778d5a41f83016379c6630262c3294c.png" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/ruvds/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">2823.09</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/ruvds/profile/" class="tm-company-card__name">
+        RUVDS.com
+      </a> <div class="tm-company-card__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/olegtsss/" title="olegtsss" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/olegtsss/" class="tm-user-info__username">
+      olegtsss
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-25T09:00:02.000Z" title="2021-10-25, 12:00">сегодня в 12:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Сам себе РКН или родительский контроль с MikroTik (ч.1)</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/ruvds/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании RUVDS.com</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/infosecurity/" class="tm-article-snippet__hubs-item-link"><span>Информационная безопасность</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/network_technologies/" class="tm-article-snippet__hubs-item-link"><span>Сетевые технологии</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><a href="https://habr.com/ru/company/ruvds/blog/583866/"><div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/getpro/habr/post_images/606/2a9/44a/6062a944a625def9fe5876e4399edeb4.png"/></div></a><br/>
+Подготовленный ранее цикл <a href="https://habr.com/ru/company/ruvds/blog/575808">статей</a>, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного материала стало понятно, что у некоторых пользователей подобное оборудование установлено дома (не удивительно, ведь сама простая <a href="https://mikrotik.com/product/RB931-2nD">модель </a>стоит всего 1500 рублей), в связи с чем решено подготовить отдельный материал, посвященный возможностям RouterOS по организации родительского контроля. Поговорим о различных подходах, настройках, сопрягаемых решениях, касающихся предметной области.<br/>
+<a name="habracut"></a><br/>
+Материалы поделены на две статьи. В первой части подробно рассмотрим организацию функционирования DNS, поговорим о работе с проходящим через маршрутизатор трафиком на L3 уровне посредством Firewall Filter и связанного с ним Ip Kid-control. Во второй части статьи подробно рассмотрим прикладное применение маркировки трафика посредством Firewall Mangle и сделаем выводы, касающиеся возможностей оборудования MikroTik по организации родительского контроля. Что-то новое никому не известное материалы статьи не раскрывают, но при этом показывают прикладное применение различных сетевых настроек, и решение поставленной задачи.<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ 1. Настройка DNS</font></h2><br/>
+Определим имеющиеся условия. Роутер MikroTik подключен к интернет провайдеру, работает NAT, раздается сеть Wi-Fi, которой пользуются все члены семьи. Классическое домашнее решение. Первое, с чего следует начать, это с указания настроек для DNS сервера маршрутизатора:<br/>
+<br/>
+<pre><code class="bash">/ip dns set allow-remote-requests=yes servers=77.88.8.7,77.88.8.3</code></pre><br/>
+В примере указаны, так называемые, семейные общедоступные сервера от <a href="https://dns.yandex.ru">Яндекса</a>, которые должны «фильтровать» часть взрослого контента. На самом деле, там полно всего, чего бы многие предпочли не показывать детям. На рынке существуют более гибкие платные настраиваемые под себя решения, такие как <a href="https://www.skydns.ru">Skydns</a> и другие. Они имеют личные кабинеты, в которых выполняются необходимые настройки. Всего 500 рублей в год, очень даже адекватная стоимость.<br/>
+<br/>
+Чтобы заданные на клиентах статические DNS сервера не смогли отработать (хотя вряд ли дети смогут сделать что-то подобное), редиректим все DNS запросы на маршрутизатор:<br/>
+<br/>
+<pre><code class="bash">/ip firewall nat
+add action=redirect chain=dstnat comment="Redirect DNS in NAT" dst-port=53 protocol=udp src-address=10.0.0.0/24 to-ports=53
+</code></pre><br/>
+Гипотетическим минусом использования платных DNS серверов является факт передачи открытой привязанной к себе (или членам семьи) информации третьим лицам, тем же DNS провайдерам. Поэтому идем дальше. Будем использовать общедоступные DNS сервера, при этом для не благонадежных сайтов установим статические <a href="https://wiki.mikrotik.com/wiki/Manual:IP/DNS">записи</a> прямо на MikroTik:<br/>
+<br/>
+<pre><code class="bash">/ip dns static add address=127.0.0.1 regexp=\\\\*example\\.com\$</code></pre><br/>
+Как видно из примера, запросы на сайты вида example.com, other.example.com, abrakatabra.example.com (субдомены) будут направлены на localhost, другими словами, в никуда. Команда для очистки кеш DNS сервера, если что:<br/>
+<br/>
+<pre><code class="bash">/ip dns cache flush</code></pre><br/>
+Подготовим простейшую html страничку заглушку для родительского контроля:<br/>
+<br/>
+<pre><code class="xml">&lt;!DOCTYPE html>
+&lt;html lang="en">
+&lt;head>
+  &lt;meta charset="UTF-8">
+  &lt;title>Родительский контроль&lt;/title>
+&lt;/head>
+&lt;body>
+	&lt;h1>Заблокировано!&lt;/h1>
+&lt;/body>
+&lt;/html>
+</code></pre><br/>
+<img src="https://habrastorage.org/r/w780q1/webt/h-/gl/4u/h-gl4ukflrvajubyq8z9ciouv_w.jpeg" data-src="https://habrastorage.org/webt/h-/gl/4u/h-gl4ukflrvajubyq8z9ciouv_w.jpeg" data-blurred="true"/><br/>
+Чтобы ее демонстрировать при попытках перехода детей на контент, запрещенный родителями, нужно развернуть web сервер. Сделать это на MikroTik, конечно, заманчиво. Скажу сразу, что пытаться прикручивать сюда работу Hotspot – это плохая идея, потому что он предназначен для других целей и не нужно городить огород. Как вариант, можно воспользоваться технологией виртуального роутера от MikroTik (<i>/metarouter</i>). Как это сделать <a href="https://habr.com/ru/post/248009">ранее</a> рассмотрено на Хабре. Однако есть минимальные требования к аппаратной части вашего роутера: процессор mips или ppc, наличие свободных 48Мб оперативной памяти и 24Мб на диске. А это уже не устройства для дома, и 1500 рублями здесь не отделаешься. Поэтому рекомендую посмотреть в сторону одноплатника Raspberry Pi или <a href="https://ruvds.com">VDS</a> всего за 130 рублей в месяц:<br/>
+<br/>
+<div style="text-align:center;"><img src="https://habrastorage.org/r/w780q1/webt/up/yp/ld/upypldkyejkipzx1nx2t3i9yykg.jpeg" data-src="https://habrastorage.org/webt/up/yp/ld/upypldkyejkipzx1nx2t3i9yykg.jpeg" data-blurred="true"/></div><br/>
+Вынести страницу заглушку на внешний сервер – это отличная идея, ведь всегда его можно использовать и под другие задачи, а также никаких проблем с электричеством и вписыванием железа в семейный интерьер. Устанавливаем web сервер:<br/>
+<br/>
+<pre><code class="bash">apt install apache2
+a2enmod ssl
+mkdir -p /var/www/example.com/
+chown www-data:www-data /var/www/example.com/
+Сюда кладем нашу HTML заглушку => /var/www/example.com/index.html
+nano /etc/apache2/sites-available/example.com.conf
+
+&lt;VirtualHost *:443>
+        RewriteEngine On
+        RewriteCond %{HTTPS} on
+        RewriteRule (.*) http://%{HTTP_HOST}%{REQUEST_URI}
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+		
+        SSLEngine on
+        SSLCertificateFile /root/example.com.crt
+        SSLCertificateKeyFile /root/example.com.key
+&lt;/VirtualHost>
+
+&lt;VirtualHost *:80>
+        DocumentRoot /var/www/example.com/
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+&lt;/VirtualHost>
+
+a2ensite example.com.conf
+a2dissite 000-default.conf
+systemctl restart apache2
+</code></pre><br/>
+Запросы к web серверу на любые домены отправляем на нашу страницу заглушку (<i>&lt;VirtualHost *:443 / 80></i>), при этом запросы по HTTPS редиректим на HTTP. Сертификат используем невалидный (или самоподписанный), о чем, конечно, браузер будет нас настойчиво уведомлять:<br/>
+<img src="https://habrastorage.org/r/w780q1/webt/lp/bp/m-/lpbpm-lo6ho0muev-ad1klydr38.jpeg" data-src="https://habrastorage.org/webt/lp/bp/m-/lpbpm-lo6ho0muev-ad1klydr38.jpeg" data-blurred="true"/><br/>
+Теперь необходимо составить список сайтов, которые подлежат родительской блокировке. Начнем логировать все DNS запросы прямо на RouterOS (пропускаем мимо содержание пакетов):<br/>
+<br/>
+<pre><code class="bash">/system logging action add name=DNS target=memory
+/system logging add action=DNS topics=dns,!packet
+</code></pre><br/>
+<img src="https://habrastorage.org/r/w780q1/webt/zg/wk/wv/zgwkwvojnovr5c2fhjpbswn8znu.jpeg" data-src="https://habrastorage.org/webt/zg/wk/wv/zgwkwvojnovr5c2fhjpbswn8znu.jpeg" data-blurred="true"/><br/>
+<br/>
+Логи можно собирать и обрабатывать на удаленном устройстве, например на VDS при помощи Graylog. Данный вопрос уже раскрыт <a href="https://habr.com/ru/company/ruvds/blog/576284">ранее</a>. Для того, чтобы все остальные члены семьи, в том числе телевизор, не попадал под контроль, следует настроить на маршрутизаторе следующие действия:<br/>
+<br/>
+<b><font color="#3AC1EF">1) В DHCP сервере статически закрепить IP адреса за детскими устройствами:</font></b><br/>
+<br/>
+<pre><code class="bash">/ip dhcp-server lease
+add address=10.0.0.254 client-id=1:11:22:33:cc:bb:aa mac-address=11:22:33:cc:bb:aa server=server_home
+add address=10.0.0.253 client-id=1:22:33:44:cc:ba:aa mac-address=22:33:44:cc:ba:aa server=server_home
+</code></pre><br/>
+Или так:<br/>
+<br/>
+<pre><code class="bash">/ip dhcp-server lease make-static numbers=1
+/ip dhcp-server lease make-static numbers=2
+</code></pre><br/>
+<b><font color="#3AC1EF">2) Собрать полученные IP адреса в один address-list:</font></b><br/>
+<br/>
+<pre><code class="bash">
+/ip firewall address-list
+add address=10.0.0.254 list=children
+add address=10.0.0.253 list=children
+</code></pre><br/>
+<b><font color="#3AC1EF">3) Указать в DHCP сервере общедоступные DNS </font></b>(предварительно отключив описанное выше правило <i>/ip firewall nat add action=redirect…</i>):<br/>
+<br/>
+<pre><code class="bash">
+/ip dhcp-server network
+add address=10.0.0.0/24 dns-server=77.88.8.8,77.88.8.1 gateway=10.0.0.1 netmask=24
+</code></pre><br/>
+<b><font color="#3AC1EF">4) Перехватывать DNS запросы от детских устройств и натировать соответственно:</font></b><br/>
+<br/>
+<pre><code class="bash">
+/ip firewall nat
+add action=dst-nat chain=dstnat comment="DST-NAT Children to localDnsServer" dst-port=53 protocol=udp  src-address-list=children to-addresses=10.0.0.1
+</code></pre><br/>
+Теперь представим, что у нас есть еще дача, на которой необходимо так же иметь родительский контроль, кроме этого родственники с детьми, друзья, коллеги, которые просят сделать им аналогичные сервисы. Тогда уже есть смысл вынести DNS сервер с MikroTik на VDS, IP адрес которого использовать на различных устройствах. Настраиваем необходимый софт:<br/>
+<br/>
+<pre><code class="bash">
+apt install bind9 dnsutils
+nano /etc/bind/named.conf.options
+
+options {
+        interface-interval 0;
+        version none;
+        recursion yes;
+        forwarders { 77.88.8.7; 77.88.8.3; };
+        allow-query { 127.0.0.1; 192.168.15.0/24 };
+};
+</code></pre><br/>
+Имеем ввиду, что зоны, которые не обслуживаются нашим сервером, будут рекурсивно запрошены у forwarders. Таким образом, ваш сервер может быть задействован в DDOS атаках, когда боты найдут IP вашего VDS и начнут постоянно запрашивать ANY DNS записи для атакуемого ресурса. Или обратная вариация, когда запрашиваться будут значительные легитимные ANY DNS записи, а в качестве источника запроса указываться IP адрес атакуемого ресурса (DNS Amplification Attack). Поэтому рекомендую ограничить запросы только с VPN сетки 192.168.15.0/24 (или пула IP вашего провайдера хотя бы).<br/>
+<br/>
+Далее настраиваем зоны, которые будем «глушить»:<br/>
+<br/>
+<pre><code class="bash">
+nano /etc/bind/named.conf.local
+
+zone "example.com" {
+    type master;
+    file "/etc/bind/db.example.com ";
+};
+
+nano /etc/bind/db.example.com
+
+$TTL 360
+$ORIGIN example.com.
+
+@ IN SOA example.com. admin.example.com. (
+        1 ; Serial
+        1d ; Refresh
+        1h ; Retry
+        1w ; Expire
+        2h ; Negative Cache TTL
+    )
+
+@				IN	NS	ns1.example.com.
+@				IN	NS	ns2.example.com.
+@				IN	A	IP VDS сервера
+ns1.example.com.		IN	A	IP VDS сервера
+ns2.example.com.		IN	A	IP VDS сервера
+*				IN	A	IP VDS сервера
+</code></pre><br/>
+Разумеется, сюда же на VDS переедет и web сервер с HTML заглушкой. Настраиваем логирование DNS запросов, чтобы можно было их анализировать и дополнять блокируемые зоны:<br/>
+<br/>
+<pre><code class="bash">
+nano /etc/apparmor.d/usr.sbin.named
+
+/var/log/bind9/** rw,
+/var/log/bind9/ rw,
+
+systemctl restart apparmor
+
+mkdir /var/log/bind9
+chown bind:bind /var/log/bind9/
+nano /etc/bind/named.conf
+
+logging {
+	channel my_file {
+		file "/var/log/bind9/bind.log" versions 3 size 100m;
+		severity info;
+		print-time yes;
+		print-category yes;
+		print-severity yes;
+	};
+
+	category default { my_file; };
+	category queries { my_file; };
+
+	category lame-servers { null; };
+};
+
+systemctl restart bind9
+tail /var/log/bind9/bind.log -F
+</code></pre><br/>
+Лог будет выглядеть примерно так:<br/>
+<br/>
+<pre><code class="bash">
+14-Oct-2021 00:10:52.237 queries: info: client @0xb3785670 192.168.1.8#37426 (example.com): query: example.com IN A + (192.168.1.9)
+14-Oct-2021 00:10:52.243 queries: info: client @0xb3785670 192.168.1.8#33533 (example.com): query: example.com IN AAAA + (192.168.1.9)
+</code></pre><br/>
+Здесь мы настроили Bind9 — наиболее распространенный DNS сервер. Конечно, он должен работать как минимум в паре, так называемые master и slave. Однако MikroTik разрешает работать только с одним сервером.<br/>
+<br/>
+Если зон будет много, тогда есть смысл выбрать более мощное виртуальное устройство. Сейчас это стоит не больших денег. В результате получается что-то вроде нашего собственного частно-коллективного решения, которое можно обкрутить web интерфейсом, внутренней логикой и после этого даже попытаться монетизировать )).<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ 2. Firewall Filter</font></h2><br/>
+Теперь вернемся к нашему MikroTik и покажем, как еще можно ограничить трафик. В дело вступает Firewall. RouterOS позволяет динамически создавать address-list по доменному имени:<br/>
+<br/>
+<pre><code class="bash">
+/ip firewall address-list
+add address=youtube.com list=Block_site_by_dns_name
+add address=vk.com list=Block_site_by_dns_name
+add address=www.youtube.com list=Block_site_by_dns_name
+</code></pre><br/>
+Доменные имена автоматически разрезолвятся в IP адреса:<br/>
+<br/>
+<pre><code class="bash">
+/ip firewall address-list print 
+Flags: X - disabled, D - dynamic 
+ #   LIST                     ADDRESS                                      CREATION-TIME        TIMEOUT             
+3   Block_site_by_dns_name   youtube.com                               oct/10/2021 22:25:51
+5   Block_site_by_dns_name   vk.com                                       oct/10/2021 22:26:40
+6 D ;;; vk.com
+Block_site_by_dns_name   87.240.190.72                                oct/10/2021 22:26:40
+7 D ;;; vk.com
+Block_site_by_dns_name   87.240.190.78                                oct/10/2021 22:26:40
+8 D ;;; vk.com
+Block_site_by_dns_name   87.240.190.67                                oct/10/2021 22:26:40
+9 D ;;; vk.com
+Block_site_by_dns_name   93.186.225.208                               oct/10/2021 22:26:40
+10 D ;;; vk.com
+Block_site_by_dns_name   87.240.139.194                               oct/10/2021 22:26:40
+11 D ;;; vk.com
+ Block_site_by_dns_name   87.240.137.158                               oct/10/2021 22:26:40
+12 D ;;; youtube.com
+Block_site_by_dns_name   173.194.221.91                               oct/10/2021 22:36:53
+13 D ;;; youtube.com
+Block_site_by_dns_name   173.194.221.136                              oct/10/2021 22:36:53
+14 D ;;; youtube.com
+Block_site_by_dns_name   173.194.221.93                               oct/10/2021 22:36:53
+15 D ;;; youtube.com
+Block_site_by_dns_name   173.194.221.190                              oct/10/2021 22:36:53
+</code></pre><br/>
+Ну и далее просто блокируем весь не угодный трафик на L3:<br/>
+<br/>
+<pre><code class="bash">
+/ip firewall filter
+add action=accept chain=input comment="Accept established,related" connection-state=established,related
+add action=drop chain=input comment="Drop invalid" connection-state=invalid
+add action=accept chain=forward comment="Accept established,related" connection-state=established,related
+add action=drop chain=forward comment="Drop invalid" connection-state=invalid
+add action=drop chain=forward comment=Drop_sites_by_address_list dst-address-list=Block_site_by_dns_name
+</code></pre><br/>
+Первые правила перед блокировкой важны. Они разгружают ваш маршрутизатор, так как установленные и связанные с ними соединения не будут обрабатываться всеми правилами Firewall.<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ 3. Kid-control</font></h2><br/>
+В самом конце данной статьи расскажу про имеющееся в RouterOS готовое решение <a href="https://wiki.mikrotik.com/wiki/Manual:Kid-control">Kid-control</a>. Его функционал позволяет удобно автоматизировать то, что можно всегда сделать скриптами. Добавляем по MAC адресам в <code>/ip kid-control device</code> все детские устройства:<br/>
+<br/>
+<pre><code class="bash">
+/ip dhcp-server lease print 
+Flags: X - disabled, R - radius, D - dynamic, B - blocked 
+ #   ADDRESS              MAC-ADDRESS       HOST-NAME     SERVER     RATE-LIMIT     STATUS  LAST-SEEN               
+ 0 D 10.0.0.253           AA:BB:11:22:33:44 LittleFood     server_...                bound   21m2s                   
+
+/ip kid-control device add mac-address=AA:BB:11:22:33:44 name=Pasha_Iphone user=Pasha
+</code></pre><br/>
+<img src="https://habrastorage.org/r/w780q1/webt/lq/54/zh/lq54zh5jlpf4iyvtljugtynn1m4.jpeg" data-src="https://habrastorage.org/webt/lq/54/zh/lq54zh5jlpf4iyvtljugtynn1m4.jpeg" data-blurred="true"/><br/>
+<br/>
+После этого задаем поведенческие правила для работы детского интернета: в какой день недели ему работать и ограничения по скорости.<br/>
+<br/>
+<pre><code class="bash">
+/ip kid-control add name=Pasha
+</code></pre><br/>
+<img src="https://habrastorage.org/r/w780q1/webt/fx/pd/6w/fxpd6wi6twnxbvtkccrephraa-8.jpeg" data-src="https://habrastorage.org/webt/fx/pd/6w/fxpd6wi6twnxbvtkccrephraa-8.jpeg" data-blurred="true"/><br/>
+<br/>
+В результате RouterOS создаст динамические правила в Firewall Filter:<br/>
+<br/>
+<pre><code class="bash">
+/ip firewall filter print
+Flags: X - disabled, I - invalid, D - dynamic 
+ 0  D ;;; Pasha_Iphone, kid-control
+      chain=forward action=reject dst-address=10.0.0.253 
+</code></pre><br/>
+Вот и весть <code>/ip kid-control</code>от RouterOS, по мне так полная скука.<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ 4. Подведем промежуточные итоги</font></h2><br/>
+Представленные возможности уже позволяют ограничить трафик, проходящий через ваш маршрутизатор. Но RouterOS на этом еще не заканчивается. Самое интересное будет в следующей части статьи. Там же будут сделаны общие выводы по комплексной технической организации родительского контроля на оборудовании MikroTik.<br/>
+<br/>
+<a href="http://ruvds.com/ru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=olegtsss%0A&amp;utm_content=mikrotik_safes_children_(chast_1)"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ou/g5/kh/oug5kh6sjydt9llengsiebnp40w.png"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmikrotik%5D" class="tm-tags-list__link">mikrotik</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Brouteros%5D" class="tm-tags-list__link">routeros</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdns%5D" class="tm-tags-list__link">dns</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bruvds_%D1%81%D1%82%D0%B0%D1%82%D1%8C%D0%B8%5D" class="tm-tags-list__link">ruvds_статьи</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/ruvds/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании RUVDS.com
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/infosecurity/" class="tm-hubs-list__link">
+    Информационная безопасность
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/network_technologies/" class="tm-hubs-list__link">
+    Сетевые технологии
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 26: ↑26 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 26: ↑26 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+26</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">3.1K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    55
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__title">RUVDS.com</a> <div class="tm-company-snippet__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/ruvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/olegtsss/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 36 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    30
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">32.1</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/olegtsss/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @olegtsss
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/ruvds/blog/583866/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 18 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-07-26T21:00:00.000Z" title="2015-07-27, 00:00">27  июля  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://ruvds.com" target="_blank" class="tm-company-basic-info__link">
+      ruvds.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    11–30 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2016-03-18T05:43:01.000Z" title="2016-03-18, 08:43">18  марта  2016</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/ruvds/" class="tm-company-basic-info__link">
+      ruvds
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/ruvds/blog/583866/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/ruvds/blog/583866/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583866":{"id":"583866","timePublished":"2021-10-25T09:00:02+00:00","isCorporative":true,"lang":"ru","titleHtml":"Сам себе РКН или родительский контроль с MikroTik (ч.1)","leadData":{"textHtml":"\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F583866\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F606\u002F2a9\u002F44a\u002F6062a944a625def9fe5876e4399edeb4.png\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u003E\r\nПодготовленный ранее цикл \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F575808\"\u003Eстатей\u003C\u002Fa\u003E, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного материала стало понятно, что у некоторых пользователей подобное оборудование установлено дома (не удивительно, ведь сама простая \u003Ca href=\"https:\u002F\u002Fmikrotik.com\u002Fproduct\u002FRB931-2nD\" rel=\"nofollow noopener noreferrer\"\u003Eмодель \u003C\u002Fa\u003Eстоит всего 1500 рублей), в связи с чем решено подготовить отдельный материал, посвященный возможностям RouterOS по организации родительского контроля. Поговорим о различных подходах, настройках, сопрягаемых решениях, касающихся предметной области.\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":30,"votesCount":36},"rating":32.1,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1465194","alias":"olegtsss","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":18,"favoritesCount":55,"readingCount":3087,"score":26,"votesCount":26},"hubs":[{"relatedData":null,"id":"19791","alias":"ruvds","type":"corporative","title":"Блог компании RUVDS.com","titleHtml":"Блог компании RUVDS.com","isProfiled":false},{"relatedData":null,"id":"50","alias":"infosecurity","type":"collective","title":"Информационная безопасность","titleHtml":"Информационная безопасность","isProfiled":true},{"relatedData":null,"id":"17123","alias":"network_technologies","type":"collective","title":"Сетевые технологии","titleHtml":"Сетевые технологии","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F583866\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F606\u002F2a9\u002F44a\u002F6062a944a625def9fe5876e4399edeb4.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nПодготовленный ранее цикл \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F575808\"\u003Eстатей\u003C\u002Fa\u003E, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного материала стало понятно, что у некоторых пользователей подобное оборудование установлено дома (не удивительно, ведь сама простая \u003Ca href=\"https:\u002F\u002Fmikrotik.com\u002Fproduct\u002FRB931-2nD\"\u003Eмодель \u003C\u002Fa\u003Eстоит всего 1500 рублей), в связи с чем решено подготовить отдельный материал, посвященный возможностям RouterOS по организации родительского контроля. Поговорим о различных подходах, настройках, сопрягаемых решениях, касающихся предметной области.\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nМатериалы поделены на две статьи. В первой части подробно рассмотрим организацию функционирования DNS, поговорим о работе с проходящим через маршрутизатор трафиком на L3 уровне посредством Firewall Filter и связанного с ним Ip Kid-control. Во второй части статьи подробно рассмотрим прикладное применение маркировки трафика посредством Firewall Mangle и сделаем выводы, касающиеся возможностей оборудования MikroTik по организации родительского контроля. Что-то новое никому не известное материалы статьи не раскрывают, но при этом показывают прикладное применение различных сетевых настроек, и решение поставленной задачи.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ 1. Настройка DNS\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nОпределим имеющиеся условия. Роутер MikroTik подключен к интернет провайдеру, работает NAT, раздается сеть Wi-Fi, которой пользуются все члены семьи. Классическое домашнее решение. Первое, с чего следует начать, это с указания настроек для DNS сервера маршрутизатора:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\u002Fip dns set allow-remote-requests=yes servers=77.88.8.7,77.88.8.3\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВ примере указаны, так называемые, семейные общедоступные сервера от \u003Ca href=\"https:\u002F\u002Fdns.yandex.ru\"\u003EЯндекса\u003C\u002Fa\u003E, которые должны «фильтровать» часть взрослого контента. На самом деле, там полно всего, чего бы многие предпочли не показывать детям. На рынке существуют более гибкие платные настраиваемые под себя решения, такие как \u003Ca href=\"https:\u002F\u002Fwww.skydns.ru\"\u003ESkydns\u003C\u002Fa\u003E и другие. Они имеют личные кабинеты, в которых выполняются необходимые настройки. Всего 500 рублей в год, очень даже адекватная стоимость.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧтобы заданные на клиентах статические DNS сервера не смогли отработать (хотя вряд ли дети смогут сделать что-то подобное), редиректим все DNS запросы на маршрутизатор:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\u002Fip firewall nat\nadd action=redirect chain=dstnat comment=\"Redirect DNS in NAT\" dst-port=53 protocol=udp src-address=10.0.0.0\u002F24 to-ports=53\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nГипотетическим минусом использования платных DNS серверов является факт передачи открытой привязанной к себе (или членам семьи) информации третьим лицам, тем же DNS провайдерам. Поэтому идем дальше. Будем использовать общедоступные DNS сервера, при этом для не благонадежных сайтов установим статические \u003Ca href=\"https:\u002F\u002Fwiki.mikrotik.com\u002Fwiki\u002FManual:IP\u002FDNS\"\u003Eзаписи\u003C\u002Fa\u003E прямо на MikroTik:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\u002Fip dns static add address=127.0.0.1 regexp=\\\\\\\\*example\\\\.com\\$\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nКак видно из примера, запросы на сайты вида example.com, other.example.com, abrakatabra.example.com (субдомены) будут направлены на localhost, другими словами, в никуда. Команда для очистки кеш DNS сервера, если что:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\u002Fip dns cache flush\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПодготовим простейшую html страничку заглушку для родительского контроля:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E&lt;!DOCTYPE html\u003E\n&lt;html lang=\"en\"\u003E\n&lt;head\u003E\n  &lt;meta charset=\"UTF-8\"\u003E\n  &lt;title\u003EРодительский контроль&lt;\u002Ftitle\u003E\n&lt;\u002Fhead\u003E\n&lt;body\u003E\n\t&lt;h1\u003EЗаблокировано!&lt;\u002Fh1\u003E\n&lt;\u002Fbody\u003E\n&lt;\u002Fhtml\u003E\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fh-\u002Fgl\u002F4u\u002Fh-gl4ukflrvajubyq8z9ciouv_w.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fh-\u002Fgl\u002F4u\u002Fh-gl4ukflrvajubyq8z9ciouv_w.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\nЧтобы ее демонстрировать при попытках перехода детей на контент, запрещенный родителями, нужно развернуть web сервер. Сделать это на MikroTik, конечно, заманчиво. Скажу сразу, что пытаться прикручивать сюда работу Hotspot – это плохая идея, потому что он предназначен для других целей и не нужно городить огород. Как вариант, можно воспользоваться технологией виртуального роутера от MikroTik (\u003Ci\u003E\u002Fmetarouter\u003C\u002Fi\u003E). Как это сделать \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F248009\"\u003Eранее\u003C\u002Fa\u003E рассмотрено на Хабре. Однако есть минимальные требования к аппаратной части вашего роутера: процессор mips или ppc, наличие свободных 48Мб оперативной памяти и 24Мб на диске. А это уже не устройства для дома, и 1500 рублями здесь не отделаешься. Поэтому рекомендую посмотреть в сторону одноплатника Raspberry Pi или \u003Ca href=\"https:\u002F\u002Fruvds.com\"\u003EVDS\u003C\u002Fa\u003E всего за 130 рублей в месяц:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fup\u002Fyp\u002Fld\u002Fupypldkyejkipzx1nx2t3i9yykg.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fup\u002Fyp\u002Fld\u002Fupypldkyejkipzx1nx2t3i9yykg.jpeg\" data-blurred=\"true\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nВынести страницу заглушку на внешний сервер – это отличная идея, ведь всегда его можно использовать и под другие задачи, а также никаких проблем с электричеством и вписыванием железа в семейный интерьер. Устанавливаем web сервер:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eapt install apache2\na2enmod ssl\nmkdir -p \u002Fvar\u002Fwww\u002Fexample.com\u002F\nchown www-data:www-data \u002Fvar\u002Fwww\u002Fexample.com\u002F\nСюда кладем нашу HTML заглушку =\u003E \u002Fvar\u002Fwww\u002Fexample.com\u002Findex.html\nnano \u002Fetc\u002Fapache2\u002Fsites-available\u002Fexample.com.conf\n\n&lt;VirtualHost *:443\u003E\n        RewriteEngine On\n        RewriteCond %{HTTPS} on\n        RewriteRule (.*) http:\u002F\u002F%{HTTP_HOST}%{REQUEST_URI}\n\n        ErrorLog ${APACHE_LOG_DIR}\u002Ferror.log\n        CustomLog ${APACHE_LOG_DIR}\u002Faccess.log combined\n\t\t\n        SSLEngine on\n        SSLCertificateFile \u002Froot\u002Fexample.com.crt\n        SSLCertificateKeyFile \u002Froot\u002Fexample.com.key\n&lt;\u002FVirtualHost\u003E\n\n&lt;VirtualHost *:80\u003E\n        DocumentRoot \u002Fvar\u002Fwww\u002Fexample.com\u002F\n        ErrorLog ${APACHE_LOG_DIR}\u002Ferror.log\n        CustomLog ${APACHE_LOG_DIR}\u002Faccess.log combined\n&lt;\u002FVirtualHost\u003E\n\na2ensite example.com.conf\na2dissite 000-default.conf\nsystemctl restart apache2\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЗапросы к web серверу на любые домены отправляем на нашу страницу заглушку (\u003Ci\u003E&lt;VirtualHost *:443 \u002F 80\u003E\u003C\u002Fi\u003E), при этом запросы по HTTPS редиректим на HTTP. Сертификат используем невалидный (или самоподписанный), о чем, конечно, браузер будет нас настойчиво уведомлять:\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Flp\u002Fbp\u002Fm-\u002Flpbpm-lo6ho0muev-ad1klydr38.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Flp\u002Fbp\u002Fm-\u002Flpbpm-lo6ho0muev-ad1klydr38.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\nТеперь необходимо составить список сайтов, которые подлежат родительской блокировке. Начнем логировать все DNS запросы прямо на RouterOS (пропускаем мимо содержание пакетов):\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\u002Fsystem logging action add name=DNS target=memory\n\u002Fsystem logging add action=DNS topics=dns,!packet\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fzg\u002Fwk\u002Fwv\u002Fzgwkwvojnovr5c2fhjpbswn8znu.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fzg\u002Fwk\u002Fwv\u002Fzgwkwvojnovr5c2fhjpbswn8znu.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЛоги можно собирать и обрабатывать на удаленном устройстве, например на VDS при помощи Graylog. Данный вопрос уже раскрыт \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F576284\"\u003Eранее\u003C\u002Fa\u003E. Для того, чтобы все остальные члены семьи, в том числе телевизор, не попадал под контроль, следует настроить на маршрутизаторе следующие действия:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003E1) В DHCP сервере статически закрепить IP адреса за детскими устройствами:\u003C\u002Ffont\u003E\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\u002Fip dhcp-server lease\nadd address=10.0.0.254 client-id=1:11:22:33:cc:bb:aa mac-address=11:22:33:cc:bb:aa server=server_home\nadd address=10.0.0.253 client-id=1:22:33:44:cc:ba:aa mac-address=22:33:44:cc:ba:aa server=server_home\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИли так:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\u002Fip dhcp-server lease make-static numbers=1\n\u002Fip dhcp-server lease make-static numbers=2\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003E2) Собрать полученные IP адреса в один address-list:\u003C\u002Ffont\u003E\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip firewall address-list\nadd address=10.0.0.254 list=children\nadd address=10.0.0.253 list=children\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003E3) Указать в DHCP сервере общедоступные DNS \u003C\u002Ffont\u003E\u003C\u002Fb\u003E(предварительно отключив описанное выше правило \u003Ci\u003E\u002Fip firewall nat add action=redirect…\u003C\u002Fi\u003E):\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip dhcp-server network\nadd address=10.0.0.0\u002F24 dns-server=77.88.8.8,77.88.8.1 gateway=10.0.0.1 netmask=24\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003E4) Перехватывать DNS запросы от детских устройств и натировать соответственно:\u003C\u002Ffont\u003E\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip firewall nat\nadd action=dst-nat chain=dstnat comment=\"DST-NAT Children to localDnsServer\" dst-port=53 protocol=udp  src-address-list=children to-addresses=10.0.0.1\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nТеперь представим, что у нас есть еще дача, на которой необходимо так же иметь родительский контроль, кроме этого родственники с детьми, друзья, коллеги, которые просят сделать им аналогичные сервисы. Тогда уже есть смысл вынести DNS сервер с MikroTik на VDS, IP адрес которого использовать на различных устройствах. Настраиваем необходимый софт:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\napt install bind9 dnsutils\nnano \u002Fetc\u002Fbind\u002Fnamed.conf.options\n\noptions {\n        interface-interval 0;\n        version none;\n        recursion yes;\n        forwarders { 77.88.8.7; 77.88.8.3; };\n        allow-query { 127.0.0.1; 192.168.15.0\u002F24 };\n};\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nИмеем ввиду, что зоны, которые не обслуживаются нашим сервером, будут рекурсивно запрошены у forwarders. Таким образом, ваш сервер может быть задействован в DDOS атаках, когда боты найдут IP вашего VDS и начнут постоянно запрашивать ANY DNS записи для атакуемого ресурса. Или обратная вариация, когда запрашиваться будут значительные легитимные ANY DNS записи, а в качестве источника запроса указываться IP адрес атакуемого ресурса (DNS Amplification Attack). Поэтому рекомендую ограничить запросы только с VPN сетки 192.168.15.0\u002F24 (или пула IP вашего провайдера хотя бы).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДалее настраиваем зоны, которые будем «глушить»:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\nnano \u002Fetc\u002Fbind\u002Fnamed.conf.local\n\nzone \"example.com\" {\n    type master;\n    file \"\u002Fetc\u002Fbind\u002Fdb.example.com \";\n};\n\nnano \u002Fetc\u002Fbind\u002Fdb.example.com\n\n$TTL 360\n$ORIGIN example.com.\n\n@ IN SOA example.com. admin.example.com. (\n        1 ; Serial\n        1d ; Refresh\n        1h ; Retry\n        1w ; Expire\n        2h ; Negative Cache TTL\n    )\n\n@\t\t\t\tIN\tNS\tns1.example.com.\n@\t\t\t\tIN\tNS\tns2.example.com.\n@\t\t\t\tIN\tA\tIP VDS сервера\nns1.example.com.\t\tIN\tA\tIP VDS сервера\nns2.example.com.\t\tIN\tA\tIP VDS сервера\n*\t\t\t\tIN\tA\tIP VDS сервера\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nРазумеется, сюда же на VDS переедет и web сервер с HTML заглушкой. Настраиваем логирование DNS запросов, чтобы можно было их анализировать и дополнять блокируемые зоны:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\nnano \u002Fetc\u002Fapparmor.d\u002Fusr.sbin.named\n\n\u002Fvar\u002Flog\u002Fbind9\u002F** rw,\n\u002Fvar\u002Flog\u002Fbind9\u002F rw,\n\nsystemctl restart apparmor\n\nmkdir \u002Fvar\u002Flog\u002Fbind9\nchown bind:bind \u002Fvar\u002Flog\u002Fbind9\u002F\nnano \u002Fetc\u002Fbind\u002Fnamed.conf\n\nlogging {\n\tchannel my_file {\n\t\tfile \"\u002Fvar\u002Flog\u002Fbind9\u002Fbind.log\" versions 3 size 100m;\n\t\tseverity info;\n\t\tprint-time yes;\n\t\tprint-category yes;\n\t\tprint-severity yes;\n\t};\n\n\tcategory default { my_file; };\n\tcategory queries { my_file; };\n\n\tcategory lame-servers { null; };\n};\n\nsystemctl restart bind9\ntail \u002Fvar\u002Flog\u002Fbind9\u002Fbind.log -F\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЛог будет выглядеть примерно так:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n14-Oct-2021 00:10:52.237 queries: info: client @0xb3785670 192.168.1.8#37426 (example.com): query: example.com IN A + (192.168.1.9)\n14-Oct-2021 00:10:52.243 queries: info: client @0xb3785670 192.168.1.8#33533 (example.com): query: example.com IN AAAA + (192.168.1.9)\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЗдесь мы настроили Bind9 — наиболее распространенный DNS сервер. Конечно, он должен работать как минимум в паре, так называемые master и slave. Однако MikroTik разрешает работать только с одним сервером.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли зон будет много, тогда есть смысл выбрать более мощное виртуальное устройство. Сейчас это стоит не больших денег. В результате получается что-то вроде нашего собственного частно-коллективного решения, которое можно обкрутить web интерфейсом, внутренней логикой и после этого даже попытаться монетизировать )).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ 2. Firewall Filter\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nТеперь вернемся к нашему MikroTik и покажем, как еще можно ограничить трафик. В дело вступает Firewall. RouterOS позволяет динамически создавать address-list по доменному имени:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip firewall address-list\nadd address=youtube.com list=Block_site_by_dns_name\nadd address=vk.com list=Block_site_by_dns_name\nadd address=www.youtube.com list=Block_site_by_dns_name\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nДоменные имена автоматически разрезолвятся в IP адреса:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip firewall address-list print \nFlags: X - disabled, D - dynamic \n #   LIST                     ADDRESS                                      CREATION-TIME        TIMEOUT             \n3   Block_site_by_dns_name   youtube.com                               oct\u002F10\u002F2021 22:25:51\n5   Block_site_by_dns_name   vk.com                                       oct\u002F10\u002F2021 22:26:40\n6 D ;;; vk.com\nBlock_site_by_dns_name   87.240.190.72                                oct\u002F10\u002F2021 22:26:40\n7 D ;;; vk.com\nBlock_site_by_dns_name   87.240.190.78                                oct\u002F10\u002F2021 22:26:40\n8 D ;;; vk.com\nBlock_site_by_dns_name   87.240.190.67                                oct\u002F10\u002F2021 22:26:40\n9 D ;;; vk.com\nBlock_site_by_dns_name   93.186.225.208                               oct\u002F10\u002F2021 22:26:40\n10 D ;;; vk.com\nBlock_site_by_dns_name   87.240.139.194                               oct\u002F10\u002F2021 22:26:40\n11 D ;;; vk.com\n Block_site_by_dns_name   87.240.137.158                               oct\u002F10\u002F2021 22:26:40\n12 D ;;; youtube.com\nBlock_site_by_dns_name   173.194.221.91                               oct\u002F10\u002F2021 22:36:53\n13 D ;;; youtube.com\nBlock_site_by_dns_name   173.194.221.136                              oct\u002F10\u002F2021 22:36:53\n14 D ;;; youtube.com\nBlock_site_by_dns_name   173.194.221.93                               oct\u002F10\u002F2021 22:36:53\n15 D ;;; youtube.com\nBlock_site_by_dns_name   173.194.221.190                              oct\u002F10\u002F2021 22:36:53\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНу и далее просто блокируем весь не угодный трафик на L3:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip firewall filter\nadd action=accept chain=input comment=\"Accept established,related\" connection-state=established,related\nadd action=drop chain=input comment=\"Drop invalid\" connection-state=invalid\nadd action=accept chain=forward comment=\"Accept established,related\" connection-state=established,related\nadd action=drop chain=forward comment=\"Drop invalid\" connection-state=invalid\nadd action=drop chain=forward comment=Drop_sites_by_address_list dst-address-list=Block_site_by_dns_name\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПервые правила перед блокировкой важны. Они разгружают ваш маршрутизатор, так как установленные и связанные с ними соединения не будут обрабатываться всеми правилами Firewall.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ 3. Kid-control\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nВ самом конце данной статьи расскажу про имеющееся в RouterOS готовое решение \u003Ca href=\"https:\u002F\u002Fwiki.mikrotik.com\u002Fwiki\u002FManual:Kid-control\"\u003EKid-control\u003C\u002Fa\u003E. Его функционал позволяет удобно автоматизировать то, что можно всегда сделать скриптами. Добавляем по MAC адресам в \u003Ccode\u003E\u002Fip kid-control device\u003C\u002Fcode\u003E все детские устройства:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip dhcp-server lease print \nFlags: X - disabled, R - radius, D - dynamic, B - blocked \n #   ADDRESS              MAC-ADDRESS       HOST-NAME     SERVER     RATE-LIMIT     STATUS  LAST-SEEN               \n 0 D 10.0.0.253           AA:BB:11:22:33:44 LittleFood     server_...                bound   21m2s                   \n\n\u002Fip kid-control device add mac-address=AA:BB:11:22:33:44 name=Pasha_Iphone user=Pasha\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Flq\u002F54\u002Fzh\u002Flq54zh5jlpf4iyvtljugtynn1m4.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Flq\u002F54\u002Fzh\u002Flq54zh5jlpf4iyvtljugtynn1m4.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосле этого задаем поведенческие правила для работы детского интернета: в какой день недели ему работать и ограничения по скорости.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip kid-control add name=Pasha\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Ffx\u002Fpd\u002F6w\u002Ffxpd6wi6twnxbvtkccrephraa-8.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ffx\u002Fpd\u002F6w\u002Ffxpd6wi6twnxbvtkccrephraa-8.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ результате RouterOS создаст динамические правила в Firewall Filter:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E\n\u002Fip firewall filter print\nFlags: X - disabled, I - invalid, D - dynamic \n 0  D ;;; Pasha_Iphone, kid-control\n      chain=forward action=reject dst-address=10.0.0.253 \n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВот и весть \u003Ccode\u003E\u002Fip kid-control\u003C\u002Fcode\u003Eот RouterOS, по мне так полная скука.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ 4. Подведем промежуточные итоги\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nПредставленные возможности уже позволяют ограничить трафик, проходящий через ваш маршрутизатор. Но RouterOS на этом еще не заканчивается. Самое интересное будет в следующей части статьи. Там же будут сделаны общие выводы по комплексной технической организации родительского контроля на оборудовании MikroTik.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"http:\u002F\u002Fruvds.com\u002Fru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=olegtsss%0A&amp;utm_content=mikrotik_safes_children_(chast_1)\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fou\u002Fg5\u002Fkh\u002Foug5kh6sjydt9llengsiebnp40w.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"mikrotik"},{"titleHtml":"routeros"},{"titleHtml":"dns"},{"titleHtml":"ruvds_статьи"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhsto.org\u002Fwebt\u002F6q\u002Fs0\u002Fdn\u002F6qs0dnetuhtifarerm8nyzrjwly.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhsto.org\u002Fwebt\u002F6q\u002Fs0\u002Fdn\u002F6qs0dnetuhtifarerm8nyzrjwly.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F583866\\\u002F\"},\"headline\":\"Сам себе РКН или родительский контроль с MikroTik (ч.1)\",\"datePublished\":\"2021-10-25T12:00:02+03:00\",\"dateModified\":\"2021-10-25T13:59:42+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"olegtsss\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Подготовленный ранее цикл статей, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F583866\\\u002F#post-content-body\",\"about\":[\"c_ruvds\",\"h_infosecurity\",\"h_network_technologies\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583866\\\u002Fc81d617fa6933e8703b3f1abb2f36d63\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002F606\\\u002F2a9\\\u002F44a\\\u002F6062a944a625def9fe5876e4399edeb4.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fh-\\\u002Fgl\\\u002F4u\\\u002Fh-gl4ukflrvajubyq8z9ciouv_w.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fup\\\u002Fyp\\\u002Fld\\\u002Fupypldkyejkipzx1nx2t3i9yykg.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Flp\\\u002Fbp\\\u002Fm-\\\u002Flpbpm-lo6ho0muev-ad1klydr38.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fzg\\\u002Fwk\\\u002Fwv\\\u002Fzgwkwvojnovr5c2fhjpbswn8znu.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Flq\\\u002F54\\\u002Fzh\\\u002Flq54zh5jlpf4iyvtljugtynn1m4.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Ffx\\\u002Fpd\\\u002F6w\\\u002Ffxpd6wi6twnxbvtkccrephraa-8.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fou\\\u002Fg5\\\u002Fkh\\\u002Foug5kh6sjydt9llengsiebnp40w.png\"]}","metaDescription":"Подготовленный ранее цикл статей, посвященный организации безопасности сетей, построенных на оборудовании MikroTik, вызвал определенный интерес у сообщества. В процессе обсуждения представленного...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"ruvds":{"alias":"ruvds","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff27\u002Fea8\u002F5bd\u002Ff27ea85bd62fbd985c308110885af7e0.png","titleHtml":"RUVDS.com","descriptionHtml":"VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E","relatedData":null,"statistics":{"postsCount":2029,"newsCount":62,"vacanciesCount":0,"employeesCount":57,"careerRating":null,"subscribersCount":36796,"rating":2823.09,"invest":null},"foundationDate":{"year":"2015","month":"07","day":"27"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fruvds.com","staffNumber":"11–30 человек","registrationDate":"2016-03-18T05:43:01+00:00","representativeUser":{"alias":"ruvds","fullname":null},"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fruvds"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fru_vds"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fru_vds"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"33905479"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002Fb77\u002F8d5\u002Fa41\u002Fb778d5a41f83016379c6630262c3294c.png","linkUrl":"https:\u002F\u002Fruvds.com\u002Fru-rub","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E с 27 июля 2015 г.","title":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду HABR10 с 27 июля 2015 г.","keywords":["Научно-популярное","DIY или Сделай сам","Системное администрирование","Разработка веб-сайтов","Читальный зал"],"descriptionHtml":"2 029 статей от авторов компании RUVDS.com","description":"2 029 статей от авторов компании RUVDS.com"},"aDeskSettings":null,"careerAlias":"ruvds","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

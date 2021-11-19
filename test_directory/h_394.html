@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Python кодогенерация на благо ETL — часть 2 / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583984\/"},"headline":"Python кодогенерация на благо ETL — часть 2","datePublished":"2021-10-18T00:32:23+03:00","dateModified":"2021-10-19T00:59:08+03:00","author":{"@type":"Person","name":"Nikita Almakov"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Привет! В первой части я поделился мыслями, которые побудили к созданию python библиотеки convtools. Кратко о ней: предоставляет примитивы (конверсии), объединяя...","url":"https:\/\/habr.com\/ru\/post\/583984\/#post-content-body","about":["h_open_source","h_python","h_programming","h_funcprog","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583984\/333cb6160549436619b45233f01c4e9d\/"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Python кодогенерация на благо ETL — часть 2" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Python кодогенерация на благо ETL — часть 2" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Python кодогенерация на благо ETL — часть 2" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Привет! В первой части я поделился мыслями, которые побудили к созданию python библиотеки convtools. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Привет! В первой части я поделился мыслями, которые побудили к созданию python библиотеки convtools. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Привет! В первой части я поделился мыслями, которые побудили к созданию python библиотеки convtools. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Привет! В первой части я поделился мыслями, которые побудили к созданию python библиотеки convtools. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Привет! В первой части я поделился мыслями, которые побудили к созданию python библиотеки convtools. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/e3a/b20/5dc/e3ab205dc8d9dd027b835a284d8067c5.JPG" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/e3a/b20/5dc/e3ab205dc8d9dd027b835a284d8067c5.JPG" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/e3a/b20/5dc/e3ab205dc8d9dd027b835a284d8067c5.JPG" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/e3a/b20/5dc/e3ab205dc8d9dd027b835a284d8067c5.JPG" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/e3a/b20/5dc/e3ab205dc8d9dd027b835a284d8067c5.JPG" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583984" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-17T21:32:23.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583984/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583984/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/e3a/b20/5dc/e3ab205dc8d9dd027b835a284d8067c5.JPG" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583984/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/westandskif/" title="westandskif" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/westandskif/" class="tm-user-info__username">
+      westandskif
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-17T21:32:23.000Z" title="2021-10-18, 00:32">18  октября   в 00:32</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Python кодогенерация на благо ETL — часть 2</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/open_source/" class="tm-article-snippet__hubs-item-link"><span>Open source</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/funcprog/" class="tm-article-snippet__hubs-item-link"><span>Функциональное программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Привет! В <a href="https://habr.com/ru/post/569398/" rel="noopener noreferrer nofollow">первой части</a> я поделился мыслями, которые побудили к созданию python библиотеки <a href="https://github.com/westandskif/convtools" rel="noopener noreferrer nofollow">convtools</a>. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные конверсии для обработки данных. Конверсия генерирует узкоспециализированный код, компилирует его и возвращает функцию, решающую конкретную задачу.</p><p>В этот раз хотелось бы подробнее остановиться на двух моментах:</p><ul><li><p>как <code>pipe</code> позволяет повысить переиспользуемость кода</p></li><li><p>новая часть библиотеки: <code>Table</code>  - потоковый обработчик табличных данных</p></li></ul><h2>1) Pipes &amp; code reuse</h2><p>Надеюсь, что читать код с комментариями удобнее, чем оторванное от него косноязычное повествование, поэтому приступим:</p><pre><code class="python">from datetime import datetime
+from decimal import Decimal
+
+from convtools import conversion as c
+
+
+# Допустим нам нужно прочесть некий отчет и поработать с ним.
+
+# описываем конверсии, необходимые при чтении отчета
+# сохраним то, как будут обрабатываться все входные строки
+c_str = c.this().call_method("strip")
+# то, как из обработанной строки получить Decimal (убиваем запятые -
+# разделители групп разрядов)
+c_decimal = c_str.call_method("replace", ",", "").as_type(Decimal)
+c_parse_date = c.call_func(
+    datetime.strptime, c.this(), "%Y-%m-%d"
+).call_method("date")
+c_date = c_str.pipe(c_parse_date)
+
+c_optional_date = c_str.pipe(c.if_(c.this(), с_parse_date, None))
+c_optional_decimal = c_str.pipe(c.if_(c.this(), c_decimal, None))
+
+# разменяем входные строки на понятные типы через (тут должен быть
+# Enum, но с диктом тоже красиво)
+c_product_type = c.naive(
+    {
+        "phone": 1,
+        "laptop": 2,
+    }
+).item(c_str.call_method("lower"))
+
+
+# теперь определим, что нас может интересовать в данных, направляя
+# каждое из полей в необходимую конверсию
+schema = {
+    "full_name": c.item("Full Name").pipe(c_str),
+    "sku": c.item("SKU").pipe(c_str),
+    "product_type": c.item("Product Type").pipe(c_product_type),
+    "earnings": c.item("Earnings").pipe(c_decimal),
+    "refunds": c.item("Refunds").pipe(c_optional_decimal),
+    "date": c.item("Date").pipe(c_date),
+    "date_of_birth": c.item("Date of Birth").pipe(c_optional_date),
+}
+
+# теперь можем забыть о том, как что и откуда берется.
+# можно описать необходимую логику
+converter = (
+    # группируем по именам и датам
+    c.group_by(schema["full_name"], schema["date"])
+    .aggregate(
+        {
+            "full_name": schema["full_name"],
+            "date": schema["date"],
+            "date_of_birth": c.ReduceFuncs.First(schema["date_of_birth"]),
+            "total_earnings": c.ReduceFuncs.Sum(schema["earnings"]),
+        }
+    )
+    # отбросим "начинающих"
+    .filter(c.item("total_earnings") > 1000)
+    # сгруппируем по датам, соберем якобы полезную аналитику:
+    #  - кол-во не "начинающих"
+    #  - их средний заработок
+    #  - их медианная дата рождения
+    #  - dict: SKU -> сумма заработков (агрегация в агрегации)
+    .pipe(
+        c.group_by(c.item("date")).aggregate(
+            {
+                "date": c.item("date"),
+                "number_of_workers": c.ReduceFuncs.Count(),
+                "average_earnings": c.ReduceFuncs.Average(
+                    c.item("total_earnings")
+                ),
+                "median_date_of_birth": c.ReduceFuncs.Median(
+                    c.item("date_of_birth")
+                ),
+                "earnings_by_sku": c.ReduceFuncs.DictSum(
+                    c.item("sku"),
+                    c.item("total_earnings"),
+                ),
+            }
+        )
+    )
+    # debug=True - выведет в stdout сгенерированный код.
+    # если установлен black, он будет еще и отформатирован
+    .gen_converter()
+)
+
+converter(input_data)</code></pre><details class="spoiler"><summary>сгенерированный код</summary><div class="spoiler__content"><pre><code class="python">def pipe__cp(input__cp, _naive, _labels, _none):
+    return (
+        _naive["strptime_ox"](input__cp.strip(), _naive["v_7o"]).date()
+        if input__cp
+        else None
+    )
+
+
+class AggData__cg:
+    __slots__ = ["v0", "v1"]
+
+    def __init__(self, _none=__none__):
+        self.v0 = _none
+        self.v1 = _none
+
+
+def group_by__cg(data_, _naive, _labels, _none):
+    signature_to_agg_data__cg = defaultdict(AggData__cg)
+
+    for row__cg in data_:
+        agg_data__cg = signature_to_agg_data__cg[
+            (
+                row__cg["Full Name"].strip(),
+                _naive["strptime_ox"](
+                    row__cg["Date"].strip(), _naive["v_7o"]
+                ).date(),
+            )
+        ]
+        if agg_data__cg.v0 is _none:
+            agg_data__cg.v0 = pipe__cp(
+                row__cg["Date of Birth"].strip(), _naive, _labels, _none
+            )
+            agg_data__cg.v1 = (
+                _naive["Decimal_4v"](
+                    row__cg["Earnings"].strip().replace(",", "")
+                )
+                or 0
+            )
+        else:
+            agg_data__cg.v1 = agg_data__cg.v1 + (
+                _naive["Decimal_4v"](
+                    row__cg["Earnings"].strip().replace(",", "")
+                )
+                or 0
+            )
+
+    result_ = (
+        {
+            "full_name": signature__cg[0],
+            "date": signature__cg[1],
+            "date_of_birth": (
+                None if agg_data__cg.v0 is _none else agg_data__cg.v0
+            ),
+            "total_earnings": (
+                0 if agg_data__cg.v1 is _none else agg_data__cg.v1
+            ),
+        }
+        for signature__cg, agg_data__cg in signature_to_agg_data__cg.items()
+    )
+    filtered_result_ = [
+        i_4z for i_4z in result_ if (i_4z["total_earnings"] > 1000)
+    ]
+    return filtered_result_
+
+
+class AggData__gp:
+    __slots__ = ["v0", "v1", "v2", "v3"]
+
+    def __init__(self, _none=__none__):
+        self.v0 = _none
+        self.v1 = _none
+        self.v2 = _none
+        self.v3 = _none
+
+
+def group_by__gp(data_, _naive, _labels, _none):
+    signature_to_agg_data__gp = defaultdict(AggData__gp)
+
+    for row__gp in data_:
+        agg_data__gp = signature_to_agg_data__gp[row__gp["date"]]
+        if agg_data__gp.v0 is _none:
+            agg_data__gp.v0 = 1
+            agg_data__gp.v2 = [row__gp["date_of_birth"]]
+            agg_data__gp.v3 = _d = defaultdict(int)
+            _d[row__gp["sku"]] = row__gp["total_earnings"] or 0
+        else:
+            agg_data__gp.v0 = agg_data__gp.v0 + 1
+            agg_data__gp.v2.append(row__gp["date_of_birth"])
+            agg_data__gp.v3[row__gp["sku"]] = agg_data__gp.v3[
+                row__gp["sku"]
+            ] + (row__gp["total_earnings"] or 0)
+        if agg_data__gp.v1 is _none:
+            if row__gp["total_earnings"] is not None:
+                agg_data__gp.v1 = (1, row__gp["total_earnings"] * 1)
+        else:
+            if row__gp["total_earnings"] is not None:
+                agg_data__gp.v1 = (
+                    agg_data__gp.v1[0] + 1,
+                    agg_data__gp.v1[1] + row__gp["total_earnings"] * 1,
+                )
+
+    return [
+        {
+            "date": signature__gp,
+            "number_of_workers": (
+                0 if agg_data__gp.v0 is _none else agg_data__gp.v0
+            ),
+            "average_earnings": (
+                None
+                if agg_data__gp.v1 is _none
+                else (agg_data__gp.v1[1] / agg_data__gp.v1[0])
+            ),
+            "median_date_of_birth": (
+                None
+                if agg_data__gp.v2 is _none
+                else _naive["median_59"](agg_data__gp.v2)
+            ),
+            "earnings_by_sku": (
+                None if agg_data__gp.v3 is _none else (dict(agg_data__gp.v3))
+            ),
+        }
+        for signature__gp, agg_data__gp in signature_to_agg_data__gp.items()
+    ]
+
+
+def converter_uk(data_):
+    global __naive_values__, __none__
+    _naive = __naive_values__
+    _none = __none__
+    _labels = {}
+    return _naive["group_by__gp"](
+        _naive["group_by__cg"](data_, _naive, _labels, _none),
+        _naive,
+        _labels,
+        _none,
+    )
+</code></pre></div></details><p>Так как все конверсии являются выражениями, метод <code>pipe</code> позволяет комбинировать практически любые из них. <code>pipe</code>-ы разумно воспринимать как бесплатную с точки зрения производительности абстракцию, так как в случаях, когда не требуется добавление <code>label</code>-ов и входные данные не используются более одного раза, <code>pipe</code> не приводит к дополнительному вызову функции.</p><h2>2) Table - потоковая обработка табличных данных</h2><p>Время от времени у меня появлялась необходимость в работе с табличными данными (или схожими с ними). И меня всегда прельщала мысль "запечь" в код индексы колонок, чтобы обращения к ним были дешевыми. И вот, наконец, имея под рукой примитивы convtools, получилось реализовать задуманное, совершая малое количество телодвижений.</p><p><strong>Логика работы</strong>: <code>Table</code> работает с итераторами лениво, вычитывая только первую строку, в которой может содержаться заголовок. Далее, опираясь на заголовок и запрошенные изменения, пишется код, который выполнит нужные преобразования над имеющимся итератором. Методы <code>into_iter_rows</code> и <code>into_csv</code> являются конечными.</p><pre><code class="python">from convtools.contrib.tables import Table
+from convtools import conversion as c
+
+(
+    Table.from_csv(
+        "tests/csvs/ac.csv",
+        header=True,
+        dialect=Table.csv_dialect(delimiter="\t"),
+    )
+    # возьмем только колонки "a" и "c"
+    .take("a", "c")
+    # добавим две новых вычисляемых колонки
+    .update(B=c.col("a") + c.col("c"), D=c.call_func(abs, c.col("c")))
+    # переименуем
+    .rename({"a": "A"})
+    # отфильтруем строки
+    .filter(c.col("c") &lt; 10)
+    # отбросим колонку "c"
+    .drop("c").into_csv("tests/csvs/out.csv")
+)
+
+
+# объединим две таблицы по колонке "a"
+list(
+    Table.from_rows([(1, 2), (2, 3)], ["a", "b"])
+    .join(
+        Table.from_rows([(1, 3), (2, 4)], ["a", "c"]),
+        how="inner",
+        on=["a"],
+    )
+    .into_iter_rows(dict)  # поддерживаются list/tuple
+)</code></pre><p>Также добавлены два изредка полезных метода:</p><pre><code class="python">"""
+Table 1      Table 2
+| a | b |    | b | c |
+| 1 | 2 |    | 3 | 4 |
+
+>>> table1.chain(table2, fill_value=" ")
+
+Result:
+| a | b | c |
+| 1 | 2 |   |
+|   | 3 | 4 |
+"""</code></pre><pre><code class="python">"""
+Table 1      Table 2
+| a | b |    | b | c |
+| 1 | 2 |    | 3 | 4 |
+             | 5 | 6 |
+>>> table1.zip(table2, fill_value=" ")
+
+Result:
+| a | b | b | c |
+| 1 | 2 | 3 | 4 |
+|   |   | 5 | 6 |
+"""
+</code></pre><h2>Заключение</h2><p>Конечно, я не питаю иллюзий, что все резко бросятся использовать convtools, но всё равно захотелось поделиться. И даже не потому, что codegen добавляет гибкость, просто меня написание кода в таком стиле ставит на другие рельсы. С таким подходом я допускаю значительно меньше ошибок, становятся более очевидными стадии обработки данных, облегчается тестирование кода, т.к. работа ведется с чистыми "почти-функциями" + convtools поощряет работу с iterator-ами, что положительно сказывается на потребляемой памяти.</p><p>Всем успехов и, если что-нибудь придумаю или подскажете, до скорого!</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpython%5D" class="tm-tags-list__link">python</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcode%20generation%5D" class="tm-tags-list__link">code generation</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bfunctional%20programming%5D" class="tm-tags-list__link">functional programming</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bad-hoc%5D" class="tm-tags-list__link">ad-hoc</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcsv%5D" class="tm-tags-list__link">csv</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bstream%20processing%5D" class="tm-tags-list__link">stream processing</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/open_source/" class="tm-hubs-list__link">
+    Open source
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/funcprog/" class="tm-hubs-list__link">
+    Функциональное программирование
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 2: ↑2 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 2: ↑2 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+2</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">2.2K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    15
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/westandskif/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 6 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    6
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">2</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Nikita Almakov</span> <a href="/ru/users/westandskif/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @westandskif
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Software engineer</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583984/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 2 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583984/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583984/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583984":{"id":"583984","timePublished":"2021-10-17T21:32:23+00:00","isCorporative":false,"lang":"ru","titleHtml":"Python кодогенерация на благо ETL — часть 2","leadData":{"textHtml":"\u003Cp\u003EПривет! В \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F569398\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eпервой части\u003C\u002Fa\u003E я поделился мыслями, которые побудили к созданию python библиотеки \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fwestandskif\u002Fconvtools\" rel=\"noopener noreferrer nofollow\"\u003Econvtools\u003C\u002Fa\u003E. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные конверсии для обработки данных. Конверсия генерирует узкоспециализированный код, компилирует его и возвращает функцию, решающую конкретную задачу.\u003C\u002Fp\u003E\u003Cp\u003EВ этот раз хотелось бы подробнее остановиться на двух моментах:\u003C\u002Fp\u003E\u003Cp\u003E1) как \u003Ccode\u003Epipe\u003C\u002Fcode\u003E позволяет повысить переиспользуемость кода\u003C\u002Fp\u003E\u003Cp\u003E2) новая часть библиотеки: \u003Ccode\u003ETable\u003C\u002Fcode\u003E  - потоковый обработчик табличных данных\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe3a\u002Fb20\u002F5dc\u002Fe3ab205dc8d9dd027b835a284d8067c5.JPG","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe3a\u002Fb20\u002F5dc\u002Fe3ab205dc8d9dd027b835a284d8067c5.JPG","fit":"cover","positionY":36.363636363636,"positionX":24.487179487179}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":6,"votesCount":6},"rating":2,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2748259","alias":"westandskif","fullname":"Nikita Almakov","avatarUrl":null,"speciality":"Software engineer"},"statistics":{"commentsCount":2,"favoritesCount":15,"readingCount":2249,"score":2,"votesCount":2},"hubs":[{"relatedData":null,"id":"144","alias":"open_source","type":"collective","title":"Open source","titleHtml":"Open source","isProfiled":true},{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true},{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"17853","alias":"funcprog","type":"collective","title":"Функциональное программирование","titleHtml":"Функциональное программирование","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EПривет! В \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F569398\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eпервой части\u003C\u002Fa\u003E я поделился мыслями, которые побудили к созданию python библиотеки \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fwestandskif\u002Fconvtools\" rel=\"noopener noreferrer nofollow\"\u003Econvtools\u003C\u002Fa\u003E. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные конверсии для обработки данных. Конверсия генерирует узкоспециализированный код, компилирует его и возвращает функцию, решающую конкретную задачу.\u003C\u002Fp\u003E\u003Cp\u003EВ этот раз хотелось бы подробнее остановиться на двух моментах:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eкак \u003Ccode\u003Epipe\u003C\u002Fcode\u003E позволяет повысить переиспользуемость кода\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eновая часть библиотеки: \u003Ccode\u003ETable\u003C\u002Fcode\u003E  - потоковый обработчик табличных данных\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Ch2\u003E1) Pipes &amp; code reuse\u003C\u002Fh2\u003E\u003Cp\u003EНадеюсь, что читать код с комментариями удобнее, чем оторванное от него косноязычное повествование, поэтому приступим:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom datetime import datetime\nfrom decimal import Decimal\n\nfrom convtools import conversion as c\n\n\n# Допустим нам нужно прочесть некий отчет и поработать с ним.\n\n# описываем конверсии, необходимые при чтении отчета\n# сохраним то, как будут обрабатываться все входные строки\nc_str = c.this().call_method(\"strip\")\n# то, как из обработанной строки получить Decimal (убиваем запятые -\n# разделители групп разрядов)\nc_decimal = c_str.call_method(\"replace\", \",\", \"\").as_type(Decimal)\nc_parse_date = c.call_func(\n    datetime.strptime, c.this(), \"%Y-%m-%d\"\n).call_method(\"date\")\nc_date = c_str.pipe(c_parse_date)\n\nc_optional_date = c_str.pipe(c.if_(c.this(), с_parse_date, None))\nc_optional_decimal = c_str.pipe(c.if_(c.this(), c_decimal, None))\n\n# разменяем входные строки на понятные типы через (тут должен быть\n# Enum, но с диктом тоже красиво)\nc_product_type = c.naive(\n    {\n        \"phone\": 1,\n        \"laptop\": 2,\n    }\n).item(c_str.call_method(\"lower\"))\n\n\n# теперь определим, что нас может интересовать в данных, направляя\n# каждое из полей в необходимую конверсию\nschema = {\n    \"full_name\": c.item(\"Full Name\").pipe(c_str),\n    \"sku\": c.item(\"SKU\").pipe(c_str),\n    \"product_type\": c.item(\"Product Type\").pipe(c_product_type),\n    \"earnings\": c.item(\"Earnings\").pipe(c_decimal),\n    \"refunds\": c.item(\"Refunds\").pipe(c_optional_decimal),\n    \"date\": c.item(\"Date\").pipe(c_date),\n    \"date_of_birth\": c.item(\"Date of Birth\").pipe(c_optional_date),\n}\n\n# теперь можем забыть о том, как что и откуда берется.\n# можно описать необходимую логику\nconverter = (\n    # группируем по именам и датам\n    c.group_by(schema[\"full_name\"], schema[\"date\"])\n    .aggregate(\n        {\n            \"full_name\": schema[\"full_name\"],\n            \"date\": schema[\"date\"],\n            \"date_of_birth\": c.ReduceFuncs.First(schema[\"date_of_birth\"]),\n            \"total_earnings\": c.ReduceFuncs.Sum(schema[\"earnings\"]),\n        }\n    )\n    # отбросим \"начинающих\"\n    .filter(c.item(\"total_earnings\") \u003E 1000)\n    # сгруппируем по датам, соберем якобы полезную аналитику:\n    #  - кол-во не \"начинающих\"\n    #  - их средний заработок\n    #  - их медианная дата рождения\n    #  - dict: SKU -\u003E сумма заработков (агрегация в агрегации)\n    .pipe(\n        c.group_by(c.item(\"date\")).aggregate(\n            {\n                \"date\": c.item(\"date\"),\n                \"number_of_workers\": c.ReduceFuncs.Count(),\n                \"average_earnings\": c.ReduceFuncs.Average(\n                    c.item(\"total_earnings\")\n                ),\n                \"median_date_of_birth\": c.ReduceFuncs.Median(\n                    c.item(\"date_of_birth\")\n                ),\n                \"earnings_by_sku\": c.ReduceFuncs.DictSum(\n                    c.item(\"sku\"),\n                    c.item(\"total_earnings\"),\n                ),\n            }\n        )\n    )\n    # debug=True - выведет в stdout сгенерированный код.\n    # если установлен black, он будет еще и отформатирован\n    .gen_converter()\n)\n\nconverter(input_data)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003Eсгенерированный код\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Edef pipe__cp(input__cp, _naive, _labels, _none):\n    return (\n        _naive[\"strptime_ox\"](input__cp.strip(), _naive[\"v_7o\"]).date()\n        if input__cp\n        else None\n    )\n\n\nclass AggData__cg:\n    __slots__ = [\"v0\", \"v1\"]\n\n    def __init__(self, _none=__none__):\n        self.v0 = _none\n        self.v1 = _none\n\n\ndef group_by__cg(data_, _naive, _labels, _none):\n    signature_to_agg_data__cg = defaultdict(AggData__cg)\n\n    for row__cg in data_:\n        agg_data__cg = signature_to_agg_data__cg[\n            (\n                row__cg[\"Full Name\"].strip(),\n                _naive[\"strptime_ox\"](\n                    row__cg[\"Date\"].strip(), _naive[\"v_7o\"]\n                ).date(),\n            )\n        ]\n        if agg_data__cg.v0 is _none:\n            agg_data__cg.v0 = pipe__cp(\n                row__cg[\"Date of Birth\"].strip(), _naive, _labels, _none\n            )\n            agg_data__cg.v1 = (\n                _naive[\"Decimal_4v\"](\n                    row__cg[\"Earnings\"].strip().replace(\",\", \"\")\n                )\n                or 0\n            )\n        else:\n            agg_data__cg.v1 = agg_data__cg.v1 + (\n                _naive[\"Decimal_4v\"](\n                    row__cg[\"Earnings\"].strip().replace(\",\", \"\")\n                )\n                or 0\n            )\n\n    result_ = (\n        {\n            \"full_name\": signature__cg[0],\n            \"date\": signature__cg[1],\n            \"date_of_birth\": (\n                None if agg_data__cg.v0 is _none else agg_data__cg.v0\n            ),\n            \"total_earnings\": (\n                0 if agg_data__cg.v1 is _none else agg_data__cg.v1\n            ),\n        }\n        for signature__cg, agg_data__cg in signature_to_agg_data__cg.items()\n    )\n    filtered_result_ = [\n        i_4z for i_4z in result_ if (i_4z[\"total_earnings\"] \u003E 1000)\n    ]\n    return filtered_result_\n\n\nclass AggData__gp:\n    __slots__ = [\"v0\", \"v1\", \"v2\", \"v3\"]\n\n    def __init__(self, _none=__none__):\n        self.v0 = _none\n        self.v1 = _none\n        self.v2 = _none\n        self.v3 = _none\n\n\ndef group_by__gp(data_, _naive, _labels, _none):\n    signature_to_agg_data__gp = defaultdict(AggData__gp)\n\n    for row__gp in data_:\n        agg_data__gp = signature_to_agg_data__gp[row__gp[\"date\"]]\n        if agg_data__gp.v0 is _none:\n            agg_data__gp.v0 = 1\n            agg_data__gp.v2 = [row__gp[\"date_of_birth\"]]\n            agg_data__gp.v3 = _d = defaultdict(int)\n            _d[row__gp[\"sku\"]] = row__gp[\"total_earnings\"] or 0\n        else:\n            agg_data__gp.v0 = agg_data__gp.v0 + 1\n            agg_data__gp.v2.append(row__gp[\"date_of_birth\"])\n            agg_data__gp.v3[row__gp[\"sku\"]] = agg_data__gp.v3[\n                row__gp[\"sku\"]\n            ] + (row__gp[\"total_earnings\"] or 0)\n        if agg_data__gp.v1 is _none:\n            if row__gp[\"total_earnings\"] is not None:\n                agg_data__gp.v1 = (1, row__gp[\"total_earnings\"] * 1)\n        else:\n            if row__gp[\"total_earnings\"] is not None:\n                agg_data__gp.v1 = (\n                    agg_data__gp.v1[0] + 1,\n                    agg_data__gp.v1[1] + row__gp[\"total_earnings\"] * 1,\n                )\n\n    return [\n        {\n            \"date\": signature__gp,\n            \"number_of_workers\": (\n                0 if agg_data__gp.v0 is _none else agg_data__gp.v0\n            ),\n            \"average_earnings\": (\n                None\n                if agg_data__gp.v1 is _none\n                else (agg_data__gp.v1[1] \u002F agg_data__gp.v1[0])\n            ),\n            \"median_date_of_birth\": (\n                None\n                if agg_data__gp.v2 is _none\n                else _naive[\"median_59\"](agg_data__gp.v2)\n            ),\n            \"earnings_by_sku\": (\n                None if agg_data__gp.v3 is _none else (dict(agg_data__gp.v3))\n            ),\n        }\n        for signature__gp, agg_data__gp in signature_to_agg_data__gp.items()\n    ]\n\n\ndef converter_uk(data_):\n    global __naive_values__, __none__\n    _naive = __naive_values__\n    _none = __none__\n    _labels = {}\n    return _naive[\"group_by__gp\"](\n        _naive[\"group_by__cg\"](data_, _naive, _labels, _none),\n        _naive,\n        _labels,\n        _none,\n    )\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EТак как все конверсии являются выражениями, метод \u003Ccode\u003Epipe\u003C\u002Fcode\u003E позволяет комбинировать практически любые из них. \u003Ccode\u003Epipe\u003C\u002Fcode\u003E-ы разумно воспринимать как бесплатную с точки зрения производительности абстракцию, так как в случаях, когда не требуется добавление \u003Ccode\u003Elabel\u003C\u002Fcode\u003E-ов и входные данные не используются более одного раза, \u003Ccode\u003Epipe\u003C\u002Fcode\u003E не приводит к дополнительному вызову функции.\u003C\u002Fp\u003E\u003Ch2\u003E2) Table - потоковая обработка табличных данных\u003C\u002Fh2\u003E\u003Cp\u003EВремя от времени у меня появлялась необходимость в работе с табличными данными (или схожими с ними). И меня всегда прельщала мысль \"запечь\" в код индексы колонок, чтобы обращения к ним были дешевыми. И вот, наконец, имея под рукой примитивы convtools, получилось реализовать задуманное, совершая малое количество телодвижений.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EЛогика работы\u003C\u002Fstrong\u003E: \u003Ccode\u003ETable\u003C\u002Fcode\u003E работает с итераторами лениво, вычитывая только первую строку, в которой может содержаться заголовок. Далее, опираясь на заголовок и запрошенные изменения, пишется код, который выполнит нужные преобразования над имеющимся итератором. Методы \u003Ccode\u003Einto_iter_rows\u003C\u002Fcode\u003E и \u003Ccode\u003Einto_csv\u003C\u002Fcode\u003E являются конечными.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom convtools.contrib.tables import Table\nfrom convtools import conversion as c\n\n(\n    Table.from_csv(\n        \"tests\u002Fcsvs\u002Fac.csv\",\n        header=True,\n        dialect=Table.csv_dialect(delimiter=\"\\t\"),\n    )\n    # возьмем только колонки \"a\" и \"c\"\n    .take(\"a\", \"c\")\n    # добавим две новых вычисляемых колонки\n    .update(B=c.col(\"a\") + c.col(\"c\"), D=c.call_func(abs, c.col(\"c\")))\n    # переименуем\n    .rename({\"a\": \"A\"})\n    # отфильтруем строки\n    .filter(c.col(\"c\") &lt; 10)\n    # отбросим колонку \"c\"\n    .drop(\"c\").into_csv(\"tests\u002Fcsvs\u002Fout.csv\")\n)\n\n\n# объединим две таблицы по колонке \"a\"\nlist(\n    Table.from_rows([(1, 2), (2, 3)], [\"a\", \"b\"])\n    .join(\n        Table.from_rows([(1, 3), (2, 4)], [\"a\", \"c\"]),\n        how=\"inner\",\n        on=[\"a\"],\n    )\n    .into_iter_rows(dict)  # поддерживаются list\u002Ftuple\n)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТакже добавлены два изредка полезных метода:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E\"\"\"\nTable 1      Table 2\n| a | b |    | b | c |\n| 1 | 2 |    | 3 | 4 |\n\n\u003E\u003E\u003E table1.chain(table2, fill_value=\" \")\n\nResult:\n| a | b | c |\n| 1 | 2 |   |\n|   | 3 | 4 |\n\"\"\"\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E\"\"\"\nTable 1      Table 2\n| a | b |    | b | c |\n| 1 | 2 |    | 3 | 4 |\n             | 5 | 6 |\n\u003E\u003E\u003E table1.zip(table2, fill_value=\" \")\n\nResult:\n| a | b | b | c |\n| 1 | 2 | 3 | 4 |\n|   |   | 5 | 6 |\n\"\"\"\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EЗаключение\u003C\u002Fh2\u003E\u003Cp\u003EКонечно, я не питаю иллюзий, что все резко бросятся использовать convtools, но всё равно захотелось поделиться. И даже не потому, что codegen добавляет гибкость, просто меня написание кода в таком стиле ставит на другие рельсы. С таким подходом я допускаю значительно меньше ошибок, становятся более очевидными стадии обработки данных, облегчается тестирование кода, т.к. работа ведется с чистыми \"почти-функциями\" + convtools поощряет работу с iterator-ами, что положительно сказывается на потребляемой памяти.\u003C\u002Fp\u003E\u003Cp\u003EВсем успехов и, если что-нибудь придумаю или подскажете, до скорого!\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"python"},{"titleHtml":"code generation"},{"titleHtml":"functional programming"},{"titleHtml":"ad-hoc"},{"titleHtml":"csv"},{"titleHtml":"stream processing"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe3a\u002Fb20\u002F5dc\u002Fe3ab205dc8d9dd027b835a284d8067c5.JPG","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe3a\u002Fb20\u002F5dc\u002Fe3ab205dc8d9dd027b835a284d8067c5.JPG","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583984\\\u002F\"},\"headline\":\"Python кодогенерация на благо ETL — часть 2\",\"datePublished\":\"2021-10-18T00:32:23+03:00\",\"dateModified\":\"2021-10-19T00:59:08+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Nikita Almakov\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Привет! В первой части я поделился мыслями, которые побудили к созданию python библиотеки convtools. Кратко о ней: предоставляет примитивы (конверсии), объединяя...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583984\\\u002F#post-content-body\",\"about\":[\"h_open_source\",\"h_python\",\"h_programming\",\"h_funcprog\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583984\\\u002F333cb6160549436619b45233f01c4e9d\\\u002F\"]}","metaDescription":"Привет! В первой части я поделился мыслями, которые побудили к созданию python библиотеки convtools. Кратко о ней: предоставляет примитивы (конверсии), объединяя которые, можно описывать сложные...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"open_source,python,programming,funcprog"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

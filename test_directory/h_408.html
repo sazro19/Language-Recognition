@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>GPU (desktop/laptop) Passthrough (Проброс видеокарты в ВМ) в ProxMox. Нюансы настроек. переезжаем в Linux / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/448312\/"},"headline":"GPU (desktop\/laptop) Passthrough (Проброс видеокарты в ВМ) в ProxMox. Нюансы настроек. переезжаем в Linux","datePublished":"2021-10-17T17:35:06+03:00","dateModified":"2021-10-18T00:14:32+03:00","author":{"@type":"Person","name":"Денис"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Предыдущие статьи &laquo;Как из домашнего ПК средствами виртуализации сохранить игровую систему&raquo; и Проброс видеокарты в ноутбуке. Laptop GPU Passthrough породили мно...","url":"https:\/\/habr.com\/ru\/post\/448312\/#post-content-body","about":["h_linux","h_sys_admin","h_virtualization","h_hardware","h_notebooks","f_admin","f_popsci"],"image":["https:\/\/habrastorage.org\/getpro\/habr\/post_images\/1cd\/62e\/a56\/1cd62ea56d9eb4e846e58712d235e119.jpg","https:\/\/habrastorage.org\/webt\/yj\/-l\/br\/yj-lbrm35wfnkwadlngbszfcv74.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/ff4\/413\/ba8\/ff4413ba8878f9db9b2a27342220c928.jpeg","https:\/\/habrastorage.org\/webt\/on\/je\/t0\/onjet0wodw0ddh__s4cayuoyvgy.png","https:\/\/habrastorage.org\/webt\/1a\/9n\/an\/1a9nanyy6odeq5t5npjdx_k2mjw.png","https:\/\/habrastorage.org\/webt\/1k\/at\/np\/1katnpbkzygu9i_pz2xy-zy86um.png","https:\/\/habrastorage.org\/webt\/q4\/oc\/2r\/q4oc2rp17wsvrp-evczfxhdueqg.png","https:\/\/habrastorage.org\/webt\/kj\/g4\/my\/kjg4myb7n81szuguzgoqopoymts.png","https:\/\/habrastorage.org\/webt\/th\/ts\/ig\/thtsig4cfogs_zsonvzggaqf3-o.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="GPU (desktop/laptop) Passthrough (Проброс видеокарты в ВМ) в ProxMox. Нюансы настроек. переезжаем в Linux" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="GPU (desktop/laptop) Passthrough (Проброс видеокарты в ВМ) в ProxMox. Нюансы настроек. переезжаем в Linux" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="GPU (desktop/laptop) Passthrough (Проброс видеокарты в ВМ) в ProxMox. Нюансы настроек. переезжаем в Linux" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Предыдущие статьи «Как из домашнего ПК средствами виртуализации сохранить игровую систему» и Проброс видеокарты в ноутбуке. Laptop GPU Passthrough породили множество откликов и значительный..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Предыдущие статьи «Как из домашнего ПК средствами виртуализации сохранить игровую систему» и Проброс видеокарты в ноутбуке. Laptop GPU Passthrough породили множество откликов и значительный..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Предыдущие статьи «Как из домашнего ПК средствами виртуализации сохранить игровую систему» и Проброс видеокарты в ноутбуке. Laptop GPU Passthrough породили множество откликов и значительный..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Предыдущие статьи «Как из домашнего ПК средствами виртуализации сохранить игровую систему» и Проброс видеокарты в ноутбуке. Laptop GPU Passthrough породили множество откликов и значительный..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Предыдущие статьи «Как из домашнего ПК средствами виртуализации сохранить игровую систему» и Проброс видеокарты в ноутбуке. Laptop GPU Passthrough породили множество откликов и значительный..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/448312/018173c32810f2b3f43f4f740b091d33/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/448312/018173c32810f2b3f43f4f740b091d33/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/448312/018173c32810f2b3f43f4f740b091d33/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/448312/018173c32810f2b3f43f4f740b091d33/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/448312/018173c32810f2b3f43f4f740b091d33/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="448312" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-17T14:35:06.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/448312/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/448312/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/448312/018173c32810f2b3f43f4f740b091d33/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/LuchS-lynx/" title="LuchS-lynx" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/LuchS-lynx/" class="tm-user-info__username">
+      LuchS-lynx
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-17T14:35:06.000Z" title="2021-10-17, 17:35">17  октября   в 17:35</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>GPU (desktop/laptop) Passthrough (Проброс видеокарты в ВМ) в ProxMox. Нюансы настроек. переезжаем в Linux</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux/" class="tm-article-snippet__hubs-item-link"><span>Настройка Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/sys_admin/" class="tm-article-snippet__hubs-item-link"><span>Системное администрирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/virtualization/" class="tm-article-snippet__hubs-item-link"><span>Виртуализация</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/hardware/" class="tm-article-snippet__hubs-item-link"><span>Компьютерное железо</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/notebooks/" class="tm-article-snippet__hubs-item-link"><span>Ноутбуки</span> <!----></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><img src="https://habrastorage.org/r/w780q1/getpro/habr/post_images/1cd/62e/a56/1cd62ea56d9eb4e846e58712d235e119.jpg" alt="image" data-src="https://habrastorage.org/getpro/habr/post_images/1cd/62e/a56/1cd62ea56d9eb4e846e58712d235e119.jpg" data-blurred="true"/><br/>
+<br/>
+Предыдущие статьи <a href="https://habr.com/ru/post/437598/">«Как из домашнего ПК средствами виртуализации сохранить игровую систему»</a> и <a href="https://habr.com/ru/post/575654/">Проброс видеокарты в ноутбуке. Laptop GPU Passthrough</a> породили множество откликов и значительный интерес к теме виртуализации. Благодаря Вашим вопросам и сообщениям на <a href="https://habr.com">Хабрахабре</a> и <a href="https://qna.habr.com" rel="nofollow noopener noreferrer">Тостере</a> возникло понимание, что тему необходимо расширить и дополнить, а потому приглашаю всех Вас под кат, что бы обсудить нюансы этой темы, и разобрать типовые ошибки, проблемы и пути их решения для всех тех, кому это интересно с практической точки зрения ;)<br/>
+<a name="habracut"></a><br/>
+<h2>1. Актуализация статьи <a href="https://habr.com/ru/post/437598/">о настройке проброса ВК в ВМ на десктопе от 27 января 2019</a></h2><br/>
+Здесь нужно сказать следующее:<br/>
+<br/>
+1.1 т.к. статья была написана когда актуальная версия ProxMox была 5-я, а на текущий момент уже 7-я, то в настройки вкрался ньюанс, а именно: начиная с 6-й версии ProxMox'а для случаев когда юзер для ВМ использует БИОС UEFI, а иначе ВК не пробросить в ВМ, необходимо при конфигурировании оборудования гостевой виртуальной машины добавлять EFI диск, который занимает 4.19Мб и хранит информацию о настройка виртуального БИОСа. <br/>
+<br/>
+<img src="/img/image-loader.svg" alt="image" data-src="https://habrastorage.org/webt/yj/-l/br/yj-lbrm35wfnkwadlngbszfcv74.png"/><br/>
+<br/>
+Остальные настройки и положения из той статьи актуальны по сей день без изменений.<br/>
+<br/>
+1.2 Так выглядит пример настроенной системы, на которой я уже живу 3 года без переустановки,<br/>
+(снято на тапок, освещение тоже не очень, видео годится только в качестве иллюстрации)<br/>
+<br/>
+<div class="oembed"><div><div style="left: 0; width: 100%; height: 0; position: relative; padding-bottom: 56.25%;"><div class="tm-iframe_temp" data-src="https://www.youtube.com/embed/wjlmWHJiEug?rel=0&amp;showinfo=1&amp;hl=en-US" data-style="border: 0; top: 0; left: 0; width: 100%; height: 100%; position: absolute;" id="" width=""></div></div></div></div><br/>
+<h2>2. Актуализация статьи <a href="https://habr.com/ru/post/575654/">о настройке проброса ВК в ВМ на ноутбуке от 6 сентября 2021</a></h2><br/>
+Здесь нужно сказать следующее:<br/>
+2.1 О MUXless и MUXed организациях подключения дисплея к видеокартам. Дело в том что я не совсем верно, как правильно меня поправили в комментариях к моей статье, выразился. Т.е. проброс ВК в ВМ возможен во всех случаях (MUXless и MUXed), со своими нюансами естественно, при условии если железо поддерживает соответствующие технологии:<br/>
+<br/>
+<img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/ff4/413/ba8/ff4413ba8878f9db9b2a27342220c928.jpeg" alt="image" data-src="https://habrastorage.org/getpro/habr/upload_files/ff4/413/ba8/ff4413ba8878f9db9b2a27342220c928.jpeg" data-blurred="true"/><br/>
+<br/>
+2.2 Второе замечание из комментариев к статье: <a href="https://habr.com/ru/post/575654/comments/#comment_23473418">Лучше в кач-ве контроллера пользовать virtio scsi single</a>, но тогда при установке системы потребуется вторым диском DVD подключать диск с драйверами и подсовывать драйвера во время установки, либо сперва установить в гостевой ВМ Windows на IDE/SATA виртуального диска, установить в системе драйвера и в файле настроек изменить подключение виртуального диска на SCSI <br/>
+<br/>
+2.3 Так выглядит пример настроенной системы на ноутбуке<br/>
+(снято на тапок, освещение тоже не очень, видео годится только в качестве иллюстрации)<br/>
+<br/>
+<div class="oembed"><div class="tm-iframe_temp" data-src="https://embedd.srv.habr.com/iframe/616bfebaf61f533babdf2ed7" data-style="" id="616bfebaf61f533babdf2ed7" width=""></div></div><br/>
+<h3>Некоторые нюансы по настройкам железа</h3><br/>
+3.1 Проброс в ВМ клавиатуры/мыши (порт PS/2) или клавиатуры ноутбука (подключенной шлейфом к мат.плате) (не usb устройства):<br/>
+сперва вводим команду в консоли (при необходимости прав добавляя sudo)<br/>
+<code>## dmesg | grep input</code><br/>
+Ищем в листинге текста запись навроде<br/>
+<code>…<br/>
+input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input<b>2</b><br/>
+…</code><br/>
+Запоминаем цифру <b>2</b> в конце, она может быть и другой. Потом в файл настроек ВМ в строку добавляем/правим:<br/>
+<code>args: -object 'input-linux,id=kbd,evdev=/dev/input/event<b>2</b>,grab_all=on,repeat=on'</code><br/>
+вставляя 2 в конец evdev=/dev/input/event<b>2</b><br/>
+<br/>
+Для мыши/тачпада — аналогично.<br/>
+<br/>
+3.2 Что касается USB устройств там все проще, устройства прокидываются прямо из веб формы по ID или же целиком можно прокинуть порт. Однако есть нюанс — если Вы по каким-либо причинам не можете как и я прокинуть аудиоустройство в ВМ, то проброс порта/устройства через USB решает эту проблему, но звук может начать отваливаться через некоторое время работы, шипеть/гудеть и прочие… прочее, в то же время на нативной системе все будет замечательно. В этом случае необходимо пробрасывать не порт/устройство, а сам контроллер USB как PCIe устройство по методу указанному в статье о пробросе ВК в ВМ, только без доп.настроек конфигов системы. И все резко наладится. Но в то же время через хост после запуска ВМ с такими настройками пробросить другие устройства с этого контроллера больше не получится.<br/>
+<br/>
+Дополнительно с 6й версии ProxMox было добавлено виртуальное аудио-устройство<br/>
+<br/>
+<img src="/img/image-loader.svg" alt="image" data-src="https://habrastorage.org/webt/on/je/t0/onjet0wodw0ddh__s4cayuoyvgy.png"/><br/>
+<br/>
+которое будет работать только в том случае, если Вы будете админить ВМ через SPICE, т.е. через WEB-интерфейс или специальный клиент SPICE в системе, навроде RDP. Кроме того сам звуковой контроллер убран из lspci выдачи в консоли так что если нужен звук — заводим или PCI-E звуковоую карту или PCI-E USB контроллер с внешней USB звуковой картой. Возможно в будующем эта проблема будет решена. Да, звук будет работать нормально при пробросе USB звуковой карты как порта с девайсом, но микрофон при этом работать не будет. Нормальная работа микрофона без наводок возможна только с полным пробросом контроллера, при этом звук будет тихим. <br/>
+<br/>
+3.3 Жесткие диски можно пробрасывать как через проброс контроллера как PCIe устройство по методу указанному в статье (не рекомендую пробрасывать контроллер интегрированный в материнскую плату, только подключенные к PCIe), в этом случае диски выпадают для хоста и управление ими полностью на себя берет гостевая ВМ, либо напрямую:<br/>
+заходим в<br/>
+## cd /dev/disk/by-id<br/>
+через dir смотрим листинг…<br/>
+копируем строки вида ata-WDC_WD40EFRX-68WT0N6_WD-WCC4E1АС9SХ9, в которой прописан интерфейс подключения, марка и номер серии жесткого диска. Затем открываем Файл конфигурации ВМ и пишем:<br/>
+sata1: volume=/dev/disk/by-id/ata-WDC_WD40EFRX-68WT0N6_WD-WCC4E1АС9SХ9<br/>
+и все работает, при этом учитывайте, что sata0-sata5, т.е. для одной ВМ число подключаемых таким образом дисков, включая виртуальных, не может превышать 6шт. В гостевой системе такие диски имеют урезанный QEMU SMART. который каждый раз при старте ВМ обнуляется и совершенно не информативен. SMART таких жестких дисков можно мониторить через WEB-интерфейс ProxMox'а или другими методами хоста на Linux:<br/>
+<br/>
+<img src="/img/image-loader.svg" alt="image" data-src="https://habrastorage.org/webt/1a/9n/an/1a9nanyy6odeq5t5npjdx_k2mjw.png"/><br/>
+<br/>
+<h3>4. Некоторые замечания по настройке Debian Linux и установке Софта</h3><br/>
+Все что будет написано дальше — спорно, т.к. автор еще только учится и разбирается в новой для себя ОС Linux. В тех случаях если написанное не является верным — прошу наставить на путь истинный. Спасибо.<br/>
+<br/>
+4.1 Linux при настройке локального времени почему-то считает что время установленное в BIOS это время по Гринвичу (GMT+0), в соответствии с локализацией к этому времени добавляются еще свой родной часовой пояс, MSK (GMT+3) в случае автора. В то время как Windows время из BIOS считает местным, в зависимости от настроек часового пояса в системе юзера. Таким образом, если Linux стоит дуал-бутом в Windows и Linux, местное время в двух ОС принимает разницу в 3 часа. Немного неудобно.<br/>
+<br/>
+4.2 Локализация. <br/>
+4.2.1 При выборе настроек региона в KDE необходимо выбирать те, которые написаны кириллицей «Россия — русский (ru_RU)». Если выбирать «Russia (ba_RU)», «Russia (cv_RU)», «Russia (myv_RU)», то это русскоязычные настройки для республиканских народов РФ, в частности Чувашей и других. Я ничего не имею против, но я потерял прилично времени прежде чем разобрался почему у меня проблемы с кодировкой. Хотя возможно это именно то что Вы искали.<br/>
+<br/>
+<img src="/img/image-loader.svg" alt="image" data-src="https://habrastorage.org/webt/1k/at/np/1katnpbkzygu9i_pz2xy-zy86um.png"/><br/>
+<br/>
+4.2.2 Для того что бы переключаться с английской расскладки на русскую и обратно необходимо добавить русскую раскладку. Для этого в настройках жмем кнопку Add, после чего выбираем русскую раскладку, переключение между раскладками настраивается тут же в блоке «Shortcuts for switching layout» -> «Main shortcuts». Дополнительно можно настроить нюансы переключений между языками.<br/>
+<br/>
+Маленький нюанс. В Windows при смене языка и если нужно сразу вводить текст с заглавной буквы я просто жму Ctrl+Shift, затем отпускаю клавишу Ctrl и, удерживая Shift, последующие символы вводятся заглавными буквами. Здесь это не так, после переключения, если не нажимать Shift повторно, а продолжать удерживать, то вводимые буквы набираются в нижнем регистре. Немного бесит, если честно, если Вы знаете как решить данную проблему или обхитрить систему — прошу дать знать. Спасибо.<br/>
+<br/>
+<img src="/img/image-loader.svg" alt="image" data-src="https://habrastorage.org/webt/q4/oc/2r/q4oc2rp17wsvrp-evczfxhdueqg.png"/><br/>
+<br/>
+4.2.3 Для того что бы выставить приоритет на хосте для WiFi перед LAN необходимо использовать метрики. Возможно я перемудрил, но зато работает:<br/>
+<code>## nano /etc/network/interfaces</code><br/>
+<pre><code class="plaintext">auto lo
+iface lo inet loopback
+
+auto enp7s0f1
+iface enp7s0f1 inet manual
+
+auto vmbr0
+iface vmbr0 inet static
+        address 192.168.11.200/24
+        gateway 192.168.11.1
+        bridge-ports enp7s0f1
+        bridge-stp off
+        bridge-fd 0
+        metric -100
+
+auto wlp0s20f3
+        metric 100</code></pre> <br/>
+4.3 Установка привычного или аналогичного софта в Linux.<br/>
+4.3.1 Установка браузера Vivaldi. Не смотря на то что многое в линуксе решается через консоль, хочется перед глазами иметь софт, по крайней первое время, максимально похожий на тот чем пользуешься в Windows. В данном случае проблемы начинаются сразу. Установка Vivaldi из deb-пакета не прокатила, пришлось подключать репозиторий:<br/>
+<br/>
+<pre><code class="plaintext">APT (Debian, Ubuntu, Mint…)
+Import the public key (to allow for verification of the APT repository)–triple-click to select the entire line
+
+wget -qO- https://repo.vivaldi.com/archive/linux_signing_key.pub | sudo apt-key add -
+
+Add the repository
+
+sudo add-apt-repository 'deb https://repo.vivaldi.com/archive/deb/ stable main'
+
+Install Vivaldi
+
+sudo apt update &amp;&amp; sudo apt install vivaldi-stable</code></pre><br/>
+<a href="https://help.vivaldi.com/desktop/install-update/manual-setup-vivaldi-linux-repositories/" rel="nofollow noopener noreferrer">help.vivaldi.com/desktop/install-update/manual-setup-vivaldi-linux-repositories</a><br/>
+<br/>
+4.3.2 <a href="https://discord.com/download" rel="nofollow noopener noreferrer">Установка Discord из deb-пакета</a> не прокатила, пришлось искать пути решения, которые были найдены в ролике на YouTube<br/>
+<br/>
+<div class="oembed"><div class="tm-iframe_temp" data-src="https://embedd.srv.habr.com/iframe/616c24fccd09f7f6552eb3ab" data-style="" id="616c24fccd09f7f6552eb3ab" width=""></div></div><br/>
+4.3.3 Несколько слов об софте для которого пришлось искать аналоги:<br/>
+а. софт на который я нашел аналоги к которым можно привыкнуть:<br/>
+<br/>
+<ul>
+<li>Total/Windows Commander — Double Commander как самый продвинутый из всех авриантов, но есть и порт <a href="https://github.com/elfmz/far2l" rel="nofollow noopener noreferrer">FAR manager for linux.</a></li>
+<li>MS Office — Libra Office/WPS Office здесь сразу стоит принять что VBA макросы полноценно не заведутся нигде, если нужны макросы, то придется осваивать JS и другие языки, собственно макросовая тема под Линуксом сильно уступает в кол-ве контента для VBA. При этом так же нужно быть готовым к тому что офисные файлы будут отображаться с возможным искажением или даже потерями строк, по сравнению с открытием тех же файлов на Windows в MS Office. Что бы что-то посмотреть сойдет, то что бы работать и быть уверенным в том что на любом конфиге на любом офисном софте один и тот же файл откроется одинакого… к сожалению нет. Здесь я только вижу путь проектировщика — после любых правок проекта выводи все листы на печать в файл PDF-формата. Зато печататься у всех будет одинаково.</li>
+<li>Paint — KolourPaint/Krita — для простых манипуляций с графическими файлами.</li>
+</ul><br/>
+б. софт на который я пока что не нашел для себя удобных аналогов: <br/>
+<br/>
+<ul>
+<li>WinRaR — RAR под Линукс существует и его даже можно скачать, но это приложение для консоли. Возможно можно будет заколхозить с Double Commander'ом, но пока не дошли руки.</li>
+<li>Notepad++ — шикарный текстовый редактор, аналог которого сложно найти под Линукс. Говорят есть версия flatpak, но как ставить такой софт я еще не разобрался.</li>
+<li>ACDSee/FastStone — программа для просмотра изображений и простенького их редактирования. Под Линуксом портированных версий не имеют.</li>
+</ul><br/>
+<h3>5. Ноутбук, температуры и профили для карлсонов</h3><br/>
+Собственно эта тема ищется сложнее всего, как и софт по данной тематике. Собственно ее можно разбить на 2 части:<br/>
+5.1 Мониторинг температур. Здесь выручает консоль, т.к. <a href="https://losst.ru/upravlenie-kulerom-linux" rel="nofollow noopener noreferrer">есть даже статья на данную тематику</a>, но дьявол кроется в деталях. После установки и настройки lm-sensors какие-никакие датчики температур начинают работать и опознаваться системой, можно даже Psensor поставить или мониторить из-под консоли, или поставить и настроить Conky. которая опять же настраивается даже не через консоль, а конфигурационный текстовый файл… <br/>
+<br/>
+И вот мы решили мониторить температуру:<br/>
+<br/>
+<img src="/img/image-loader.svg" alt="image" data-src="https://habrastorage.org/webt/kj/g4/my/kjg4myb7n81szuguzgoqopoymts.png"/><br/>
+<br/>
+И возникают одни вопросы, что такое сенсоры: temp1, Sensor 1, Sensor 2? Где тут температуры дискретной ВК и общей на ЦП!?<br/>
+<br/>
+fancontrol у меня не установился… т.е. управлять карлсонами деже из командной строки не могу и стоит надеяться только на пресеты БИОСа… после удобного control center 3.0 это фиаско, и одна из двух вещей которые сдерживают окончательный переход с Windows на Linux…<br/>
+<br/>
+5.2 Андервольтинг/Даунвольтинг — управление множителем и питанием процессора.<br/>
+То ли тема не популярна под Линукс, то ли мне нужно пройти пару семестров о поиске в google, аналогов IntelXTU/TrottleStop под линукс днем с огнём не сыщешь…<br/>
+<br/>
+5.3 Данный пункт относится к ноутбукам Clevo.<br/>
+Несмотря на то, что сам ОЕМ производитель данные ноутбуки никогда сам не сертифицировал для Линукс и не выпускал для них драйверов под Линукс и софт, тем не менее некоторые ноутбуки, в т.ч. и игровые, продаются двумя фирмами с предустановленными Линукс Дистрибутивами. Это System76 и Tuxedo.<br/>
+<br/>
+Ссылка на библиотеку для ControlCenter и софт Tuxedo:<br/>
+<a href="https://packages.ubuntu.com/groovy/amd64/libappindicator3-1/download" rel="nofollow noopener noreferrer">packages.ubuntu.com/groovy/amd64/libappindicator3-1/download</a><br/>
+<a href="https://www.tuxedocomputers.com/en/Infos/Help-and-Support/Instructions.tuxedo" rel="nofollow noopener noreferrer">www.tuxedocomputers.com/en/Infos/Help-and-Support/Instructions.tuxedo</a><br/>
+<a href="https://deb.tuxedocomputers.com/ubuntu/pool/main/t/" rel="nofollow noopener noreferrer">deb.tuxedocomputers.com/ubuntu/pool/main/t</a><br/>
+<a href="https://github.com/tuxedocomputers" rel="nofollow noopener noreferrer">github.com/tuxedocomputers</a><br/>
+<br/>
+Ссылка на софт System76:<br/>
+<a href="https://support.system76.com/articles/system76-software/" rel="nofollow noopener noreferrer">support.system76.com/articles/system76-software</a><br/>
+<a href="https://github.com/system76" rel="nofollow noopener noreferrer">github.com/system76</a><br/>
+<br/>
+System76 пилит софт только под Arch и Fedora Linux, Tuxedo делает софт еще и под Ubuntu, но судя по всему 100% совместимости нет. fancontrol от Tuxedo в Debian ставится отказывается, в то время как tuxedo-control-center встал со скрипом… видимо в данном случае совместимость софта между Ubuntu и Debian не полноценная, а может быть я чего-то не знаю/не учел.<br/>
+<br/>
+<img src="/img/image-loader.svg" alt="image" data-src="https://habrastorage.org/webt/th/ts/ig/thtsig4cfogs_zsonvzggaqf3-o.png"/><br/>
+<br/>
+<h3>P.S.</h3><br/>
+Несмотря на то что графические интерфейсы Linux в последнее время здорово продвинулись и обгоняют Windows проблемы с софтом и настройками все еще присутствуют. На текущий момент настроить проброс ВК в ВМ, ИМХО, проще чем подчинить параметры питания и скорость вращения профилей куллера в ноутбуке…<br/>
+<br/>
+Новый день принесет новый опыт. Всем добра, берегите себя и своих близких, а так же Ваши гаджеты.</div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bproxmox%5D" class="tm-tags-list__link">proxmox</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bgpu%20passthrough%5D" class="tm-tags-list__link">gpu passthrough</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bgpupassthrough%5D" class="tm-tags-list__link">gpupassthrough</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B2%D0%B8%D1%80%D1%82%D1%83%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%5D" class="tm-tags-list__link">виртуализация</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B2%D0%B8%D1%80%D1%82%D1%83%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%20%D0%B4%D0%B5%D1%81%D0%BA%D1%82%D0%BE%D0%BF%D0%BE%D0%B2%5D" class="tm-tags-list__link">виртуализация десктопов</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B2%D0%B8%D1%80%D1%82%D1%83%D0%B0%D0%BB%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F%20%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D0%BA%D0%B8%5D" class="tm-tags-list__link">виртуализация графики</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bkvm%5D" class="tm-tags-list__link">kvm</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Blinux%5D" class="tm-tags-list__link">linux</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Blinux%20%D0%B4%D0%BB%D1%8F%20%D0%B2%D1%81%D0%B5%D1%85%5D" class="tm-tags-list__link">linux для всех</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D0%B1%D1%80%D0%BE%D1%81%20%D0%B2%D0%B8%D0%B4%D0%B5%D0%BE%D0%BA%D0%B0%D1%80%D1%82%D1%8B%5D" class="tm-tags-list__link">проброс видеокарты</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BB%D0%B8%D0%BD%D1%83%D0%BA%D1%81%20%D0%B2%20%D0%BC%D0%B0%D1%81%D1%81%D1%8B%5D" class="tm-tags-list__link">линукс в массы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0%20%D0%BB%D0%B8%D0%BD%D1%83%D0%BA%D1%81%5D" class="tm-tags-list__link">настройка линукс</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BDebian%5D" class="tm-tags-list__link">Debian</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BClevo%5D" class="tm-tags-list__link">Clevo</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BTuxedo%5D" class="tm-tags-list__link">Tuxedo</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bsystem76%5D" class="tm-tags-list__link">system76</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/linux/" class="tm-hubs-list__link">
+    Настройка Linux
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/sys_admin/" class="tm-hubs-list__link">
+    Системное администрирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/virtualization/" class="tm-hubs-list__link">
+    Виртуализация
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/hardware/" class="tm-hubs-list__link">
+    Компьютерное железо
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/notebooks/" class="tm-hubs-list__link">
+    Ноутбуки
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 10: ↑10 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 10: ↑10 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+10</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">5.3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    56
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/LuchS-lynx/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 32 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    28
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">10.1</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Денис</span> <a href="/ru/users/LuchS-lynx/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @LuchS-lynx
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">инженер ПТО/ инженер сметчик</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/448312/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 21 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/448312/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/448312/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"448312":{"id":"448312","timePublished":"2021-10-17T14:35:06+00:00","isCorporative":false,"lang":"ru","titleHtml":"GPU (desktop\u002Flaptop) Passthrough (Проброс видеокарты в ВМ) в ProxMox. Нюансы настроек. переезжаем в Linux","leadData":{"textHtml":"\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F1cd\u002F62e\u002Fa56\u002F1cd62ea56d9eb4e846e58712d235e119.jpg\" alt=\"image\"\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nПредыдущие статьи \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F437598\u002F\"\u003E«Как из домашнего ПК средствами виртуализации сохранить игровую систему»\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F575654\u002F\"\u003EПроброс видеокарты в ноутбуке. Laptop GPU Passthrough\u003C\u002Fa\u003E породили множество откликов и значительный интерес к теме виртуализации. Благодаря Вашим вопросам и сообщениям на \u003Ca href=\"https:\u002F\u002Fhabr.com\"\u003EХабрахабре\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fqna.habr.com\" rel=\"nofollow noopener noreferrer\"\u003EТостере\u003C\u002Fa\u003E возникло понимание, что тему необходимо расширить и дополнить, а потому приглашаю всех Вас под кат, что бы обсудить нюансы этой темы, и разобрать типовые ошибки, проблемы и пути их решения для всех тех, кому это интересно с практической точки зрения ;)\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":28,"votesCount":32},"rating":10.1,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"951716","alias":"LuchS-lynx","fullname":"Денис","avatarUrl":null,"speciality":"инженер ПТО\u002F инженер сметчик"},"statistics":{"commentsCount":21,"favoritesCount":56,"readingCount":5289,"score":10,"votesCount":10},"hubs":[{"relatedData":null,"id":"36","alias":"linux","type":"collective","title":"Настройка Linux","titleHtml":"Настройка Linux","isProfiled":true},{"relatedData":null,"id":"221","alias":"sys_admin","type":"collective","title":"Системное администрирование","titleHtml":"Системное администрирование","isProfiled":true},{"relatedData":null,"id":"7312","alias":"virtualization","type":"collective","title":"Виртуализация","titleHtml":"Виртуализация","isProfiled":true},{"relatedData":null,"id":"21898","alias":"hardware","type":"collective","title":"Компьютерное железо","titleHtml":"Компьютерное железо","isProfiled":false},{"relatedData":null,"id":"21952","alias":"notebooks","type":"collective","title":"Ноутбуки","titleHtml":"Ноутбуки","isProfiled":false}],"flows":[{"id":"6","alias":"admin","title":"Администрирование"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F1cd\u002F62e\u002Fa56\u002F1cd62ea56d9eb4e846e58712d235e119.jpg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fpost_images\u002F1cd\u002F62e\u002Fa56\u002F1cd62ea56d9eb4e846e58712d235e119.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПредыдущие статьи \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F437598\u002F\"\u003E«Как из домашнего ПК средствами виртуализации сохранить игровую систему»\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F575654\u002F\"\u003EПроброс видеокарты в ноутбуке. Laptop GPU Passthrough\u003C\u002Fa\u003E породили множество откликов и значительный интерес к теме виртуализации. Благодаря Вашим вопросам и сообщениям на \u003Ca href=\"https:\u002F\u002Fhabr.com\"\u003EХабрахабре\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fqna.habr.com\" rel=\"nofollow noopener noreferrer\"\u003EТостере\u003C\u002Fa\u003E возникло понимание, что тему необходимо расширить и дополнить, а потому приглашаю всех Вас под кат, что бы обсудить нюансы этой темы, и разобрать типовые ошибки, проблемы и пути их решения для всех тех, кому это интересно с практической точки зрения ;)\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E1. Актуализация статьи \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F437598\u002F\"\u003Eо настройке проброса ВК в ВМ на десктопе от 27 января 2019\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nЗдесь нужно сказать следующее:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n1.1 т.к. статья была написана когда актуальная версия ProxMox была 5-я, а на текущий момент уже 7-я, то в настройки вкрался ньюанс, а именно: начиная с 6-й версии ProxMox'а для случаев когда юзер для ВМ использует БИОС UEFI, а иначе ВК не пробросить в ВМ, необходимо при конфигурировании оборудования гостевой виртуальной машины добавлять EFI диск, который занимает 4.19Мб и хранит информацию о настройка виртуального БИОСа. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fyj\u002F-l\u002Fbr\u002Fyj-lbrm35wfnkwadlngbszfcv74.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОстальные настройки и положения из той статьи актуальны по сей день без изменений.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n1.2 Так выглядит пример настроенной системы, на которой я уже живу 3 года без переустановки,\u003Cbr\u002F\u003E\r\n(снято на тапок, освещение тоже не очень, видео годится только в качестве иллюстрации)\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"oembed\"\u003E\u003Cdiv\u003E\u003Cdiv style=\"left: 0; width: 100%; height: 0; position: relative; padding-bottom: 56.25%;\"\u003E\u003Cdiv class=\"tm-iframe_temp\" data-src=\"https:\u002F\u002Fwww.youtube.com\u002Fembed\u002FwjlmWHJiEug?rel=0&amp;showinfo=1&amp;hl=en-US\" data-style=\"border: 0; top: 0; left: 0; width: 100%; height: 100%; position: absolute;\" id=\"\" width=\"\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E2. Актуализация статьи \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F575654\u002F\"\u003Eо настройке проброса ВК в ВМ на ноутбуке от 6 сентября 2021\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nЗдесь нужно сказать следующее:\u003Cbr\u002F\u003E\r\n2.1 О MUXless и MUXed организациях подключения дисплея к видеокартам. Дело в том что я не совсем верно, как правильно меня поправили в комментариях к моей статье, выразился. Т.е. проброс ВК в ВМ возможен во всех случаях (MUXless и MUXed), со своими нюансами естественно, при условии если железо поддерживает соответствующие технологии:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fff4\u002F413\u002Fba8\u002Fff4413ba8878f9db9b2a27342220c928.jpeg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fff4\u002F413\u002Fba8\u002Fff4413ba8878f9db9b2a27342220c928.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n2.2 Второе замечание из комментариев к статье: \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F575654\u002Fcomments\u002F#comment_23473418\"\u003EЛучше в кач-ве контроллера пользовать virtio scsi single\u003C\u002Fa\u003E, но тогда при установке системы потребуется вторым диском DVD подключать диск с драйверами и подсовывать драйвера во время установки, либо сперва установить в гостевой ВМ Windows на IDE\u002FSATA виртуального диска, установить в системе драйвера и в файле настроек изменить подключение виртуального диска на SCSI \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n2.3 Так выглядит пример настроенной системы на ноутбуке\u003Cbr\u002F\u003E\r\n(снято на тапок, освещение тоже не очень, видео годится только в качестве иллюстрации)\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"oembed\"\u003E\u003Cdiv class=\"tm-iframe_temp\" data-src=\"https:\u002F\u002Fembedd.srv.habr.com\u002Fiframe\u002F616bfebaf61f533babdf2ed7\" data-style=\"\" id=\"616bfebaf61f533babdf2ed7\" width=\"\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3\u003EНекоторые нюансы по настройкам железа\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n3.1 Проброс в ВМ клавиатуры\u002Fмыши (порт PS\u002F2) или клавиатуры ноутбука (подключенной шлейфом к мат.плате) (не usb устройства):\u003Cbr\u002F\u003E\r\nсперва вводим команду в консоли (при необходимости прав добавляя sudo)\u003Cbr\u002F\u003E\r\n\u003Ccode\u003E## dmesg | grep input\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\nИщем в листинге текста запись навроде\u003Cbr\u002F\u003E\r\n\u003Ccode\u003E…\u003Cbr\u002F\u003E\r\ninput: AT Translated Set 2 keyboard as \u002Fdevices\u002Fplatform\u002Fi8042\u002Fserio0\u002Finput\u002Finput\u003Cb\u003E2\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n…\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\nЗапоминаем цифру \u003Cb\u003E2\u003C\u002Fb\u003E в конце, она может быть и другой. Потом в файл настроек ВМ в строку добавляем\u002Fправим:\u003Cbr\u002F\u003E\r\n\u003Ccode\u003Eargs: -object 'input-linux,id=kbd,evdev=\u002Fdev\u002Finput\u002Fevent\u003Cb\u003E2\u003C\u002Fb\u003E,grab_all=on,repeat=on'\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\nвставляя 2 в конец evdev=\u002Fdev\u002Finput\u002Fevent\u003Cb\u003E2\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля мыши\u002Fтачпада — аналогично.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n3.2 Что касается USB устройств там все проще, устройства прокидываются прямо из веб формы по ID или же целиком можно прокинуть порт. Однако есть нюанс — если Вы по каким-либо причинам не можете как и я прокинуть аудиоустройство в ВМ, то проброс порта\u002Fустройства через USB решает эту проблему, но звук может начать отваливаться через некоторое время работы, шипеть\u002Fгудеть и прочие… прочее, в то же время на нативной системе все будет замечательно. В этом случае необходимо пробрасывать не порт\u002Fустройство, а сам контроллер USB как PCIe устройство по методу указанному в статье о пробросе ВК в ВМ, только без доп.настроек конфигов системы. И все резко наладится. Но в то же время через хост после запуска ВМ с такими настройками пробросить другие устройства с этого контроллера больше не получится.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДополнительно с 6й версии ProxMox было добавлено виртуальное аудио-устройство\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fon\u002Fje\u002Ft0\u002Fonjet0wodw0ddh__s4cayuoyvgy.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nкоторое будет работать только в том случае, если Вы будете админить ВМ через SPICE, т.е. через WEB-интерфейс или специальный клиент SPICE в системе, навроде RDP. Кроме того сам звуковой контроллер убран из lspci выдачи в консоли так что если нужен звук — заводим или PCI-E звуковоую карту или PCI-E USB контроллер с внешней USB звуковой картой. Возможно в будующем эта проблема будет решена. Да, звук будет работать нормально при пробросе USB звуковой карты как порта с девайсом, но микрофон при этом работать не будет. Нормальная работа микрофона без наводок возможна только с полным пробросом контроллера, при этом звук будет тихим. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n3.3 Жесткие диски можно пробрасывать как через проброс контроллера как PCIe устройство по методу указанному в статье (не рекомендую пробрасывать контроллер интегрированный в материнскую плату, только подключенные к PCIe), в этом случае диски выпадают для хоста и управление ими полностью на себя берет гостевая ВМ, либо напрямую:\u003Cbr\u002F\u003E\r\nзаходим в\u003Cbr\u002F\u003E\r\n## cd \u002Fdev\u002Fdisk\u002Fby-id\u003Cbr\u002F\u003E\r\nчерез dir смотрим листинг…\u003Cbr\u002F\u003E\r\nкопируем строки вида ata-WDC_WD40EFRX-68WT0N6_WD-WCC4E1АС9SХ9, в которой прописан интерфейс подключения, марка и номер серии жесткого диска. Затем открываем Файл конфигурации ВМ и пишем:\u003Cbr\u002F\u003E\r\nsata1: volume=\u002Fdev\u002Fdisk\u002Fby-id\u002Fata-WDC_WD40EFRX-68WT0N6_WD-WCC4E1АС9SХ9\u003Cbr\u002F\u003E\r\nи все работает, при этом учитывайте, что sata0-sata5, т.е. для одной ВМ число подключаемых таким образом дисков, включая виртуальных, не может превышать 6шт. В гостевой системе такие диски имеют урезанный QEMU SMART. который каждый раз при старте ВМ обнуляется и совершенно не информативен. SMART таких жестких дисков можно мониторить через WEB-интерфейс ProxMox'а или другими методами хоста на Linux:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F1a\u002F9n\u002Fan\u002F1a9nanyy6odeq5t5npjdx_k2mjw.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E4. Некоторые замечания по настройке Debian Linux и установке Софта\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nВсе что будет написано дальше — спорно, т.к. автор еще только учится и разбирается в новой для себя ОС Linux. В тех случаях если написанное не является верным — прошу наставить на путь истинный. Спасибо.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n4.1 Linux при настройке локального времени почему-то считает что время установленное в BIOS это время по Гринвичу (GMT+0), в соответствии с локализацией к этому времени добавляются еще свой родной часовой пояс, MSK (GMT+3) в случае автора. В то время как Windows время из BIOS считает местным, в зависимости от настроек часового пояса в системе юзера. Таким образом, если Linux стоит дуал-бутом в Windows и Linux, местное время в двух ОС принимает разницу в 3 часа. Немного неудобно.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n4.2 Локализация. \u003Cbr\u002F\u003E\r\n4.2.1 При выборе настроек региона в KDE необходимо выбирать те, которые написаны кириллицей «Россия — русский (ru_RU)». Если выбирать «Russia (ba_RU)», «Russia (cv_RU)», «Russia (myv_RU)», то это русскоязычные настройки для республиканских народов РФ, в частности Чувашей и других. Я ничего не имею против, но я потерял прилично времени прежде чем разобрался почему у меня проблемы с кодировкой. Хотя возможно это именно то что Вы искали.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F1k\u002Fat\u002Fnp\u002F1katnpbkzygu9i_pz2xy-zy86um.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n4.2.2 Для того что бы переключаться с английской расскладки на русскую и обратно необходимо добавить русскую раскладку. Для этого в настройках жмем кнопку Add, после чего выбираем русскую раскладку, переключение между раскладками настраивается тут же в блоке «Shortcuts for switching layout» -\u003E «Main shortcuts». Дополнительно можно настроить нюансы переключений между языками.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМаленький нюанс. В Windows при смене языка и если нужно сразу вводить текст с заглавной буквы я просто жму Ctrl+Shift, затем отпускаю клавишу Ctrl и, удерживая Shift, последующие символы вводятся заглавными буквами. Здесь это не так, после переключения, если не нажимать Shift повторно, а продолжать удерживать, то вводимые буквы набираются в нижнем регистре. Немного бесит, если честно, если Вы знаете как решить данную проблему или обхитрить систему — прошу дать знать. Спасибо.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fq4\u002Foc\u002F2r\u002Fq4oc2rp17wsvrp-evczfxhdueqg.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n4.2.3 Для того что бы выставить приоритет на хосте для WiFi перед LAN необходимо использовать метрики. Возможно я перемудрил, но зато работает:\u003Cbr\u002F\u003E\r\n\u003Ccode\u003E## nano \u002Fetc\u002Fnetwork\u002Finterfaces\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Eauto lo\niface lo inet loopback\n\nauto enp7s0f1\niface enp7s0f1 inet manual\n\nauto vmbr0\niface vmbr0 inet static\n        address 192.168.11.200\u002F24\n        gateway 192.168.11.1\n        bridge-ports enp7s0f1\n        bridge-stp off\n        bridge-fd 0\n        metric -100\n\nauto wlp0s20f3\n        metric 100\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E \u003Cbr\u002F\u003E\r\n4.3 Установка привычного или аналогичного софта в Linux.\u003Cbr\u002F\u003E\r\n4.3.1 Установка браузера Vivaldi. Не смотря на то что многое в линуксе решается через консоль, хочется перед глазами иметь софт, по крайней первое время, максимально похожий на тот чем пользуешься в Windows. В данном случае проблемы начинаются сразу. Установка Vivaldi из deb-пакета не прокатила, пришлось подключать репозиторий:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003EAPT (Debian, Ubuntu, Mint…)\nImport the public key (to allow for verification of the APT repository)–triple-click to select the entire line\n\nwget -qO- https:\u002F\u002Frepo.vivaldi.com\u002Farchive\u002Flinux_signing_key.pub | sudo apt-key add -\n\nAdd the repository\n\nsudo add-apt-repository 'deb https:\u002F\u002Frepo.vivaldi.com\u002Farchive\u002Fdeb\u002F stable main'\n\nInstall Vivaldi\n\nsudo apt update &amp;&amp; sudo apt install vivaldi-stable\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fhelp.vivaldi.com\u002Fdesktop\u002Finstall-update\u002Fmanual-setup-vivaldi-linux-repositories\u002F\" rel=\"nofollow noopener noreferrer\"\u003Ehelp.vivaldi.com\u002Fdesktop\u002Finstall-update\u002Fmanual-setup-vivaldi-linux-repositories\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n4.3.2 \u003Ca href=\"https:\u002F\u002Fdiscord.com\u002Fdownload\" rel=\"nofollow noopener noreferrer\"\u003EУстановка Discord из deb-пакета\u003C\u002Fa\u003E не прокатила, пришлось искать пути решения, которые были найдены в ролике на YouTube\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"oembed\"\u003E\u003Cdiv class=\"tm-iframe_temp\" data-src=\"https:\u002F\u002Fembedd.srv.habr.com\u002Fiframe\u002F616c24fccd09f7f6552eb3ab\" data-style=\"\" id=\"616c24fccd09f7f6552eb3ab\" width=\"\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n4.3.3 Несколько слов об софте для которого пришлось искать аналоги:\u003Cbr\u002F\u003E\r\nа. софт на который я нашел аналоги к которым можно привыкнуть:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003ETotal\u002FWindows Commander — Double Commander как самый продвинутый из всех авриантов, но есть и порт \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Felfmz\u002Ffar2l\" rel=\"nofollow noopener noreferrer\"\u003EFAR manager for linux.\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003EMS Office — Libra Office\u002FWPS Office здесь сразу стоит принять что VBA макросы полноценно не заведутся нигде, если нужны макросы, то придется осваивать JS и другие языки, собственно макросовая тема под Линуксом сильно уступает в кол-ве контента для VBA. При этом так же нужно быть готовым к тому что офисные файлы будут отображаться с возможным искажением или даже потерями строк, по сравнению с открытием тех же файлов на Windows в MS Office. Что бы что-то посмотреть сойдет, то что бы работать и быть уверенным в том что на любом конфиге на любом офисном софте один и тот же файл откроется одинакого… к сожалению нет. Здесь я только вижу путь проектировщика — после любых правок проекта выводи все листы на печать в файл PDF-формата. Зато печататься у всех будет одинаково.\u003C\u002Fli\u003E\r\n\u003Cli\u003EPaint — KolourPaint\u002FKrita — для простых манипуляций с графическими файлами.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nб. софт на который я пока что не нашел для себя удобных аналогов: \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EWinRaR — RAR под Линукс существует и его даже можно скачать, но это приложение для консоли. Возможно можно будет заколхозить с Double Commander'ом, но пока не дошли руки.\u003C\u002Fli\u003E\r\n\u003Cli\u003ENotepad++ — шикарный текстовый редактор, аналог которого сложно найти под Линукс. Говорят есть версия flatpak, но как ставить такой софт я еще не разобрался.\u003C\u002Fli\u003E\r\n\u003Cli\u003EACDSee\u002FFastStone — программа для просмотра изображений и простенького их редактирования. Под Линуксом портированных версий не имеют.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3\u003E5. Ноутбук, температуры и профили для карлсонов\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nСобственно эта тема ищется сложнее всего, как и софт по данной тематике. Собственно ее можно разбить на 2 части:\u003Cbr\u002F\u003E\r\n5.1 Мониторинг температур. Здесь выручает консоль, т.к. \u003Ca href=\"https:\u002F\u002Flosst.ru\u002Fupravlenie-kulerom-linux\" rel=\"nofollow noopener noreferrer\"\u003Eесть даже статья на данную тематику\u003C\u002Fa\u003E, но дьявол кроется в деталях. После установки и настройки lm-sensors какие-никакие датчики температур начинают работать и опознаваться системой, можно даже Psensor поставить или мониторить из-под консоли, или поставить и настроить Conky. которая опять же настраивается даже не через консоль, а конфигурационный текстовый файл… \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИ вот мы решили мониторить температуру:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fkj\u002Fg4\u002Fmy\u002Fkjg4myb7n81szuguzgoqopoymts.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИ возникают одни вопросы, что такое сенсоры: temp1, Sensor 1, Sensor 2? Где тут температуры дискретной ВК и общей на ЦП!?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nfancontrol у меня не установился… т.е. управлять карлсонами деже из командной строки не могу и стоит надеяться только на пресеты БИОСа… после удобного control center 3.0 это фиаско, и одна из двух вещей которые сдерживают окончательный переход с Windows на Linux…\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n5.2 Андервольтинг\u002FДаунвольтинг — управление множителем и питанием процессора.\u003Cbr\u002F\u003E\r\nТо ли тема не популярна под Линукс, то ли мне нужно пройти пару семестров о поиске в google, аналогов IntelXTU\u002FTrottleStop под линукс днем с огнём не сыщешь…\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n5.3 Данный пункт относится к ноутбукам Clevo.\u003Cbr\u002F\u003E\r\nНесмотря на то, что сам ОЕМ производитель данные ноутбуки никогда сам не сертифицировал для Линукс и не выпускал для них драйверов под Линукс и софт, тем не менее некоторые ноутбуки, в т.ч. и игровые, продаются двумя фирмами с предустановленными Линукс Дистрибутивами. Это System76 и Tuxedo.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСсылка на библиотеку для ControlCenter и софт Tuxedo:\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fpackages.ubuntu.com\u002Fgroovy\u002Famd64\u002Flibappindicator3-1\u002Fdownload\" rel=\"nofollow noopener noreferrer\"\u003Epackages.ubuntu.com\u002Fgroovy\u002Famd64\u002Flibappindicator3-1\u002Fdownload\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fwww.tuxedocomputers.com\u002Fen\u002FInfos\u002FHelp-and-Support\u002FInstructions.tuxedo\" rel=\"nofollow noopener noreferrer\"\u003Ewww.tuxedocomputers.com\u002Fen\u002FInfos\u002FHelp-and-Support\u002FInstructions.tuxedo\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fdeb.tuxedocomputers.com\u002Fubuntu\u002Fpool\u002Fmain\u002Ft\u002F\" rel=\"nofollow noopener noreferrer\"\u003Edeb.tuxedocomputers.com\u002Fubuntu\u002Fpool\u002Fmain\u002Ft\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftuxedocomputers\" rel=\"nofollow noopener noreferrer\"\u003Egithub.com\u002Ftuxedocomputers\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСсылка на софт System76:\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fsupport.system76.com\u002Farticles\u002Fsystem76-software\u002F\" rel=\"nofollow noopener noreferrer\"\u003Esupport.system76.com\u002Farticles\u002Fsystem76-software\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fsystem76\" rel=\"nofollow noopener noreferrer\"\u003Egithub.com\u002Fsystem76\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nSystem76 пилит софт только под Arch и Fedora Linux, Tuxedo делает софт еще и под Ubuntu, но судя по всему 100% совместимости нет. fancontrol от Tuxedo в Debian ставится отказывается, в то время как tuxedo-control-center встал со скрипом… видимо в данном случае совместимость софта между Ubuntu и Debian не полноценная, а может быть я чего-то не знаю\u002Fне учел.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"image\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fth\u002Fts\u002Fig\u002Fthtsig4cfogs_zsonvzggaqf3-o.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch3\u003EP.S.\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\nНесмотря на то что графические интерфейсы Linux в последнее время здорово продвинулись и обгоняют Windows проблемы с софтом и настройками все еще присутствуют. На текущий момент настроить проброс ВК в ВМ, ИМХО, проще чем подчинить параметры питания и скорость вращения профилей куллера в ноутбуке…\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНовый день принесет новый опыт. Всем добра, берегите себя и своих близких, а так же Ваши гаджеты.\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"proxmox"},{"titleHtml":"gpu passthrough"},{"titleHtml":"gpupassthrough"},{"titleHtml":"виртуализация"},{"titleHtml":"виртуализация десктопов"},{"titleHtml":"виртуализация графики"},{"titleHtml":"kvm"},{"titleHtml":"linux"},{"titleHtml":"linux для всех"},{"titleHtml":"проброс видеокарты"},{"titleHtml":"линукс в массы"},{"titleHtml":"настройка линукс"},{"titleHtml":"Debian"},{"titleHtml":"Clevo"},{"titleHtml":"Tuxedo"},{"titleHtml":"system76"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F448312\u002F018173c32810f2b3f43f4f740b091d33\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F448312\u002F018173c32810f2b3f43f4f740b091d33\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F448312\\\u002F\"},\"headline\":\"GPU (desktop\\\u002Flaptop) Passthrough (Проброс видеокарты в ВМ) в ProxMox. Нюансы настроек. переезжаем в Linux\",\"datePublished\":\"2021-10-17T17:35:06+03:00\",\"dateModified\":\"2021-10-18T00:14:32+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Денис\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Предыдущие статьи &laquo;Как из домашнего ПК средствами виртуализации сохранить игровую систему&raquo; и Проброс видеокарты в ноутбуке. Laptop GPU Passthrough породили мно...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F448312\\\u002F#post-content-body\",\"about\":[\"h_linux\",\"h_sys_admin\",\"h_virtualization\",\"h_hardware\",\"h_notebooks\",\"f_admin\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fpost_images\\\u002F1cd\\\u002F62e\\\u002Fa56\\\u002F1cd62ea56d9eb4e846e58712d235e119.jpg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fyj\\\u002F-l\\\u002Fbr\\\u002Fyj-lbrm35wfnkwadlngbszfcv74.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fff4\\\u002F413\\\u002Fba8\\\u002Fff4413ba8878f9db9b2a27342220c928.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fon\\\u002Fje\\\u002Ft0\\\u002Fonjet0wodw0ddh__s4cayuoyvgy.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F1a\\\u002F9n\\\u002Fan\\\u002F1a9nanyy6odeq5t5npjdx_k2mjw.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F1k\\\u002Fat\\\u002Fnp\\\u002F1katnpbkzygu9i_pz2xy-zy86um.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fq4\\\u002Foc\\\u002F2r\\\u002Fq4oc2rp17wsvrp-evczfxhdueqg.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fkj\\\u002Fg4\\\u002Fmy\\\u002Fkjg4myb7n81szuguzgoqopoymts.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fth\\\u002Fts\\\u002Fig\\\u002Fthtsig4cfogs_zsonvzggaqf3-o.png\"]}","metaDescription":"Предыдущие статьи «Как из домашнего ПК средствами виртуализации сохранить игровую систему» и Проброс видеокарты в ноутбуке. Laptop GPU Passthrough породили множество откликов и значительный...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"linux,sys_admin,virtualization,hardware,notebooks"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

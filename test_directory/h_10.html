@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Настройка системы для облачного гейминга с помощью VFIO, Parsec и AMD / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/584910\/"},"headline":"Настройка системы для облачного гейминга с помощью VFIO, Parsec и AMD","datePublished":"2021-10-25T16:00:02+03:00","dateModified":"2021-10-25T16:30:07+03:00","author":{"@type":"Person","name":"Дмитрий Брайт"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Этот проект продолжит предыдущий, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощ...","url":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/584910\/#post-content-body","about":["c_ruvds","h_cloud_services","h_videocards","h_games","f_admin","f_popsci"],"image":["https:\/\/habr.com\/share\/publication\/584910\/e9282f35a9bec8a4c92e7929efeb42b7\/","https:\/\/habrastorage.org\/webt\/ll\/fg\/in\/llfgine0pooyd91brgtsojantqw.png","https:\/\/habrastorage.org\/webt\/y-\/s-\/oa\/y-s-oa-8zdklfsonv3waetwbr0a.png","https:\/\/habrastorage.org\/webt\/xv\/yr\/vt\/xvyrvt2dafapfqbuofbqhjjferk.png","https:\/\/habrastorage.org\/webt\/ux\/gi\/we\/uxgiwehj37ctetfgnn3a6benci8.png","https:\/\/habrastorage.org\/webt\/ys\/qk\/x4\/ysqkx4zeotj1hphqfk_f3fmtu-g.png","https:\/\/habrastorage.org\/webt\/ou\/g5\/kh\/oug5kh6sjydt9llengsiebnp40w.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Настройка системы для облачного гейминга с помощью VFIO, Parsec и AMD" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Настройка системы для облачного гейминга с помощью VFIO, Parsec и AMD" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Настройка системы для облачного гейминга с помощью VFIO, Parsec и AMD" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Этот проект продолжит предыдущий, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Этот проект продолжит предыдущий, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Этот проект продолжит предыдущий, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Этот проект продолжит предыдущий, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Этот проект продолжит предыдущий, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/ll/fg/in/llfgine0pooyd91brgtsojantqw.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/ll/fg/in/llfgine0pooyd91brgtsojantqw.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/ll/fg/in/llfgine0pooyd91brgtsojantqw.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/ll/fg/in/llfgine0pooyd91brgtsojantqw.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/ll/fg/in/llfgine0pooyd91brgtsojantqw.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="584910" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-25T13:00:02.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/584910/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/ruvds/blog/584910/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/ll/fg/in/llfgine0pooyd91brgtsojantqw.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="ruvds" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://ruvds.com/ru-rub"><img src="//habrastorage.org/getpro/habr/branding/b77/8d5/a41/b778d5a41f83016379c6630262c3294c.png" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/ruvds/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">2823.09</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/ruvds/profile/" class="tm-company-card__name">
+        RUVDS.com
+      </a> <div class="tm-company-card__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Bright_Translate/" title="Bright_Translate" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/f9c/ff9/7d9/f9cff97d9c0677af28dab451897f88e4.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Bright_Translate/" class="tm-user-info__username">
+      Bright_Translate
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-25T13:00:02.000Z" title="2021-10-25, 16:00">сегодня в 16:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Настройка системы для облачного гейминга с помощью VFIO, Parsec и AMD</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/ruvds/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании RUVDS.com</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cloud_services/" class="tm-article-snippet__hubs-item-link"><span>Облачные сервисы</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/videocards/" class="tm-article-snippet__hubs-item-link"><span>Видеокарты</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/games/" class="tm-article-snippet__hubs-item-link"><span>Игры и игровые приставки</span> <!----></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://ounapuu.ee/posts/2021/09/07/diy-cloud-gaming-vfio-parsec-amd/" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Herman Õunapuu
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><a href="https://habr.com/ru/company/ruvds/blog/584910/"><div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ll/fg/in/llfgine0pooyd91brgtsojantqw.png"/></div></a><br/>
+<br/>
+Этот проект продолжит <a href="https://habr.com/ru/company/ruvds/blog/583784/">предыдущий</a>, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я смогу подключаться со своего ПК в гостинной через 20 метров витой пары. <a name="habracut"></a><br/>
+<br/>
+<h2><font color="#3AC1EF">Облачный гейминг?</font></h2><br/>
+<a href="https://en.wikipedia.org/wiki/Cloud_gaming">Запуск игр в облаке</a> становится все более популярен при том, что <a href="https://www.xbox.com/en-US/xbox-game-pass/cloud-gaming">Microsoft</a>, <a href="https://stadia.google.com/">Google</a>, <a href="https://www.nvidia.com/en-eu/geforce-now/">Nvidia </a>и другие компании предлагают услуги потоковой передачи игрового процесса на ваше устройство. Подобные конфигурации, как правило, опираются на мощный сервер в датацентре, который обрабатывает саму игру, отправляя сжатый видеопоток на устройство пользователя. Работает такая технология на удивление хорошо, но ввиду высокой стоимости, низкой скорости интернета во многих регионах планеты и <a href="https://www.nvidia.com/en-us/geforce/forums/gfn-announcements/22/346564/2k-games-on-geforce-now/">сложностей с лицензированием</a>, такой вариант подойдет не для всех.<br/>
+<br/>
+Однако, если у вас уже есть относительно мощный игровой ПК, и вы хотите использовать его для запуска имеющихся игр по сети, то для этого имеется очень много решений.<br/>
+<br/>
+Вот некоторые варианты:<br/>
+<br/>
+<ul>
+<li><a href="https://store.steampowered.com/remoteplay">Steam remote play</a>: работает для игр, запущенных через Steam.</li>
+<li><a href="https://parsec.app/">Parsec</a>: может стримить весь десктоп, включая игры.</li>
+<li><a href="https://moonlight-stream.org/">Moonlight</a>: то же самое, но работает только на хостах с Nvidia GPU, так как в основе реализации лежит протокол Nvidia GameStream.</li>
+</ul><br/>
+В прошлом я добивался неплохих результатов со Steam remote play, но ограничивающим фактором выступала зависимость от Steam. Недавно же я купил пару игр от <a href="https://www.gog.com/">GOG</a>, в которые наверняка можно играть удаленно, запустив их через Steam, но мне не хочется с этим возиться.<br/>
+<br/>
+В конкретно данной конфигурации я предпочел использовать Parsec. Он не идеален, но для наших целей вполне сойдет. Используемая видеокарта, а именно Radeon RX570, также вносит свои ограничения, поскольку с Moonlight работать не может.<br/>
+<br/>
+Для начала Parsec необходимо установить на клиентскую и хост машины. У меня в роли клиента выступает <a href="https://ounapuu.ee/posts/2021/06/28/breaking-and-fixing-thinkpad-x230/">возвращенный с того света Lenovo ThinkPad X230</a>. Он не блещет быстродействием, но все же может выполнять аппаратное декодирование H.264 и в состоянии покоя использует всего 12Вт энергии, что делает его идеальным кандидатом для подобного тестирования. Также отмечу, что обе машины я подключил к локальной сети через Ethernet, чтобы исключить возможные проседания в скорости из-за WiFi.<br/>
+<br/>
+<h2><font color="#3AC1EF">VFIO, игры и Вы</font></h2><br/>
+Более серьезной проблемой же стала производительность игр внутри VM. После того, как настройка VFIO была закончена, и все заработало, я эту конфигурацию больше не оптимизировал. Когда же пришло время реально ее использовать, я столкнулся с рядом проблем производительности, в частности с фризами и низкой частотой кадров. Все же для игр требования к задержке намного строже, чем для других рабочих нагрузок.<br/>
+<br/>
+Благодаря <a href="https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF#Performance_tuning">отличному руководству Arch</a> я придумал много вариантов, которые потенциально способны повысить быстродействие этой виртуальной машины для гейминга.<br/>
+<br/>
+Прежде, чем начать, я прогнал несколько бенчмарков, чтобы лучше понять конкретный уровень имеющейся производительности. Для тестирования каждого изменения я в качестве основы взял GTA V, так как эта игра неплохо выявляет проблемы с быстродействием.<br/>
+<br/>
+Что я в итоге проделал:<br/>
+<br/>
+<ul>
+<li>Установил модель CPU в <code>virt-manager</code> как <code>host-passthrough</code>. </li>
+<li>Использовал <a href="https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF#Dynamically_isolating_CPUs">динамическое изолирование</a> ядер CPU, <a href="https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF#CPU_pinning">привязанных к VM</a>, чтобы исключить использование этих ядер ОС хоста и другими VM.</li>
+<li>Настроил CPU governor (диспетчер выбора частоты процессора) на повышение быстродействия изолированных ядер, чтобы исключить проблемы с недостаточной частотой и переключением между режимами ожидания/работы: <code>echo performance > /sys/devices/system/cpu/cpu[4-7]/cpufreq/scaling_governor</code>.</li>
+<li><a href="https://wiki.archlinux.org/title/PCI_passthrough_via_OVMF#Static_huge_pages">Включил статический пул HugePages</a> для исключения проблем с низкой скоростью обработки памяти.</li>
+<li>Отключил SMT в настройках UEFI, устранив одну дополнительную переменную.</li>
+<li>Установил комплект 64Гб DDR4-3600, чтобы выделить больше памяти для VM (16Гб), оставив достаточно для хоста и других служб.</li>
+</ul><br/>
+Золотое правило при отладке конфигурации — это менять по одному параметру за раз, сопоставляя полученные результаты с исходными. Не каждое из сделанных мной изменений оказалось положительным. Например, при настройке VM на использование 4 ядер и 8 потоков вместо просто 4 ядер, частота кадров в GTA V упала вдвое. Предполагаю, что VM рассматривала “SMT ядра” как реальные, сбивая планировщика Windows с толку.<br/>
+<br/>
+Поэкспериментировав с этой настройкой и применив перечисленные приемы, я смог избавиться от большинства проблем, получив уже более плавный геймплей. Наконец-то, при игре на виртуальной машине стало чувствоваться, что под капотом у нее 4 ядра, 16Гб RAM и RX570.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/y-/s-/oa/y-s-oa-8zdklfsonv3waetwbr0a.png"/><br/>
+<i><font color="#999999">Результат теста производительности CPU в Passmark до доработок</font></i> <br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/xv/yr/vt/xvyrvt2dafapfqbuofbqhjjferk.png"/><br/>
+<i><font color="#999999">Тот же тест Passmark после доработок</font></i> <br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ux/gi/we/uxgiwehj37ctetfgnn3a6benci8.png"/><br/>
+<i><font color="#999999">Результат теста быстродействия памяти в Passmark до доработок</font></i> <br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ys/qk/x4/ysqkx4zeotj1hphqfk_f3fmtu-g.png"/><br/>
+<i><font color="#999999">Тот же тест Passmark после доработок</font></i><br/>
+<br/>
+На этом этапе я бы счел текущий конфиг фантастическим для того, кто хочет играть, используя VFIO. Тем не менее, поскольку я использовал его по сети с помощью Parsec, то вскоре у меня возникли другие проблемы, но теперь уже с видеокартой.<br/>
+<br/>
+<h2><font color="#3AC1EF">Проблемы с видеокартой</font></h2><br/>
+Parsec и другие аналогичные решения кодируют изображение в видеопоток посредством энкодера на самом кристалле видеокарты. В настройках это может обозначаться, как hardware encoding (аппаратное кодирование). Я же до сборки этой конфигурации не знал, что энкодеры видеокарт AMD <a href="https://support.parsec.app/hc/en-us/articles/115002683371-Troubleshooting-Lag-Latency-and-Quality-Issues">славятся своей слабостью</a>:<br/>
+<br/>
+<blockquote>Если на хосте установлена карта от AMD, то кодирование обычно выполняется намного медленнее, чем на картах Nvidia и даже Intel. Хотя при низких разрешениях проблем наблюдаться не должно. Если все гости поддерживают кодек H.265, то при его включении производительность будет выше.</blockquote><br/>
+И это ощутимо. При попытке стримить игры с разрешением 1080p результатом стала непоследовательная лагающая неразбериха. Представьте, что пытаетесь играть примерно на 30фпс, а график частоты кадров напоминает мониторинг сердечного ритма – именно так это ощущалось. При 720p процесс уже был намного плавнее. Да, качество изображения в этом случае страдает, но уже можно хоть как-то играть.<br/>
+<br/>
+Я также решил попробовать сменить кодек с H.264 на H.265. Результат я протестировал в Dirt Rally ввиду наличия в этой игре режима зацикливания бенчмарка. При использовании H.264 задержка кодирования составляла около 10мс. В случае с H.265 ее показатель сократился до 8мс. Не особо впечатляет, но все же на 20% лучше. Недостатком этого приема для моей конфигурации было то, что клиентский ноутбук просто не поддерживает аппаратно-ускоренное декодирование H.265, поддержка которого появилась во встроенных GPU Intel, начиная с процессоров 7-го поколения.<br/>
+<br/>
+Помимо этого, видеокарта вызывает проблемы и с Parsec, периодически проваливая подключение и выводя сообщение об ошибке энкодера хоста. Как правило, это лечится перезагрузкой VM, что после буквально пары сбоев уже порядком надоедает. В других случаях Parsec порой просто зависал во время геймплея и приводил к сопутствующему зависанию клиента при 100% загрузке CPU. Все это нельзя назвать реально плавным опытом. <br/>
+<br/>
+Еще одна проблема, замеченная с помощью <a href="https://www.msi.com/Landing/afterburner/graphics-cards">MSI Afterburner</a>, заключалась в нестабильности фреймрейта в некоторых играх, например в GTA V. Уже после всех исправлений и доработок все равно продолжали возникать небольшие фризы, даже при включении <code>vsync</code>. Я решил пройтись по настройкам AMD Radeon, чтобы понять, не вызывает ли какая-нибудь из фич драйвера побочный эффект. <br/>
+<br/>
+У меня был выбран режим <code>Gaming</code>, ведь именно для этого видеокарта и использовалась, но в итоге я решил изменить его на <code>Standard</code>. И тут волшебным образом фризы пропали! Подозреваю, что причиной могла быть опция <code>Radeon Anti-Lag</code>, поскольку это одна из основных настроек, которые оказались отключены после переключения на Standard.<br/>
+<br/>
+<h2><font color="#3AC1EF">Стоит ли оно того?</font></h2><br/>
+Мне нравятся технические испытания, и прохождение по всем этим этапам для получения от конфигурации все большего быстродействия стало интересным опытом. Однако другие могут не разделять моего энтузиазма. Если же вам все-таки хочется пройти этим путем и попутно поднабраться знаний, то можете смело опираться на мой проект в качестве руководства. Также будет не лишним почитать отчеты об экспериментах других людей и каждый раз оценивать собственные результаты, чтобы понимать, дают ли они желаемый эффект. <br/>
+<br/>
+Ну а тем, кто хочет просто играть в игры, не особо заморачиваясь с получением ожидаемого быстродействия от машины, я все же порекомендую собрать отдельный игровой ПК.<br/>
+<br/>
+Если готовить машину конкретно для такой рабочей нагрузки, то я бы посоветовал изменить следующее:<br/>
+<br/>
+<ul>
+<li>Заменить гибридный процессор на стандартный, например Ryzen 9 5950X. Благодаря <a href="https://images.anandtech.com/doci/16214/Ryzen9_3800X_Hand_575px_678x452.jpg">физически разделенной компоновке ядер</a> можно присвоить один их сегмент игровой VM, а остальные оставить хосту. Эти процессоры также имеют большой объем L3 кэша, что окажется кстати в нагрузках, требующих низкую задержку, в тех же играх.</li>
+<li>Если вы собираетесь делать сборку для стриминга, то лучше начать с видеокарты Nvidia. Ошибки 43 уже нет, так что эти GPU стали вполне пригодны для таких решений, как Moonlight.</li>
+<li>Использовать плату с большим количеством слотов SATA или M.2. Это существенно упрощает проброс устройств хранения данных.</li>
+</ul><br/>
+<h2><font color="#3AC1EF">Дальнейшие планы</font></h2><br/>
+На этом мое приключение не заканчивается. Недавно я решил подыскать видеокарту Nvidia, чтобы провести сравнение с моей RX570. В итоге мне попалась GTX1060, которая происходит из той же эпохи и имеет примерно схожие характеристики производительности. Думаю, получится неплохой проект сравнения этих карт в сценариях Parsec vs Parsec и Parsec vs Moonlight.<br/>
+<br/>
+Также надеюсь, что все же мне удастся перейти к использованию более современного клиентского ПК, который будет поддерживать H.265 и более высокие разрешения вывода. Да, 4K при 60Гц – это излишне накладно для ноутбука из 2012. Если же учесть, что речь идет о ThinkPad, то случится это где-то после 2025. <br/>
+<br/>
+Что касается конфигурации хранилища, то приятель посоветовал мне настроить с помощью Samba общий доступ к виртуальной машине с NAS и разместить на ней библиотеку Steam с прочими игровыми файлами. В конце концов, скорость передачи по виртуальной LAN в ходе тестирования достигала 2-3ГГбит/с. А учитывая наличие в ZFS 2.0 постоянного кэша L2ARC, я смогу воспользоваться и этим (если мне вообще понадобится L2ARC, так как и ARC весьма эффективен). Сейчас NAS и игровая виртуальные машины синхронизированы просто через Syncthing, то есть, как минимум, базовый бэкап всех игр у меня имеется.<br/>
+<br/>
+<a href="http://ruvds.com/ru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=Bright_Translate&amp;utm_content=nastrojka_sistemy_dlya_oblachnogo_gejminga_s_pomoshhyu_vfio,_parsec_i_amd"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ou/g5/kh/oug5kh6sjydt9llengsiebnp40w.png"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bruvds_%D0%BF%D0%B5%D1%80%D0%B5%D0%B2%D0%BE%D0%B4%5D" class="tm-tags-list__link">ruvds_перевод</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BE%D0%B1%D0%BB%D0%B0%D1%87%D0%BD%D1%8B%D0%B9%20%D0%B3%D0%B5%D0%B9%D0%BC%D0%B8%D0%BD%D0%B3%5D" class="tm-tags-list__link">облачный гейминг</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D0%B1%D1%80%D0%BE%D1%81%20GPU%5D" class="tm-tags-list__link">проброс GPU</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0%20vm%5D" class="tm-tags-list__link">настройка vm</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/ruvds/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании RUVDS.com
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cloud_services/" class="tm-hubs-list__link">
+    Облачные сервисы
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/videocards/" class="tm-hubs-list__link">
+    Видеокарты
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/games/" class="tm-hubs-list__link">
+    Игры и игровые приставки
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 8: ↑8 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 8: ↑8 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+8</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">673</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    11
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__title">RUVDS.com</a> <div class="tm-company-snippet__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/ruvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Bright_Translate/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/f9c/ff9/7d9/f9cff97d9c0677af28dab451897f88e4.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 198 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    103.5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">203</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Дмитрий Брайт</span> <a href="/ru/users/Bright_Translate/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Bright_Translate
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Переводчик</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/ruvds/blog/584910/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 2 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-07-26T21:00:00.000Z" title="2015-07-27, 00:00">27  июля  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://ruvds.com" target="_blank" class="tm-company-basic-info__link">
+      ruvds.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    11–30 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2016-03-18T05:43:01.000Z" title="2016-03-18, 08:43">18  марта  2016</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/ruvds/" class="tm-company-basic-info__link">
+      ruvds
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/ruvds/blog/584910/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/ruvds/blog/584910/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"584910":{"id":"584910","timePublished":"2021-10-25T13:00:02+00:00","isCorporative":true,"lang":"ru","titleHtml":"Настройка системы для облачного гейминга с помощью VFIO, Parsec и AMD","leadData":{"textHtml":"\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F584910\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fll\u002Ffg\u002Fin\u002Fllfgine0pooyd91brgtsojantqw.png\"\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nЭтот проект продолжит \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F583784\u002F\"\u003Eпредыдущий\u003C\u002Fa\u003E, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я смогу подключаться со своего ПК в гостинной через 20 метров витой пары.","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Herman Õunapuu","originalUrl":"https:\u002F\u002Founapuu.ee\u002Fposts\u002F2021\u002F09\u002F07\u002Fdiy-cloud-gaming-vfio-parsec-amd\u002F"}}],"author":{"scoreStats":{"score":103.5,"votesCount":198},"rating":203,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2488151","alias":"Bright_Translate","fullname":"Дмитрий Брайт","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Ff9c\u002Fff9\u002F7d9\u002Ff9cff97d9c0677af28dab451897f88e4.jpg","speciality":"Переводчик"},"statistics":{"commentsCount":2,"favoritesCount":11,"readingCount":673,"score":8,"votesCount":8},"hubs":[{"relatedData":null,"id":"19791","alias":"ruvds","type":"corporative","title":"Блог компании RUVDS.com","titleHtml":"Блог компании RUVDS.com","isProfiled":false},{"relatedData":null,"id":"21470","alias":"cloud_services","type":"collective","title":"Облачные сервисы","titleHtml":"Облачные сервисы","isProfiled":false},{"relatedData":null,"id":"21944","alias":"videocards","type":"collective","title":"Видеокарты","titleHtml":"Видеокарты","isProfiled":false},{"relatedData":null,"id":"21980","alias":"games","type":"collective","title":"Игры и игровые приставки","titleHtml":"Игры и игровые приставки","isProfiled":false}],"flows":[{"id":"6","alias":"admin","title":"Администрирование"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F584910\u002F\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fll\u002Ffg\u002Fin\u002Fllfgine0pooyd91brgtsojantqw.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭтот проект продолжит \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fruvds\u002Fblog\u002F583784\u002F\"\u003Eпредыдущий\u003C\u002Fa\u003E, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я смогу подключаться со своего ПК в гостинной через 20 метров витой пары. \u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EОблачный гейминг?\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fen.wikipedia.org\u002Fwiki\u002FCloud_gaming\"\u003EЗапуск игр в облаке\u003C\u002Fa\u003E становится все более популярен при том, что \u003Ca href=\"https:\u002F\u002Fwww.xbox.com\u002Fen-US\u002Fxbox-game-pass\u002Fcloud-gaming\"\u003EMicrosoft\u003C\u002Fa\u003E, \u003Ca href=\"https:\u002F\u002Fstadia.google.com\u002F\"\u003EGoogle\u003C\u002Fa\u003E, \u003Ca href=\"https:\u002F\u002Fwww.nvidia.com\u002Fen-eu\u002Fgeforce-now\u002F\"\u003ENvidia \u003C\u002Fa\u003Eи другие компании предлагают услуги потоковой передачи игрового процесса на ваше устройство. Подобные конфигурации, как правило, опираются на мощный сервер в датацентре, который обрабатывает саму игру, отправляя сжатый видеопоток на устройство пользователя. Работает такая технология на удивление хорошо, но ввиду высокой стоимости, низкой скорости интернета во многих регионах планеты и \u003Ca href=\"https:\u002F\u002Fwww.nvidia.com\u002Fen-us\u002Fgeforce\u002Fforums\u002Fgfn-announcements\u002F22\u002F346564\u002F2k-games-on-geforce-now\u002F\"\u003Eсложностей с лицензированием\u003C\u002Fa\u003E, такой вариант подойдет не для всех.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОднако, если у вас уже есть относительно мощный игровой ПК, и вы хотите использовать его для запуска имеющихся игр по сети, то для этого имеется очень много решений.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВот некоторые варианты:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fstore.steampowered.com\u002Fremoteplay\"\u003ESteam remote play\u003C\u002Fa\u003E: работает для игр, запущенных через Steam.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fparsec.app\u002F\"\u003EParsec\u003C\u002Fa\u003E: может стримить весь десктоп, включая игры.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fmoonlight-stream.org\u002F\"\u003EMoonlight\u003C\u002Fa\u003E: то же самое, но работает только на хостах с Nvidia GPU, так как в основе реализации лежит протокол Nvidia GameStream.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nВ прошлом я добивался неплохих результатов со Steam remote play, но ограничивающим фактором выступала зависимость от Steam. Недавно же я купил пару игр от \u003Ca href=\"https:\u002F\u002Fwww.gog.com\u002F\"\u003EGOG\u003C\u002Fa\u003E, в которые наверняка можно играть удаленно, запустив их через Steam, но мне не хочется с этим возиться.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ конкретно данной конфигурации я предпочел использовать Parsec. Он не идеален, но для наших целей вполне сойдет. Используемая видеокарта, а именно Radeon RX570, также вносит свои ограничения, поскольку с Moonlight работать не может.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля начала Parsec необходимо установить на клиентскую и хост машины. У меня в роли клиента выступает \u003Ca href=\"https:\u002F\u002Founapuu.ee\u002Fposts\u002F2021\u002F06\u002F28\u002Fbreaking-and-fixing-thinkpad-x230\u002F\"\u003Eвозвращенный с того света Lenovo ThinkPad X230\u003C\u002Fa\u003E. Он не блещет быстродействием, но все же может выполнять аппаратное декодирование H.264 и в состоянии покоя использует всего 12Вт энергии, что делает его идеальным кандидатом для подобного тестирования. Также отмечу, что обе машины я подключил к локальной сети через Ethernet, чтобы исключить возможные проседания в скорости из-за WiFi.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EVFIO, игры и Вы\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nБолее серьезной проблемой же стала производительность игр внутри VM. После того, как настройка VFIO была закончена, и все заработало, я эту конфигурацию больше не оптимизировал. Когда же пришло время реально ее использовать, я столкнулся с рядом проблем производительности, в частности с фризами и низкой частотой кадров. Все же для игр требования к задержке намного строже, чем для других рабочих нагрузок.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nБлагодаря \u003Ca href=\"https:\u002F\u002Fwiki.archlinux.org\u002Ftitle\u002FPCI_passthrough_via_OVMF#Performance_tuning\"\u003Eотличному руководству Arch\u003C\u002Fa\u003E я придумал много вариантов, которые потенциально способны повысить быстродействие этой виртуальной машины для гейминга.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПрежде, чем начать, я прогнал несколько бенчмарков, чтобы лучше понять конкретный уровень имеющейся производительности. Для тестирования каждого изменения я в качестве основы взял GTA V, так как эта игра неплохо выявляет проблемы с быстродействием.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧто я в итоге проделал:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EУстановил модель CPU в \u003Ccode\u003Evirt-manager\u003C\u002Fcode\u003E как \u003Ccode\u003Ehost-passthrough\u003C\u002Fcode\u003E. \u003C\u002Fli\u003E\r\n\u003Cli\u003EИспользовал \u003Ca href=\"https:\u002F\u002Fwiki.archlinux.org\u002Ftitle\u002FPCI_passthrough_via_OVMF#Dynamically_isolating_CPUs\"\u003Eдинамическое изолирование\u003C\u002Fa\u003E ядер CPU, \u003Ca href=\"https:\u002F\u002Fwiki.archlinux.org\u002Ftitle\u002FPCI_passthrough_via_OVMF#CPU_pinning\"\u003Eпривязанных к VM\u003C\u002Fa\u003E, чтобы исключить использование этих ядер ОС хоста и другими VM.\u003C\u002Fli\u003E\r\n\u003Cli\u003EНастроил CPU governor (диспетчер выбора частоты процессора) на повышение быстродействия изолированных ядер, чтобы исключить проблемы с недостаточной частотой и переключением между режимами ожидания\u002Fработы: \u003Ccode\u003Eecho performance \u003E \u002Fsys\u002Fdevices\u002Fsystem\u002Fcpu\u002Fcpu[4-7]\u002Fcpufreq\u002Fscaling_governor\u003C\u002Fcode\u003E.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fwiki.archlinux.org\u002Ftitle\u002FPCI_passthrough_via_OVMF#Static_huge_pages\"\u003EВключил статический пул HugePages\u003C\u002Fa\u003E для исключения проблем с низкой скоростью обработки памяти.\u003C\u002Fli\u003E\r\n\u003Cli\u003EОтключил SMT в настройках UEFI, устранив одну дополнительную переменную.\u003C\u002Fli\u003E\r\n\u003Cli\u003EУстановил комплект 64Гб DDR4-3600, чтобы выделить больше памяти для VM (16Гб), оставив достаточно для хоста и других служб.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nЗолотое правило при отладке конфигурации — это менять по одному параметру за раз, сопоставляя полученные результаты с исходными. Не каждое из сделанных мной изменений оказалось положительным. Например, при настройке VM на использование 4 ядер и 8 потоков вместо просто 4 ядер, частота кадров в GTA V упала вдвое. Предполагаю, что VM рассматривала “SMT ядра” как реальные, сбивая планировщика Windows с толку.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПоэкспериментировав с этой настройкой и применив перечисленные приемы, я смог избавиться от большинства проблем, получив уже более плавный геймплей. Наконец-то, при игре на виртуальной машине стало чувствоваться, что под капотом у нее 4 ядра, 16Гб RAM и RX570.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fy-\u002Fs-\u002Foa\u002Fy-s-oa-8zdklfsonv3waetwbr0a.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EРезультат теста производительности CPU в Passmark до доработок\u003C\u002Ffont\u003E\u003C\u002Fi\u003E \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fxv\u002Fyr\u002Fvt\u002Fxvyrvt2dafapfqbuofbqhjjferk.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EТот же тест Passmark после доработок\u003C\u002Ffont\u003E\u003C\u002Fi\u003E \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fux\u002Fgi\u002Fwe\u002Fuxgiwehj37ctetfgnn3a6benci8.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EРезультат теста быстродействия памяти в Passmark до доработок\u003C\u002Ffont\u003E\u003C\u002Fi\u003E \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fys\u002Fqk\u002Fx4\u002Fysqkx4zeotj1hphqfk_f3fmtu-g.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003E\u003Cfont color=\"#999999\"\u003EТот же тест Passmark после доработок\u003C\u002Ffont\u003E\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНа этом этапе я бы счел текущий конфиг фантастическим для того, кто хочет играть, используя VFIO. Тем не менее, поскольку я использовал его по сети с помощью Parsec, то вскоре у меня возникли другие проблемы, но теперь уже с видеокартой.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EПроблемы с видеокартой\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nParsec и другие аналогичные решения кодируют изображение в видеопоток посредством энкодера на самом кристалле видеокарты. В настройках это может обозначаться, как hardware encoding (аппаратное кодирование). Я же до сборки этой конфигурации не знал, что энкодеры видеокарт AMD \u003Ca href=\"https:\u002F\u002Fsupport.parsec.app\u002Fhc\u002Fen-us\u002Farticles\u002F115002683371-Troubleshooting-Lag-Latency-and-Quality-Issues\"\u003Eславятся своей слабостью\u003C\u002Fa\u003E:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EЕсли на хосте установлена карта от AMD, то кодирование обычно выполняется намного медленнее, чем на картах Nvidia и даже Intel. Хотя при низких разрешениях проблем наблюдаться не должно. Если все гости поддерживают кодек H.265, то при его включении производительность будет выше.\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\nИ это ощутимо. При попытке стримить игры с разрешением 1080p результатом стала непоследовательная лагающая неразбериха. Представьте, что пытаетесь играть примерно на 30фпс, а график частоты кадров напоминает мониторинг сердечного ритма – именно так это ощущалось. При 720p процесс уже был намного плавнее. Да, качество изображения в этом случае страдает, но уже можно хоть как-то играть.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЯ также решил попробовать сменить кодек с H.264 на H.265. Результат я протестировал в Dirt Rally ввиду наличия в этой игре режима зацикливания бенчмарка. При использовании H.264 задержка кодирования составляла около 10мс. В случае с H.265 ее показатель сократился до 8мс. Не особо впечатляет, но все же на 20% лучше. Недостатком этого приема для моей конфигурации было то, что клиентский ноутбук просто не поддерживает аппаратно-ускоренное декодирование H.265, поддержка которого появилась во встроенных GPU Intel, начиная с процессоров 7-го поколения.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПомимо этого, видеокарта вызывает проблемы и с Parsec, периодически проваливая подключение и выводя сообщение об ошибке энкодера хоста. Как правило, это лечится перезагрузкой VM, что после буквально пары сбоев уже порядком надоедает. В других случаях Parsec порой просто зависал во время геймплея и приводил к сопутствующему зависанию клиента при 100% загрузке CPU. Все это нельзя назвать реально плавным опытом. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕще одна проблема, замеченная с помощью \u003Ca href=\"https:\u002F\u002Fwww.msi.com\u002FLanding\u002Fafterburner\u002Fgraphics-cards\"\u003EMSI Afterburner\u003C\u002Fa\u003E, заключалась в нестабильности фреймрейта в некоторых играх, например в GTA V. Уже после всех исправлений и доработок все равно продолжали возникать небольшие фризы, даже при включении \u003Ccode\u003Evsync\u003C\u002Fcode\u003E. Я решил пройтись по настройкам AMD Radeon, чтобы понять, не вызывает ли какая-нибудь из фич драйвера побочный эффект. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nУ меня был выбран режим \u003Ccode\u003EGaming\u003C\u002Fcode\u003E, ведь именно для этого видеокарта и использовалась, но в итоге я решил изменить его на \u003Ccode\u003EStandard\u003C\u002Fcode\u003E. И тут волшебным образом фризы пропали! Подозреваю, что причиной могла быть опция \u003Ccode\u003ERadeon Anti-Lag\u003C\u002Fcode\u003E, поскольку это одна из основных настроек, которые оказались отключены после переключения на Standard.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EСтоит ли оно того?\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nМне нравятся технические испытания, и прохождение по всем этим этапам для получения от конфигурации все большего быстродействия стало интересным опытом. Однако другие могут не разделять моего энтузиазма. Если же вам все-таки хочется пройти этим путем и попутно поднабраться знаний, то можете смело опираться на мой проект в качестве руководства. Также будет не лишним почитать отчеты об экспериментах других людей и каждый раз оценивать собственные результаты, чтобы понимать, дают ли они желаемый эффект. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНу а тем, кто хочет просто играть в игры, не особо заморачиваясь с получением ожидаемого быстродействия от машины, я все же порекомендую собрать отдельный игровой ПК.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли готовить машину конкретно для такой рабочей нагрузки, то я бы посоветовал изменить следующее:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EЗаменить гибридный процессор на стандартный, например Ryzen 9 5950X. Благодаря \u003Ca href=\"https:\u002F\u002Fimages.anandtech.com\u002Fdoci\u002F16214\u002FRyzen9_3800X_Hand_575px_678x452.jpg\"\u003Eфизически разделенной компоновке ядер\u003C\u002Fa\u003E можно присвоить один их сегмент игровой VM, а остальные оставить хосту. Эти процессоры также имеют большой объем L3 кэша, что окажется кстати в нагрузках, требующих низкую задержку, в тех же играх.\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли вы собираетесь делать сборку для стриминга, то лучше начать с видеокарты Nvidia. Ошибки 43 уже нет, так что эти GPU стали вполне пригодны для таких решений, как Moonlight.\u003C\u002Fli\u003E\r\n\u003Cli\u003EИспользовать плату с большим количеством слотов SATA или M.2. Это существенно упрощает проброс устройств хранения данных.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003EДальнейшие планы\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nНа этом мое приключение не заканчивается. Недавно я решил подыскать видеокарту Nvidia, чтобы провести сравнение с моей RX570. В итоге мне попалась GTX1060, которая происходит из той же эпохи и имеет примерно схожие характеристики производительности. Думаю, получится неплохой проект сравнения этих карт в сценариях Parsec vs Parsec и Parsec vs Moonlight.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТакже надеюсь, что все же мне удастся перейти к использованию более современного клиентского ПК, который будет поддерживать H.265 и более высокие разрешения вывода. Да, 4K при 60Гц – это излишне накладно для ноутбука из 2012. Если же учесть, что речь идет о ThinkPad, то случится это где-то после 2025. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧто касается конфигурации хранилища, то приятель посоветовал мне настроить с помощью Samba общий доступ к виртуальной машине с NAS и разместить на ней библиотеку Steam с прочими игровыми файлами. В конце концов, скорость передачи по виртуальной LAN в ходе тестирования достигала 2-3ГГбит\u002Fс. А учитывая наличие в ZFS 2.0 постоянного кэша L2ARC, я смогу воспользоваться и этим (если мне вообще понадобится L2ARC, так как и ARC весьма эффективен). Сейчас NAS и игровая виртуальные машины синхронизированы просто через Syncthing, то есть, как минимум, базовый бэкап всех игр у меня имеется.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"http:\u002F\u002Fruvds.com\u002Fru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=Bright_Translate&amp;utm_content=nastrojka_sistemy_dlya_oblachnogo_gejminga_s_pomoshhyu_vfio,_parsec_i_amd\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fou\u002Fg5\u002Fkh\u002Foug5kh6sjydt9llengsiebnp40w.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"ruvds_перевод"},{"titleHtml":"облачный гейминг"},{"titleHtml":"проброс GPU"},{"titleHtml":"настройка vm"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fll\u002Ffg\u002Fin\u002Fllfgine0pooyd91brgtsojantqw.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fll\u002Ffg\u002Fin\u002Fllfgine0pooyd91brgtsojantqw.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F584910\\\u002F\"},\"headline\":\"Настройка системы для облачного гейминга с помощью VFIO, Parsec и AMD\",\"datePublished\":\"2021-10-25T16:00:02+03:00\",\"dateModified\":\"2021-10-25T16:30:07+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Дмитрий Брайт\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Этот проект продолжит предыдущий, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощ...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F584910\\\u002F#post-content-body\",\"about\":[\"c_ruvds\",\"h_cloud_services\",\"h_videocards\",\"h_games\",\"f_admin\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F584910\\\u002Fe9282f35a9bec8a4c92e7929efeb42b7\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fll\\\u002Ffg\\\u002Fin\\\u002Fllfgine0pooyd91brgtsojantqw.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fy-\\\u002Fs-\\\u002Foa\\\u002Fy-s-oa-8zdklfsonv3waetwbr0a.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fxv\\\u002Fyr\\\u002Fvt\\\u002Fxvyrvt2dafapfqbuofbqhjjferk.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fux\\\u002Fgi\\\u002Fwe\\\u002Fuxgiwehj37ctetfgnn3a6benci8.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fys\\\u002Fqk\\\u002Fx4\\\u002Fysqkx4zeotj1hphqfk_f3fmtu-g.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fou\\\u002Fg5\\\u002Fkh\\\u002Foug5kh6sjydt9llengsiebnp40w.png\"]}","metaDescription":"Этот проект продолжит предыдущий, где я рассматривал настройку VFIO в общем. Для многих этого уже будет достаточно, но моей целью все же является получение мощной игровой конфигурации, к которой я...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"ruvds":{"alias":"ruvds","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff27\u002Fea8\u002F5bd\u002Ff27ea85bd62fbd985c308110885af7e0.png","titleHtml":"RUVDS.com","descriptionHtml":"VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E","relatedData":null,"statistics":{"postsCount":2029,"newsCount":62,"vacanciesCount":0,"employeesCount":57,"careerRating":null,"subscribersCount":36796,"rating":2823.09,"invest":null},"foundationDate":{"year":"2015","month":"07","day":"27"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fruvds.com","staffNumber":"11–30 человек","registrationDate":"2016-03-18T05:43:01+00:00","representativeUser":{"alias":"ruvds","fullname":null},"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fruvds"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fru_vds"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fru_vds"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"33905479"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002Fb77\u002F8d5\u002Fa41\u002Fb778d5a41f83016379c6630262c3294c.png","linkUrl":"https:\u002F\u002Fruvds.com\u002Fru-rub","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E с 27 июля 2015 г.","title":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду HABR10 с 27 июля 2015 г.","keywords":["Научно-популярное","DIY или Сделай сам","Системное администрирование","Разработка веб-сайтов","Читальный зал"],"descriptionHtml":"2 029 статей от авторов компании RUVDS.com","description":"2 029 статей от авторов компании RUVDS.com"},"aDeskSettings":null,"careerAlias":"ruvds","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

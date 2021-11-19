@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Маленькая библиотека для работы с графами / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/582206\/"},"headline":"Маленькая библиотека для работы с графами","datePublished":"2021-10-07T16:19:24+03:00","dateModified":"2021-10-07T18:39:42+03:00","author":{"@type":"Person","name":"Максим Аксенов"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относитель...","url":"https:\/\/habr.com\/ru\/post\/582206\/#post-content-body","about":["h_cpp","f_develop"],"image":["https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/fab\/2f8\/3ca\/fab2f83ca57709a1e91b7c92e258808b.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/1d9\/a4d\/834\/1d9a4d834856e08a9f194488315dd71b.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Маленькая библиотека для работы с графами" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Маленькая библиотека для работы с графами" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Маленькая библиотека для работы с графами" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относительно простых задач. Кроме того, возникли..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относительно простых задач. Кроме того, возникли..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относительно простых задач. Кроме того, возникли..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относительно простых задач. Кроме того, возникли..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относительно простых задач. Кроме того, возникли..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/582206/7f88a450216fa5fe0f4520073a35768d/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/582206/7f88a450216fa5fe0f4520073a35768d/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/582206/7f88a450216fa5fe0f4520073a35768d/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/582206/7f88a450216fa5fe0f4520073a35768d/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/582206/7f88a450216fa5fe0f4520073a35768d/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582206" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-07T13:19:24.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582206/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/582206/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/582206/7f88a450216fa5fe0f4520073a35768d/" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582206/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/user01/" title="user01" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/user01/" class="tm-user-info__username">
+      user01
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-07T13:19:24.000Z" title="2021-10-07, 16:19">7  октября   в 16:19</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Маленькая библиотека для работы с графами</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Из песочницы
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относительно простых задач. Кроме того, возникли опасения, что на то, чтобы разобраться с ней уйдет слишком много времени, о boost::graph написана целая <a href="https://www.ozon.ru/product/c-boost-graph-library-2457394" rel="noopener noreferrer nofollow">книга</a>. Ну, а если обозримые задачи можно решить в лоб и быстро, то почему бы не попробовать, а boost::graph оставить до лучших времен.</p><p>Итак, граф сущность довольно простая, он состоит из вершин и ребер, в которых есть какая-то полезная информация. Ребра можно реализовать так:</p><pre><code class="cpp">template &lt;class V, class E>
+class Edge
+{
+public:
+	Edge(const E&amp; properties, Vertice&lt;V, E>* vertice1, Vertice&lt;V, E>* vertice2)
+		: properties_(properties)
+		, vertice1_(vertice1)
+		, vertice2_(vertice2)
+	{}
+	const Vertice&lt;V, E>* getVertice1() const { return vertice1_; }
+	const Vertice&lt;V, E>* getVertice2() const { return vertice2_; }
+	const E* getProperties() const { return &amp;properties_; }
+private:
+	const E properties_;
+	Vertice&lt;V, E>* vertice1_;
+	Vertice&lt;V, E>* vertice2_;
+};</code></pre><p>Думаю, что тут и так все понятно, но есть одна деталь: если ребро ориентированное - один из указателей будет нулевым. Или можно еще так сказать: указатель на вершину указывает направление ребра. Такая реализация приводит к тому, что впустую расходуется указатель у ориентированных ребер, но сэкономить, к сожалению, не получится. Можно реализовать ориентированное ребро с одним указателем, сделать его потомком неориентированное ребро, добавив туда еще один указатель, и использовать виртуальные функции, но тогда добавится указатель на таблицу виртуальных функций и расход памяти даже увеличится.</p><p>Реализация вершины тоже довольно проста:</p><pre><code class="cpp">template &lt;class V, class E>
+class Vertice
+{
+public:
+  Vertice(const V&amp; properties) : properties_(properties) {}
+	const V* getProperties() const { return &amp;properties_; }
+	const std::vector&lt;Edge&lt;V, E>*>* getEdges() const { return &amp;edges_; }
+	void addOrderedEdge(const E&amp; properties, Vertice&lt;V, E>* target)
+	{
+		Edge&lt;V, E>* edge = new Edge&lt;V, E>(properties, target, nullptr);
+		edges_.push_back(edge);
+	}
+	void addEdge(const E&amp; properties, Vertice&lt;V, E>* target)
+	{
+		Edge&lt;V, E>* edge = new Edge&lt;V, E>(properties, target, this);
+		edges_.push_back(edge);
+		target->edges_.push_back(edge);
+	}
+private:
+	const V properties_;
+	std::vector&lt;Edge&lt;V, E>*> edges_;
+};</code></pre><p>edges_ содержит указатели на исходящие ребра вершины и это дает возможность подумать о еще одном варианте экономии. Также как и в первом варианте можно использовать наследование, но без виртуальных функций, ориентированные и неориентированные ребра разделять в векторе нулевым указателем и использовать приведение типов. Даст ли это экономию? Далеко не факт, мы избавляемся от указателя в одном месте, но он добавляется в другом. А вот, что точно факт, так это то, что код усложнится. Поэтому, вспоминаем, что графы у нас используются небольшие, успокаиваем себя словами Дональда Кнута, что преждевременная оптимизация корень всех бед, и оставляем все как есть.<br/><br/>Чтобы сделать дальнейший рассказ более наглядным, предположим, что у нас есть такой граф и все дальнейшие рассуждения будем вести на его основе.</p><figure class="full-width "><img src="/img/image-loader.svg" height="467" data-src="https://habrastorage.org/getpro/habr/upload_files/fab/2f8/3ca/fab2f83ca57709a1e91b7c92e258808b.png" data-width="966"/><figcaption></figcaption></figure><p>Для начала создадим граф:</p><pre><code class="cpp">Vertice&lt;std::string, int> a1("A1");
+Vertice&lt;std::string, int> b1("B1");
+a1.addEdge(10, &amp;b1);
+Vertice&lt;std::string, int> c1("C1");
+b1.addEdge(20, &amp;c1);
+Vertice&lt;std::string, int> b2("B2");
+a1.addEdge(15, &amp;b2);
+Vertice&lt;std::string, int> e1("E1");
+c1.addOrderedEdge(30, &amp;e1);
+Vertice&lt;std::string, int> f1("F1");
+e1.addOrderedEdge(25, &amp;f1);
+b2.addEdge(40, &amp;f1);
+Vertice&lt;std::string, int> b3("B3");
+a1.addOrderedEdge(10, &amp;b3);
+b3.addEdge(12, &amp;c1);</code></pre><p>И будем искать какой-нибудь путь из вершины А1 в вершину В3 и его стоимость. Для этого можно использовать обход граф в <a href="https://ru.wikipedia.org/wiki/%D0%9F%D0%BE%D0%B8%D1%81%D0%BA_%D0%B2_%D0%B3%D0%BB%D1%83%D0%B1%D0%B8%D0%BD%D1%83" rel="noopener noreferrer nofollow">глубину</a>, в процессе обхода будем запоминать пройденные вершины и суммировать стоимость дуг. На графе обход будет выглядеть так, шаги обхода пронумерованы:</p><figure class="full-width "><img src="/img/image-loader.svg" height="467" data-src="https://habrastorage.org/getpro/habr/upload_files/1d9/a4d/834/1d9a4d834856e08a9f194488315dd71b.png" data-width="966"/><figcaption></figcaption></figure><p>Глядя на этот обход можно отметить пару моментов:</p><ul><li><p>путь не обязательно приведет к успеху и придется возвращаться назад (шаги 3-10)</p></li><li><p>в процессе обхода можно попасть в уже пройденные вершины и тогда нужно прекращать обход и откатываться назад (шаг 6)</p></li></ul><p>С учетом сказанного реализация может выглядеть так:</p><pre><code class="cpp">bool search(const Vertice&lt;std::string, int>* vertice, const std::string&amp; name, std::vector&lt;const Vertice&lt;std::string, int>*>* visited, int* cost)
+{
+	if (std::find(visited->begin(), visited->end(), vertice) != visited->end())
+	{
+		return false;
+	}
+	visited->push_back(vertice);
+	if (*vertice->getProperties() == name)
+	{
+		return true;
+	}
+	for (const Edge&lt;std::string, int>* edge : *vertice->getEdges())
+	{
+		const Vertice&lt;std::string, int>* next = edge->getVertice1() == vertice || edge->getVertice1() == nullptr ? edge->getVertice2() : edge->getVertice1();
+		if (search(next, name, visited, cost))
+		{
+			*cost += *edge->getProperties();
+			return true;
+		}
+	}
+	visited->pop_back();
+	return false;
+}</code></pre><p>Это рекурсивная функция делает следующее:</p><ol><li><p>Проверяет, что вершина еще не была пройдена и формирует список пройденных вершин</p></li><li><p>Завершает рекурсию, если вершина была найдена</p></li><li><p>Рекурсивно вызывает себя для соседних вершин</p></li><li><p>Если вершина была найдена - суммирует пройденные дуги</p></li></ol><p>Что можно сказать об этой функции?<br/>Она работает и это, пожалуй, единственное ее достоинство.<br/>А вот что можно сказать о недостатках:</p><ol><li><p>Слишком многословная, основная часть кода - обход графа, а самое интересное - работа с данными вершин и дуг, занимает всего пару строчек и теряется на фоне остального кода. Причем во времена до 11 стандарта, когда не было ни range-based for, ни auto, она была еще более громоздкой.</p></li><li><p>Этот код не получится использовать повторно. Например, проверка на посещение уже пройденных вершин будет полезен для подавляющего большинства алгоритмов, но повторно его использовать при такой реализации мы не сможем.</p></li><li><p>Такой код провоцирует копипаст со всеми вытекающими из него опечатками и ошибками. После второго похода в отладчик было решено срочно с этим что-то делать.</p></li></ol><p>Тут естественно возникает желание разделить обход графа и работу с вершинами и дугами. И для этого хорошо подойдет что-то типа паттерна <a href="https://ru.wikipedia.org/wiki/%D0%9F%D0%BE%D1%81%D0%B5%D1%82%D0%B8%D1%82%D0%B5%D0%BB%D1%8C_(%D1%88%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD_%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F)" rel="noopener noreferrer nofollow">посетитель</a>. С учетом того, динамический полиморфизм нам не нужен - будем использовать шаблоны. Для начала нужно понять какие должны быть методы у посетителя и их сигнатура. Очевидно, что должны быть два метода: visitVertice и visitEdge, котрые будут обрабатывать соответствующее объекты. А если посмотреть на функцию search, то становится очевидно, что visitVertice должна возвращать true или false, которое указывает, следует ли остановить обход или продолжать, аналогично и для visitEdge. Но этого недостаточно, нужен код, который выполнит суммирование стоимости дуг и удаление вершин при выходе из рекурсивного вызова, поэтому добавим еще функции leaveVertice и leaveEdge. Исходя из всего этого алгоритм обхода в глубину можно реализовать так:</p><pre><code class="cpp">template &lt;class V, class E, class F>
+void depthPass(const Vertice&lt;V, E>* vertice, F* visitor)
+{
+	if (!visitor->visitVertice(vertice))
+	{
+		return;
+	}
+	for(Edge&lt;V,E>* edge : *vertice->getEdges())
+	{
+		if (!visitor->visitEdge(edge))
+		{
+			continue;
+		}
+		const Vertice&lt;V, E>* next = edge->getVertice1() == vertice || edge->getVertice1() == nullptr ? edge->getVertice2() : edge->getVertice1();
+		depthPass(next, visitor);
+		visitor->leaveEdge(edge);
+	}
+	visitor->leaveVertice(vertice);
+}</code></pre><p>И теперь можно реализовать простой, но очень полезный посетитель. Он не будет делать ничего особенного, просто защищать алгоритм от зацикливания:</p><pre><code class="cpp">template &lt;class V, class E>
+class OneTimeVisitor
+{
+public:
+	bool visitVertice(const Vertice&lt;V, E>* vertice)
+	{
+		if (std::find(visited_.begin(), visited_.end(), vertice) != visited_.end())
+		{
+			return false;
+		}
+		visited_.push_back(vertice);
+		return true;
+	}
+	bool visitEdge(const Edge&lt;V,E>*)
+	{
+		return true;
+	}
+	void leaveVertice(const Vertice&lt;V, E>*) { visited_.pop_back(); }
+	void leaveEdge(const Edge&lt;V, E>* ) {}
+	const std::vector&lt;const Vertice&lt;V,E>*>&amp; getVisited() const { return visited_; }
+private:
+	std::vector&lt;const Vertice&lt;V,E>*> visited_;
+};</code></pre><p>Как несложно заметить, этот полностью дублирует код из search, но теперь другие посетители могут наследоваться от OneTimeVisitor и повторно использовать его код. Или можно так сказать: OneTimeVisitor обеспечивает посещение всех вершин графа один раз. Теперь можно вернуться к функции search и реализовать ее в виде посетителя. При этом расширим ее возможности, чтобы она искала не один путь, а заданное количество путей. И для начала реализуем просто поиск пути без подсчета стоимости. Почему так? Чтобы повторно использовать код. Поиск пути - достаточно абстрактный алгоритм, который может быть реализован, используя только оператор сравнения. А подсчет стоимости значительно больше привязан к данным ребер. Объединяя эти операции в одном посетителе мы сильно снижаем возможность его повторного использования.</p><pre><code class="cpp">template &lt;class V, class E, class C = std::equal_to&lt;V>>
+class PathBuilder : public OneTimeVisitor&lt;V, E>
+{
+public:
+	PathBuilder(const V&amp; value, size_t pathCount = std::numeric_limits&lt;size_t>::max())
+		: value_(value)
+		, pathCount_(pathCount)
+		, pathes_(new std::vector&lt;std::vector&lt;const Vertice&lt;V, E>*>>())
+	{}
+	bool visitVertice(const Vertice&lt;V, E>* vertice)
+	{
+		if (!OneTimeVisitor&lt;V, E>::visitVertice(vertice))
+		{
+			return false;
+		}
+		if (C()(*vertice->getProperties(), value_))
+		{
+			pathes_->push_back(OneTimeVisitor&lt;V, E>::getVisited());
+			OneTimeVisitor&lt;V, E>::leaveVertice(vertice);
+			return false;
+		}
+		return true;
+	}
+	bool visitEdge(const Edge&lt;V,E>* edge)
+	{
+		if (!OneTimeVisitor&lt;V, E>::visitEdge(edge))
+		{
+			return false;
+		}
+		if (pathes_->size() &lt; pathCount_)
+		{
+			return true;
+		}
+		OneTimeVisitor&lt;V, E>::leaveEdge(edge);
+		return false;
+	}
+
+private:
+	const V value_;
+	const size_t pathCount_;
+	std::shared_ptr&lt;std::vector&lt;std::vector&lt;const Vertice&lt;V, E>*>>> pathes_;
+};</code></pre><p>Здесь нужно обратить внимание на следующий момент: если метод visit* базового класса вернул true, а метод производного класса собирается вернуть false, то должен быть вызван соответствующий метод leave базового класса. В противном случае посетитель будет в рассинхронизированном состоянии: члены базового класса будут в состоянии, как если бы посетитель посетил текущий узел или ребро, а члены производного класса нет. Причина использования shared_ptr будет объяснена позже - это задел для дальнейшего развития библиотеки.</p><p>Посетитель для поиска путей и стоимостей может реализовать наследуясь от PathBuilder. Но можно было бы наследоваться от OneTimeVisitor и повторить логику PathBuilder, возможно, так было бы проще. Это скорее дело вкуса и предпочтений.</p><pre><code class="cpp">template &lt;class V, class E, class C = std::equal_to&lt;V>>
+class PathCostBuilder : public PathBuilder&lt;V, E, C>
+{
+public:
+	PathCostBuilder(const V&amp; value, size_t pathCount = std::numeric_limits&lt;size_t>::max())
+		: PathBuilder&lt;V, E, C>(value, std::numeric_limits&lt;size_t>::max())
+		, pathCount_(pathCount)
+		, cost_(0)
+		, costs_(new std::multimap&lt;int, int>())
+	{}
+	bool visitVertice(const Vertice&lt;V, E>* vertice)
+	{
+		size_t oldPathesSize = PathBuilder&lt;V, E, C>::getPathes().size();
+		if (!PathBuilder&lt;V, E, C>::visitVertice(vertice))
+		{
+			if (PathBuilder&lt;V, E, C>::getPathes().size() != oldPathesSize)
+			{
+				if (costs_->size() == pathCount_ &amp;&amp; cost_ &lt; (--costs_->end())->first)
+				{
+					auto lastItem = --costs_->end();
+					getPathes().erase(getPathes().begin() + lastItem->second);
+					costs_->erase(lastItem);
+				}
+				if (costs_->size() &lt; pathCount_)
+				{
+					costs_->emplace(cost_, PathBuilder&lt;V, E, C>::getPathes().size() -1);
+				}
+			}
+			return false;
+		}
+		if (costs_->size() == pathCount_ &amp;&amp; cost_ >= (--costs_->end())->first)
+		{
+			PathBuilder&lt;V, E, C>::leaveVertice(vertice);
+			return false;
+		}
+		return true;
+	}
+	bool visitEdge(Edge&lt;V,E>* edge)
+	{
+		if (!PathBuilder&lt;V, E, C>::visitEdge(edge))
+		{
+			return false;
+		}
+		cost_ += *edge->getProperties();
+		return true;
+	};
+	void leaveEdge(Edge&lt;V, E>* edge)
+	{
+		cost_ -= *edge->getProperties();
+	}
+private:
+	size_t pathCount_;
+	int cost_;
+	std::shared_ptr&lt;std::multimap&lt;int, int>> costs_; // cost, path position pairs
+};</code></pre><p>За кадром остался вопрос деструктора Vertice. Здесь ничего сложного, но нужно помнить, что ребра создаются в классе вершин, а значит они должны и удаляться там же. Кроме того, если ребро неориентированное, то ребро должно быть удалено из списка ребер еще одного узла:</p><pre><code class="cpp">~Vertice()
+{
+	for(Edge&lt;V, E>* edge : edges_)
+	{
+		if (edge->vertice1_ != nullptr &amp;&amp; edge->vertice2_ != nullptr)
+		{
+			Vertice&lt;V, E>* other = (edge->vertice1_ == this ) ? edge->vertice2_ : edge->vertice1_;
+			other->edges_.erase(std::find(other->edges_.begin(), other->edges_.end(), edge));
+		}
+		delete edge;
+	}
+}</code></pre><p>Поскольку очень часто узлы будут создаваться динамически, например, описание графа может быть в файле, а сохраняться только указатель на один узел из которого будет выполняться все расчеты, то реализуем посетитель, который будет собирать все вершины графа для последующего удаления. Но чтобы сделать посетитель более универсальным добавим еще один параметр, который определяет максимальное удаление собираемых вершин от стартового. По умолчанию ограничения нет, а 1 означает ближайших соседей:</p><pre><code class="cpp">template &lt;class V, class E>
+class VerticeCollector
+{
+public:
+	VerticeCollector(size_t deptLimit = std::numeric_limits&lt;size_t>::max())
+		: deptLimit_(deptLimit)
+		, dept_(0)
+	{}
+	bool visitVertice(const Vertice&lt;V, E>* vertice)
+	{
+		return vertices_.insert(vertice).second;
+	}
+	void leaveVertice(const Vertice&lt;V, E>* vertice)
+	{
+	}
+	bool visitEdge(const Edge&lt;V,E>*)
+	{
+		if (dept_ >= deptLimit_)
+		{
+			return false;
+		}
+		++dept_;
+		return true;
+	}
+	void leaveEdge(const Edge&lt;V, E>* )
+	{
+		--dept_;
+	}
+private:
+	size_t deptLimit_;
+	size_t dept_;
+	std::unordered_set&lt;const Vertice&lt;V, E>*> vertices_;
+};</code></pre><p>Как видите, этот посетитель не наследуется от OneTimeVisitor поскольку это не дает никаких преимуществ.</p><p>Добавляя новые посетители можно реализовывать различные алгоритмы на графах. Для решения практических задач этого достаточно. Но есть еще один вариант обхода графа - обход в ширину. Теоретически он может дать лучший по скорости результат, если алгоритм не требует обхода всего графа, как, например, при поиске всех возможных маршрутов. Однако на практике это не обязательно так. Почему, станет понятно позже. Если внимательно прочитать описание обхода в глубину и в ширину, наример, на Википедии, и немного поразмыслить, то станет очевидно, что в первом случае алгоритм посещает соседей самой последней посещенной вершиной, а во втором первой еще не обработаной вершины. Такое поведение можно смоделировать с помощью стека (ведь не просто так использовалась рекурсивная функция, а стек вызавов функций называется стеком) и очереди. Таким образом, на первый взгляд может показаться, просто помещая указатели на вершины в разные контейнеры, получим разные типы обхода. Однако, за исключением простейших случаев, например, поиска узла, это не так. Проблема в том, что в процессе обхода пути на графе, посетитель может собирать необходимую ему информацию, например, подсчитывать стоимости, а при обходе в ширину осуществляется обход одновременно нескольких путей. Однако в простешем случае, если посетитель не изменяет своего состояния при посещении вершин, как, например, при поиске вершины, это сработает.</p><pre><code class="cpp">template &lt;class V, class E, class F>
+void dummyBreadthPass(const Vertice&lt;V, E>* vertice, F* visitor)
+{
+	std::queue&lt;const Vertice&lt;V, E>*> vertices;
+	vertices.push(vertice);
+	while (!vertices.empty())
+	{
+		const Vertice&lt;V, E>* current = vertices.front();
+		vertices.pop();
+		if (!visitor->visitVertice(current))
+		{
+			continue;
+		}
+		for(Edge&lt;V,E>* edge : *current->getEdges())
+		{
+			if (!visitor->visitEdge(edge))
+			{
+				continue;
+			}
+			const Vertice&lt;V, E>* next = edge->getVertice1() == current || edge->getVertice1() == nullptr ? edge->getVertice2() : edge->getVertice1();
+			vertices.push(next);
+		}
+	}
+}</code></pre><p>Эта функция очень похожа на depthPass. Ее принципиальное отличие в отсутствии методов leaveVertice и leaveEdge, поскольку мы не можем накапливать информацию при обходе графа, то и восстанавливать ее в исходное состояние нет никакого смысла.</p><p>И все же, как реализовать обход графа в ширину с произвольным посетителем? Очень просто, нужно для каждого пути использовать свой посетитель, а общую информцию, например, контейнер с результатами, сделать доступной всем экземплярам посетителя, например, через статический член класса или указатель:</p><pre><code class="cpp">template &lt;class V, class E, class F, class Q>
+void breadthPassCommon(const Vertice&lt;V, E>* vertice, F* visitor)
+{
+	Q verticeQueue;
+	verticeQueue.push(make_pair(vertice, new F(*visitor)));
+	while (!verticeQueue.empty())
+	{
+		const Vertice&lt;V, E>* vertice = verticeQueue.front().first;
+		F* visitor = verticeQueue.front().second;
+		verticeQueue.pop();
+		if (!visitor->visitVertice(vertice))
+		{
+			continue;
+		}
+		bool visitorPassed = false;
+		F tmpVisitor(*visitor);
+		for(auto it = vertice->getEdges()->begin(); it != vertice->getEdges()->end(); ++it)
+		{
+			F* branchVisitor = visitor;
+			if (visitorPassed)
+			{
+				branchVisitor = new F(tmpVisitor);
+			}
+			else
+			{
+				visitorPassed = true;
+			}
+			if (!branchVisitor->visitEdge(*it))
+			{
+				delete branchVisitor;
+				continue;
+			}
+			const Vertice&lt;V, E>* next = (*it)->getVertice1() == vertice || (*it)->getVertice1() == nullptr ? (*it)->getVertice2() : (*it)->getVertice1();
+			verticeQueue.push(make_pair(next, branchVisitor));
+		}
+		if (!visitorPassed)
+		{
+			delete visitor;
+		}
+	}
+}</code></pre><p>Хочу обратить внимание, что в очереди хранится не только указатель на узел, но и посетитель, который копируется при обходе каждого нового пути, это очень расточительно с точки зрения памяти, если узлы имеют много дуг, а посетители хранят много информации. Очередь сделана параметром шаблона, чтобы можно было использовать обычную очередь и очередь с приоритетом. Очередь с приоритетом лучше подойдет, если по каким-либо данным можно выбрать наиболее перспективный путь. Например, при поиске кратчайшего пути можно первыми обрабатывать пути с минимальной стоимостью.</p><pre><code class="cpp">template &lt;class V, class E, class F>
+void breadthPass(const Vertice&lt;V, E>* vertice, F* visitor)
+{
+	breadthPassCommon&lt;V, E, F, std::queue&lt;std::pair&lt;const Vertice&lt;V, E>*, F*>>>(vertice, visitor);
+}
+
+template &lt;class V, class E, class F>
+void priorityBreadthPass(const Vertice&lt;V, E>* vertice, F* visitor)
+{
+	typedef std::pair&lt;const Vertice&lt;V,E>*, F*> QueueType;
+	struct PairLess
+	{
+		bool operator()(const QueueType&amp; a, const QueueType&amp; b)
+		{
+			return *a.second &lt; *b.second;
+		}
+	};
+	class FrontAdapter : public std::priority_queue&lt;QueueType, std::vector&lt;QueueType>, PairLess>
+	{
+	public:
+		const QueueType&amp; front() const { return std::priority_queue&lt;QueueType, std::vector&lt;QueueType>, PairLess>::top(); }
+	};
+	breadthPassCommon&lt;V, E, F, FrontAdapter>(vertice, visitor);
+}</code></pre></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%90%D0%BB%D0%B3%D0%BE%D1%80%D0%B8%D1%82%D0%BC%D1%8B%5D" class="tm-tags-list__link">Алгоритмы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B3%D1%80%D0%B0%D1%84%D1%8B%5D" class="tm-tags-list__link">графы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%88%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD%D1%8B%5D" class="tm-tags-list__link">шаблоны</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 7: ↑7 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 7: ↑7 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+7</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">2K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    28
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/user01/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 3 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    3
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">7</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Максим Аксенов</span> <a href="/ru/users/user01/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @user01
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/582206/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 5 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/582206/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/582206/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582206":{"id":"582206","timePublished":"2021-10-07T13:19:24+00:00","isCorporative":false,"lang":"ru","titleHtml":"Маленькая библиотека для работы с графами","leadData":{"textHtml":"\u003Cp\u003EХочу рассказать об одном интересном решении для работы с небольшими графами (несколько сотен или тысяч вершин с несколькими ребрами каждый) над которыми нужно выполнять довольно много разнообразных вычислений. Я постарался  изложить материал максимально просто, чтобы было понятно даже начинающим разработчикам, и последовательно, начиная с самых первых простых решений в начале работы и дальше в строну усложнения. Тем не менее для поминания необходимо знание С++, в частности базовое понимание шаблонов и рекурсивных функций. Статья скорее про реализацию на С++, чем про графы.\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать далее","image":null},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"sandbox","data":null}],"author":{"scoreStats":{"score":3,"votesCount":3},"rating":7,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"467014","alias":"user01","fullname":"Максим Аксенов","avatarUrl":null,"speciality":null},"statistics":{"commentsCount":5,"favoritesCount":28,"readingCount":2030,"score":7,"votesCount":7},"hubs":[{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EДолжен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относительно простых задач. Кроме того, возникли опасения, что на то, чтобы разобраться с ней уйдет слишком много времени, о boost::graph написана целая \u003Ca href=\"https:\u002F\u002Fwww.ozon.ru\u002Fproduct\u002Fc-boost-graph-library-2457394\" rel=\"noopener noreferrer nofollow\"\u003Eкнига\u003C\u002Fa\u003E. Ну, а если обозримые задачи можно решить в лоб и быстро, то почему бы не попробовать, а boost::graph оставить до лучших времен.\u003C\u002Fp\u003E\u003Cp\u003EИтак, граф сущность довольно простая, он состоит из вершин и ребер, в которых есть какая-то полезная информация. Ребра можно реализовать так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E\u003E\nclass Edge\n{\npublic:\n\tEdge(const E&amp; properties, Vertice&lt;V, E\u003E* vertice1, Vertice&lt;V, E\u003E* vertice2)\n\t\t: properties_(properties)\n\t\t, vertice1_(vertice1)\n\t\t, vertice2_(vertice2)\n\t{}\n\tconst Vertice&lt;V, E\u003E* getVertice1() const { return vertice1_; }\n\tconst Vertice&lt;V, E\u003E* getVertice2() const { return vertice2_; }\n\tconst E* getProperties() const { return &amp;properties_; }\nprivate:\n\tconst E properties_;\n\tVertice&lt;V, E\u003E* vertice1_;\n\tVertice&lt;V, E\u003E* vertice2_;\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДумаю, что тут и так все понятно, но есть одна деталь: если ребро ориентированное - один из указателей будет нулевым. Или можно еще так сказать: указатель на вершину указывает направление ребра. Такая реализация приводит к тому, что впустую расходуется указатель у ориентированных ребер, но сэкономить, к сожалению, не получится. Можно реализовать ориентированное ребро с одним указателем, сделать его потомком неориентированное ребро, добавив туда еще один указатель, и использовать виртуальные функции, но тогда добавится указатель на таблицу виртуальных функций и расход памяти даже увеличится.\u003C\u002Fp\u003E\u003Cp\u003EРеализация вершины тоже довольно проста:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E\u003E\nclass Vertice\n{\npublic:\n  Vertice(const V&amp; properties) : properties_(properties) {}\n\tconst V* getProperties() const { return &amp;properties_; }\n\tconst std::vector&lt;Edge&lt;V, E\u003E*\u003E* getEdges() const { return &amp;edges_; }\n\tvoid addOrderedEdge(const E&amp; properties, Vertice&lt;V, E\u003E* target)\n\t{\n\t\tEdge&lt;V, E\u003E* edge = new Edge&lt;V, E\u003E(properties, target, nullptr);\n\t\tedges_.push_back(edge);\n\t}\n\tvoid addEdge(const E&amp; properties, Vertice&lt;V, E\u003E* target)\n\t{\n\t\tEdge&lt;V, E\u003E* edge = new Edge&lt;V, E\u003E(properties, target, this);\n\t\tedges_.push_back(edge);\n\t\ttarget-\u003Eedges_.push_back(edge);\n\t}\nprivate:\n\tconst V properties_;\n\tstd::vector&lt;Edge&lt;V, E\u003E*\u003E edges_;\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003Eedges_ содержит указатели на исходящие ребра вершины и это дает возможность подумать о еще одном варианте экономии. Также как и в первом варианте можно использовать наследование, но без виртуальных функций, ориентированные и неориентированные ребра разделять в векторе нулевым указателем и использовать приведение типов. Даст ли это экономию? Далеко не факт, мы избавляемся от указателя в одном месте, но он добавляется в другом. А вот, что точно факт, так это то, что код усложнится. Поэтому, вспоминаем, что графы у нас используются небольшие, успокаиваем себя словами Дональда Кнута, что преждевременная оптимизация корень всех бед, и оставляем все как есть.\u003Cbr\u002F\u003E\u003Cbr\u002F\u003EЧтобы сделать дальнейший рассказ более наглядным, предположим, что у нас есть такой граф и все дальнейшие рассуждения будем вести на его основе.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"467\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffab\u002F2f8\u002F3ca\u002Ffab2f83ca57709a1e91b7c92e258808b.png\" data-width=\"966\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EДля начала создадим граф:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EVertice&lt;std::string, int\u003E a1(\"A1\");\nVertice&lt;std::string, int\u003E b1(\"B1\");\na1.addEdge(10, &amp;b1);\nVertice&lt;std::string, int\u003E c1(\"C1\");\nb1.addEdge(20, &amp;c1);\nVertice&lt;std::string, int\u003E b2(\"B2\");\na1.addEdge(15, &amp;b2);\nVertice&lt;std::string, int\u003E e1(\"E1\");\nc1.addOrderedEdge(30, &amp;e1);\nVertice&lt;std::string, int\u003E f1(\"F1\");\ne1.addOrderedEdge(25, &amp;f1);\nb2.addEdge(40, &amp;f1);\nVertice&lt;std::string, int\u003E b3(\"B3\");\na1.addOrderedEdge(10, &amp;b3);\nb3.addEdge(12, &amp;c1);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ будем искать какой-нибудь путь из вершины А1 в вершину В3 и его стоимость. Для этого можно использовать обход граф в \u003Ca href=\"https:\u002F\u002Fru.wikipedia.org\u002Fwiki\u002F%D0%9F%D0%BE%D0%B8%D1%81%D0%BA_%D0%B2_%D0%B3%D0%BB%D1%83%D0%B1%D0%B8%D0%BD%D1%83\" rel=\"noopener noreferrer nofollow\"\u003Eглубину\u003C\u002Fa\u003E, в процессе обхода будем запоминать пройденные вершины и суммировать стоимость дуг. На графе обход будет выглядеть так, шаги обхода пронумерованы:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"467\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F1d9\u002Fa4d\u002F834\u002F1d9a4d834856e08a9f194488315dd71b.png\" data-width=\"966\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EГлядя на этот обход можно отметить пару моментов:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eпуть не обязательно приведет к успеху и придется возвращаться назад (шаги 3-10)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eв процессе обхода можно попасть в уже пройденные вершины и тогда нужно прекращать обход и откатываться назад (шаг 6)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EС учетом сказанного реализация может выглядеть так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Ebool search(const Vertice&lt;std::string, int\u003E* vertice, const std::string&amp; name, std::vector&lt;const Vertice&lt;std::string, int\u003E*\u003E* visited, int* cost)\n{\n\tif (std::find(visited-\u003Ebegin(), visited-\u003Eend(), vertice) != visited-\u003Eend())\n\t{\n\t\treturn false;\n\t}\n\tvisited-\u003Epush_back(vertice);\n\tif (*vertice-\u003EgetProperties() == name)\n\t{\n\t\treturn true;\n\t}\n\tfor (const Edge&lt;std::string, int\u003E* edge : *vertice-\u003EgetEdges())\n\t{\n\t\tconst Vertice&lt;std::string, int\u003E* next = edge-\u003EgetVertice1() == vertice || edge-\u003EgetVertice1() == nullptr ? edge-\u003EgetVertice2() : edge-\u003EgetVertice1();\n\t\tif (search(next, name, visited, cost))\n\t\t{\n\t\t\t*cost += *edge-\u003EgetProperties();\n\t\t\treturn true;\n\t\t}\n\t}\n\tvisited-\u003Epop_back();\n\treturn false;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭто рекурсивная функция делает следующее:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EПроверяет, что вершина еще не была пройдена и формирует список пройденных вершин\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЗавершает рекурсию, если вершина была найдена\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EРекурсивно вызывает себя для соседних вершин\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЕсли вершина была найдена - суммирует пройденные дуги\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EЧто можно сказать об этой функции?\u003Cbr\u002F\u003EОна работает и это, пожалуй, единственное ее достоинство.\u003Cbr\u002F\u003EА вот что можно сказать о недостатках:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EСлишком многословная, основная часть кода - обход графа, а самое интересное - работа с данными вершин и дуг, занимает всего пару строчек и теряется на фоне остального кода. Причем во времена до 11 стандарта, когда не было ни range-based for, ни auto, она была еще более громоздкой.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЭтот код не получится использовать повторно. Например, проверка на посещение уже пройденных вершин будет полезен для подавляющего большинства алгоритмов, но повторно его использовать при такой реализации мы не сможем.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EТакой код провоцирует копипаст со всеми вытекающими из него опечатками и ошибками. После второго похода в отладчик было решено срочно с этим что-то делать.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EТут естественно возникает желание разделить обход графа и работу с вершинами и дугами. И для этого хорошо подойдет что-то типа паттерна \u003Ca href=\"https:\u002F\u002Fru.wikipedia.org\u002Fwiki\u002F%D0%9F%D0%BE%D1%81%D0%B5%D1%82%D0%B8%D1%82%D0%B5%D0%BB%D1%8C_(%D1%88%D0%B0%D0%B1%D0%BB%D0%BE%D0%BD_%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D1%8F)\" rel=\"noopener noreferrer nofollow\"\u003Eпосетитель\u003C\u002Fa\u003E. С учетом того, динамический полиморфизм нам не нужен - будем использовать шаблоны. Для начала нужно понять какие должны быть методы у посетителя и их сигнатура. Очевидно, что должны быть два метода: visitVertice и visitEdge, котрые будут обрабатывать соответствующее объекты. А если посмотреть на функцию search, то становится очевидно, что visitVertice должна возвращать true или false, которое указывает, следует ли остановить обход или продолжать, аналогично и для visitEdge. Но этого недостаточно, нужен код, который выполнит суммирование стоимости дуг и удаление вершин при выходе из рекурсивного вызова, поэтому добавим еще функции leaveVertice и leaveEdge. Исходя из всего этого алгоритм обхода в глубину можно реализовать так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E, class F\u003E\nvoid depthPass(const Vertice&lt;V, E\u003E* vertice, F* visitor)\n{\n\tif (!visitor-\u003EvisitVertice(vertice))\n\t{\n\t\treturn;\n\t}\n\tfor(Edge&lt;V,E\u003E* edge : *vertice-\u003EgetEdges())\n\t{\n\t\tif (!visitor-\u003EvisitEdge(edge))\n\t\t{\n\t\t\tcontinue;\n\t\t}\n\t\tconst Vertice&lt;V, E\u003E* next = edge-\u003EgetVertice1() == vertice || edge-\u003EgetVertice1() == nullptr ? edge-\u003EgetVertice2() : edge-\u003EgetVertice1();\n\t\tdepthPass(next, visitor);\n\t\tvisitor-\u003EleaveEdge(edge);\n\t}\n\tvisitor-\u003EleaveVertice(vertice);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ теперь можно реализовать простой, но очень полезный посетитель. Он не будет делать ничего особенного, просто защищать алгоритм от зацикливания:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E\u003E\nclass OneTimeVisitor\n{\npublic:\n\tbool visitVertice(const Vertice&lt;V, E\u003E* vertice)\n\t{\n\t\tif (std::find(visited_.begin(), visited_.end(), vertice) != visited_.end())\n\t\t{\n\t\t\treturn false;\n\t\t}\n\t\tvisited_.push_back(vertice);\n\t\treturn true;\n\t}\n\tbool visitEdge(const Edge&lt;V,E\u003E*)\n\t{\n\t\treturn true;\n\t}\n\tvoid leaveVertice(const Vertice&lt;V, E\u003E*) { visited_.pop_back(); }\n\tvoid leaveEdge(const Edge&lt;V, E\u003E* ) {}\n\tconst std::vector&lt;const Vertice&lt;V,E\u003E*\u003E&amp; getVisited() const { return visited_; }\nprivate:\n\tstd::vector&lt;const Vertice&lt;V,E\u003E*\u003E visited_;\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКак несложно заметить, этот полностью дублирует код из search, но теперь другие посетители могут наследоваться от OneTimeVisitor и повторно использовать его код. Или можно так сказать: OneTimeVisitor обеспечивает посещение всех вершин графа один раз. Теперь можно вернуться к функции search и реализовать ее в виде посетителя. При этом расширим ее возможности, чтобы она искала не один путь, а заданное количество путей. И для начала реализуем просто поиск пути без подсчета стоимости. Почему так? Чтобы повторно использовать код. Поиск пути - достаточно абстрактный алгоритм, который может быть реализован, используя только оператор сравнения. А подсчет стоимости значительно больше привязан к данным ребер. Объединяя эти операции в одном посетителе мы сильно снижаем возможность его повторного использования.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E, class C = std::equal_to&lt;V\u003E\u003E\nclass PathBuilder : public OneTimeVisitor&lt;V, E\u003E\n{\npublic:\n\tPathBuilder(const V&amp; value, size_t pathCount = std::numeric_limits&lt;size_t\u003E::max())\n\t\t: value_(value)\n\t\t, pathCount_(pathCount)\n\t\t, pathes_(new std::vector&lt;std::vector&lt;const Vertice&lt;V, E\u003E*\u003E\u003E())\n\t{}\n\tbool visitVertice(const Vertice&lt;V, E\u003E* vertice)\n\t{\n\t\tif (!OneTimeVisitor&lt;V, E\u003E::visitVertice(vertice))\n\t\t{\n\t\t\treturn false;\n\t\t}\n\t\tif (C()(*vertice-\u003EgetProperties(), value_))\n\t\t{\n\t\t\tpathes_-\u003Epush_back(OneTimeVisitor&lt;V, E\u003E::getVisited());\n\t\t\tOneTimeVisitor&lt;V, E\u003E::leaveVertice(vertice);\n\t\t\treturn false;\n\t\t}\n\t\treturn true;\n\t}\n\tbool visitEdge(const Edge&lt;V,E\u003E* edge)\n\t{\n\t\tif (!OneTimeVisitor&lt;V, E\u003E::visitEdge(edge))\n\t\t{\n\t\t\treturn false;\n\t\t}\n\t\tif (pathes_-\u003Esize() &lt; pathCount_)\n\t\t{\n\t\t\treturn true;\n\t\t}\n\t\tOneTimeVisitor&lt;V, E\u003E::leaveEdge(edge);\n\t\treturn false;\n\t}\n\nprivate:\n\tconst V value_;\n\tconst size_t pathCount_;\n\tstd::shared_ptr&lt;std::vector&lt;std::vector&lt;const Vertice&lt;V, E\u003E*\u003E\u003E\u003E pathes_;\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗдесь нужно обратить внимание на следующий момент: если метод visit* базового класса вернул true, а метод производного класса собирается вернуть false, то должен быть вызван соответствующий метод leave базового класса. В противном случае посетитель будет в рассинхронизированном состоянии: члены базового класса будут в состоянии, как если бы посетитель посетил текущий узел или ребро, а члены производного класса нет. Причина использования shared_ptr будет объяснена позже - это задел для дальнейшего развития библиотеки.\u003C\u002Fp\u003E\u003Cp\u003EПосетитель для поиска путей и стоимостей может реализовать наследуясь от PathBuilder. Но можно было бы наследоваться от OneTimeVisitor и повторить логику PathBuilder, возможно, так было бы проще. Это скорее дело вкуса и предпочтений.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E, class C = std::equal_to&lt;V\u003E\u003E\nclass PathCostBuilder : public PathBuilder&lt;V, E, C\u003E\n{\npublic:\n\tPathCostBuilder(const V&amp; value, size_t pathCount = std::numeric_limits&lt;size_t\u003E::max())\n\t\t: PathBuilder&lt;V, E, C\u003E(value, std::numeric_limits&lt;size_t\u003E::max())\n\t\t, pathCount_(pathCount)\n\t\t, cost_(0)\n\t\t, costs_(new std::multimap&lt;int, int\u003E())\n\t{}\n\tbool visitVertice(const Vertice&lt;V, E\u003E* vertice)\n\t{\n\t\tsize_t oldPathesSize = PathBuilder&lt;V, E, C\u003E::getPathes().size();\n\t\tif (!PathBuilder&lt;V, E, C\u003E::visitVertice(vertice))\n\t\t{\n\t\t\tif (PathBuilder&lt;V, E, C\u003E::getPathes().size() != oldPathesSize)\n\t\t\t{\n\t\t\t\tif (costs_-\u003Esize() == pathCount_ &amp;&amp; cost_ &lt; (--costs_-\u003Eend())-\u003Efirst)\n\t\t\t\t{\n\t\t\t\t\tauto lastItem = --costs_-\u003Eend();\n\t\t\t\t\tgetPathes().erase(getPathes().begin() + lastItem-\u003Esecond);\n\t\t\t\t\tcosts_-\u003Eerase(lastItem);\n\t\t\t\t}\n\t\t\t\tif (costs_-\u003Esize() &lt; pathCount_)\n\t\t\t\t{\n\t\t\t\t\tcosts_-\u003Eemplace(cost_, PathBuilder&lt;V, E, C\u003E::getPathes().size() -1);\n\t\t\t\t}\n\t\t\t}\n\t\t\treturn false;\n\t\t}\n\t\tif (costs_-\u003Esize() == pathCount_ &amp;&amp; cost_ \u003E= (--costs_-\u003Eend())-\u003Efirst)\n\t\t{\n\t\t\tPathBuilder&lt;V, E, C\u003E::leaveVertice(vertice);\n\t\t\treturn false;\n\t\t}\n\t\treturn true;\n\t}\n\tbool visitEdge(Edge&lt;V,E\u003E* edge)\n\t{\n\t\tif (!PathBuilder&lt;V, E, C\u003E::visitEdge(edge))\n\t\t{\n\t\t\treturn false;\n\t\t}\n\t\tcost_ += *edge-\u003EgetProperties();\n\t\treturn true;\n\t};\n\tvoid leaveEdge(Edge&lt;V, E\u003E* edge)\n\t{\n\t\tcost_ -= *edge-\u003EgetProperties();\n\t}\nprivate:\n\tsize_t pathCount_;\n\tint cost_;\n\tstd::shared_ptr&lt;std::multimap&lt;int, int\u003E\u003E costs_; \u002F\u002F cost, path position pairs\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗа кадром остался вопрос деструктора Vertice. Здесь ничего сложного, но нужно помнить, что ребра создаются в классе вершин, а значит они должны и удаляться там же. Кроме того, если ребро неориентированное, то ребро должно быть удалено из списка ребер еще одного узла:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E~Vertice()\n{\n\tfor(Edge&lt;V, E\u003E* edge : edges_)\n\t{\n\t\tif (edge-\u003Evertice1_ != nullptr &amp;&amp; edge-\u003Evertice2_ != nullptr)\n\t\t{\n\t\t\tVertice&lt;V, E\u003E* other = (edge-\u003Evertice1_ == this ) ? edge-\u003Evertice2_ : edge-\u003Evertice1_;\n\t\t\tother-\u003Eedges_.erase(std::find(other-\u003Eedges_.begin(), other-\u003Eedges_.end(), edge));\n\t\t}\n\t\tdelete edge;\n\t}\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПоскольку очень часто узлы будут создаваться динамически, например, описание графа может быть в файле, а сохраняться только указатель на один узел из которого будет выполняться все расчеты, то реализуем посетитель, который будет собирать все вершины графа для последующего удаления. Но чтобы сделать посетитель более универсальным добавим еще один параметр, который определяет максимальное удаление собираемых вершин от стартового. По умолчанию ограничения нет, а 1 означает ближайших соседей:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E\u003E\nclass VerticeCollector\n{\npublic:\n\tVerticeCollector(size_t deptLimit = std::numeric_limits&lt;size_t\u003E::max())\n\t\t: deptLimit_(deptLimit)\n\t\t, dept_(0)\n\t{}\n\tbool visitVertice(const Vertice&lt;V, E\u003E* vertice)\n\t{\n\t\treturn vertices_.insert(vertice).second;\n\t}\n\tvoid leaveVertice(const Vertice&lt;V, E\u003E* vertice)\n\t{\n\t}\n\tbool visitEdge(const Edge&lt;V,E\u003E*)\n\t{\n\t\tif (dept_ \u003E= deptLimit_)\n\t\t{\n\t\t\treturn false;\n\t\t}\n\t\t++dept_;\n\t\treturn true;\n\t}\n\tvoid leaveEdge(const Edge&lt;V, E\u003E* )\n\t{\n\t\t--dept_;\n\t}\nprivate:\n\tsize_t deptLimit_;\n\tsize_t dept_;\n\tstd::unordered_set&lt;const Vertice&lt;V, E\u003E*\u003E vertices_;\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКак видите, этот посетитель не наследуется от OneTimeVisitor поскольку это не дает никаких преимуществ.\u003C\u002Fp\u003E\u003Cp\u003EДобавляя новые посетители можно реализовывать различные алгоритмы на графах. Для решения практических задач этого достаточно. Но есть еще один вариант обхода графа - обход в ширину. Теоретически он может дать лучший по скорости результат, если алгоритм не требует обхода всего графа, как, например, при поиске всех возможных маршрутов. Однако на практике это не обязательно так. Почему, станет понятно позже. Если внимательно прочитать описание обхода в глубину и в ширину, наример, на Википедии, и немного поразмыслить, то станет очевидно, что в первом случае алгоритм посещает соседей самой последней посещенной вершиной, а во втором первой еще не обработаной вершины. Такое поведение можно смоделировать с помощью стека (ведь не просто так использовалась рекурсивная функция, а стек вызавов функций называется стеком) и очереди. Таким образом, на первый взгляд может показаться, просто помещая указатели на вершины в разные контейнеры, получим разные типы обхода. Однако, за исключением простейших случаев, например, поиска узла, это не так. Проблема в том, что в процессе обхода пути на графе, посетитель может собирать необходимую ему информацию, например, подсчитывать стоимости, а при обходе в ширину осуществляется обход одновременно нескольких путей. Однако в простешем случае, если посетитель не изменяет своего состояния при посещении вершин, как, например, при поиске вершины, это сработает.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E, class F\u003E\nvoid dummyBreadthPass(const Vertice&lt;V, E\u003E* vertice, F* visitor)\n{\n\tstd::queue&lt;const Vertice&lt;V, E\u003E*\u003E vertices;\n\tvertices.push(vertice);\n\twhile (!vertices.empty())\n\t{\n\t\tconst Vertice&lt;V, E\u003E* current = vertices.front();\n\t\tvertices.pop();\n\t\tif (!visitor-\u003EvisitVertice(current))\n\t\t{\n\t\t\tcontinue;\n\t\t}\n\t\tfor(Edge&lt;V,E\u003E* edge : *current-\u003EgetEdges())\n\t\t{\n\t\t\tif (!visitor-\u003EvisitEdge(edge))\n\t\t\t{\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tconst Vertice&lt;V, E\u003E* next = edge-\u003EgetVertice1() == current || edge-\u003EgetVertice1() == nullptr ? edge-\u003EgetVertice2() : edge-\u003EgetVertice1();\n\t\t\tvertices.push(next);\n\t\t}\n\t}\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭта функция очень похожа на depthPass. Ее принципиальное отличие в отсутствии методов leaveVertice и leaveEdge, поскольку мы не можем накапливать информацию при обходе графа, то и восстанавливать ее в исходное состояние нет никакого смысла.\u003C\u002Fp\u003E\u003Cp\u003EИ все же, как реализовать обход графа в ширину с произвольным посетителем? Очень просто, нужно для каждого пути использовать свой посетитель, а общую информцию, например, контейнер с результатами, сделать доступной всем экземплярам посетителя, например, через статический член класса или указатель:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E, class F, class Q\u003E\nvoid breadthPassCommon(const Vertice&lt;V, E\u003E* vertice, F* visitor)\n{\n\tQ verticeQueue;\n\tverticeQueue.push(make_pair(vertice, new F(*visitor)));\n\twhile (!verticeQueue.empty())\n\t{\n\t\tconst Vertice&lt;V, E\u003E* vertice = verticeQueue.front().first;\n\t\tF* visitor = verticeQueue.front().second;\n\t\tverticeQueue.pop();\n\t\tif (!visitor-\u003EvisitVertice(vertice))\n\t\t{\n\t\t\tcontinue;\n\t\t}\n\t\tbool visitorPassed = false;\n\t\tF tmpVisitor(*visitor);\n\t\tfor(auto it = vertice-\u003EgetEdges()-\u003Ebegin(); it != vertice-\u003EgetEdges()-\u003Eend(); ++it)\n\t\t{\n\t\t\tF* branchVisitor = visitor;\n\t\t\tif (visitorPassed)\n\t\t\t{\n\t\t\t\tbranchVisitor = new F(tmpVisitor);\n\t\t\t}\n\t\t\telse\n\t\t\t{\n\t\t\t\tvisitorPassed = true;\n\t\t\t}\n\t\t\tif (!branchVisitor-\u003EvisitEdge(*it))\n\t\t\t{\n\t\t\t\tdelete branchVisitor;\n\t\t\t\tcontinue;\n\t\t\t}\n\t\t\tconst Vertice&lt;V, E\u003E* next = (*it)-\u003EgetVertice1() == vertice || (*it)-\u003EgetVertice1() == nullptr ? (*it)-\u003EgetVertice2() : (*it)-\u003EgetVertice1();\n\t\t\tverticeQueue.push(make_pair(next, branchVisitor));\n\t\t}\n\t\tif (!visitorPassed)\n\t\t{\n\t\t\tdelete visitor;\n\t\t}\n\t}\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EХочу обратить внимание, что в очереди хранится не только указатель на узел, но и посетитель, который копируется при обходе каждого нового пути, это очень расточительно с точки зрения памяти, если узлы имеют много дуг, а посетители хранят много информации. Очередь сделана параметром шаблона, чтобы можно было использовать обычную очередь и очередь с приоритетом. Очередь с приоритетом лучше подойдет, если по каким-либо данным можно выбрать наиболее перспективный путь. Например, при поиске кратчайшего пути можно первыми обрабатывать пути с минимальной стоимостью.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;class V, class E, class F\u003E\nvoid breadthPass(const Vertice&lt;V, E\u003E* vertice, F* visitor)\n{\n\tbreadthPassCommon&lt;V, E, F, std::queue&lt;std::pair&lt;const Vertice&lt;V, E\u003E*, F*\u003E\u003E\u003E(vertice, visitor);\n}\n\ntemplate &lt;class V, class E, class F\u003E\nvoid priorityBreadthPass(const Vertice&lt;V, E\u003E* vertice, F* visitor)\n{\n\ttypedef std::pair&lt;const Vertice&lt;V,E\u003E*, F*\u003E QueueType;\n\tstruct PairLess\n\t{\n\t\tbool operator()(const QueueType&amp; a, const QueueType&amp; b)\n\t\t{\n\t\t\treturn *a.second &lt; *b.second;\n\t\t}\n\t};\n\tclass FrontAdapter : public std::priority_queue&lt;QueueType, std::vector&lt;QueueType\u003E, PairLess\u003E\n\t{\n\tpublic:\n\t\tconst QueueType&amp; front() const { return std::priority_queue&lt;QueueType, std::vector&lt;QueueType\u003E, PairLess\u003E::top(); }\n\t};\n\tbreadthPassCommon&lt;V, E, F, FrontAdapter\u003E(vertice, visitor);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"Алгоритмы"},{"titleHtml":"графы"},{"titleHtml":"шаблоны"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F582206\u002F7f88a450216fa5fe0f4520073a35768d\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F582206\u002F7f88a450216fa5fe0f4520073a35768d\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582206\\\u002F\"},\"headline\":\"Маленькая библиотека для работы с графами\",\"datePublished\":\"2021-10-07T16:19:24+03:00\",\"dateModified\":\"2021-10-07T18:39:42+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Максим Аксенов\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относитель...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F582206\\\u002F#post-content-body\",\"about\":[\"h_cpp\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ffab\\\u002F2f8\\\u002F3ca\\\u002Ffab2f83ca57709a1e91b7c92e258808b.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F1d9\\\u002Fa4d\\\u002F834\\\u002F1d9a4d834856e08a9f194488315dd71b.png\"]}","metaDescription":"Должен сразу сказать, что в boost есть библиотека graph, но при беглом ее просмотре было совершенно не очевидно, какие преимущества она дает в решении относительно простых задач. Кроме того, возникли...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"cpp"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

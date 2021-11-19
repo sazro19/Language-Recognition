@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Прокачиваем силу — Rust и Windows API / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/581042\/"},"headline":"Прокачиваем силу — Rust и Windows API","datePublished":"2021-10-06T12:00:01+03:00","dateModified":"2021-10-06T22:49:16+03:00","author":{"@type":"Person","name":"Иван Роганов"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Недавно я написал статью Трясём стариной &mdash; или как вспомнить Ассемблер, если ты его учил 20 лет назад. В статье рассказывается о том, как изучать ассемблер на...","url":"https:\/\/habr.com\/ru\/company\/ruvds\/blog\/581042\/#post-content-body","about":["c_ruvds","h_system_programming","h_api","h_rust","h_win_dev","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/581042\/1c12af642e1e0b213673af2d2b63e224\/","https:\/\/habrastorage.org\/webt\/_i\/5f\/bi\/_i5fbiwfsoqrwxdz0k0v6pye6gw.png","https:\/\/habrastorage.org\/webt\/6g\/09\/yv\/6g09yvmf_i0zwkvle0ayip_wvzy.jpeg","https:\/\/habrastorage.org\/webt\/3d\/0x\/jk\/3d0xjkq1gg5sx8firvmeno6imiw.png","https:\/\/habrastorage.org\/webt\/ev\/3-\/zv\/ev3-zvetzllye_wyubek05gvgty.png","https:\/\/habrastorage.org\/webt\/yh\/lr\/om\/yhlromiggoj0kishyjvhjn_rrwk.png","https:\/\/habrastorage.org\/webt\/4e\/5b\/58\/4e5b58jq082vlvlbd7c5twjm-ku.png","https:\/\/habrastorage.org\/webt\/ig\/8j\/nm\/ig8jnmktr7feyjwvvjoyscgpj9s.png","https:\/\/habrastorage.org\/webt\/ou\/g5\/kh\/oug5kh6sjydt9llengsiebnp40w.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Прокачиваем силу — Rust и Windows API" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Прокачиваем силу — Rust и Windows API" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Прокачиваем силу — Rust и Windows API" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Недавно я написал статью Трясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Недавно я написал статью Трясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Недавно я написал статью Трясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Недавно я написал статью Трясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Недавно я написал статью Трясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/_i/5f/bi/_i5fbiwfsoqrwxdz0k0v6pye6gw.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/_i/5f/bi/_i5fbiwfsoqrwxdz0k0v6pye6gw.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/_i/5f/bi/_i5fbiwfsoqrwxdz0k0v6pye6gw.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/_i/5f/bi/_i5fbiwfsoqrwxdz0k0v6pye6gw.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/_i/5f/bi/_i5fbiwfsoqrwxdz0k0v6pye6gw.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="581042" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-06T09:00:01.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/581042/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/ruvds/blog/581042/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/_i/5f/bi/_i5fbiwfsoqrwxdz0k0v6pye6gw.png" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="ruvds" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><div class="tm-company-card__branding tm-company-article__branding tm-company-card__branding_loading"><div class="tm-company-card__branding-placeholder"><!----></div> <a href="https://ruvds.com/ru-rub"><img src="//habrastorage.org/getpro/habr/branding/b77/8d5/a41/b778d5a41f83016379c6630262c3294c.png" width="100%" class="tm-company-card__branding-image"></a></div></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/ruvds/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">2824.34</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/ruvds/profile/" class="tm-company-card__name">
+        RUVDS.com
+      </a> <div class="tm-company-card__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Nurked/" title="Nurked" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/361/c5c/ce5/361c5cce5e0fe4093a681f0553aaa4ac.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Nurked/" class="tm-user-info__username">
+      Nurked
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-06T09:00:01.000Z" title="2021-10-06, 12:00">6  октября   в 12:00</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Прокачиваем силу — Rust и Windows API</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/ruvds/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании RUVDS.com</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/system_programming/" class="tm-article-snippet__hubs-item-link"><span>Системное программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/api/" class="tm-article-snippet__hubs-item-link"><span>API</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/rust/" class="tm-article-snippet__hubs-item-link"><span>Rust</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/win_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка под Windows</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/_i/5f/bi/_i5fbiwfsoqrwxdz0k0v6pye6gw.png"/><br/>
+<br/>
+Недавно я написал статью <a href="https://habr.com/en/company/ruvds/blog/579444/">Трясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад</a>. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для целей самой статьи игрушка была подходящая, но конечный результат меня немного удручил. Бинарник размером в 10 килобайт, который потребляет 2 мегабайта памяти, из-за неправильно слинкованной библиотеки резал глаза. <br/>
+<br/>
+Посему я задался вопросом, а как это можно было бы сделать правильнее? Наверняка есть намного более удачное решение. (И организовал ещё один конкурс с призами в конце статьи) <br/>
+<br/>
+А почему бы не сделать на Rust, и правильно прикрученных библиотеках? При этом, если вы знаете, что делаете, то вы можете запросто уменьшить количество потребляемой оперативной памяти, но при этом написать визуальную игрушку с использованием Windows API. <br/>
+<br/>
+Причём это не значит, что вы будете использовать какую-то нестандартную библиотеку. Встречайте — <a href="https://github.com/microsoft/windows-rs">windows-rs</a>, проект поддерживаемый Microsoft. Ваш билет в мир Windows, если вы пишете на Rust. <a name="habracut"></a> <br/>
+<br/>
+При написании этой статьи я понял, что мы берём понемногу из двух миров — Windows API и rust. Определённые моменты будут казаться очевидными для rust разработчиков, другие моменты будут казаться очевидными для Windows разработчиков. Так как это — статья для всех, то я решил что будет лучше, если объясню больше, чем меньше. <br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Введение</font></h2><br/>
+Для тех кто незнаком с Rust — вам необходимо будет подтянуть свои знания. Хотя бы потому что с момента своего создания в 2010 году язык завоёвывает популярность. С 2016 года язык появлялся в отчётах stackoverflow в списках самых любимых языков. В 2021 году Rust остаётся самым любимым языком на <a href="https://insights.stackoverflow.com/survey/2021#most-loved-dreaded-and-wanted-language-love-dread">stackoverflow</a>, что не мешает ему оставаться очень нишевым языком, доступным только избранным. В основном потому, что сам по себе Rust это низкоуровневый язык, который хоть и красив и приятен, но всё же учится не за 20 минут по видео из ютуба.<br/>
+<br/>
+Rust используется в <a href="https://www.zdnet.com/article/rust-in-the-linux-kernel-why-it-matters-and-whats-happening-next/">ядре Linux</a>. Естественно, так как Rust был изначально создан в Mozilla Foundation, то большое количество компонентов Firefox <a href="https://wiki.mozilla.org/Oxidation">написано именно на нём</a>. В Microsoft решили, что не стоит отставать, и начали <a href="https://www.youtube.com/watch?v=NQBVUjdkLAA">использовать Rust</a> в части своих проектов. <br/>
+<div class="scrollable-table"><table>
+<tr>
+<td width="300"><img width="300" src="https://habrastorage.org/r/w780q1/webt/6g/09/yv/6g09yvmf_i0zwkvle0ayip_wvzy.jpeg" data-src="https://habrastorage.org/webt/6g/09/yv/6g09yvmf_i0zwkvle0ayip_wvzy.jpeg" data-blurred="true"/></td>
+<td>И если год назад вы могли увидеть в репозитории упоминания, что проект не находится в стабильном состоянии и не рекомендуется к использованию в работе, то сейчас эти упоминания из проекта пропали. (Хотя, для того чтобы вы могли воспользоваться результатами этого проекта, вам всё равно придётся установить Rust Nightly билд, и вы успеете насмотреться на предупреждения от компилятора).</td>
+</tr>
+</table></div>Итак, в чём заключается проект? Все Windows API импортированы в Rust и вы можете использовать любые стандартные функции прямо из вашей программы, без большого количества колдовства.<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Начало работы</font></h2><br/>
+Итак, что же нам нужно сделать, для того чтобы начать работать с Windows API в Rust. <br/>
+<br/>
+Для начала, нам потребуется <a href="https://www.oreilly.com/library/view/rust-programming-by/9781788390637/e07dc768-de29-482e-804b-0274b4bef418.xhtml">rust nightly</a>.<br/>
+<br/>
+<code>rustup default nightly<br/>
+rustup update<br/>
+</code><br/>
+После этого вам нужно будет создать новый проект на rust и сразу создать дополнительную библиотеку под названием bindings. <br/>
+<code>cargo new testproject<br/>
+cd testproject<br/>
+cargo new --lib bindings</code>.<br/>
+И, после этого добавить в cargo.toml в нашем проекте зависимости для подключения библиотеки Microsoft. <br/>
+<br/>
+<code>Cargo.toml<br/>
+<br/>
+[dependencies] <br/>
+bindings = { path = "bindings" }<br/>
+windows = "0.21.1"<br/>
+</code><br/>
+На момент написания статьи, актуальная версия библиотеки 0.21.1, посему везде будем использовать именно эту версию.<br/>
+<br/>
+После этого в самой папке с библиотекой bindings нам нужно будет добавить в Cargo.toml следующий текст:<br/>
+<code>[package]<br/>
+name = "bindings"<br/>
+version = "0.1.0"<br/>
+edition = "2018"<br/>
+<br/>
+[dependencies]<br/>
+windows = "0.21.1"<br/>
+<br/>
+[build-dependencies]<br/>
+windows = "0.21.1"</code><br/>
+Итак, что у нас тут получается? У нас есть проект под названием testproject, в нём есть библиотека bindings. Цель этой библиотеки — подключать зависимости для того, чтобы вы могли работать с Windows API в вашем приложении. <br/>
+<br/>
+Сам файл bindings/src/lib.rs будет состоять из одной команды:<br/>
+<br/>
+<pre><code class="rust">::windows::include_bindings!();</code></pre><br/>
+Это — вызов макроса, который подключит все необходимые зависимости. <br/>
+<br/>
+И теперь, самое интересное, файл bindings/build.rs<br/>
+<br/>
+<pre><code class="rust">fn main() {
+    windows::build! {
+        Windows::Win32::UI::WindowsAndMessaging::MessageBoxA,    
+    };
+}
+</code></pre><br/>
+Естественно, по старой доброй традиции мы начнём с вывода бесполезного сообщения на экран. Посему мы начнём с подключения стандартного класса MessageBox, который позволит вывести на экран сообщение.<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Написание программы</font></h2><br/>
+Итак, мы закончили с подготовкой. Что делать теперь? Теперь всё просто. Здесь можно брать документацию Windows API и искать то, что нам интересно. <br/>
+<br/>
+Для начала, давайте разберёмся с очень простым действием вывода сообщения «Привет Хабр». Это всё очень просто, но позволит нам посмотреть на два основных отличия winrs программы от обычного растовского бинарника. <br/>
+<br/>
+Первое — функция main теперь должна возвращать windows::Result&lt;()>. В данном случае мы будем возвращать пустой кортеж, но так как мы находимся в Windows, мы можем вернуть очень много вариантов значений. Для тех, кому это может понадобиться, Result принимает error, подробности <a href="https://docs.rs/windows/0.6.0/windows/struct.Error.html">здесь</a>.<br/>
+<br/>
+<pre><code class="rust">fn main() -> windows::Result&lt;()> {
+    Ok(())
+}</code></pre><br/>
+Второе — все вызовы самих Windows API должны производиться через директиву unsafe. <br/>
+<br/>
+Я видел множество каких-то непонятный священных войн по поводу того, что использование директивы unsafe должно быть запрещено законом. Если честно, я никогда не понимал из-за чего происходят подобные войны. Давайте посмотрим на <a href="https://doc.rust-lang.org/book/ch19-01-unsafe-rust.html">официальную документацию</a>. Здесь нам ясно и чётко рассказывают, что в использовании unsafe нет ничего дьявольского, и оно разрешено Женевской конвенцией. Вам просто необходимо знать, что да как использовать.<br/>
+<br/>
+Ок. Лезем дальше. Давайте откроем документацию Microsoft и найдём в ней <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-messagebox">MessageBoxA</a>.<br/>
+<br/>
+У нас есть четыре параметра, которые нам надо передать этой функции.<br/>
+<br/>
+<pre><code class="cpp">int MessageBox(
+  HWND    hWnd,
+  LPCTSTR lpText,
+  LPCTSTR lpCaption,
+  UINT    uType
+);</code></pre> <br/>
+<ul>
+<li><b><font color="#3AC1EF">hWnd</font></b> — дескриптор основного окна, в котором будет показано уведомление. Так как MessageBoxA — это модальное окно, то выполнение команд в основном окне заблокируется, пока будет активно уведомление. Так как у нас нет никакого окна, то сюда можно смело передавать NULL.</li>
+<li><b><font color="#3AC1EF">lpText/lpCaption</font></b> — указатель типа Long на строку, строки, которые будут показывать в заголовке и теле окна.</li>
+<li><b><font color="#3AC1EF">uType</font></b> — набор констант, которые зададут поведение, тип кнопок и иконок в этом MessageBox</li>
+</ul><br/>
+Надо заметить, что Microsoft хорошо потрудились с созданием правильных биндингов. Данную функцию в rust мы будем вызывать как <br/>
+<br/>
+<pre><code class="rust">MessageBoxA(None, "Привет", "Это игра 2048 для Хабры", MB_OK | MB_ICONINFORMATION );</code></pre><br/>
+Как вы видите, нам не пришлось изобретать велосипед, и пытаться создавать тип NULL, которого не существует в Rust, да и передача строк не требует шести преобразований их в разные форматы. Поэтому нам не нужно извращаться и писать что-то типа:<br/>
+<br/>
+<pre><code class="rust">MessageBoxA(
+            std::ptr::null_mut(),
+            lp_text.as_ptr(),
+            lp_caption.as_ptr(),
+            MB_OK | MB_ICONINFORMATION
+        );
+    }</code></pre><br/>
+Всё достаточно цивильно.<br/>
+<br/>
+Так, давайте подключим наши биндинги, соберём программу и посмотрим, как она работает. Конечный результат выглядит вот так:<br/>
+<br/>
+<pre><code class="rust">use bindings::Windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_OK, MB_ICONINFORMATION};
+
+
+fn main() -> windows::Result&lt;()> {
+    unsafe {
+        MessageBoxA(None, "Привет", "Это игра 2048 для Хабры", MB_OK | MB_ICONINFORMATION );
+    }
+    Ok(())
+}</code></pre><br/>
+Смотрим: Потрачено!<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/3d/0x/jk/3d0xjkq1gg5sx8firvmeno6imiw.png"/><br/>
+<br/>
+Замечательно! Повсюду кракозябры, как в 1999 году. Что делать? Разбираемся и понимаем, что MessageBoxA работает c ANSI строками, в то время как MessageBoxW работает с Unicode (Wide strings). Собственно говоря, эта нотация сохранилась во всех Windows API. Я не знаю причин не использовать W версии функций. Но, будьте аккуратны, большое количество писателей мануалов на английском языке не понимают разницы, и вы увидите загруженность A версиями функций, в то время как вам необходимо использовать W версии этих функций. <br/>
+<br/>
+Заменяем всё в lib.rs и main.rs. Пробуем ещё раз.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ev/3-/zv/ev3-zvetzllye_wyubek05gvgty.png"/><br/>
+<br/>
+Победа!<br/>
+<br/>
+При весе в 164 килобайт на диске, программа занимает 940 килобайт оперативной памяти. И при этом работает с Windows API. Достаточно скромно. Лучше, чем ассемблер с кривыми биндингами, который работает только в консоли. <br/>
+<br/>
+<b><font color="#3AC1EF">Итак, давайте пройдёмся по основным моментам этой главы:</font></b><br/>
+<br/>
+<ol>
+<li>Вызов WinAPI это всегда unsafe вызов.</li>
+<li>fn main должна возвращать результат, понятный Windows.</li>
+<li>Вы знаете где и как найти документацию по Windows API и можете использовать их в вашей программе. (Все данные о WinAPI можно достать <a href="https://docs.microsoft.com/en-us/windows/win32/api/">здесь</a>, а данные о функциях, спортированных в rust находятся <a href="https://microsoft.github.io/windows-docs-rs/doc/bindings/Windows/index.html">здесь.</a></li>
+</ol><br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Пишем программу</font></h2><br/>
+Ну что же, теперь мы умеем создавать программу на rust, которая может тянуть WinAPI. Дело за малым — создать окно, понакидать в него что-то, что будет представлять тайлы в нашей игре, и написать логику.<br/>
+<br/>
+Ну что же, давайте создадим окно и понакидаем в него всякого разного. <br/>
+<br/>
+Для начала, давайте обновим build.rs и добавим кое-какие функции, которые нам понадобятся.<br/>
+<br/>
+<pre><code class="rust">fn main() {
+    windows::build! {
+        Windows::Win32::{
+            Foundation::*,
+            Graphics::Gdi::ValidateRect,
+            UI::WindowsAndMessaging::*,
+            System::LibraryLoader::{
+                GetModuleHandleA,
+            },
+        },    
+    };
+}</code></pre><br/>
+После этого заменим импорты и код Main на следующий метод:<br/>
+<br/>
+<pre><code class="rust">unsafe {
+        let instance = GetModuleHandleA(None);
+        debug_assert!(instance.0 != 0);
+
+        let window_class = "window";
+
+        let wc = WNDCLASSA {
+            hCursor: LoadCursorW(None, IDC_ARROW),
+            hInstance: instance,
+            lpszClassName: PSTR(b"window\0".as_ptr() as _),
+            style: CS_HREDRAW | CS_VREDRAW,
+            lpfnWndProc: None,
+            ..Default::default()
+        };
+
+        let atom = RegisterClassA(&amp;wc);
+        debug_assert!(atom != 0);
+
+        CreateWindowExW(
+            Default::default(),
+            window_class,
+            "2048",
+            WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            None,
+            None,
+            instance,
+            std::ptr::null_mut(),
+        );
+        Ok(())
+    }</code></pre><br/>
+Здесь мы вызываем <a href="https://docs.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-getmodulehandlea">GetModuleHandleA</a>. Эта функция возвращает нам называние модуля в котором мы работаем. Каждое окно должно быть привязано к определённому модулю. В данном случае это будет название нашего бинарного файла.<br/>
+<br/>
+После этого создаём структуру <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassa">WNDCLASSA</a> и заполняем её параметрами, с которыми наше окно будет запускаться. <br/>
+<br/>
+Далее, мы <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerclassa">регистрируем</a> этот класс. <br/>
+<br/>
+После чего мы запускаем это окно, вызывая <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-createwindowexw">CreateWindowExW</a>.<br/>
+<br/>
+Компилируем и пробуем всё это запустить.<br/>
+<br/>
+На экране нет ничего. Более того, если мы попробуем перекомпилировать проект, то у нас всё рухнет и ругнётся на линкер с ошибкой, что конечный бинарный файл для записи недоступен.<br/>
+<br/>
+Идём в диспетчер задач и видим там, что наша программа безбожно висит. <br/>
+<div class="scrollable-table"><table>
+<tr>
+<td>Как сказали Ильф и Петров: «Скоро только кошки родятся!» Создание окна в Windows это не просто вызов какой-то там функции. Для правильной работы окна вам потребуется создать обработчик очереди сообщений. </td>
+<td width="300"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/yh/lr/om/yhlromiggoj0kishyjvhjn_rrwk.png" data-width="300"/></td>
+</tr>
+</table></div>Основная и очень большая статья о том, как работают очереди сообщений в Windows, находится <a href="https://docs.microsoft.com/en-us/windows/win32/winmsg/messages-and-message-queues">здесь</a>.<br/>
+<br/>
+Но, для того чтобы дать вам понять, как работает очередь сообщений в Windows, давайте приведём следующий пример. <br/>
+<br/>
+Сколько раз вам приходилось видеть вот такое?<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/4e/5b/58/4e5b58jq082vlvlbd7c5twjm-ku.png"/> <br/>
+<br/>
+Думаю много раз. Что произошло? Окно перестало отвечать на сообщения в очереди сообщений.<br/>
+<br/>
+Фактически, у вас постоянно должна работать неблокируемая функция, которая будет получать и обрабатывать сообщения, посылаемые в окно. Пример того, что будет, если вы умудритесь заблокировать эту функцию приведён выше. Наше окно не отвечает на системные запросы. <br/>
+<br/>
+Именно поэтому наша программа превратилась в программу-невидимку.<br/>
+<br/>
+Давайте создадим обработчик сообщений. <br/>
+<br/>
+Первым делом добавляем после CreateWindowExW следующий код<br/>
+<br/>
+<pre><code class="rust">let mut message = MSG::default();
+while GetMessageW(&amp;mut message, HWND(0), 0, 0).into() {
+      DispatchMessageA(&amp;mut message);
+}</code></pre><br/>
+А в описании структуры WNDCLASSA заменим:<br/>
+<br/>
+<pre><code class="rust">lpfnWndProc</code></pre> <br/>
+с <br/>
+<br/>
+<pre><code class="rust">None</code></pre> <br/>
+на <br/>
+<br/>
+<pre><code class="rust">Some(wndproc)</code></pre><br/>
+Ну, и теперь, давайте напишем эту wndproc, которая будет у нас обрабатывать сообщения.<br/>
+<br/>
+<pre><code class="rust">extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    unsafe {
+        match message as u32 {
+            _ => DefWindowProcA(window, message, wparam, lparam),
+        }
+    }
+}</code></pre><br/>
+Собственно говоря, мы просто отправили все сообщения на <a href="https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-defwindowproca">обработчик сообщений по умолчанию</a>.<br/>
+<br/>
+Теперь давайте запустим и проверим всё это.<br/>
+<br/>
+Ура! Наконец-то! У нас есть окно!<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ig/8j/nm/ig8jnmktr7feyjwvvjoyscgpj9s.png"/><br/>
+<br/>
+Только не пытайтесь его закрыть. У вас всё рухнет. Окно закроется, а программа останется висеть в памяти. И не пытайтесь изменять размер этого окна. Если вдруг чего, вы увидите чёрные прямоугольники, вместо контента.<br/>
+<br/>
+Сообщений, которые будут посылаться вашему окну очень много. Два основных сообщения, с которыми нам нужно будет разобраться прямо сейчас это WM_PAINT и WM_DESTROY. Первое вызывается, когда окну нужно перерисовать контент, второе — когда окно закрывается. В первом случае мы просто перерисуем контент, во втором — выйдем из программы.<br/>
+<br/>
+Обновляем код и получаем:<br/>
+<br/>
+<pre><code class="rust">extern "system" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    unsafe {
+        match message as u32 {
+            WM_PAINT => {
+                ValidateRect(window, std::ptr::null());
+                LRESULT(0)
+            }
+            WM_DESTROY => {
+                PostQuitMessage(0);
+                LRESULT(0)
+            }
+            _ => DefWindowProcA(window, message, wparam, lparam),
+        }
+    }
+}</code></pre><br/>
+При закрытии окна мы выходим из программы, а при изменении размера мы его перерисовываем. Теперь окно не будет виснуть, и вы можете запустить и закрыть программу.<br/>
+<br/>
+Проверяем. Бинарник размером в 160 килобайт, занимает 1 мегабайт оперативной памяти. <br/>
+<br/>
+Очень аккуратно.<br/>
+<br/>
+<b><font color="#3AC1EF">Проверяем знания:</font></b><br/>
+<br/>
+<ul>
+<li>Для работы с окнами необходимо сначала создать окно. Для этого надо найти название модуля, который создаёт окно, создать структуру, описывающую класс окна, зарегистрировать этот класс и создать окно</li>
+<li>Само по себе окно — это не программа. Необходимо создать обработчик очереди сообщений этого окна.</li>
+<li>В обработчике нужно создать как минимум логику сообщения WM_DESTROY, чтобы пользователь мог выйти из вашей программы.</li>
+<li>Несмотря на всё вышеописанное, программа всё равно остаётся компактной.</li>
+</ul><br/>
+(Задание внимательным — это окно не будет выводить нормально текст в заголовке на русском. Посмотрите на данные из предыдущей главы, и попробуйте это исправить.)<br/>
+<br/>
+<h2><font color="#3AC1EF">▍ Что дальше? </font></h2><br/>
+На этом я остановлюсь, ибо статья продолжает расти и вылезает за пределы разумного времени прочтения. Хотя вы уже имеете на руках готовую программу, написанную на rust, которая создаёт окно и запускает очередь сообщений. Тут вас остановить может только ваше воображение. <br/>
+<br/>
+<ol>
+<li> <a href="https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-keydown">WM_KEYDOWN</a> Сообщение, которое нужно перехватить в нашем обработчике очереди сообщений. Возникает при нажатии на клавишу клавиатуры. В этом сообщении вы получите состояние клавиатуры и сможете отловить нажатие стрелочек.</li>
+<li><a href="https://docs.microsoft.com/en-us/windows/win32/xinput/xinput-game-controller-apis-portal">XInput</a> Если у вас есть игровой контроллер, то вы можете воспользоваться этими API для того, чтобы получить нажатие кнопок управления.</li>
+<li><a href="https://docs.microsoft.com/en-us/windows/win32/api/gdipluspen/nl-gdipluspen-pen">GDI+</a> позволяет вам рисовать объекты в окне. </li>
+<li><a href="https://docs.microsoft.com/en-us/windows/win32/direct2d/direct2d-portal">Direct2d</a> позволяет это делать намного быстрее и качественнее</li>
+<li>A <a href="https://docs.microsoft.com/en-us/windows/win32/direct3d12/directx-12-programming-guide">Direct3d12</a> позволяет вам делать это всё на новом уровне.</li>
+</ol><br/>
+Дополнительная информация выложена на <a href="https://github.com/microsoft/windows-rs">github</a>. Там же вы сможете найти огромное количество примеров, включающих все вышеописанные методы отображения контента и ссылки на документацию.<br/>
+<br/>
+И всё это доступно прямо сейчас в rust. Надеюсь вы узнали для себя немного нового и возможно у вас появились идеи о том, как вы могли бы это применить в вашей работе. Что же, если это так, то я очень рад, что вам пригодилось.<br/>
+<br/>
+И, как обычно, конкурс. На этот раз задача будет отстоять в реализации самой компактной игры 2048 написанной на rust. Первое место — эквивалент $25 в пейпал. Второе место — $15, третье $5.<br/>
+<br/>
+Мерять будем потребление оперативки. Игра должна быть написана на rust и в ней обязательно использовать winapi. Она должна быть графической. Но конкретный движок на выбор.<br/>
+<br/>
+Если вам хочется ещё — то пишите и задавайте вопросы в комментариях.<br/>
+<br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Для тех, кто пришёл посмотреть на кота, и кому ни rust, ни Windows API не нужны</b>
+                        <div class="spoiler_text">Кота зовут Мистер Кайден. Живёт он по <a href="https://www.webtoons.com/en/action/eleceed/episode-1/viewer?title_no=1571&amp;episode_no=1">этому</a> адресу. Это корейский кот, его <a href="https://www.instagram.com/zhenastudio/?hl=en">хозяйка</a> превратила его в знаменитость в Корее. Кот является главным героем манги Eleceed. Рекомендую подключиться к прочтению. Русского перевода я не нашёл, но всё хорошо переведено на английский. Если вы хотите подучить язык — самое то, ибо текста не так много, а кот очаровательный.<br/>
+</div>
+                    </div><br/>
+<a href="http://ruvds.com/ru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=nurked&amp;utm_content=prokachivaem_silu_%E2%80%94_rust_i_windows_api"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ou/g5/kh/oug5kh6sjydt9llengsiebnp40w.png"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Brust%5D" class="tm-tags-list__link">rust</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bwindows%5D" class="tm-tags-list__link">windows</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bwindows-rs%5D" class="tm-tags-list__link">windows-rs</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bwinapi%5D" class="tm-tags-list__link">winapi</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bwindows%20api%5D" class="tm-tags-list__link">windows api</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bwinforms%5D" class="tm-tags-list__link">winforms</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BA%D0%BE%D1%82%5D" class="tm-tags-list__link">кот</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcat%5D" class="tm-tags-list__link">cat</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bkayden%5D" class="tm-tags-list__link">kayden</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmr%20kayden%5D" class="tm-tags-list__link">mr kayden</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bruvds_%D1%81%D1%82%D0%B0%D1%82%D1%8C%D0%B8%5D" class="tm-tags-list__link">ruvds_статьи</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/ruvds/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании RUVDS.com
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/system_programming/" class="tm-hubs-list__link">
+    Системное программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/api/" class="tm-hubs-list__link">
+    API
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/rust/" class="tm-hubs-list__link">
+    Rust
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/win_dev/" class="tm-hubs-list__link">
+    Разработка под Windows
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 60: ↑56 и ↓4</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 60: ↑56 и ↓4" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+52</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">6.1K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    57
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f27/ea8/5bd/f27ea85bd62fbd985c308110885af7e0.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/ruvds/profile/" class="tm-company-snippet__title">RUVDS.com</a> <div class="tm-company-snippet__description">VDS/VPS-хостинг. Скидка 10% по коду <b>HABR10</b></div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/ruvds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/ru_vds" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Nurked/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/361/c5c/ce5/361c5cce5e0fe4093a681f0553aaa4ac.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 462 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    226.7
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">73.9</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Иван Роганов</span> <a href="/ru/users/Nurked/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Nurked
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Птица-говорун. Писец пером, програмец компьютером.</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <button type="submit" class="tm-user-card__button btn btn_transparent btn_small">
+      Задонатить
+    </button> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/ruvds/blog/581042/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 31 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-07-26T21:00:00.000Z" title="2015-07-27, 00:00">27  июля  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://ruvds.com" target="_blank" class="tm-company-basic-info__link">
+      ruvds.com
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    11–30 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2016-03-18T05:43:01.000Z" title="2016-03-18, 08:43">18  марта  2016</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/ruvds/" class="tm-company-basic-info__link">
+      ruvds
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/ruvds/blog/581042/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/ruvds/blog/581042/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"581042":{"id":"581042","timePublished":"2021-10-06T09:00:01+00:00","isCorporative":true,"lang":"ru","titleHtml":"Прокачиваем силу — Rust и Windows API","leadData":{"textHtml":"\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F_i\u002F5f\u002Fbi\u002F_i5fbiwfsoqrwxdz0k0v6pye6gw.png\"\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nНедавно я написал статью \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fen\u002Fcompany\u002Fruvds\u002Fblog\u002F579444\u002F\"\u003EТрясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад\u003C\u002Fa\u003E. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для целей самой статьи игрушка была подходящая, но конечный результат меня немного удручил. Бинарник размером в 10 килобайт, который потребляет 2 мегабайта памяти, из-за неправильно слинкованной библиотеки резал глаза. \u003Cbr\u003E\r\n\u003Cbr\u003E\r\nПосему я задался вопросом, а как это можно было бы сделать правильнее? Наверняка есть намного более удачное решение. (И организовал ещё один конкурс с призами в конце статьи) \u003Cbr\u003E\r\n\u003Cbr\u003E\r\nА почему бы не сделать на Rust, и правильно прикрученных библиотеках? При этом, если вы знаете, что делаете, то вы можете запросто уменьшить количество потребляемой оперативной памяти, но при этом написать визуальную игрушку с использованием Windows API. \u003Cbr\u003E\r\n\u003Cbr\u003E\r\nПричём это не значит, что вы будете использовать какую-то нестандартную библиотеку. Встречайте — \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fmicrosoft\u002Fwindows-rs\" rel=\"nofollow noopener noreferrer\"\u003Ewindows-rs\u003C\u002Fa\u003E, проект поддерживаемый Microsoft. Ваш билет в мир Windows, если вы пишете на Rust.","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":226.7,"votesCount":462},"rating":73.9,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":"johnrhorn","paymentWebmoney":null},"id":"46820","alias":"Nurked","fullname":"Иван Роганов","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F361\u002Fc5c\u002Fce5\u002F361c5cce5e0fe4093a681f0553aaa4ac.jpg","speciality":"Птица-говорун. Писец пером, програмец компьютером."},"statistics":{"commentsCount":31,"favoritesCount":57,"readingCount":6124,"score":52,"votesCount":60},"hubs":[{"relatedData":null,"id":"19791","alias":"ruvds","type":"corporative","title":"Блог компании RUVDS.com","titleHtml":"Блог компании RUVDS.com","isProfiled":false},{"relatedData":null,"id":"5767","alias":"system_programming","type":"collective","title":"Системное программирование","titleHtml":"Системное программирование","isProfiled":true},{"relatedData":null,"id":"17690","alias":"api","type":"collective","title":"API","titleHtml":"API","isProfiled":true},{"relatedData":null,"id":"18961","alias":"rust","type":"collective","title":"Rust","titleHtml":"Rust","isProfiled":true},{"relatedData":null,"id":"21456","alias":"win_dev","type":"collective","title":"Разработка под Windows","titleHtml":"Разработка под Windows","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F_i\u002F5f\u002Fbi\u002F_i5fbiwfsoqrwxdz0k0v6pye6gw.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНедавно я написал статью \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fen\u002Fcompany\u002Fruvds\u002Fblog\u002F579444\u002F\"\u003EТрясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад\u003C\u002Fa\u003E. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для целей самой статьи игрушка была подходящая, но конечный результат меня немного удручил. Бинарник размером в 10 килобайт, который потребляет 2 мегабайта памяти, из-за неправильно слинкованной библиотеки резал глаза. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосему я задался вопросом, а как это можно было бы сделать правильнее? Наверняка есть намного более удачное решение. (И организовал ещё один конкурс с призами в конце статьи) \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nА почему бы не сделать на Rust, и правильно прикрученных библиотеках? При этом, если вы знаете, что делаете, то вы можете запросто уменьшить количество потребляемой оперативной памяти, но при этом написать визуальную игрушку с использованием Windows API. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПричём это не значит, что вы будете использовать какую-то нестандартную библиотеку. Встречайте — \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fmicrosoft\u002Fwindows-rs\"\u003Ewindows-rs\u003C\u002Fa\u003E, проект поддерживаемый Microsoft. Ваш билет в мир Windows, если вы пишете на Rust. \u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри написании этой статьи я понял, что мы берём понемногу из двух миров — Windows API и rust. Определённые моменты будут казаться очевидными для rust разработчиков, другие моменты будут казаться очевидными для Windows разработчиков. Так как это — статья для всех, то я решил что будет лучше, если объясню больше, чем меньше. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Введение\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nДля тех кто незнаком с Rust — вам необходимо будет подтянуть свои знания. Хотя бы потому что с момента своего создания в 2010 году язык завоёвывает популярность. С 2016 года язык появлялся в отчётах stackoverflow в списках самых любимых языков. В 2021 году Rust остаётся самым любимым языком на \u003Ca href=\"https:\u002F\u002Finsights.stackoverflow.com\u002Fsurvey\u002F2021#most-loved-dreaded-and-wanted-language-love-dread\"\u003Estackoverflow\u003C\u002Fa\u003E, что не мешает ему оставаться очень нишевым языком, доступным только избранным. В основном потому, что сам по себе Rust это низкоуровневый язык, который хоть и красив и приятен, но всё же учится не за 20 минут по видео из ютуба.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nRust используется в \u003Ca href=\"https:\u002F\u002Fwww.zdnet.com\u002Farticle\u002Frust-in-the-linux-kernel-why-it-matters-and-whats-happening-next\u002F\"\u003Eядре Linux\u003C\u002Fa\u003E. Естественно, так как Rust был изначально создан в Mozilla Foundation, то большое количество компонентов Firefox \u003Ca href=\"https:\u002F\u002Fwiki.mozilla.org\u002FOxidation\"\u003Eнаписано именно на нём\u003C\u002Fa\u003E. В Microsoft решили, что не стоит отставать, и начали \u003Ca href=\"https:\u002F\u002Fwww.youtube.com\u002Fwatch?v=NQBVUjdkLAA\"\u003Eиспользовать Rust\u003C\u002Fa\u003E в части своих проектов. \u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd width=\"300\"\u003E\u003Cimg width=\"300\" src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002F6g\u002F09\u002Fyv\u002F6g09yvmf_i0zwkvle0ayip_wvzy.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F6g\u002F09\u002Fyv\u002F6g09yvmf_i0zwkvle0ayip_wvzy.jpeg\" data-blurred=\"true\"\u002F\u003E\u003C\u002Ftd\u003E\r\n\u003Ctd\u003EИ если год назад вы могли увидеть в репозитории упоминания, что проект не находится в стабильном состоянии и не рекомендуется к использованию в работе, то сейчас эти упоминания из проекта пропали. (Хотя, для того чтобы вы могли воспользоваться результатами этого проекта, вам всё равно придётся установить Rust Nightly билд, и вы успеете насмотреться на предупреждения от компилятора).\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003EИтак, в чём заключается проект? Все Windows API импортированы в Rust и вы можете использовать любые стандартные функции прямо из вашей программы, без большого количества колдовства.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Начало работы\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nИтак, что же нам нужно сделать, для того чтобы начать работать с Windows API в Rust. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля начала, нам потребуется \u003Ca href=\"https:\u002F\u002Fwww.oreilly.com\u002Flibrary\u002Fview\u002Frust-programming-by\u002F9781788390637\u002Fe07dc768-de29-482e-804b-0274b4bef418.xhtml\"\u003Erust nightly\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ccode\u003Erustup default nightly\u003Cbr\u002F\u003E\r\nrustup update\u003Cbr\u002F\u003E\r\n\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\nПосле этого вам нужно будет создать новый проект на rust и сразу создать дополнительную библиотеку под названием bindings. \u003Cbr\u002F\u003E\r\n\u003Ccode\u003Ecargo new testproject\u003Cbr\u002F\u003E\r\ncd testproject\u003Cbr\u002F\u003E\r\ncargo new --lib bindings\u003C\u002Fcode\u003E.\u003Cbr\u002F\u003E\r\nИ, после этого добавить в cargo.toml в нашем проекте зависимости для подключения библиотеки Microsoft. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ccode\u003ECargo.toml\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n[dependencies] \u003Cbr\u002F\u003E\r\nbindings = { path = \"bindings\" }\u003Cbr\u002F\u003E\r\nwindows = \"0.21.1\"\u003Cbr\u002F\u003E\r\n\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\nНа момент написания статьи, актуальная версия библиотеки 0.21.1, посему везде будем использовать именно эту версию.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосле этого в самой папке с библиотекой bindings нам нужно будет добавить в Cargo.toml следующий текст:\u003Cbr\u002F\u003E\r\n\u003Ccode\u003E[package]\u003Cbr\u002F\u003E\r\nname = \"bindings\"\u003Cbr\u002F\u003E\r\nversion = \"0.1.0\"\u003Cbr\u002F\u003E\r\nedition = \"2018\"\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n[dependencies]\u003Cbr\u002F\u003E\r\nwindows = \"0.21.1\"\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n[build-dependencies]\u003Cbr\u002F\u003E\r\nwindows = \"0.21.1\"\u003C\u002Fcode\u003E\u003Cbr\u002F\u003E\r\nИтак, что у нас тут получается? У нас есть проект под названием testproject, в нём есть библиотека bindings. Цель этой библиотеки — подключать зависимости для того, чтобы вы могли работать с Windows API в вашем приложении. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСам файл bindings\u002Fsrc\u002Flib.rs будет состоять из одной команды:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003E::windows::include_bindings!();\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЭто — вызов макроса, который подключит все необходимые зависимости. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИ теперь, самое интересное, файл bindings\u002Fbuild.rs\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003Efn main() {\n    windows::build! {\n        Windows::Win32::UI::WindowsAndMessaging::MessageBoxA,    \n    };\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЕстественно, по старой доброй традиции мы начнём с вывода бесполезного сообщения на экран. Посему мы начнём с подключения стандартного класса MessageBox, который позволит вывести на экран сообщение.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Написание программы\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nИтак, мы закончили с подготовкой. Что делать теперь? Теперь всё просто. Здесь можно брать документацию Windows API и искать то, что нам интересно. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля начала, давайте разберёмся с очень простым действием вывода сообщения «Привет Хабр». Это всё очень просто, но позволит нам посмотреть на два основных отличия winrs программы от обычного растовского бинарника. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПервое — функция main теперь должна возвращать windows::Result&lt;()\u003E. В данном случае мы будем возвращать пустой кортеж, но так как мы находимся в Windows, мы можем вернуть очень много вариантов значений. Для тех, кому это может понадобиться, Result принимает error, подробности \u003Ca href=\"https:\u002F\u002Fdocs.rs\u002Fwindows\u002F0.6.0\u002Fwindows\u002Fstruct.Error.html\"\u003Eздесь\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003Efn main() -\u003E windows::Result&lt;()\u003E {\n    Ok(())\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВторое — все вызовы самих Windows API должны производиться через директиву unsafe. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЯ видел множество каких-то непонятный священных войн по поводу того, что использование директивы unsafe должно быть запрещено законом. Если честно, я никогда не понимал из-за чего происходят подобные войны. Давайте посмотрим на \u003Ca href=\"https:\u002F\u002Fdoc.rust-lang.org\u002Fbook\u002Fch19-01-unsafe-rust.html\"\u003Eофициальную документацию\u003C\u002Fa\u003E. Здесь нам ясно и чётко рассказывают, что в использовании unsafe нет ничего дьявольского, и оно разрешено Женевской конвенцией. Вам просто необходимо знать, что да как использовать.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОк. Лезем дальше. Давайте откроем документацию Microsoft и найдём в ней \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fapi\u002Fwinuser\u002Fnf-winuser-messagebox\"\u003EMessageBoxA\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nУ нас есть четыре параметра, которые нам надо передать этой функции.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eint MessageBox(\n  HWND    hWnd,\n  LPCTSTR lpText,\n  LPCTSTR lpCaption,\n  UINT    uType\n);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E \u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003EhWnd\u003C\u002Ffont\u003E\u003C\u002Fb\u003E — дескриптор основного окна, в котором будет показано уведомление. Так как MessageBoxA — это модальное окно, то выполнение команд в основном окне заблокируется, пока будет активно уведомление. Так как у нас нет никакого окна, то сюда можно смело передавать NULL.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003ElpText\u002FlpCaption\u003C\u002Ffont\u003E\u003C\u002Fb\u003E — указатель типа Long на строку, строки, которые будут показывать в заголовке и теле окна.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003EuType\u003C\u002Ffont\u003E\u003C\u002Fb\u003E — набор констант, которые зададут поведение, тип кнопок и иконок в этом MessageBox\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nНадо заметить, что Microsoft хорошо потрудились с созданием правильных биндингов. Данную функцию в rust мы будем вызывать как \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003EMessageBoxA(None, \"Привет\", \"Это игра 2048 для Хабры\", MB_OK | MB_ICONINFORMATION );\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nКак вы видите, нам не пришлось изобретать велосипед, и пытаться создавать тип NULL, которого не существует в Rust, да и передача строк не требует шести преобразований их в разные форматы. Поэтому нам не нужно извращаться и писать что-то типа:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003EMessageBoxA(\n            std::ptr::null_mut(),\n            lp_text.as_ptr(),\n            lp_caption.as_ptr(),\n            MB_OK | MB_ICONINFORMATION\n        );\n    }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nВсё достаточно цивильно.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТак, давайте подключим наши биндинги, соберём программу и посмотрим, как она работает. Конечный результат выглядит вот так:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003Euse bindings::Windows::Win32::UI::WindowsAndMessaging::{MessageBoxA, MB_OK, MB_ICONINFORMATION};\n\n\nfn main() -\u003E windows::Result&lt;()\u003E {\n    unsafe {\n        MessageBoxA(None, \"Привет\", \"Это игра 2048 для Хабры\", MB_OK | MB_ICONINFORMATION );\n    }\n    Ok(())\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nСмотрим: Потрачено!\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F3d\u002F0x\u002Fjk\u002F3d0xjkq1gg5sx8firvmeno6imiw.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЗамечательно! Повсюду кракозябры, как в 1999 году. Что делать? Разбираемся и понимаем, что MessageBoxA работает c ANSI строками, в то время как MessageBoxW работает с Unicode (Wide strings). Собственно говоря, эта нотация сохранилась во всех Windows API. Я не знаю причин не использовать W версии функций. Но, будьте аккуратны, большое количество писателей мануалов на английском языке не понимают разницы, и вы увидите загруженность A версиями функций, в то время как вам необходимо использовать W версии этих функций. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЗаменяем всё в lib.rs и main.rs. Пробуем ещё раз.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fev\u002F3-\u002Fzv\u002Fev3-zvetzllye_wyubek05gvgty.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПобеда!\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПри весе в 164 килобайт на диске, программа занимает 940 килобайт оперативной памяти. И при этом работает с Windows API. Достаточно скромно. Лучше, чем ассемблер с кривыми биндингами, который работает только в консоли. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003EИтак, давайте пройдёмся по основным моментам этой главы:\u003C\u002Ffont\u003E\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EВызов WinAPI это всегда unsafe вызов.\u003C\u002Fli\u003E\r\n\u003Cli\u003Efn main должна возвращать результат, понятный Windows.\u003C\u002Fli\u003E\r\n\u003Cli\u003EВы знаете где и как найти документацию по Windows API и можете использовать их в вашей программе. (Все данные о WinAPI можно достать \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fapi\u002F\"\u003Eздесь\u003C\u002Fa\u003E, а данные о функциях, спортированных в rust находятся \u003Ca href=\"https:\u002F\u002Fmicrosoft.github.io\u002Fwindows-docs-rs\u002Fdoc\u002Fbindings\u002FWindows\u002Findex.html\"\u003Eздесь.\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Пишем программу\u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nНу что же, теперь мы умеем создавать программу на rust, которая может тянуть WinAPI. Дело за малым — создать окно, понакидать в него что-то, что будет представлять тайлы в нашей игре, и написать логику.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНу что же, давайте создадим окно и понакидаем в него всякого разного. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля начала, давайте обновим build.rs и добавим кое-какие функции, которые нам понадобятся.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003Efn main() {\n    windows::build! {\n        Windows::Win32::{\n            Foundation::*,\n            Graphics::Gdi::ValidateRect,\n            UI::WindowsAndMessaging::*,\n            System::LibraryLoader::{\n                GetModuleHandleA,\n            },\n        },    \n    };\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПосле этого заменим импорты и код Main на следующий метод:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003Eunsafe {\n        let instance = GetModuleHandleA(None);\n        debug_assert!(instance.0 != 0);\n\n        let window_class = \"window\";\n\n        let wc = WNDCLASSA {\n            hCursor: LoadCursorW(None, IDC_ARROW),\n            hInstance: instance,\n            lpszClassName: PSTR(b\"window\\0\".as_ptr() as _),\n            style: CS_HREDRAW | CS_VREDRAW,\n            lpfnWndProc: None,\n            ..Default::default()\n        };\n\n        let atom = RegisterClassA(&amp;wc);\n        debug_assert!(atom != 0);\n\n        CreateWindowExW(\n            Default::default(),\n            window_class,\n            \"2048\",\n            WS_OVERLAPPEDWINDOW | WS_VISIBLE,\n            CW_USEDEFAULT,\n            CW_USEDEFAULT,\n            CW_USEDEFAULT,\n            CW_USEDEFAULT,\n            None,\n            None,\n            instance,\n            std::ptr::null_mut(),\n        );\n        Ok(())\n    }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЗдесь мы вызываем \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fapi\u002Flibloaderapi\u002Fnf-libloaderapi-getmodulehandlea\"\u003EGetModuleHandleA\u003C\u002Fa\u003E. Эта функция возвращает нам называние модуля в котором мы работаем. Каждое окно должно быть привязано к определённому модулю. В данном случае это будет название нашего бинарного файла.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосле этого создаём структуру \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fapi\u002Fwinuser\u002Fns-winuser-wndclassa\"\u003EWNDCLASSA\u003C\u002Fa\u003E и заполняем её параметрами, с которыми наше окно будет запускаться. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДалее, мы \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fapi\u002Fwinuser\u002Fnf-winuser-registerclassa\"\u003Eрегистрируем\u003C\u002Fa\u003E этот класс. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПосле чего мы запускаем это окно, вызывая \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fapi\u002Fwinuser\u002Fnf-winuser-createwindowexw\"\u003ECreateWindowExW\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКомпилируем и пробуем всё это запустить.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНа экране нет ничего. Более того, если мы попробуем перекомпилировать проект, то у нас всё рухнет и ругнётся на линкер с ошибкой, что конечный бинарный файл для записи недоступен.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИдём в диспетчер задач и видим там, что наша программа безбожно висит. \u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003EКак сказали Ильф и Петров: «Скоро только кошки родятся!» Создание окна в Windows это не просто вызов какой-то там функции. Для правильной работы окна вам потребуется создать обработчик очереди сообщений. \u003C\u002Ftd\u003E\r\n\u003Ctd width=\"300\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fyh\u002Flr\u002Fom\u002Fyhlromiggoj0kishyjvhjn_rrwk.png\" data-width=\"300\"\u002F\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003EОсновная и очень большая статья о том, как работают очереди сообщений в Windows, находится \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fwinmsg\u002Fmessages-and-message-queues\"\u003Eздесь\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо, для того чтобы дать вам понять, как работает очередь сообщений в Windows, давайте приведём следующий пример. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСколько раз вам приходилось видеть вот такое?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F4e\u002F5b\u002F58\u002F4e5b58jq082vlvlbd7c5twjm-ku.png\"\u002F\u003E \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДумаю много раз. Что произошло? Окно перестало отвечать на сообщения в очереди сообщений.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nФактически, у вас постоянно должна работать неблокируемая функция, которая будет получать и обрабатывать сообщения, посылаемые в окно. Пример того, что будет, если вы умудритесь заблокировать эту функцию приведён выше. Наше окно не отвечает на системные запросы. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИменно поэтому наша программа превратилась в программу-невидимку.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДавайте создадим обработчик сообщений. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПервым делом добавляем после CreateWindowExW следующий код\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003Elet mut message = MSG::default();\nwhile GetMessageW(&amp;mut message, HWND(0), 0, 0).into() {\n      DispatchMessageA(&amp;mut message);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nА в описании структуры WNDCLASSA заменим:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003ElpfnWndProc\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E \u003Cbr\u002F\u003E\r\nс \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003ENone\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E \u003Cbr\u002F\u003E\r\nна \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003ESome(wndproc)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНу, и теперь, давайте напишем эту wndproc, которая будет у нас обрабатывать сообщения.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003Eextern \"system\" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -\u003E LRESULT {\n    unsafe {\n        match message as u32 {\n            _ =\u003E DefWindowProcA(window, message, wparam, lparam),\n        }\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nСобственно говоря, мы просто отправили все сообщения на \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fapi\u002Fwinuser\u002Fnf-winuser-defwindowproca\"\u003Eобработчик сообщений по умолчанию\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТеперь давайте запустим и проверим всё это.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nУра! Наконец-то! У нас есть окно!\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fig\u002F8j\u002Fnm\u002Fig8jnmktr7feyjwvvjoyscgpj9s.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТолько не пытайтесь его закрыть. У вас всё рухнет. Окно закроется, а программа останется висеть в памяти. И не пытайтесь изменять размер этого окна. Если вдруг чего, вы увидите чёрные прямоугольники, вместо контента.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСообщений, которые будут посылаться вашему окну очень много. Два основных сообщения, с которыми нам нужно будет разобраться прямо сейчас это WM_PAINT и WM_DESTROY. Первое вызывается, когда окну нужно перерисовать контент, второе — когда окно закрывается. В первом случае мы просто перерисуем контент, во втором — выйдем из программы.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОбновляем код и получаем:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"rust\"\u003Eextern \"system\" fn wndproc(window: HWND, message: u32, wparam: WPARAM, lparam: LPARAM) -\u003E LRESULT {\n    unsafe {\n        match message as u32 {\n            WM_PAINT =\u003E {\n                ValidateRect(window, std::ptr::null());\n                LRESULT(0)\n            }\n            WM_DESTROY =\u003E {\n                PostQuitMessage(0);\n                LRESULT(0)\n            }\n            _ =\u003E DefWindowProcA(window, message, wparam, lparam),\n        }\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПри закрытии окна мы выходим из программы, а при изменении размера мы его перерисовываем. Теперь окно не будет виснуть, и вы можете запустить и закрыть программу.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПроверяем. Бинарник размером в 160 килобайт, занимает 1 мегабайт оперативной памяти. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОчень аккуратно.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E\u003Cfont color=\"#3AC1EF\"\u003EПроверяем знания:\u003C\u002Ffont\u003E\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EДля работы с окнами необходимо сначала создать окно. Для этого надо найти название модуля, который создаёт окно, создать структуру, описывающую класс окна, зарегистрировать этот класс и создать окно\u003C\u002Fli\u003E\r\n\u003Cli\u003EСамо по себе окно — это не программа. Необходимо создать обработчик очереди сообщений этого окна.\u003C\u002Fli\u003E\r\n\u003Cli\u003EВ обработчике нужно создать как минимум логику сообщения WM_DESTROY, чтобы пользователь мог выйти из вашей программы.\u003C\u002Fli\u003E\r\n\u003Cli\u003EНесмотря на всё вышеописанное, программа всё равно остаётся компактной.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n(Задание внимательным — это окно не будет выводить нормально текст в заголовке на русском. Посмотрите на данные из предыдущей главы, и попробуйте это исправить.)\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Cfont color=\"#3AC1EF\"\u003E▍ Что дальше? \u003C\u002Ffont\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nНа этом я остановлюсь, ибо статья продолжает расти и вылезает за пределы разумного времени прочтения. Хотя вы уже имеете на руках готовую программу, написанную на rust, которая создаёт окно и запускает очередь сообщений. Тут вас остановить может только ваше воображение. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Finputdev\u002Fwm-keydown\"\u003EWM_KEYDOWN\u003C\u002Fa\u003E Сообщение, которое нужно перехватить в нашем обработчике очереди сообщений. Возникает при нажатии на клавишу клавиатуры. В этом сообщении вы получите состояние клавиатуры и сможете отловить нажатие стрелочек.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fxinput\u002Fxinput-game-controller-apis-portal\"\u003EXInput\u003C\u002Fa\u003E Если у вас есть игровой контроллер, то вы можете воспользоваться этими API для того, чтобы получить нажатие кнопок управления.\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fapi\u002Fgdipluspen\u002Fnl-gdipluspen-pen\"\u003EGDI+\u003C\u002Fa\u003E позволяет вам рисовать объекты в окне. \u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fdirect2d\u002Fdirect2d-portal\"\u003EDirect2d\u003C\u002Fa\u003E позволяет это делать намного быстрее и качественнее\u003C\u002Fli\u003E\r\n\u003Cli\u003EA \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fwindows\u002Fwin32\u002Fdirect3d12\u002Fdirectx-12-programming-guide\"\u003EDirect3d12\u003C\u002Fa\u003E позволяет вам делать это всё на новом уровне.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\nДополнительная информация выложена на \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fmicrosoft\u002Fwindows-rs\"\u003Egithub\u003C\u002Fa\u003E. Там же вы сможете найти огромное количество примеров, включающих все вышеописанные методы отображения контента и ссылки на документацию.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИ всё это доступно прямо сейчас в rust. Надеюсь вы узнали для себя немного нового и возможно у вас появились идеи о том, как вы могли бы это применить в вашей работе. Что же, если это так, то я очень рад, что вам пригодилось.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИ, как обычно, конкурс. На этот раз задача будет отстоять в реализации самой компактной игры 2048 написанной на rust. Первое место — эквивалент $25 в пейпал. Второе место — $15, третье $5.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМерять будем потребление оперативки. Игра должна быть написана на rust и в ней обязательно использовать winapi. Она должна быть графической. Но конкретный движок на выбор.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли вам хочется ещё — то пишите и задавайте вопросы в комментариях.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EДля тех, кто пришёл посмотреть на кота, и кому ни rust, ни Windows API не нужны\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003EКота зовут Мистер Кайден. Живёт он по \u003Ca href=\"https:\u002F\u002Fwww.webtoons.com\u002Fen\u002Faction\u002Feleceed\u002Fepisode-1\u002Fviewer?title_no=1571&amp;episode_no=1\"\u003Eэтому\u003C\u002Fa\u003E адресу. Это корейский кот, его \u003Ca href=\"https:\u002F\u002Fwww.instagram.com\u002Fzhenastudio\u002F?hl=en\"\u003Eхозяйка\u003C\u002Fa\u003E превратила его в знаменитость в Корее. Кот является главным героем манги Eleceed. Рекомендую подключиться к прочтению. Русского перевода я не нашёл, но всё хорошо переведено на английский. Если вы хотите подучить язык — самое то, ибо текста не так много, а кот очаровательный.\u003Cbr\u002F\u003E\r\n\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"http:\u002F\u002Fruvds.com\u002Fru-rub?utm_source=habr&amp;utm_medium=article&amp;utm_campaign=nurked&amp;utm_content=prokachivaem_silu_%E2%80%94_rust_i_windows_api\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fou\u002Fg5\u002Fkh\u002Foug5kh6sjydt9llengsiebnp40w.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"rust"},{"titleHtml":"windows"},{"titleHtml":"windows-rs"},{"titleHtml":"winapi"},{"titleHtml":"windows api"},{"titleHtml":"winforms"},{"titleHtml":"кот"},{"titleHtml":"cat"},{"titleHtml":"kayden"},{"titleHtml":"mr kayden"},{"titleHtml":"ruvds_статьи"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F_i\u002F5f\u002Fbi\u002F_i5fbiwfsoqrwxdz0k0v6pye6gw.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F_i\u002F5f\u002Fbi\u002F_i5fbiwfsoqrwxdz0k0v6pye6gw.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F581042\\\u002F\"},\"headline\":\"Прокачиваем силу — Rust и Windows API\",\"datePublished\":\"2021-10-06T12:00:01+03:00\",\"dateModified\":\"2021-10-06T22:49:16+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Иван Роганов\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Недавно я написал статью Трясём стариной &mdash; или как вспомнить Ассемблер, если ты его учил 20 лет назад. В статье рассказывается о том, как изучать ассемблер на...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fruvds\\\u002Fblog\\\u002F581042\\\u002F#post-content-body\",\"about\":[\"c_ruvds\",\"h_system_programming\",\"h_api\",\"h_rust\",\"h_win_dev\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F581042\\\u002F1c12af642e1e0b213673af2d2b63e224\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F_i\\\u002F5f\\\u002Fbi\\\u002F_i5fbiwfsoqrwxdz0k0v6pye6gw.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F6g\\\u002F09\\\u002Fyv\\\u002F6g09yvmf_i0zwkvle0ayip_wvzy.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F3d\\\u002F0x\\\u002Fjk\\\u002F3d0xjkq1gg5sx8firvmeno6imiw.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fev\\\u002F3-\\\u002Fzv\\\u002Fev3-zvetzllye_wyubek05gvgty.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fyh\\\u002Flr\\\u002Fom\\\u002Fyhlromiggoj0kishyjvhjn_rrwk.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F4e\\\u002F5b\\\u002F58\\\u002F4e5b58jq082vlvlbd7c5twjm-ku.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fig\\\u002F8j\\\u002Fnm\\\u002Fig8jnmktr7feyjwvvjoyscgpj9s.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fou\\\u002Fg5\\\u002Fkh\\\u002Foug5kh6sjydt9llengsiebnp40w.png\"]}","metaDescription":"Недавно я написал статью Трясём стариной — или как вспомнить Ассемблер, если ты его учил 20 лет назад. В статье рассказывается о том, как изучать ассемблер на примере игрушки 2048. Возможно для...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"ruvds":{"alias":"ruvds","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff27\u002Fea8\u002F5bd\u002Ff27ea85bd62fbd985c308110885af7e0.png","titleHtml":"RUVDS.com","descriptionHtml":"VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E","relatedData":null,"statistics":{"postsCount":2029,"newsCount":62,"vacanciesCount":0,"employeesCount":57,"careerRating":null,"subscribersCount":36797,"rating":2824.34,"invest":null},"foundationDate":{"year":"2015","month":"07","day":"27"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fruvds.com","staffNumber":"11–30 человек","registrationDate":"2016-03-18T05:43:01+00:00","representativeUser":{"alias":"ruvds","fullname":null},"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fruvds"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002Fru_vds"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fru_vds"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"33905479"}],"branding":{"imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fbranding\u002Fb77\u002F8d5\u002Fa41\u002Fb778d5a41f83016379c6630262c3294c.png","linkUrl":"https:\u002F\u002Fruvds.com\u002Fru-rub","pixelUrl":""},"status":"active"},"metadata":{"titleHtml":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду \u003Cb\u003EHABR10\u003C\u002Fb\u003E с 27 июля 2015 г.","title":"RUVDS.com, Москва - VDS\u002FVPS-хостинг. Скидка 10% по коду HABR10 с 27 июля 2015 г.","keywords":["Научно-популярное","DIY или Сделай сам","Системное администрирование","Разработка веб-сайтов","Читальный зал"],"descriptionHtml":"2 029 статей от авторов компании RUVDS.com","description":"2 029 статей от авторов компании RUVDS.com"},"aDeskSettings":null,"careerAlias":"ruvds","maxCustomTrackerLinks":3}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

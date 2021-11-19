@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Прерывая корутины С++ / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/ispsystem\/blog\/580828\/"},"headline":"Прерывая корутины С++","datePublished":"2021-10-14T09:19:46+03:00","dateModified":"2021-10-14T13:18:13+03:00","author":{"@type":"Person","name":"Александр"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в пр...","url":"https:\/\/habr.com\/ru\/company\/ispsystem\/blog\/580828\/#post-content-body","about":["c_ispsystem","h_programming","h_cpp","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/580828\/123b57da2cfb371af67d0f7b735eaa9a\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/c42\/6f7\/551\/c426f75519413436c3d71ade7ba3e94f.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Прерывая корутины С++" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Прерывая корутины С++" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Прерывая корутины С++" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/702/ba9/95f/702ba995fe3e22d37a2f795436d69296.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/702/ba9/95f/702ba995fe3e22d37a2f795436d69296.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/702/ba9/95f/702ba995fe3e22d37a2f795436d69296.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/702/ba9/95f/702ba995fe3e22d37a2f795436d69296.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/702/ba9/95f/702ba995fe3e22d37a2f795436d69296.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="580828" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-14T06:19:46.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/580828/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/ispsystem/blog/580828/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/702/ba9/95f/702ba995fe3e22d37a2f795436d69296.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/580828/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="ispsystem" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/ispsystem/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/8a9/6fd/9bb/8a96fd9bb52e0685442fa3f74a2a4509.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">139.73</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/ispsystem/profile/" class="tm-company-card__name">
+        ISPsystem
+      </a> <div class="tm-company-card__description">Софт для управления IT-инфраструктурой</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Doktor3lo/" title="Doktor3lo" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/f8e/507/229/f8e5072291c90ee8eb1391c9b784ef88.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Doktor3lo/" class="tm-user-info__username">
+      Doktor3lo
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-14T06:19:46.000Z" title="2021-10-14, 09:19">14  октября   в 09:19</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Прерывая корутины С++</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/ispsystem/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании ISPsystem</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="488" data-src="https://habrastorage.org/getpro/habr/upload_files/c42/6f7/551/c426f75519413436c3d71ade7ba3e94f.png" data-width="912"/><figcaption></figcaption></figure><p>В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании сопрограмм, которые можно прервать извне. Изначально мне это понадобилось для реализации механизма deadline или timeout (кому как больше нравится). Согласитесь, довольно часто возникающая задача. На этом примере я продемонстрирую использование еще нескольких возможностей, предоставляемых С++. Речь пойдет об <strong><em>await_transform</em></strong> и конструкторе объекта <strong><em>promise_type</em></strong>.</p><blockquote><p><em>В UNIX системах вы легко можете прервать любой процесс в любой момент, отправив ему сигнал. И это замечательная возможность! Система гарантирует освобождение всей занятой им памяти и иных ресурсов.</em></p><p><em>Но вот уже с потоком этот фокус не пройдет — система просто не знает, какие ресурсы процесса принадлежат потоку и должны быть освобождены, а какие еще понадобятся. Обычно такую задачу решают периодической проверкой некого флага, сообщающего о необходимости завершить поток. Проверяя флаг, вы сами решаете, что нужно сделать для корректного завершения.</em></p></blockquote><p>Корутины можно рассматривать как легковесные потоки. Во многом подходы к принудительному завершению потоков и корутин схожи.</p><p>В этот раз не обойдется без boost::asio. Но он будет использован исключительно в демонстрационных целях — в детали его работы я углубляться сильно не буду. А начну по традиции с конца. Давайте напишем простое приложение, которое может быть завершено нажатием CTRL+C. Как раз в нем получилось больше boost, чем во всём остальном коде.</p><pre><code class="cpp">task coroutine() {
+  // вся логика приложения вынесена в эту функцию. По понятным причинам
+  // main() не может быть корутиной - программа просто завершилась бы
+  // при первом же вызове co_await. Но это только теория, компилятор не
+  // позволит вам проверить это на практике
+  // ...
+}
+
+int main(int argc, char *argv[]) {
+  // эта переменная - сердце boost::asio обеспечивающее связь вашего
+  // приложения и операций ввода/вывода операционной системы
+  boost::asio::io_context context;
+  // SIGINT - это тот сигнал, который получит ваше приложение, когда вы нажмете CTRL+C
+  boost::asio::signal_set signals(context, SIGINT);
+  // запускаем наш "настоящий main"
+  auto job = coroutine();
+  // регистрируем в boost::asio наш обработчик сигнала SIGINT
+  signals.async_wait([job = std::move(job)] (auto code) {
+    // при получении сигнала прерываем наше приложение
+    job.terminate();
+  });
+  // context.run() будет выполняться до тех пор, пока не будут обработаны
+  // все зарегистрированные в этом context события. Так что, мы получим
+  // красивый так называемый graceful shutdown
+  // на самом деле, я так не делаю. Дело в том, что такой подход лишает
+  // ваше приложение возможности завершиться по собственному желанию. В
+  // context будет висеть и ждать своего часа обработчик сигнала. Эта
+  // проблема может быть решена различными способами, но для
+  // упрощения примера мы не будем рассматривать данную ситуацию
+  context.run();
+}</code></pre><p>Что же дают нам для реализации подобного механизма корутины С++? И всё, и ничего. В комментариях к моей статье <a href="https://habr.com/ru/company/ispsystem/blog/578366/">генераторы на корутинах С++</a> мне задавали вопрос: что случится, если генератор (корутину) не вызовут после очередного <strong><em>co_yield</em></strong>? Ответ был прост — всё будет хорошо, если все ресурсы внутри генератора освобождаются при помощи RAII. Завершаясь, корутина уничтожит все локальные переменные, вызывая для них деструкторы. Поэтому, используя идиому RAII, вы как бы объясняете компилятору, какие ресурсы принадлежат корутине. А использованные вами операторы <strong><em>co_await</em></strong> и <strong><em>co_yield</em></strong> будут как раз теми точками, где вы будете проверять флаг — требование завершить корутину. На самом деле всё еще круче! Вместо того, чтобы думать о том, как завершить корутину, вам надо просто её не возобновлять. То есть, не делать ничего. Компилятор всё сделает за вас. Казалось бы — успех! Ставим точку, дальше и писать не о чем :)</p><p>В действительности это хорошо сработает только при использовании <strong><em>co_yield</em></strong>.</p><h2>Не всё так просто или что делать, если вам надоело ждать</h2><p>В чем же проблема <strong><em>co_await </em></strong>? Я уже касался этой проблемы в другой моей <a href="https://habr.com/ru/company/ispsystem/blog/578590/">статье про каналы на С++</a>. Дело в том, что <strong><em>co_await</em></strong> не просто ждёт возобновления корутины, он ждет возникновения некого события (например чтения при помощи boost::asio::async_read). И это событие неплохо было бы отменить. Во-первых — чтобы не загружать приложение ненужной работой. А во вторых <em>awaitable</em> объект может использовать ссылки на локальные переменные корутины. Когда <em>awaitable</em> дождется события и начнет сохранять полученные данные в несуществующий уже буфер, в лучшем случае вы получите аварийное завершение приложения. </p><blockquote><p><em>Почему в лучшем? Потому что будет хотя бы ясно где ошибка. Если вам «повезет», и вы просто перезапишите данные в какой-нибудь случайной переменной, которой не повезло получить область памяти с тем же адресом, найти источник проблемы будет гораздо сложнее.</em></p><p><em>Находить подобные проблемы очень помогает address sanitizer. Я настоятельно рекомендую отладочные сборки делать именно с ним.</em></p></blockquote><p>Для решения этой проблемы я решил сделать свои <em>awaitable</em> объекты прерываемыми. И для этого добавил в них еще один метод — <strong><em>on_terminate</em></strong>. Давайте рассмотрим пример реализации операции sleep. Она может выглядеть следующим образом:</p><pre><code class="cpp">template &lt;typename Duration>
+auto sleep(Duration duration) {
+  struct [[nodisacrd]] awaitable {
+    // для асинхронного sleep я использовал таймер из boost
+    boost::asio::steady_timer timer;
+    // резервируем в нашем awaitable объекте место под результат
+    boost::system::error_code error{};
+    
+    bool await_ready() const { return false; }
+    void await_suspend(std::coroutine_handle&lt;> coro) {
+      // регистрируем событие в io_context, ссылку на который мы 
+      // неявно получили через executor при создании steady_timer
+      // смотри ниже
+      timer.async_wait([coro] (auto ec) mutable {
+        if (!error) { error = ec; }
+        // при получении события возобновляем корутину
+        coro.resume();
+      });
+    }
+    void on_terminate(boost::system::error_code ec) {
+      error = ec;
+      // cancel прервет текущую асинхронную операцию, что приведет к вызову
+      // callback (нашей лямбды) с ec = boost::asio::error::operation_aborted
+      timer.cancel();
+    }
+    // нашему awaitable нечего возврящать, но в случае
+    // возникновения ошибки он выбрасывает исключение
+    void await_resume() {
+      if (error) { throw boost::system::system_error(error); }
+    }
+  };
+  // на самом деле, не очень честно заводить таймер здесь, потому что
+  // отсчет времени начнется с момента создания awaitable объекта, а не
+  // с момента вызова co_await. В некоторых случаях это может быть
+  // существенно
+  // еще вы можете спросить: что такое executor и откуда он взялся?
+  // это переменная типа boost::asio::any_io_executor, обычно я передаю
+  // её в подобные функции параметром, но всё больше склоняюсь к мысли
+  // использовать для этого глобальные thread_local переменные
+  return awaitable{.timer = boost::asio::steady_timer{executor, std::forward&lt;Duration>(duration)}};
+};</code></pre><blockquote><p><em>boost позволяет любой вызов асинхронный вызов (async_XXX) превратить в awaitable объект при помощи механизма completion token. Для этого надо в качестве callback передать </em><strong><em>boost::asio::use_awaitable</em></strong><em>. Но в нашем случае это ничем нам не поможет.</em></p></blockquote><p>Для того, чтобы понять как этот метод нам поможет, давайте теперь напишем наш task. Идея в следующем: при каждом вызове <strong><em>co_await</em></strong> мы будем запоминать ссылку на <em>awaitable</em> объект и в случае вызова terminate — вызывать метод on_terminate.</p><p>В этом нам как раз и поможет метод <strong><em>promise_type::await_transform()</em></strong>. Если он определен, то перед каждом вызовом <strong><em>co_await</em></strong> в него передается <em>awaitable</em> объект. Метод, в свою очередь, должен вернуть тоже <em>awaitable</em> объект (может вернуть тот же, может другой). И именно этот, полученный от <strong><em>await_transform</em></strong> объект, будет передан в <strong><em>co_await</em></strong>.</p><pre><code class="cpp">class task {
+public:
+  struct promise_type {
+    struct state_t {
+      // функтор для вызова on_terminate из текущего awaitable объекта
+      std::function&lt;void(boost::system::error_code)> callback;
+    };
+    std::shared_ptr&lt;state_t> state = std::make_shared&lt;state_t>();
+    // никаких лишних остановок корутины ни до
+    std::suspend_never initial_suspend() const noexcept { return {}; }
+    // ни после
+    std::suspend_never final_suspend() const noexcept { return {}; }
+    // нашему task надо иметь ссылку на состояние, чтобы вызвать on_terminate
+    auto get_return_object() { return task{state}; }
+    // корутина ничего не возвращает
+    void return_void() { }
+    // просто игнорируем все непойманные исключения,
+    // они будут приводить к корректному завершению корутин
+    void unhandled_exception() { }
+    
+    template &lt;typename Awaitable>
+    auto await_transform(Awaitable &amp;&amp;awaitable) {
+      // методы wrapper вызывают соответствующие методы из базового awaitable
+      struct [[nodiscard]] wrapper {
+        Awaitable base;
+        std::shared_ptr&lt;state_t> m_state;
+        
+        auto await_ready() { return base.await_ready(); }
+        auto await_suspend(std::experimental::coroutine_handle&lt;> coro) {
+          // сохраняем ссылку на awaitable через замыкание
+          m_state->callback = [this] (boost::system::error_code ec) {
+            base.on_terminate(ec);
+          });
+          return base.await_suspend(coro);
+        }
+        auto await_resume() {
+          return base.await_resume();
+        }
+      };
+      return wrapper{std::forward&lt;Awaitable>(awaitable), state};
+    }
+  };
+  
+  // как только корутина завершится, promise_type будет уничтожен
+  // наш weak_ptr будет указывать на null. В остальных случаях,
+  // при однопоточной работе, state будет указывать на текущий
+  // awaitable объект, который прервал выполнение корутины
+  void terminate(boost::system::error_code ec = boost::asio::error::interrupted) {
+    if (auto ptr = m_state.lock(); ptr != nullptr &amp;&amp; ptr->callback != nullptr) {
+      ptr->callback(ec);
+      // защищаемся от повторного вызова terminate()
+      ptr->callback = nullptr;
+    }
+  }
+  
+private:
+  // сохрани мы ссылку на promise_type - и перед нами встал бы вопрос:
+  // как узнать, завершилась ли корутина. Данный подход избавляет нас
+  // от этой диллемы
+  std::weak_ptr&lt;promise_type::state_t> m_state;
+  
+  explicit task(std::weak_ptr&lt;promise_type::state_t> state)
+    : m_state{std::move(state)} {}
+};</code></pre><p>Мы получили искомое поведение. Правда, наш terminate не завершает корутину немедленно, а лишь приводит к возникновению ошибки (exception). Как по мне, это более прямой и гибкий путь, но незначительно поменяв логику <strong><em>await_suspend</em></strong>, можно сделать и немедленное завершение.</p><details class="spoiler"><summary>Полный код получившегося приложения</summary><div class="spoiler__content"><pre><code class="cpp">#include &lt;boost/asio/error.hpp>
+#include &lt;boost/asio/io_context.hpp>
+#include &lt;boost/asio/signal_set.hpp>
+#include &lt;boost/asio/steady_timer.hpp>
+#include &lt;experimental/coroutine>
+#include &lt;iostream>
+
+namespace std {
+  using namespace experimental;
+} // end of namespace std
+
+thread_local boost::asio::any_io_executor current_executor;
+
+class task {
+  public:
+  struct promise_type {
+    struct state_t {
+      bool locked = false;
+      std::function&lt;void(boost::system::error_code)> on_terminate;
+      void lock() { locked = true; }
+      void unlock() { locked = false; }
+      using ptr = std::shared_ptr&lt;state_t>;
+    };
+    state_t::ptr state = std::make_shared&lt;state_t>();
+
+    auto get_return_object() { return task{state}; }
+    std::suspend_never initial_suspend() noexcept { return {}; }
+    std::suspend_never final_suspend() noexcept { return {}; }
+    void return_void() {}
+    void unhandled_exception() { }
+    template &lt;typename Awaitable>
+    auto await_transform(Awaitable &amp;&amp;awaitable) {
+      struct [[nodiscard]] wrapper {
+        std::shared_ptr&lt;state_t> state;
+        Awaitable awaitable;
+        bool await_ready() { return awaitable.await_ready(); }
+        auto await_suspend(std::coroutine_handle&lt;> coro) {
+          state->on_terminate = [this] (boost::system::error_code ec) {
+            awaitable.on_terminate(ec);
+          };
+          return awaitable.await_suspend(coro);
+        }
+        auto await_resume() {
+          return awaitable.await_resume();
+        }
+      };
+      return wrapper{state, std::forward&lt;Awaitable>(awaitable)};
+    }
+  };
+
+  void terminate(boost::system::error_code ec = boost::asio::error::interrupted) {
+    if (auto ptr = m_state.lock(); ptr != nullptr &amp;&amp; ptr->on_terminate != nullptr &amp;&amp; !ptr->locked) {
+      ptr->on_terminate(ec);
+      ptr->on_terminate = nullptr;
+    }
+  }
+
+  using state_t = promise_type::state_t::ptr;
+private:
+  std::weak_ptr&lt;promise_type::state_t> m_state;
+  task(std::weak_ptr&lt;promise_type::state_t> state) : m_state(std::move(state)) {}
+};
+
+template &lt;typename Duration>
+auto sleep(Duration &amp;&amp;duration) {
+  struct [[nodiscard]] awaitable {
+    boost::asio::steady_timer timer;
+    boost::system::error_code error{};
+
+    bool await_ready() { return false; }
+    void await_suspend(std::coroutine_handle&lt;> coro) {
+      timer.template async_wait([this, coro] (auto ec) mutable {
+        if (!error) { error = ec; }
+        coro.resume();
+      });
+    }
+    void on_terminate(boost::system::error_code ec) {
+      error = ec;
+      timer.cancel();
+    }
+    void await_resume() {
+      if (error) { throw boost::system::system_error(error); }
+    }
+  };
+  return awaitable{boost::asio::steady_timer{current_executor, std::forward&lt;Duration>(duration)}};
+}
+
+task coroutine() {
+  using namespace std::chrono_literals;
+  std::cout &lt;&lt; "before sleep" &lt;&lt; std::endl;
+  try {
+    co_await sleep(5s);
+    std::cout &lt;&lt; "after sleep" &lt;&lt; std::endl;
+  } catch (...) { }
+  std::cout &lt;&lt; "final cleanup" &lt;&lt; std::endl;
+  co_await sleep(2s);
+}
+
+int main(int argc, char *argv[]) {
+  boost::asio::io_context context;
+  current_executor = context.get_executor();
+  boost::asio::signal_set signals{context, SIGINT};
+  auto job = coroutine();
+  signals.async_wait([job = std::move(job)] (auto ec, auto code) mutable {
+   job.terminate();
+  });
+  context.run();
+  return 0;
+}</code></pre><p>для мгновенного завершения корутины код <strong><em>await_suspend</em></strong> может быть таким:</p><pre><code class="cpp">void await_suspend(std::coroutine_handle&lt;> coro) {
+  timer.template async_wait([this, coro] (auto ec) mutable {
+    if (!error) {
+      error = ec;
+      coro.resume();
+    } else {
+      coro.destroy();
+    }
+  });
+}</code></pre></div></details><blockquote><p><em>Еще </em><strong><em>await_transform</em></strong><em> удобен для сохранения контекста выполнения. Если при использовании потоков с этим замечательно справляются </em><strong><em>thread_local</em></strong><em> переменные, при асинхронной работе это вызывает определенные трудности.</em></p><p><em>Например, если вы хотите записывать в журнал request id обрабатываемого запроса, можно конечно таскать logger во все функции параметром. Но это очень утомительно. Всё же удобнее иметь его в глобальной переменной.</em></p></blockquote><h2>Не прерывайте прерывание</h2><p>Но иногда хочется сказать: «Постойте! Вот сейчас меня прерывать не надо»</p><p>Например, если вы уже выполняете операцию очистки при завершении корутины. В таких случаях RAII спасает не всегда. Иногда хочется выполнить какие-нибудь асинхронные вызовы, а деструктор не может быть корутиной. Или же для операции требуется большое количество локальных переменных. Что можно сделать в этой ситуации?</p><ul><li><p>запустить еще одну корутину в конце текущей или из деструктора и выполнить требуемые действия в ней;</p></li><li><p>можно выполнить какой-нибудь специальный co_await и обработать его в том же <strong><em>await_transform</em></strong>;</p></li><li><p>можно написать шаблон-декоратор, который скроет от <strong><em>await_transform</em></strong> метод <strong><em>on_terminate</em></strong>, и научить наш task работать с такими awaitable объектами.</p></li></ul><p>А можно передать состояние корутины в нее параметром. И добавить в это состояние метод, запрещающий прерывание. Дело в том, что если <strong><em>promise_type</em></strong> имеет конструктор, принимающий такой же набор параметров, как и корутина, он будет вызван и в него будут переданы ссылки на копии параметров.</p><blockquote><p><em>Параметры корутин, в отличие от параметров обычных функций, передаются не через стек. Их копии сохраняются в куче в момент вызова корутины.</em></p><p><em>Компилятор может принять решение хранить параметры и локальные переменные корутины в стеке, если её время жизни меньше времени жизни вызывающей функции.</em></p></blockquote><p>Таким образом, мы получаем в конструкторе <strong><em>promise_type</em></strong> доступ к параметрам корутины. Причем мы можем не только читать их, но и менять!</p><pre><code class="cpp">struct promise_type {
+  struct state_t {
+    bool locked = false;
+    std::function&lt;void(boost::system::error_code)> callback;
+    void lock() { locked = true; }
+    void unlock { locked = false; }
+    using ptr = std::shared_ptr&lt;state_t>;
+  };
+  ptr state;
+
+  // на случай, если наша корутина вообще не имеет параметров
+  promise_type() : state{std::make_shared&lt;state_t>()} { }
+
+  // этот конструктор подойдет под любой набор параметров
+  template &lt;typename ...Args>
+  explicit promise_type(Args &amp; ...args) : promise_type{} {
+    // используем fold expression: для каждого параметра будет создана
+    // лямбда, затем все их результаты сложены при помощи логического "или"
+    //
+    // конструкция выглядит страшно, но фактически она скомпилируется
+    // в одну операцию присваивания для первого подходящего по типу
+    // параметра. Остальное будет безжалостно выкинуто в процессе
+    // оптимизации. Кто не верит, вот ссылка на compiler explorer
+    // https://godbolt.org/z/hsrPErqfn
+    ([this] (auto &amp;param) {
+      if constexpr (std::is_same_v&lt;Args, state_t::ptr>) {
+        // мы ЗАПИСЫВАЕМ новое значение в параметр корутины
+        // и делаем это фактически до её запуска
+        param = state;
+        return true;
+      }
+      return false;
+    }(args) || ...);
+  }
+  // ...
+};</code></pre><p>Это небольшое улучшение позволяет нам написать следующий код:</p><pre><code class="cpp">task coroutine(task::state_t lock = {}) {
+  using std::chrono_literals;
+  try {
+    std::cout &lt;&lt; "we are doing our work here" &lt;&lt; std::endl;
+  	co_await sleep(10s);
+    std::cout &lt;&lt; "work is complete" &lt;&lt; std::endl;
+  } catch (...) { }
+  std::cout &lt;&lt; "final cleanup" &lt;&lt; std::endl;
+  // я назвал методы state - lock и unlock, это дает
+  // мне возможность использовать std::lock_guard
+  const std::lock_guard g(*lock);
+  // следующий sleep уже не будет прерван
+  co_await sleep(5s);
+}</code></pre><blockquote><p><em>Еще одно ограничение корутин: секция catch не может содержать точек переключения </em><strong><em>co_await</em></strong><em> или </em><strong><em>co_yield</em></strong><em>.</em></p></blockquote><h2>З.Ы.</h2><p>Механизмы, рассмотренные сегодня, позволяют реализовывать поистине фантастические вещи. А их сочетание может дать просто волшебные возможности и сорвать крышу. Только подумайте, оператор внутри функции может получить неявный доступ к её параметрам. Не уверен, что могу сходу придумать удачный пример использования подобной связки.</p><p>Но при аккуратном подходе, в первую очередь разработчиками библиотек и фреймворков, конструкторы <strong><em>promise_type</em></strong> и <strong><em>await_transform</em></strong> могут позволить изящно решить массу задач асинхронного программирования.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%81%2B%2B20%5D" class="tm-tags-list__link">с++20</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcoroutines%5D" class="tm-tags-list__link">coroutines</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Basync%2Fawait%5D" class="tm-tags-list__link">async/await</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/ispsystem/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании ISPsystem
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 21: ↑21 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 21: ↑21 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+21</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">4.7K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    42
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/ispsystem/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/8a9/6fd/9bb/8a96fd9bb52e0685442fa3f74a2a4509.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/ispsystem/profile/" class="tm-company-snippet__title">ISPsystem</a> <div class="tm-company-snippet__description">Софт для управления IT-инфраструктурой</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://www.ispsystem.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://facebook.com/ispsystem" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://twitter.com/ISPsystem_ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Twitter
+    </a><a href="https://vk.com/ispsystem" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Doktor3lo/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/f8e/507/229/f8e5072291c90ee8eb1391c9b784ef88.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 27 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    23
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">23</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Александр</span> <a href="/ru/users/Doktor3lo/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Doktor3lo
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Chief of R&D</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/ispsystem/blog/580828/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 4 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2004-02-09T21:00:00.000Z" title="2004-02-10, 00:00">10  февраля  2004</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://www.ispsystem.ru" target="_blank" class="tm-company-basic-info__link">
+      www.ispsystem.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    101–200 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2009-05-19T09:28:44.000Z" title="2009-05-19, 13:28">19  мая  2009</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/ISPsystem_software/" class="tm-company-basic-info__link">
+      ISPsystem
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/ispsystem/blog/580828/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/ispsystem/blog/580828/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"580828":{"id":"580828","timePublished":"2021-10-14T06:19:46+00:00","isCorporative":true,"lang":"ru","titleHtml":"Прерывая корутины С++","leadData":{"textHtml":"\u003Cp\u003EВ своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании сопрограмм, которые можно прервать извне. Изначально мне это понадобилось для реализации механизма deadline или timeout (кому как больше нравится). Согласитесь, довольно часто возникающая задача. На этом примере я продемонстрирую использование еще нескольких возможностей, предоставляемых С++. Речь пойдет об \u003Cstrong\u003E\u003Cem\u003Eawait_transform\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E и конструкторе объекта \u003Cstrong\u003E\u003Cem\u003Epromise_type\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F702\u002Fba9\u002F95f\u002F702ba995fe3e22d37a2f795436d69296.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F702\u002Fba9\u002F95f\u002F702ba995fe3e22d37a2f795436d69296.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":23,"votesCount":27},"rating":23,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1377480","alias":"Doktor3lo","fullname":"Александр","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Ff8e\u002F507\u002F229\u002Ff8e5072291c90ee8eb1391c9b784ef88.png","speciality":"Chief of R&D"},"statistics":{"commentsCount":4,"favoritesCount":42,"readingCount":4725,"score":21,"votesCount":21},"hubs":[{"relatedData":null,"id":"10120","alias":"ispsystem","type":"corporative","title":"Блог компании ISPsystem","titleHtml":"Блог компании ISPsystem","isProfiled":false},{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"488\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc42\u002F6f7\u002F551\u002Fc426f75519413436c3d71ade7ba3e94f.png\" data-width=\"912\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВ своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании сопрограмм, которые можно прервать извне. Изначально мне это понадобилось для реализации механизма deadline или timeout (кому как больше нравится). Согласитесь, довольно часто возникающая задача. На этом примере я продемонстрирую использование еще нескольких возможностей, предоставляемых С++. Речь пойдет об \u003Cstrong\u003E\u003Cem\u003Eawait_transform\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E и конструкторе объекта \u003Cstrong\u003E\u003Cem\u003Epromise_type\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E.\u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Cem\u003EВ UNIX системах вы легко можете прервать любой процесс в любой момент, отправив ему сигнал. И это замечательная возможность! Система гарантирует освобождение всей занятой им памяти и иных ресурсов.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EНо вот уже с потоком этот фокус не пройдет — система просто не знает, какие ресурсы процесса принадлежат потоку и должны быть освобождены, а какие еще понадобятся. Обычно такую задачу решают периодической проверкой некого флага, сообщающего о необходимости завершить поток. Проверяя флаг, вы сами решаете, что нужно сделать для корректного завершения.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EКорутины можно рассматривать как легковесные потоки. Во многом подходы к принудительному завершению потоков и корутин схожи.\u003C\u002Fp\u003E\u003Cp\u003EВ этот раз не обойдется без boost::asio. Но он будет использован исключительно в демонстрационных целях — в детали его работы я углубляться сильно не буду. А начну по традиции с конца. Давайте напишем простое приложение, которое может быть завершено нажатием CTRL+C. Как раз в нем получилось больше boost, чем во всём остальном коде.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etask coroutine() {\n  \u002F\u002F вся логика приложения вынесена в эту функцию. По понятным причинам\n  \u002F\u002F main() не может быть корутиной - программа просто завершилась бы\n  \u002F\u002F при первом же вызове co_await. Но это только теория, компилятор не\n  \u002F\u002F позволит вам проверить это на практике\n  \u002F\u002F ...\n}\n\nint main(int argc, char *argv[]) {\n  \u002F\u002F эта переменная - сердце boost::asio обеспечивающее связь вашего\n  \u002F\u002F приложения и операций ввода\u002Fвывода операционной системы\n  boost::asio::io_context context;\n  \u002F\u002F SIGINT - это тот сигнал, который получит ваше приложение, когда вы нажмете CTRL+C\n  boost::asio::signal_set signals(context, SIGINT);\n  \u002F\u002F запускаем наш \"настоящий main\"\n  auto job = coroutine();\n  \u002F\u002F регистрируем в boost::asio наш обработчик сигнала SIGINT\n  signals.async_wait([job = std::move(job)] (auto code) {\n    \u002F\u002F при получении сигнала прерываем наше приложение\n    job.terminate();\n  });\n  \u002F\u002F context.run() будет выполняться до тех пор, пока не будут обработаны\n  \u002F\u002F все зарегистрированные в этом context события. Так что, мы получим\n  \u002F\u002F красивый так называемый graceful shutdown\n  \u002F\u002F на самом деле, я так не делаю. Дело в том, что такой подход лишает\n  \u002F\u002F ваше приложение возможности завершиться по собственному желанию. В\n  \u002F\u002F context будет висеть и ждать своего часа обработчик сигнала. Эта\n  \u002F\u002F проблема может быть решена различными способами, но для\n  \u002F\u002F упрощения примера мы не будем рассматривать данную ситуацию\n  context.run();\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЧто же дают нам для реализации подобного механизма корутины С++? И всё, и ничего. В комментариях к моей статье \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fispsystem\u002Fblog\u002F578366\u002F\"\u003Eгенераторы на корутинах С++\u003C\u002Fa\u003E мне задавали вопрос: что случится, если генератор (корутину) не вызовут после очередного \u003Cstrong\u003E\u003Cem\u003Eco_yield\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E? Ответ был прост — всё будет хорошо, если все ресурсы внутри генератора освобождаются при помощи RAII. Завершаясь, корутина уничтожит все локальные переменные, вызывая для них деструкторы. Поэтому, используя идиому RAII, вы как бы объясняете компилятору, какие ресурсы принадлежат корутине. А использованные вами операторы \u003Cstrong\u003E\u003Cem\u003Eco_await\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E и \u003Cstrong\u003E\u003Cem\u003Eco_yield\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E будут как раз теми точками, где вы будете проверять флаг — требование завершить корутину. На самом деле всё еще круче! Вместо того, чтобы думать о том, как завершить корутину, вам надо просто её не возобновлять. То есть, не делать ничего. Компилятор всё сделает за вас. Казалось бы — успех! Ставим точку, дальше и писать не о чем :)\u003C\u002Fp\u003E\u003Cp\u003EВ действительности это хорошо сработает только при использовании \u003Cstrong\u003E\u003Cem\u003Eco_yield\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E.\u003C\u002Fp\u003E\u003Ch2\u003EНе всё так просто или что делать, если вам надоело ждать\u003C\u002Fh2\u003E\u003Cp\u003EВ чем же проблема \u003Cstrong\u003E\u003Cem\u003Eco_await \u003C\u002Fem\u003E\u003C\u002Fstrong\u003E? Я уже касался этой проблемы в другой моей \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fispsystem\u002Fblog\u002F578590\u002F\"\u003Eстатье про каналы на С++\u003C\u002Fa\u003E. Дело в том, что \u003Cstrong\u003E\u003Cem\u003Eco_await\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E не просто ждёт возобновления корутины, он ждет возникновения некого события (например чтения при помощи boost::asio::async_read). И это событие неплохо было бы отменить. Во-первых — чтобы не загружать приложение ненужной работой. А во вторых \u003Cem\u003Eawaitable\u003C\u002Fem\u003E объект может использовать ссылки на локальные переменные корутины. Когда \u003Cem\u003Eawaitable\u003C\u002Fem\u003E дождется события и начнет сохранять полученные данные в несуществующий уже буфер, в лучшем случае вы получите аварийное завершение приложения. \u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Cem\u003EПочему в лучшем? Потому что будет хотя бы ясно где ошибка. Если вам «повезет», и вы просто перезапишите данные в какой-нибудь случайной переменной, которой не повезло получить область памяти с тем же адресом, найти источник проблемы будет гораздо сложнее.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EНаходить подобные проблемы очень помогает address sanitizer. Я настоятельно рекомендую отладочные сборки делать именно с ним.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EДля решения этой проблемы я решил сделать свои \u003Cem\u003Eawaitable\u003C\u002Fem\u003E объекты прерываемыми. И для этого добавил в них еще один метод — \u003Cstrong\u003E\u003Cem\u003Eon_terminate\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E. Давайте рассмотрим пример реализации операции sleep. Она может выглядеть следующим образом:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;typename Duration\u003E\nauto sleep(Duration duration) {\n  struct [[nodisacrd]] awaitable {\n    \u002F\u002F для асинхронного sleep я использовал таймер из boost\n    boost::asio::steady_timer timer;\n    \u002F\u002F резервируем в нашем awaitable объекте место под результат\n    boost::system::error_code error{};\n    \n    bool await_ready() const { return false; }\n    void await_suspend(std::coroutine_handle&lt;\u003E coro) {\n      \u002F\u002F регистрируем событие в io_context, ссылку на который мы \n      \u002F\u002F неявно получили через executor при создании steady_timer\n      \u002F\u002F смотри ниже\n      timer.async_wait([coro] (auto ec) mutable {\n        if (!error) { error = ec; }\n        \u002F\u002F при получении события возобновляем корутину\n        coro.resume();\n      });\n    }\n    void on_terminate(boost::system::error_code ec) {\n      error = ec;\n      \u002F\u002F cancel прервет текущую асинхронную операцию, что приведет к вызову\n      \u002F\u002F callback (нашей лямбды) с ec = boost::asio::error::operation_aborted\n      timer.cancel();\n    }\n    \u002F\u002F нашему awaitable нечего возврящать, но в случае\n    \u002F\u002F возникновения ошибки он выбрасывает исключение\n    void await_resume() {\n      if (error) { throw boost::system::system_error(error); }\n    }\n  };\n  \u002F\u002F на самом деле, не очень честно заводить таймер здесь, потому что\n  \u002F\u002F отсчет времени начнется с момента создания awaitable объекта, а не\n  \u002F\u002F с момента вызова co_await. В некоторых случаях это может быть\n  \u002F\u002F существенно\n  \u002F\u002F еще вы можете спросить: что такое executor и откуда он взялся?\n  \u002F\u002F это переменная типа boost::asio::any_io_executor, обычно я передаю\n  \u002F\u002F её в подобные функции параметром, но всё больше склоняюсь к мысли\n  \u002F\u002F использовать для этого глобальные thread_local переменные\n  return awaitable{.timer = boost::asio::steady_timer{executor, std::forward&lt;Duration\u003E(duration)}};\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Cem\u003Eboost позволяет любой вызов асинхронный вызов (async_XXX) превратить в awaitable объект при помощи механизма completion token. Для этого надо в качестве callback передать \u003C\u002Fem\u003E\u003Cstrong\u003E\u003Cem\u003Eboost::asio::use_awaitable\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003Cem\u003E. Но в нашем случае это ничем нам не поможет.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EДля того, чтобы понять как этот метод нам поможет, давайте теперь напишем наш task. Идея в следующем: при каждом вызове \u003Cstrong\u003E\u003Cem\u003Eco_await\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E мы будем запоминать ссылку на \u003Cem\u003Eawaitable\u003C\u002Fem\u003E объект и в случае вызова terminate — вызывать метод on_terminate.\u003C\u002Fp\u003E\u003Cp\u003EВ этом нам как раз и поможет метод \u003Cstrong\u003E\u003Cem\u003Epromise_type::await_transform()\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E. Если он определен, то перед каждом вызовом \u003Cstrong\u003E\u003Cem\u003Eco_await\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E в него передается \u003Cem\u003Eawaitable\u003C\u002Fem\u003E объект. Метод, в свою очередь, должен вернуть тоже \u003Cem\u003Eawaitable\u003C\u002Fem\u003E объект (может вернуть тот же, может другой). И именно этот, полученный от \u003Cstrong\u003E\u003Cem\u003Eawait_transform\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E объект, будет передан в \u003Cstrong\u003E\u003Cem\u003Eco_await\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eclass task {\npublic:\n  struct promise_type {\n    struct state_t {\n      \u002F\u002F функтор для вызова on_terminate из текущего awaitable объекта\n      std::function&lt;void(boost::system::error_code)\u003E callback;\n    };\n    std::shared_ptr&lt;state_t\u003E state = std::make_shared&lt;state_t\u003E();\n    \u002F\u002F никаких лишних остановок корутины ни до\n    std::suspend_never initial_suspend() const noexcept { return {}; }\n    \u002F\u002F ни после\n    std::suspend_never final_suspend() const noexcept { return {}; }\n    \u002F\u002F нашему task надо иметь ссылку на состояние, чтобы вызвать on_terminate\n    auto get_return_object() { return task{state}; }\n    \u002F\u002F корутина ничего не возвращает\n    void return_void() { }\n    \u002F\u002F просто игнорируем все непойманные исключения,\n    \u002F\u002F они будут приводить к корректному завершению корутин\n    void unhandled_exception() { }\n    \n    template &lt;typename Awaitable\u003E\n    auto await_transform(Awaitable &amp;&amp;awaitable) {\n      \u002F\u002F методы wrapper вызывают соответствующие методы из базового awaitable\n      struct [[nodiscard]] wrapper {\n        Awaitable base;\n        std::shared_ptr&lt;state_t\u003E m_state;\n        \n        auto await_ready() { return base.await_ready(); }\n        auto await_suspend(std::experimental::coroutine_handle&lt;\u003E coro) {\n          \u002F\u002F сохраняем ссылку на awaitable через замыкание\n          m_state-\u003Ecallback = [this] (boost::system::error_code ec) {\n            base.on_terminate(ec);\n          });\n          return base.await_suspend(coro);\n        }\n        auto await_resume() {\n          return base.await_resume();\n        }\n      };\n      return wrapper{std::forward&lt;Awaitable\u003E(awaitable), state};\n    }\n  };\n  \n  \u002F\u002F как только корутина завершится, promise_type будет уничтожен\n  \u002F\u002F наш weak_ptr будет указывать на null. В остальных случаях,\n  \u002F\u002F при однопоточной работе, state будет указывать на текущий\n  \u002F\u002F awaitable объект, который прервал выполнение корутины\n  void terminate(boost::system::error_code ec = boost::asio::error::interrupted) {\n    if (auto ptr = m_state.lock(); ptr != nullptr &amp;&amp; ptr-\u003Ecallback != nullptr) {\n      ptr-\u003Ecallback(ec);\n      \u002F\u002F защищаемся от повторного вызова terminate()\n      ptr-\u003Ecallback = nullptr;\n    }\n  }\n  \nprivate:\n  \u002F\u002F сохрани мы ссылку на promise_type - и перед нами встал бы вопрос:\n  \u002F\u002F как узнать, завершилась ли корутина. Данный подход избавляет нас\n  \u002F\u002F от этой диллемы\n  std::weak_ptr&lt;promise_type::state_t\u003E m_state;\n  \n  explicit task(std::weak_ptr&lt;promise_type::state_t\u003E state)\n    : m_state{std::move(state)} {}\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EМы получили искомое поведение. Правда, наш terminate не завершает корутину немедленно, а лишь приводит к возникновению ошибки (exception). Как по мне, это более прямой и гибкий путь, но незначительно поменяв логику \u003Cstrong\u003E\u003Cem\u003Eawait_suspend\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E, можно сделать и немедленное завершение.\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПолный код получившегося приложения\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E#include &lt;boost\u002Fasio\u002Ferror.hpp\u003E\n#include &lt;boost\u002Fasio\u002Fio_context.hpp\u003E\n#include &lt;boost\u002Fasio\u002Fsignal_set.hpp\u003E\n#include &lt;boost\u002Fasio\u002Fsteady_timer.hpp\u003E\n#include &lt;experimental\u002Fcoroutine\u003E\n#include &lt;iostream\u003E\n\nnamespace std {\n  using namespace experimental;\n} \u002F\u002F end of namespace std\n\nthread_local boost::asio::any_io_executor current_executor;\n\nclass task {\n  public:\n  struct promise_type {\n    struct state_t {\n      bool locked = false;\n      std::function&lt;void(boost::system::error_code)\u003E on_terminate;\n      void lock() { locked = true; }\n      void unlock() { locked = false; }\n      using ptr = std::shared_ptr&lt;state_t\u003E;\n    };\n    state_t::ptr state = std::make_shared&lt;state_t\u003E();\n\n    auto get_return_object() { return task{state}; }\n    std::suspend_never initial_suspend() noexcept { return {}; }\n    std::suspend_never final_suspend() noexcept { return {}; }\n    void return_void() {}\n    void unhandled_exception() { }\n    template &lt;typename Awaitable\u003E\n    auto await_transform(Awaitable &amp;&amp;awaitable) {\n      struct [[nodiscard]] wrapper {\n        std::shared_ptr&lt;state_t\u003E state;\n        Awaitable awaitable;\n        bool await_ready() { return awaitable.await_ready(); }\n        auto await_suspend(std::coroutine_handle&lt;\u003E coro) {\n          state-\u003Eon_terminate = [this] (boost::system::error_code ec) {\n            awaitable.on_terminate(ec);\n          };\n          return awaitable.await_suspend(coro);\n        }\n        auto await_resume() {\n          return awaitable.await_resume();\n        }\n      };\n      return wrapper{state, std::forward&lt;Awaitable\u003E(awaitable)};\n    }\n  };\n\n  void terminate(boost::system::error_code ec = boost::asio::error::interrupted) {\n    if (auto ptr = m_state.lock(); ptr != nullptr &amp;&amp; ptr-\u003Eon_terminate != nullptr &amp;&amp; !ptr-\u003Elocked) {\n      ptr-\u003Eon_terminate(ec);\n      ptr-\u003Eon_terminate = nullptr;\n    }\n  }\n\n  using state_t = promise_type::state_t::ptr;\nprivate:\n  std::weak_ptr&lt;promise_type::state_t\u003E m_state;\n  task(std::weak_ptr&lt;promise_type::state_t\u003E state) : m_state(std::move(state)) {}\n};\n\ntemplate &lt;typename Duration\u003E\nauto sleep(Duration &amp;&amp;duration) {\n  struct [[nodiscard]] awaitable {\n    boost::asio::steady_timer timer;\n    boost::system::error_code error{};\n\n    bool await_ready() { return false; }\n    void await_suspend(std::coroutine_handle&lt;\u003E coro) {\n      timer.template async_wait([this, coro] (auto ec) mutable {\n        if (!error) { error = ec; }\n        coro.resume();\n      });\n    }\n    void on_terminate(boost::system::error_code ec) {\n      error = ec;\n      timer.cancel();\n    }\n    void await_resume() {\n      if (error) { throw boost::system::system_error(error); }\n    }\n  };\n  return awaitable{boost::asio::steady_timer{current_executor, std::forward&lt;Duration\u003E(duration)}};\n}\n\ntask coroutine() {\n  using namespace std::chrono_literals;\n  std::cout &lt;&lt; \"before sleep\" &lt;&lt; std::endl;\n  try {\n    co_await sleep(5s);\n    std::cout &lt;&lt; \"after sleep\" &lt;&lt; std::endl;\n  } catch (...) { }\n  std::cout &lt;&lt; \"final cleanup\" &lt;&lt; std::endl;\n  co_await sleep(2s);\n}\n\nint main(int argc, char *argv[]) {\n  boost::asio::io_context context;\n  current_executor = context.get_executor();\n  boost::asio::signal_set signals{context, SIGINT};\n  auto job = coroutine();\n  signals.async_wait([job = std::move(job)] (auto ec, auto code) mutable {\n   job.terminate();\n  });\n  context.run();\n  return 0;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003Eдля мгновенного завершения корутины код \u003Cstrong\u003E\u003Cem\u003Eawait_suspend\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E может быть таким:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Evoid await_suspend(std::coroutine_handle&lt;\u003E coro) {\n  timer.template async_wait([this, coro] (auto ec) mutable {\n    if (!error) {\n      error = ec;\n      coro.resume();\n    } else {\n      coro.destroy();\n    }\n  });\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Cem\u003EЕще \u003C\u002Fem\u003E\u003Cstrong\u003E\u003Cem\u003Eawait_transform\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003Cem\u003E удобен для сохранения контекста выполнения. Если при использовании потоков с этим замечательно справляются \u003C\u002Fem\u003E\u003Cstrong\u003E\u003Cem\u003Ethread_local\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003Cem\u003E переменные, при асинхронной работе это вызывает определенные трудности.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EНапример, если вы хотите записывать в журнал request id обрабатываемого запроса, можно конечно таскать logger во все функции параметром. Но это очень утомительно. Всё же удобнее иметь его в глобальной переменной.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Ch2\u003EНе прерывайте прерывание\u003C\u002Fh2\u003E\u003Cp\u003EНо иногда хочется сказать: «Постойте! Вот сейчас меня прерывать не надо»\u003C\u002Fp\u003E\u003Cp\u003EНапример, если вы уже выполняете операцию очистки при завершении корутины. В таких случаях RAII спасает не всегда. Иногда хочется выполнить какие-нибудь асинхронные вызовы, а деструктор не может быть корутиной. Или же для операции требуется большое количество локальных переменных. Что можно сделать в этой ситуации?\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eзапустить еще одну корутину в конце текущей или из деструктора и выполнить требуемые действия в ней;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eможно выполнить какой-нибудь специальный co_await и обработать его в том же \u003Cstrong\u003E\u003Cem\u003Eawait_transform\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E;\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eможно написать шаблон-декоратор, который скроет от \u003Cstrong\u003E\u003Cem\u003Eawait_transform\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E метод \u003Cstrong\u003E\u003Cem\u003Eon_terminate\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E, и научить наш task работать с такими awaitable объектами.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EА можно передать состояние корутины в нее параметром. И добавить в это состояние метод, запрещающий прерывание. Дело в том, что если \u003Cstrong\u003E\u003Cem\u003Epromise_type\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E имеет конструктор, принимающий такой же набор параметров, как и корутина, он будет вызван и в него будут переданы ссылки на копии параметров.\u003C\u002Fp\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Cem\u003EПараметры корутин, в отличие от параметров обычных функций, передаются не через стек. Их копии сохраняются в куче в момент вызова корутины.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EКомпилятор может принять решение хранить параметры и локальные переменные корутины в стеке, если её время жизни меньше времени жизни вызывающей функции.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Cp\u003EТаким образом, мы получаем в конструкторе \u003Cstrong\u003E\u003Cem\u003Epromise_type\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E доступ к параметрам корутины. Причем мы можем не только читать их, но и менять!\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estruct promise_type {\n  struct state_t {\n    bool locked = false;\n    std::function&lt;void(boost::system::error_code)\u003E callback;\n    void lock() { locked = true; }\n    void unlock { locked = false; }\n    using ptr = std::shared_ptr&lt;state_t\u003E;\n  };\n  ptr state;\n\n  \u002F\u002F на случай, если наша корутина вообще не имеет параметров\n  promise_type() : state{std::make_shared&lt;state_t\u003E()} { }\n\n  \u002F\u002F этот конструктор подойдет под любой набор параметров\n  template &lt;typename ...Args\u003E\n  explicit promise_type(Args &amp; ...args) : promise_type{} {\n    \u002F\u002F используем fold expression: для каждого параметра будет создана\n    \u002F\u002F лямбда, затем все их результаты сложены при помощи логического \"или\"\n    \u002F\u002F\n    \u002F\u002F конструкция выглядит страшно, но фактически она скомпилируется\n    \u002F\u002F в одну операцию присваивания для первого подходящего по типу\n    \u002F\u002F параметра. Остальное будет безжалостно выкинуто в процессе\n    \u002F\u002F оптимизации. Кто не верит, вот ссылка на compiler explorer\n    \u002F\u002F https:\u002F\u002Fgodbolt.org\u002Fz\u002FhsrPErqfn\n    ([this] (auto &amp;param) {\n      if constexpr (std::is_same_v&lt;Args, state_t::ptr\u003E) {\n        \u002F\u002F мы ЗАПИСЫВАЕМ новое значение в параметр корутины\n        \u002F\u002F и делаем это фактически до её запуска\n        param = state;\n        return true;\n      }\n      return false;\n    }(args) || ...);\n  }\n  \u002F\u002F ...\n};\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭто небольшое улучшение позволяет нам написать следующий код:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etask coroutine(task::state_t lock = {}) {\n  using std::chrono_literals;\n  try {\n    std::cout &lt;&lt; \"we are doing our work here\" &lt;&lt; std::endl;\n  \tco_await sleep(10s);\n    std::cout &lt;&lt; \"work is complete\" &lt;&lt; std::endl;\n  } catch (...) { }\n  std::cout &lt;&lt; \"final cleanup\" &lt;&lt; std::endl;\n  \u002F\u002F я назвал методы state - lock и unlock, это дает\n  \u002F\u002F мне возможность использовать std::lock_guard\n  const std::lock_guard g(*lock);\n  \u002F\u002F следующий sleep уже не будет прерван\n  co_await sleep(5s);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cblockquote\u003E\u003Cp\u003E\u003Cem\u003EЕще одно ограничение корутин: секция catch не может содержать точек переключения \u003C\u002Fem\u003E\u003Cstrong\u003E\u003Cem\u003Eco_await\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003Cem\u003E или \u003C\u002Fem\u003E\u003Cstrong\u003E\u003Cem\u003Eco_yield\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003Cem\u003E.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003Ch2\u003EЗ.Ы.\u003C\u002Fh2\u003E\u003Cp\u003EМеханизмы, рассмотренные сегодня, позволяют реализовывать поистине фантастические вещи. А их сочетание может дать просто волшебные возможности и сорвать крышу. Только подумайте, оператор внутри функции может получить неявный доступ к её параметрам. Не уверен, что могу сходу придумать удачный пример использования подобной связки.\u003C\u002Fp\u003E\u003Cp\u003EНо при аккуратном подходе, в первую очередь разработчиками библиотек и фреймворков, конструкторы \u003Cstrong\u003E\u003Cem\u003Epromise_type\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E и \u003Cstrong\u003E\u003Cem\u003Eawait_transform\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E могут позволить изящно решить массу задач асинхронного программирования.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"с++20"},{"titleHtml":"coroutines"},{"titleHtml":"async\u002Fawait"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F702\u002Fba9\u002F95f\u002F702ba995fe3e22d37a2f795436d69296.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F702\u002Fba9\u002F95f\u002F702ba995fe3e22d37a2f795436d69296.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fispsystem\\\u002Fblog\\\u002F580828\\\u002F\"},\"headline\":\"Прерывая корутины С++\",\"datePublished\":\"2021-10-14T09:19:46+03:00\",\"dateModified\":\"2021-10-14T13:18:13+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Александр\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в пр...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fispsystem\\\u002Fblog\\\u002F580828\\\u002F#post-content-body\",\"about\":[\"c_ispsystem\",\"h_programming\",\"h_cpp\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F580828\\\u002F123b57da2cfb371af67d0f7b735eaa9a\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fc42\\\u002F6f7\\\u002F551\\\u002Fc426f75519413436c3d71ade7ba3e94f.png\"]}","metaDescription":"В своих предыдущих постах я описывал задачи, которые были решены скорее в академических целях. Сегодня я хочу поделиться реальным примером, который работает в продакшене. Речь пойдет о написании...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"ispsystem":{"alias":"ispsystem","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F8a9\u002F6fd\u002F9bb\u002F8a96fd9bb52e0685442fa3f74a2a4509.png","titleHtml":"ISPsystem","descriptionHtml":"Софт для управления IT-инфраструктурой","relatedData":null,"statistics":{"postsCount":83,"newsCount":0,"vacanciesCount":0,"employeesCount":28,"careerRating":null,"subscribersCount":1142,"rating":139.73,"invest":null},"foundationDate":{"year":"2004","month":"02","day":"10"},"location":{"city":{"id":"446476","title":"Иркутск"},"region":{"id":"1785","title":"Иркутская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fwww.ispsystem.ru","staffNumber":"101–200 человек","registrationDate":"2009-05-19T09:28:44+00:00","representativeUser":{"alias":"ISPsystem_software","fullname":"ISPsystem"},"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fwww.ispsystem.ru"},{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fispsystem"},{"title":"Twitter","url":"https:\u002F\u002Ftwitter.com\u002FISPsystem_ru"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fispsystem"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-48365417-8"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"ISPsystem, Иркутск - Софт для управления IT-инфраструктурой с 10 февраля 2004 г.","title":"ISPsystem, Иркутск - Софт для управления IT-инфраструктурой с 10 февраля 2004 г.","keywords":["Программирование","C++","Виртуализация","Сетевые технологии","Веб-дизайн"],"descriptionHtml":"83 статьи от авторов компании ISPsystem","description":"83 статьи от авторов компании ISPsystem"},"aDeskSettings":null,"careerAlias":"ispsystem","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

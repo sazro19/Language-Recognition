@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Ленивые диапазоны и стирание типов / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/585160\/"},"headline":"Ленивые диапазоны и стирание типов","datePublished":"2021-10-25T13:47:15+03:00","dateModified":"2021-10-25T14:17:54+03:00","author":{"@type":"Person","name":"izvolov"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"В публикации Ленивые операции над множествами в C++ я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее расс...","url":"https:\/\/habr.com\/ru\/post\/585160\/#post-content-body","about":["h_programming","h_cpp","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/585160\/933c9f6b4a6eeb4897e5b727ac2805fb\/"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Ленивые диапазоны и стирание типов" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Ленивые диапазоны и стирание типов" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Ленивые диапазоны и стирание типов" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="В публикации Ленивые операции над множествами в C++ я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="В публикации Ленивые операции над множествами в C++ я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="В публикации Ленивые операции над множествами в C++ я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="В публикации Ленивые операции над множествами в C++ я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="В публикации Ленивые операции над множествами в C++ я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/585160/933c9f6b4a6eeb4897e5b727ac2805fb/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/585160/933c9f6b4a6eeb4897e5b727ac2805fb/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/585160/933c9f6b4a6eeb4897e5b727ac2805fb/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/585160/933c9f6b4a6eeb4897e5b727ac2805fb/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/585160/933c9f6b4a6eeb4897e5b727ac2805fb/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="585160" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-25T10:47:15.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/585160/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/585160/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/585160/933c9f6b4a6eeb4897e5b727ac2805fb/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/izvolov/" title="izvolov" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_pink"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/izvolov/" class="tm-user-info__username">
+      izvolov
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-25T10:47:15.000Z" title="2021-10-25, 13:47">сегодня в 13:47</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Ленивые диапазоны и стирание типов</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><p>В публикации <a href="https://habr.com/ru/post/547002/">Ленивые операции над множествами в C++</a> я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие операции удобными в использовании.</p><br/>
+<p>Один из основных моментов в интерфейсе ленивых операций над диапазонами — это возможность следующей записи</p><br/>
+<pre><code class="cpp">burst::merge(std::tie(range1, range2, ...));</code></pre><br/>
+<p>То есть возможность работать с произвольным набором исходных диапазонов.</p><br/>
+<p>В коде это будет выглядеть как-то так:</p><br/>
+<pre><code class="cpp">const auto odd = std::vector{1, 3, 5, 7};
+const auto even = std::list{0, 2, 4, 6, 8};
+
+const auto merged_range = burst::merge(std::tie(odd, even));
+
+const auto expected = {0, 1, 2, 3, 4, 5, 6, 7, 8};
+assert(merged_range == expected);</code></pre><br/>
+<p>Почему же это так важно, и что стоит за этой записью?</p><br/>
+<p>Ответ на вопрос "почему это важно" понятен. Во-первых, это красиво. Кроме того, удобно.<br/>
+А вот что за этим стоит — и есть суть данной публикации.</p><a name="habracut"></a><br/>
+<a name="contents"></a><br/>
+<h2>Содержание</h2><br/>
+<ol>
+<li><a href="#motivation">Проблематика</a></li>
+<li><a href="#range-erasure">Стирание типа диапазона</a></li>
+<li><a href="#do-please">Сделай. Пожалуйста</a></li>
+<li><a href="#range-vector">Массив диапазонов</a></li>
+<li><a href="#owning-range">Диапазон из контейнера</a></li>
+<li><a href="#bringing-together">Собираем всё вместе</a></li>
+<li><a href="#stdtie">std::tie</a></li>
+<li><a href="#conclusion">Заключение</a></li>
+<li><a href="#links">Ссылки</a></li>
+</ol><br/>
+<a name="motivation"></a><br/>
+<h2><a href="#contents">Проблематика</a></h2><br/>
+<p>Ключевой момент дизайна ленивых итераторов над диапазонами (см. <a href="https://habr.com/ru/post/547002/#fast-creation">Дизайн->Быстрое копирование</a>) — это их легковесность. Если коротко — в итераторе не лежит ничего лишнего, кроме пары других итераторов.</p><br/>
+<p>Это даёт гибкость, но и накладывает определённые ограничения.</p><br/>
+<p>Допустим, мы хотим слить несколько разнотипных диапазонов. Но под капотом у итератора слияния сидит алгоритм, который хранит сливаемые диапазоны в одном контейнере и может переупорядочивать их (см. <a href="https://habr.com/ru/post/547002/#merge-algorithm">Алгоритм слияния</a>).<br/>
+Хранить в одном контейнере разнотипные объекты можно (например, использовать <a href="https://en.cppreference.com/w/cpp/utility/variant" rel="nofollow noopener noreferrer">std::variant</a> или <a href="https://habr.com/ru/post/302372/">динамический кортеж</a>), но в нашем случае довольно накладно. Поэтому нужно привести их к одному типу.</p><br/>
+<blockquote>— Но как, Холмс?<br/>
+<br/>
+— Элементарно, мой дорогой Ватсон. Использовать стирание типов.</blockquote><br/>
+<a name="range-erasure"></a><br/>
+<h2><a href="#contents">Стирание типа диапазона</a></h2><br/>
+<p>Канонический пример стирания типов — <a href="https://en.cppreference.com/w/cpp/utility/any" rel="nofollow noopener noreferrer"><code>std::any</code></a>.<br/>
+Наш "стёртый" диапазон — это <code>any</code>-диапазон. Собственно, в Бусте он так и называется — <a href="https://www.boost.org/doc/libs/1_67_0/libs/range/doc/html/range/reference/ranges/any_range.html" rel="nofollow noopener noreferrer"><code>boost::any_range</code></a>.</p><br/>
+<p>Для приведения разных диапазонов к единому типу нужно:</p><br/>
+<ol>
+<li>Найти минимальную категорию из категорий исходных диапазонов;</li>
+<li>Выделить тип итерируемых элементов;</li>
+<li>Создать <code>any</code>-диапазон, который знает только свою категорию и тип итерируемых элементов.</li>
+</ol><br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Стирание типов на пальцах</b>
+                        <div class="spoiler_text"><p>Если совсем по-простому, стирание типов — это механизм, который позволяет "потерять" тип объекта на этапе компиляции, но "запомнить" этот тип в обработчике, который будет вызван когда-нибудь потом.</p><br/>
+<pre><code class="cpp">#include &lt;iostream>
+#include &lt;string>
+
+template &lt;typename T>
+void handle (const void * erased_object)
+{
+    std::cout &lt;&lt; *static_cast&lt;const T *>(erased_object) &lt;&lt; std::endl;
+}
+
+struct erased_t
+{
+    // Обработчик принимает указатель на void.
+    using handler_type = void (*) (const void *);
+
+    const void * object;
+    handler_type handler;
+};
+
+template &lt;typename T>
+erased_t erase (const T &amp; object)
+{
+    // Запомнили указатель на объект и нужный ему обработчик.
+    return {&amp;object, &amp;handle&lt;T>};
+}
+
+int main ()
+{
+    auto s = std::string("123");
+
+    // Стёрли тип.
+    auto erased = erase(s);
+
+    // ...
+    // Много кода.
+    // ...
+
+    // Вызвали запомненный обработчик.
+    erased.handler(erased.object);
+}
+</code></pre></div>
+                    </div><br/>
+<a name="do-please"></a><br/>
+<h2><a href="#contents">Сделай. Пожалуйста</a></h2><br/>
+<p>Итак, у нас есть возможность стирать типы диапазонов. Напишем функцию <a href="https://github.com/izvolov/burst/blob/master/include/burst/iterator/detail/uniform_range_tuple_please.hpp#L61" rel="nofollow noopener noreferrer"><code>uniform_range_tuple_please</code></a>, которая из кортежа ссылок на различные диапазоны должна сделать кортеж ссылок на одинаковые диапазоны.</p><br/>
+<blockquote>Тут я использую идиому, которую называю "please" (если у неё есть какое-то общераспространённое название, напишите в комментариях, пожалуйста). Заключается она в том, что некая функция делает что-то только в том случае, если это требуется. А если не требуется, то возвращает то же, что получила на входе.</blockquote><br/>
+<pre><code class="cpp">template &lt;typename... Ranges>
+auto uniform_range_tuple_please (std::tuple&lt;Ranges &amp;...> ranges)
+{
+    return uniform_range_tuple_please_impl(ranges, are_same&lt;Ranges...>{});
+}</code></pre><br/>
+<p>Если изначальные кортежи неодинаковые, то мы их приводим к единому типу.</p><br/>
+<pre><code class="cpp">template &lt;typename... Ranges>
+auto uniform_range_tuple_please_impl (std::tuple&lt;Ranges &amp;...> ranges, std::false_type)
+{
+    static_assert(not are_same_v&lt;Ranges...>, "");
+    using iterator_category = minimum_category_t&lt;range_category_t&lt;Ranges>...>;
+    using boost_traversal =
+        typename boost::iterator_category_to_traversal&lt;iterator_category>::type;
+    return by_all(to_any_range&lt;boost_traversal>, ranges);
+}</code></pre><br/>
+<p>Если же они изначально одинаковые, то ничего делать не нужно. Возвращаем исходный объект.</p><br/>
+<pre><code class="cpp">template &lt;typename... Ranges>
+auto uniform_range_tuple_please_impl (std::tuple&lt;Ranges &amp;...> ranges, std::true_type)
+{
+    static_assert(are_same_v&lt;Ranges...>, "");
+    return ranges;
+}</code></pre><br/>
+<a name="range-vector"></a><br/>
+<h2><a href="#contents">Массив диапазонов</a></h2><br/>
+<p>После того, как исходные диапазоны были приведены к единому типу, нужно их сложить в контейнер. Здесь просто складываем их в <code>std::vector</code>. Для этого я использую самописную утилиту <a href="https://github.com/izvolov/burst/blob/master/include/burst/range/make_range_vector.hpp#L18" rel="nofollow noopener noreferrer"><code>burst::make_range_vector</code></a>. Всё.</p><br/>
+<a name="owning-range"></a><br/>
+<h2><a href="#contents">Диапазон из контейнера</a></h2><br/>
+<p>Дальше требуется ещё одна хитрость.</p><br/>
+<p>Как уже было сказано, в итераторе слияния должна храниться только пара итераторов на контейнер, в котором лежат сливаемые диапазоны. А после предыдущего шага у нас на руках как раз-таки контейнер. И его нужно, с одной стороны, где-то сохранить (он должен жить, пока жив итератор слияния), а с другой — в итераторе слияния должны быть только итераторы на начало и конец нашего контейнера.</p><br/>
+<p>Для этого есть <a href="https://github.com/izvolov/burst/blob/master/include/burst/iterator/owning_iterator.hpp#L20" rel="nofollow noopener noreferrer">владеющий итератор</a>. Он хранит итерируемый контейнер (в умном указателе) и итератор этого контейнера. Время жизни итерируемого контейнера ограничено созданием первого и уничтожением последнего экземпляров владеющего итератора. Кроме того, владеющий итератор сохраняет все характеристики итератора хранимого контейнера. Все действия с ним — продвижение, разыменование, сравнение — производятся так, как будто бы с итератором хранимого контейнера.</p><br/>
+<a name="bringing-together"></a><br/>
+<h2><a href="#contents">Собираем всё вместе</a></h2><br/>
+<p>А теперь осталось только взять всё, что у нас имеется, и написать нужную обвязку:</p><br/>
+<pre><code class="cpp">template &lt;typename ... Ranges>
+auto make_merge_iterator (std::tuple&lt;Ranges &amp;...> ranges)
+{
+    auto common_ranges = detail::uniform_range_tuple_please(ranges);
+    return make_merge_iterator(own_as_range(burst::apply(make_range_vector, common_ranges)));
+}</code></pre><br/>
+<a name="stdtie"></a><br/>
+<h2><a href="#contents">std::tie</a></h2><br/>
+<p>Ленивый итератор над диапазонами оперирует только ссылками и итераторами на исходные диапазоны. Поэтому нужно, чтобы был внешний (по отношению к нашему ленивому итератору) владелец этих диапазонов.</p><br/>
+<p>Я долго думал над тем, какой именно интерфейс нужно предоставить для того, чтобы передавать произвольный набор исходных диапазонов: то ли создать специальную структуру, то ли использовать вариадик и <code>enable_if</code>-магию. Но потом понял, что в стандартной библиотеке уже есть то, что мне нужно: <code>std::tie</code>.</p><br/>
+<p>Во-первых, <code>std::tie</code> создаёт кортеж. Во-вторых, запись получается достаточно лаконичной. Ну и в-третьих, <code>std::tie</code> принимает только lvalue, то есть временные объекты он принимать откажется. Значит, тем, что мы передаём в <code>std::tie</code>, уже кто-то владеет, и объект не умрёт в процессе слияния. Никаких висячих ссылок.</p><br/>
+<a name="conclusion"></a><br/>
+<h2><a href="#contents">Заключение</a></h2><br/>
+<p>Мы получили удобный интерфейс для ленивого слияния (или любой другой операции над множествами) и достаточно эффективную реализацию этого механизма.</p><br/>
+<p>При этом, если для нас недопустимы накладные расходы на, например, <code>std::shared_ptr</code> в недрах <code>burst::owning_iterator</code>, то мы по-прежнему можем <a href="https://habr.com/ru/post/547002/#create-range">создать диапазон для слияния руками</a>.</p><br/>
+<a name="links"></a><br/>
+<h2><a href="#contents">Ссылки</a></h2><br/>
+<ul>
+<li><a href="https://en.cppreference.com/w/cpp/utility/tuple/tie" rel="nofollow noopener noreferrer"><code>std::tie</code></a></li>
+<li><a href="https://en.cppreference.com/w/cpp/utility/any" rel="nofollow noopener noreferrer"><code>std::any</code></a></li>
+<li><a href="https://www.boost.org/doc/libs/1_67_0/libs/range/doc/html/range/reference/ranges/any_range.html" rel="nofollow noopener noreferrer"><code>boost::any_range</code></a></li>
+<li><a href="https://github.com/izvolov/burst#%D0%BB%D0%B5%D0%BD%D0%B8%D0%B2%D1%8B%D0%B5-%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F-%D0%BD%D0%B0%D0%B4-%D0%B4%D0%B8%D0%B0%D0%BF%D0%B0%D0%B7%D0%BE%D0%BD%D0%B0%D0%BC%D0%B8" rel="nofollow noopener noreferrer">Ленивые операции над диапазонами в библиотеке Burst</a></li>
+</ul></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bc%2B%2B%5D" class="tm-tags-list__link">c++</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BB%D0%B5%D0%BD%D0%B8%D0%B2%D1%8B%D0%B5%20%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F%5D" class="tm-tags-list__link">ленивые вычисления</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B8%D1%82%D0%B5%D1%80%D0%B0%D1%82%D0%BE%D1%80%D1%8B%5D" class="tm-tags-list__link">итераторы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B4%D0%B8%D0%B0%D0%BF%D0%B0%D0%B7%D0%BE%D0%BD%D1%8B%5D" class="tm-tags-list__link">диапазоны</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D0%BB%D0%B3%D0%BE%D1%80%D0%B8%D1%82%D0%BC%D1%8B%5D" class="tm-tags-list__link">алгоритмы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%81%D0%BB%D0%B8%D1%8F%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">слияние</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 5: ↑5 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 5: ↑5 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+5</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">606</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    13
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/izvolov/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_pink"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 150 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    85.5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/izvolov/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @izvolov
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Декомпозитор</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://gitlab.com/star-system/proxima" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://github.com/izvolov/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Github
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/585160/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментировать 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/585160/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/585160/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"585160":{"id":"585160","timePublished":"2021-10-25T10:47:15+00:00","isCorporative":false,"lang":"ru","titleHtml":"Ленивые диапазоны и стирание типов","leadData":{"textHtml":"\u003Cp\u003EВ публикации \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547002\u002F\"\u003EЛенивые операции над множествами в C++\u003C\u002Fa\u003E я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие операции удобными в использовании.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EОдин из основных моментов в интерфейсе ленивых операций над диапазонами — это возможность следующей записи\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eburst::merge(std::tie(range1, range2, ...));\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u003E\r\n\u003Cp\u003EТо есть возможность работать с произвольным набором исходных диапазонов.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EВ коде это будет выглядеть как-то так:\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Econst auto odd = std::vector{1, 3, 5, 7};\nconst auto even = std::list{0, 2, 4, 6, 8};\n\nconst auto merged_range = burst::merge(std::tie(odd, even));\n\nconst auto expected = {0, 1, 2, 3, 4, 5, 6, 7, 8};\nassert(merged_range == expected);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u003E\r\n\u003Cp\u003EПочему же это так важно, и что стоит за этой записью?\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EОтвет на вопрос &quot;почему это важно&quot; понятен. Во-первых, это красиво. Кроме того, удобно.\u003Cbr\u003E\r\nА вот что за этим стоит — и есть суть данной публикации.\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":85.5,"votesCount":150},"rating":5,"relatedData":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fgitlab.com\u002Fstar-system\u002Fproxima","value":"https:\u002F\u002Fgitlab.com\u002Fstar-system\u002Fproxima"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Fizvolov\u002F","value":"izvolov"}],"authorContacts":[{"title":"Сайт","url":"https:\u002F\u002Fgitlab.com\u002Fstar-system\u002Fproxima","value":"https:\u002F\u002Fgitlab.com\u002Fstar-system\u002Fproxima"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Fizvolov\u002F","value":"izvolov"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1135572","alias":"izvolov","fullname":null,"avatarUrl":null,"speciality":"Декомпозитор"},"statistics":{"commentsCount":0,"favoritesCount":13,"readingCount":606,"score":5,"votesCount":5},"hubs":[{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EВ публикации \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547002\u002F\"\u003EЛенивые операции над множествами в C++\u003C\u002Fa\u003E я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие операции удобными в использовании.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОдин из основных моментов в интерфейсе ленивых операций над диапазонами — это возможность следующей записи\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Eburst::merge(std::tie(range1, range2, ...));\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТо есть возможность работать с произвольным набором исходных диапазонов.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ коде это будет выглядеть как-то так:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Econst auto odd = std::vector{1, 3, 5, 7};\nconst auto even = std::list{0, 2, 4, 6, 8};\n\nconst auto merged_range = burst::merge(std::tie(odd, even));\n\nconst auto expected = {0, 1, 2, 3, 4, 5, 6, 7, 8};\nassert(merged_range == expected);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПочему же это так важно, и что стоит за этой записью?\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОтвет на вопрос \"почему это важно\" понятен. Во-первых, это красиво. Кроме того, удобно.\u003Cbr\u002F\u003E\r\nА вот что за этим стоит — и есть суть данной публикации.\u003C\u002Fp\u003E\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"contents\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EСодержание\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003E\u003Ca href=\"#motivation\"\u003EПроблематика\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#range-erasure\"\u003EСтирание типа диапазона\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#do-please\"\u003EСделай. Пожалуйста\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#range-vector\"\u003EМассив диапазонов\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#owning-range\"\u003EДиапазон из контейнера\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#bringing-together\"\u003EСобираем всё вместе\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#stdtie\"\u003Estd::tie\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#conclusion\"\u003EЗаключение\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"#links\"\u003EСсылки\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"motivation\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003EПроблематика\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКлючевой момент дизайна ленивых итераторов над диапазонами (см. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547002\u002F#fast-creation\"\u003EДизайн-\u003EБыстрое копирование\u003C\u002Fa\u003E) — это их легковесность. Если коротко — в итераторе не лежит ничего лишнего, кроме пары других итераторов.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЭто даёт гибкость, но и накладывает определённые ограничения.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДопустим, мы хотим слить несколько разнотипных диапазонов. Но под капотом у итератора слияния сидит алгоритм, который хранит сливаемые диапазоны в одном контейнере и может переупорядочивать их (см. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547002\u002F#merge-algorithm\"\u003EАлгоритм слияния\u003C\u002Fa\u003E).\u003Cbr\u002F\u003E\r\nХранить в одном контейнере разнотипные объекты можно (например, использовать \u003Ca href=\"https:\u002F\u002Fen.cppreference.com\u002Fw\u002Fcpp\u002Futility\u002Fvariant\" rel=\"nofollow noopener noreferrer\"\u003Estd::variant\u003C\u002Fa\u003E или \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F302372\u002F\"\u003Eдинамический кортеж\u003C\u002Fa\u003E), но в нашем случае довольно накладно. Поэтому нужно привести их к одному типу.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003E— Но как, Холмс?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n— Элементарно, мой дорогой Ватсон. Использовать стирание типов.\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"range-erasure\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003EСтирание типа диапазона\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКанонический пример стирания типов — \u003Ca href=\"https:\u002F\u002Fen.cppreference.com\u002Fw\u002Fcpp\u002Futility\u002Fany\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003Estd::any\u003C\u002Fcode\u003E\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\nНаш \"стёртый\" диапазон — это \u003Ccode\u003Eany\u003C\u002Fcode\u003E-диапазон. Собственно, в Бусте он так и называется — \u003Ca href=\"https:\u002F\u002Fwww.boost.org\u002Fdoc\u002Flibs\u002F1_67_0\u002Flibs\u002Frange\u002Fdoc\u002Fhtml\u002Frange\u002Freference\u002Franges\u002Fany_range.html\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003Eboost::any_range\u003C\u002Fcode\u003E\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля приведения разных диапазонов к единому типу нужно:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EНайти минимальную категорию из категорий исходных диапазонов;\u003C\u002Fli\u003E\r\n\u003Cli\u003EВыделить тип итерируемых элементов;\u003C\u002Fli\u003E\r\n\u003Cli\u003EСоздать \u003Ccode\u003Eany\u003C\u002Fcode\u003E-диапазон, который знает только свою категорию и тип итерируемых элементов.\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EСтирание типов на пальцах\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E\u003Cp\u003EЕсли совсем по-простому, стирание типов — это механизм, который позволяет \"потерять\" тип объекта на этапе компиляции, но \"запомнить\" этот тип в обработчике, который будет вызван когда-нибудь потом.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E#include &lt;iostream\u003E\n#include &lt;string\u003E\n\ntemplate &lt;typename T\u003E\nvoid handle (const void * erased_object)\n{\n    std::cout &lt;&lt; *static_cast&lt;const T *\u003E(erased_object) &lt;&lt; std::endl;\n}\n\nstruct erased_t\n{\n    \u002F\u002F Обработчик принимает указатель на void.\n    using handler_type = void (*) (const void *);\n\n    const void * object;\n    handler_type handler;\n};\n\ntemplate &lt;typename T\u003E\nerased_t erase (const T &amp; object)\n{\n    \u002F\u002F Запомнили указатель на объект и нужный ему обработчик.\n    return {&amp;object, &amp;handle&lt;T\u003E};\n}\n\nint main ()\n{\n    auto s = std::string(\"123\");\n\n    \u002F\u002F Стёрли тип.\n    auto erased = erase(s);\n\n    \u002F\u002F ...\n    \u002F\u002F Много кода.\n    \u002F\u002F ...\n\n    \u002F\u002F Вызвали запомненный обработчик.\n    erased.handler(erased.object);\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"do-please\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003EСделай. Пожалуйста\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИтак, у нас есть возможность стирать типы диапазонов. Напишем функцию \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fizvolov\u002Fburst\u002Fblob\u002Fmaster\u002Finclude\u002Fburst\u002Fiterator\u002Fdetail\u002Funiform_range_tuple_please.hpp#L61\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003Euniform_range_tuple_please\u003C\u002Fcode\u003E\u003C\u002Fa\u003E, которая из кортежа ссылок на различные диапазоны должна сделать кортеж ссылок на одинаковые диапазоны.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003EТут я использую идиому, которую называю \"please\" (если у неё есть какое-то общераспространённое название, напишите в комментариях, пожалуйста). Заключается она в том, что некая функция делает что-то только в том случае, если это требуется. А если не требуется, то возвращает то же, что получила на входе.\u003C\u002Fblockquote\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;typename... Ranges\u003E\nauto uniform_range_tuple_please (std::tuple&lt;Ranges &amp;...\u003E ranges)\n{\n    return uniform_range_tuple_please_impl(ranges, are_same&lt;Ranges...\u003E{});\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли изначальные кортежи неодинаковые, то мы их приводим к единому типу.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;typename... Ranges\u003E\nauto uniform_range_tuple_please_impl (std::tuple&lt;Ranges &amp;...\u003E ranges, std::false_type)\n{\n    static_assert(not are_same_v&lt;Ranges...\u003E, \"\");\n    using iterator_category = minimum_category_t&lt;range_category_t&lt;Ranges\u003E...\u003E;\n    using boost_traversal =\n        typename boost::iterator_category_to_traversal&lt;iterator_category\u003E::type;\n    return by_all(to_any_range&lt;boost_traversal\u003E, ranges);\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЕсли же они изначально одинаковые, то ничего делать не нужно. Возвращаем исходный объект.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;typename... Ranges\u003E\nauto uniform_range_tuple_please_impl (std::tuple&lt;Ranges &amp;...\u003E ranges, std::true_type)\n{\n    static_assert(are_same_v&lt;Ranges...\u003E, \"\");\n    return ranges;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"range-vector\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003EМассив диапазонов\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПосле того, как исходные диапазоны были приведены к единому типу, нужно их сложить в контейнер. Здесь просто складываем их в \u003Ccode\u003Estd::vector\u003C\u002Fcode\u003E. Для этого я использую самописную утилиту \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fizvolov\u002Fburst\u002Fblob\u002Fmaster\u002Finclude\u002Fburst\u002Frange\u002Fmake_range_vector.hpp#L18\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003Eburst::make_range_vector\u003C\u002Fcode\u003E\u003C\u002Fa\u003E. Всё.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"owning-range\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003EДиапазон из контейнера\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДальше требуется ещё одна хитрость.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EКак уже было сказано, в итераторе слияния должна храниться только пара итераторов на контейнер, в котором лежат сливаемые диапазоны. А после предыдущего шага у нас на руках как раз-таки контейнер. И его нужно, с одной стороны, где-то сохранить (он должен жить, пока жив итератор слияния), а с другой — в итераторе слияния должны быть только итераторы на начало и конец нашего контейнера.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля этого есть \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fizvolov\u002Fburst\u002Fblob\u002Fmaster\u002Finclude\u002Fburst\u002Fiterator\u002Fowning_iterator.hpp#L20\" rel=\"nofollow noopener noreferrer\"\u003Eвладеющий итератор\u003C\u002Fa\u003E. Он хранит итерируемый контейнер (в умном указателе) и итератор этого контейнера. Время жизни итерируемого контейнера ограничено созданием первого и уничтожением последнего экземпляров владеющего итератора. Кроме того, владеющий итератор сохраняет все характеристики итератора хранимого контейнера. Все действия с ним — продвижение, разыменование, сравнение — производятся так, как будто бы с итератором хранимого контейнера.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"bringing-together\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003EСобираем всё вместе\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EА теперь осталось только взять всё, что у нас имеется, и написать нужную обвязку:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Etemplate &lt;typename ... Ranges\u003E\nauto make_merge_iterator (std::tuple&lt;Ranges &amp;...\u003E ranges)\n{\n    auto common_ranges = detail::uniform_range_tuple_please(ranges);\n    return make_merge_iterator(own_as_range(burst::apply(make_range_vector, common_ranges)));\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"stdtie\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003Estd::tie\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЛенивый итератор над диапазонами оперирует только ссылками и итераторами на исходные диапазоны. Поэтому нужно, чтобы был внешний (по отношению к нашему ленивому итератору) владелец этих диапазонов.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЯ долго думал над тем, какой именно интерфейс нужно предоставить для того, чтобы передавать произвольный набор исходных диапазонов: то ли создать специальную структуру, то ли использовать вариадик и \u003Ccode\u003Eenable_if\u003C\u002Fcode\u003E-магию. Но потом понял, что в стандартной библиотеке уже есть то, что мне нужно: \u003Ccode\u003Estd::tie\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВо-первых, \u003Ccode\u003Estd::tie\u003C\u002Fcode\u003E создаёт кортеж. Во-вторых, запись получается достаточно лаконичной. Ну и в-третьих, \u003Ccode\u003Estd::tie\u003C\u002Fcode\u003E принимает только lvalue, то есть временные объекты он принимать откажется. Значит, тем, что мы передаём в \u003Ccode\u003Estd::tie\u003C\u002Fcode\u003E, уже кто-то владеет, и объект не умрёт в процессе слияния. Никаких висячих ссылок.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"conclusion\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003EЗаключение\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EМы получили удобный интерфейс для ленивого слияния (или любой другой операции над множествами) и достаточно эффективную реализацию этого механизма.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПри этом, если для нас недопустимы накладные расходы на, например, \u003Ccode\u003Estd::shared_ptr\u003C\u002Fcode\u003E в недрах \u003Ccode\u003Eburst::owning_iterator\u003C\u002Fcode\u003E, то мы по-прежнему можем \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F547002\u002F#create-range\"\u003Eсоздать диапазон для слияния руками\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ca name=\"links\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003E\u003Ca href=\"#contents\"\u003EСсылки\u003C\u002Fa\u003E\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fen.cppreference.com\u002Fw\u002Fcpp\u002Futility\u002Ftuple\u002Ftie\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003Estd::tie\u003C\u002Fcode\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fen.cppreference.com\u002Fw\u002Fcpp\u002Futility\u002Fany\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003Estd::any\u003C\u002Fcode\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fwww.boost.org\u002Fdoc\u002Flibs\u002F1_67_0\u002Flibs\u002Frange\u002Fdoc\u002Fhtml\u002Frange\u002Freference\u002Franges\u002Fany_range.html\" rel=\"nofollow noopener noreferrer\"\u003E\u003Ccode\u003Eboost::any_range\u003C\u002Fcode\u003E\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fizvolov\u002Fburst#%D0%BB%D0%B5%D0%BD%D0%B8%D0%B2%D1%8B%D0%B5-%D0%B2%D1%8B%D1%87%D0%B8%D1%81%D0%BB%D0%B5%D0%BD%D0%B8%D1%8F-%D0%BD%D0%B0%D0%B4-%D0%B4%D0%B8%D0%B0%D0%BF%D0%B0%D0%B7%D0%BE%D0%BD%D0%B0%D0%BC%D0%B8\" rel=\"nofollow noopener noreferrer\"\u003EЛенивые операции над диапазонами в библиотеке Burst\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"c++"},{"titleHtml":"ленивые вычисления"},{"titleHtml":"итераторы"},{"titleHtml":"диапазоны"},{"titleHtml":"алгоритмы"},{"titleHtml":"слияние"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F585160\u002F933c9f6b4a6eeb4897e5b727ac2805fb\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F585160\u002F933c9f6b4a6eeb4897e5b727ac2805fb\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F585160\\\u002F\"},\"headline\":\"Ленивые диапазоны и стирание типов\",\"datePublished\":\"2021-10-25T13:47:15+03:00\",\"dateModified\":\"2021-10-25T14:17:54+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"izvolov\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"В публикации Ленивые операции над множествами в C++ я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее расс...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F585160\\\u002F#post-content-body\",\"about\":[\"h_programming\",\"h_cpp\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F585160\\\u002F933c9f6b4a6eeb4897e5b727ac2805fb\\\u002F\"]}","metaDescription":"В публикации Ленивые операции над множествами в C++ я показал, как можно проектировать ленивые операции над несколькими диапазонами. Теперь я хочу подробнее рассказать о важном решении, делающем такие...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"programming,cpp"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

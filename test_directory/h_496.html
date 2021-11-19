@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>[Пятничное] Сколько стоит держать 100 запросов в секунду в Azure на .NET Core MVC и MSSQL / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583084\/"},"headline":"[Пятничное] Сколько стоит держать 100 запросов в секунду в Azure на .NET Core MVC и MSSQL","datePublished":"2021-10-15T10:03:52+03:00","dateModified":"2021-10-18T20:23:51+03:00","author":{"@type":"Person","name":"Drag13"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность баз...","url":"https:\/\/habr.com\/ru\/post\/583084\/#post-content-body","about":["h_hi","h_webdev","h_cloud_computing","h_mssql","h_web_testing","f_develop","f_admin"],"image":["https:\/\/habrastorage.org\/webt\/6h\/56\/vg\/6h56vgajsm1p51c-qqga5j0fwc4.jpeg","https:\/\/habrastorage.org\/webt\/t6\/pn\/fl\/t6pnfl5a-ltnt5-k84x9lhdhtam.png","https:\/\/habrastorage.org\/webt\/2o\/hn\/zk\/2ohnzk1dc4_alhara5sptfgvfjg.png","https:\/\/habrastorage.org\/webt\/2w\/hz\/id\/2whzidblbdqpspapgeh0vsozyzm.png","https:\/\/habrastorage.org\/webt\/km\/da\/_m\/kmda_m2uyzbjjmhrcvducljumhm.png","https:\/\/habrastorage.org\/webt\/d9\/w7\/mz\/d9w7mzciusv5oo_wdi4jrhkn2pi.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="[Пятничное] Сколько стоит держать 100 запросов в секунду в Azure на .NET Core MVC и MSSQL" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="[Пятничное] Сколько стоит держать 100 запросов в секунду в Azure на .NET Core MVC и MSSQL" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="[Пятничное] Сколько стоит держать 100 запросов в секунду в Azure на .NET Core MVC и MSSQL" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/583084/3bd9f157b5cb4c11d8793971b4781ff3/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/583084/3bd9f157b5cb4c11d8793971b4781ff3/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/583084/3bd9f157b5cb4c11d8793971b4781ff3/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/583084/3bd9f157b5cb4c11d8793971b4781ff3/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/583084/3bd9f157b5cb4c11d8793971b4781ff3/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583084" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-15T07:03:52.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583084/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583084/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/583084/3bd9f157b5cb4c11d8793971b4781ff3/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Drag13/" title="Drag13" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/abc/4a4/fa0/abc4a4fa0e705dc40b55583a42921419.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Drag13/" class="tm-user-info__username">
+      Drag13
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-15T07:03:52.000Z" title="2021-10-15, 10:03">15  октября   в 10:03</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>[Пятничное] Сколько стоит держать 100 запросов в секунду в Azure на .NET Core MVC и MSSQL</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/hi/" class="tm-article-snippet__hubs-item-link"><span>Высокая производительность</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/webdev/" class="tm-article-snippet__hubs-item-link"><span>Разработка веб-сайтов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cloud_computing/" class="tm-article-snippet__hubs-item-link"><span>Облачные вычисления</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/mssql/" class="tm-article-snippet__hubs-item-link"><span>Microsoft SQL Server</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/web_testing/" class="tm-article-snippet__hubs-item-link"><span>Тестирование веб-сервисов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><p><img src="https://habrastorage.org/r/w780q1/webt/6h/56/vg/6h56vgajsm1p51c-qqga5j0fwc4.jpeg" alt="How much does it cost to handle 100RPS with .NET MVC and Azure" data-src="https://habrastorage.org/webt/6h/56/vg/6h56vgajsm1p51c-qqga5j0fwc4.jpeg" data-blurred="true"/></p><br/>
+<p>Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его словам, они провозились почти все выходные, но добиться приемлемого времени отклика от БД им не удалось, несмотря на все попытки. Даже переход на существенно более дорогой тариф не принес ощутимых результатов. Помню, я тогда еще подумал, что было бы неплохо протестировать все это самому, но времени не было и идея осталась не реализованной, хотя сам разговор я запомнил хорошо.</p><br/>
+<p>И вот, спустя пять лет случается флешбэк — выходит <a href="https://habr.com/ru/post/578192/">статья о нагрузочном тестировании Azure</a>, в которой автор добивается 4 запроса в секунду за 250$ в месяц. Тут уж я просто не мог пройти мимо. Ведь не может такого быть, чтобы второе по величине облако давало так мало за не самые маленькие деньги, правильно? Поэтому я очень быстро набросал простейшее веб приложение на .NET, накатил базу StackOverflow за 2010 год, запустил туда скромную нагрузку в 100 RPS и стал судорожно протирать свои глаза. Даже такую нагрузку мое приложение не держало, причем вообще. 50 RPS тоже оказались слишком высокой планкой, как, впрочем, и 25. И тут я понял, что так дело не пойдет — к вопросу надо подходить системно.</p><br/>
+<p>Итак, кому интересно сколько стоит 100 RPS в Azure с .NET Core MVC + .NET 5 + MSSQL на Kestrel — берите кофей и прошу под кат.</p><a name="habracut"></a><br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Дисклеймер</b>
+                        <div class="spoiler_text"><p>Статья написана в пятничном формате и не претендует на абсолютную полноту и достоверность. И, хотя я и пытался получить наиболее точные результаты, они, естественно, могут отличаться от вашего случая. Поэтому я прошу не делать сколь-либо далеко идущих выводов на основании данной статьи, а воспринимать ее скорее, как информацию к размышлению.</p></div>
+                    </div><br/>
+<p>Перед тем как начинать тестирование, неплохо было бы понимать, что мы будем тестировать, как мы будем тестировать и чем. Если этап подготовки вам не слишком интересен, смело пропускайте следующую часть.</p><br/>
+<h2 id="chto-testiruem">Что тестируем</h2><br/>
+<p>Для тестирования я создал <a href="https://github.com/Drag13/AzurePerformanceTest" rel="nofollow noopener noreferrer">.NET Core 5 MVC</a> приложение с двумя Razor страницами. Первая страница практически пуста, без логики, с минимальной разметкой и CSS, который добавляется по умолчанию. С помощью этой страницы я хочу узнать сколько RPS приложение держит в принципе. Вторая страница содержит список из 25 пользователей имена (DisplayName) которых начинаются со случайно выбранных трех букв английского алфавита. Пользователей я буду брать из базы данных <a href="https://downloads.brentozar.com/StackOverflow2010.7z" rel="nofollow noopener noreferrer">StackOverflow за 2010 год</a>, всего в ней насчитывается 299_398 пользователей, что не очень много. Дополнительно я создал индекс на соответствующую колонку.</p><br/>
+<p>В коде это выглядит примерно так:</p><br/>
+<pre><code class="cs"> var size = _symbols.Length; 
+ var randomSymbols = new char[] {
+                  _symbols[_rnd.Next(size)]
+                , _symbols[_rnd.Next(size)]
+                , _symbols[_rnd.Next(size)]
+                };
+
+var key = new string(randomSymbols);
+
+var users = _ctx.Users
+                            .Where(x => x.DisplayName.StartsWith(key))
+                            .OrderBy(x => x.DisplayName)
+                            .Take(25)
+                            .ToArray();
+</code></pre><br/>
+<p>Тест немного искусственный, но сам сценарий поиска пользователя по имени (а не первичному ключу) вполне реален. Так что как некая попугаемерка тест подойдет.</p><br/>
+<h2 id="kak-testiruem">Как тестируем</h2><br/>
+<p>Тестировать я буду в два этапа. Сначала я запущу все локально, чтобы получить ориентировочные значения. После этого я задеплою проект в Azure и начну тестировать там, повышая или понижая мощность конфигурации пока не достигну 100 RPS. Характеристики моего ноутбука не самые топовые (Core i5-9400H @ 2.50GHz, 16GB RAM и SDD), так что будет интересно сравнить </p><br/>
+<p>Само тестирование будет идти по примерно следующему алгоритму:</p><br/>
+<ol>
+<li>Даем желаемую нагрузку</li>
+<li>Если приложение с нагрузкой справляется, фиксируем результат</li>
+<li>Если приложение с нагрузкой не справляется, уменьшаем нагрузку в два раза</li>
+<li>Если приложение справляется с уменьшенной нагрузкой — увеличиваем ее на ~25% и повторяем цикл до тех пор, пока не зафиксируем значительное проседание RPS, после чего фиксируем предыдущий результат.</li>
+<li>Если приложение не справляется с уменьшенной нагрузкой, снова уменьшаем ее в два раза и переходим в п. 4. Если после повторного уменьшения приложение все равно не справляется — фиксируем результат</li>
+</ol><br/>
+<p>Такой подход позволит нам более точно определить нагрузку, которую держит наше приложение. К тому же, я заметил, что после изменения тарифного плана базы данных производительность всегда падает (возможно умирает кэш самой БД или статистика). Подача нагрузки постепенно также нивелирует эту проблему.</p><br/>
+<h2 id="chem-testiruem">Чем тестируем</h2><br/>
+<p>Инструментов для тестирования немало — тут и <a href="https://gatling.io/" rel="nofollow noopener noreferrer">Gatling</a> и <a href="https://jmeter.apache.org/" rel="nofollow noopener noreferrer">JMeter</a>. Я же давно хотел попробовать <a href="https://github.com/PragmaticFlow/NBomber" rel="nofollow noopener noreferrer">NBomber</a> — очень простой фреймворк для нагрузочного тестирования, который написан на 100% <a href="https://fsharpforfunandprofit.com/" rel="nofollow noopener noreferrer">F#</a>. Как язык, F# мне давно нравится, и идея использовать его хоть как-то показалась мне очень заманчивой (спойлер — кода на F# было написано максимум десять строк, так что поиграться с F# так и не вышло)</p><br/>
+<p>Собственно, сам NBomber прост. Сначала мы описываем “шаги” нагрузочного тестирования, в которых указываем ресурсы, которые мы хотим "дернуть", а затем, на основе шагов, конфигурируем сценарий, указывая количество запросов и длительность тестирования.</p><br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Выглядит это примерно так (причем все взято из документации):</b>
+                        <div class="spoiler_text"><pre><code class="cs"> let step = Step.create("index.html", 
+                            timeout = seconds 5,
+                            clientFactory = HttpClientFactory.create(), 
+                            execute = fun context -> 
+                            Http.createRequest "GET" url
+                            |> Http.withHeader "Accept" "text/html"
+                            |> Http.send context)
+
+    let scenario = 
+        Scenario.create "simple_http" [step]       
+        |> Scenario.withWarmUpDuration(seconds 1)
+        |> Scenario.withLoadSimulations [
+                   InjectPerSec(rate = rate, during = seconds loadingTimeSeconds)
+               ]    </code></pre></div>
+                    </div><br/>
+<p>В результате мы получаем пять файлов — логи, результаты в текстовом прдеставлении, те же результаты в маркдаун, в csv и html с красивыми графиками</p><br/>
+<p><img src="/img/image-loader.svg" alt="красивое" data-src="https://habrastorage.org/webt/t6/pn/fl/t6pnfl5a-ltnt5-k84x9lhdhtam.png"/></p><br/>
+<p>От себя я написал какой-то унылый код, который парсит аргументы консольной строки в лоб, но гордиться тут особо нечем.</p><br/>
+<h2 id="u-menya-lokalno-vse-rabotaet">У меня локально все работает</h2><br/>
+<p>Перед тем как тестировать локально, не забудьте включить ноутбук в розетку. Это может улучшить результаты (если план потребления электроэнергии настроен на экономию батареи) и буквально не оставит вас с черным экраном, если батарея вдруг сядет. Звучит смешно, но все случается впервые.</p><br/>
+<p>Итак, я подключил ноут к электросети, стартовал приложение и открыл страничку, чтобы проверить приложение. Сюрпризов не было, страница с пользователями открывалась за 250-300мс. Убедившись, что все работает, я начал давать нагрузку на пустую страницу. И вот первый результат: NBomber работает, мы уверенно держим 1000 RPS:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>60000</code>, ok = <code>60000</code>, RPS = <code>1000</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>0.64</code>, mean = <code>152.91</code>, max = <code>857.91</code>, StdDev = <code>145.81</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>120.32</code>, 75% = <code>174.34</code>, 95% = <code>527.87</code>, 99% = <code>788.99</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Тут мне стало интересно, какой максимум я смогу выжать из своего ноута и это оказалось около 2000 RPS (на самом деле нет)</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>120000</code>, ok = <code>118669</code>, RPS = <code>1977.8</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>0.96</code>, mean = <code>250.03</code>, max = <code>5486.01</code>, StdDev = <code>460.46</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>176.26</code>, 75% = <code>259.71</code>, 95% = <code>454.14</code>, 99% = <code>3129.34</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>После этого мне пришлось приостановить тестирование, так как кулера уже гудели как шмели, и я начал опасаться троттлинга. Дав ноутбуку передохнуть, я начал тестировать страницу с пользователями. Давать 1000 RPS я как-то постеснялся и решил начать с сотни. Результат меня удивил — под нагрузкой в 100 RPS успешно завершилось всего 10% запросов:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>5561</code>, ok = <code>580</code>, RPS = <code>9.7</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>228.51</code>, mean = <code>3030.77</code>, max = <code>4965.96</code>, StdDev = <code>1223.88</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>3094.53</code>, 75% = <code>3872.77</code>, 95% = <code>4935.68</code>, 99% = <code>4968.45</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p> — Сюююююрприз — сказал бы мой ноутбук, если бы мог говорить, и добавил бы, что 100 RPS держать он не собирается. </p><br/>
+<p>Тут я понял, что совершил типичную ошибку дилетанта — тестирую дебаг версию да еще и подключился не к той базе данных (это была вторая база данных, без индекса). Позор и еще раз позор мне. Но лучше признавать свои ошибки чем гордо делать вид что так и должно быть.</p><br/>
+<p>Выбрав правильную БД, и запустив приложение в режиме релиза я смог добиться почти 150RPS:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>8976</code>, ok = <code>8976</code>, RPS = <code>149.6</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>24.44</code>, mean = <code>1080.12</code>, max = <code>2173.79</code>, StdDev = <code>399.85</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>1029.63</code>, 75% = <code>1117.18</code>, 95% = <code>2068.48</code>, 99% = <code>2146.3</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>На пустой странице, максимальное количество запросов в секунду которых удалось добиться, составило 2784 (релиз нам принес почти +40%, разница очевидна):</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>180000</code>, ok = <code>167058</code>, RPS = <code>2784.3</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>0.39</code>, mean = <code>339.22</code>, max = <code>7625.08</code>, StdDev = <code>1242.98</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>12.16</code>, 75% = <code>31.76</code>, 95% = <code>3411.97</code>, 99% = <code>6942.72</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Так что можем фиксировать результаты: локально мой ноутбук держит 2.7K RPS на пустой странице и 150 RPS на странице с выборкой пользователей из базы данных. Время двигаться к облакам, ведь там "все будет хорошо" (С)</p><br/>
+<h2 id="oblachno---tuchi-sguschayutsya">Облачно — тучи сгущаются</h2><br/>
+<p>Теперь, когда есть от чего отталкиваться, можно посмотреть, что предлагает Azure. Интересно же сравнить свое родное железо с тем, облачным.</p><br/>
+<p>Для начала нужно создать "Web App" — "слот" для размещения веб приложения и выбрать для него тариф. От тарифа зависит вычислительные мощности, которые мы сможем использовать и некоторые дополнительные возможности, например геобалансировку. Я взял самый дешевый тарифный план, который поддерживает выделенные ресурсы — B1 со следующими характеристиками:</p><br/>
+<ul>
+<li>Вычислительная мощность — 100 ACU</li>
+<li>Память — 1.75GB</li>
+<li>Цена — 32$</li>
+</ul><br/>
+<p>Что такое ACU — <a href="https://docs.microsoft.com/en-us/azure/virtual-machines/acu" rel="nofollow noopener noreferrer">никому не понятно</a>. Рабочая частота, тип процессора, тип памяти, тип диска — все это тщательно скрыто. Единственное что понятно, что ACU это некие попугаи в которых можно сравнивать производительность между разными тарифными планами внутри самой Azure. Естественно, сравнить производительность, например с Amazon, не выйдет. Понятно зачем это сделано, но раздражает сильно.</p><br/>
+<p>После разворота самого приложения нам нужно еще развернуть SQL сервер и SQL базу данных. Здесь все аналогично предыдущему пункту, только вместо CPU и Memory мы имеем DTU и размер хранилища. Несмотря на наличие бенчмарков от Microsoft, что такое <a href="https://docs.microsoft.com/en-us/azure/azure-sql/database/service-tiers-dtu" rel="nofollow noopener noreferrer">DTU</a> понятно чуть менее чем никак. Т.е. ничего не понятно кроме того, что 1 DTU стоит 1.5 доллара в месяц, а для базы данных которую ожидает серьезная нагрузка на CPU <a href="https://docs.microsoft.com/en-us/azure/azure-sql/database/resource-limits-dtu-single-databases#single-database-storage-sizes-and-compute-sizes" rel="nofollow noopener noreferrer">нужно брать уровень S3 или выше</a>. S3 это 100 DTU, 150$ в месяц только за одну базу. Ну что ж, поверим специалистам и возьмем сразу S3, посмотрим, насколько она превзойдет мой ноутбук.</p><br/>
+<p>Подняв SQL сервер и восстановив базу из бэкапа (я так же накатил индекс, проверил его наличие и увеличил максимальное кол-во соединений с БД на всякий случай) я запустил еще чистенькую виртуалку в том же регионе. Для виртуалки я взял B4ms с 4 ядрами и 16GB оперативной памяти с Windows Server 2019 Datacenter gen 1 на борту. По идее это должно дать более-менее честную картинку, и мы не встрянем в проблему исчерпания TCP/IP соединений.</p><br/>
+<h2 id="oblachno---nachinaetsya-liven">Облачно — начинается ливень</h2><br/>
+<p>Приложение я поднял, базу данных развернул, страницу открыл — все работает как надо. Страница с пользователями открывается даже быстрее чем на моем ноутбуке — 200-250мс, что внушает надежду. Напомню, что мой ноут держит 2700 RPS на пустой странице и 150RPS на тестовой странице с пользователями. Предлагаю с чего-то подобного и начать:</p><br/>
+<p>Даем нагрузку в 2000 RPS на пустую страницу и… ничего. Такую нагрузку B1 не держит от слова совсем. Что хотя и обидно, но понятно, B1 все-таки рекомендуется для разработки, а не для нагрузочного тестирования. После нескольких итераций оказалось, что B1 справляется только с 300RPS</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>18000</code>, ok = <code>18000</code>, RPS = <code>300</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>3.95</code>, mean = <code>419.46</code>, max = <code>2070.85</code>, StdDev = <code>198.27</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>375.81</code>, 75% = <code>419.58</code>, 95% = <code>935.94</code>, 99% = <code>1068.03</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Что, ж не будем мучать котов, и возьмем тариф посерьезнее, например P1V2 — 210 ACU, 3.5GB оперативной памяти за 49.57$.</p><br/>
+<p>На этом тарифном плане мы держим уже 1000RPS с наихудшим результатом в 1833мс. (а вот 1200 уже не держим)</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>60000</code>, ok = <code>60000</code>, RPS = <code>1000</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>3.21</code>, mean = <code>565.14</code>, max = <code>2547.46</code>, StdDev = <code>338.81</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>549.89</code>, 75% = <code>605.18</code>, 95% = 1319.94, 99% = <code>1833.98</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Не так хорошо, как мой ноутбук (надеюсь это прозвучало достаточно пафосно), но для экспериментов хватит. Зато наглядно видно, как смена тарифа влияет на способность держать нагрузку — в данном конкретном случае 20$ увеличили потолок по нагрузке более чем на 200%.</p><br/>
+<p>После этого я попробовал нагрузить страницу с пользователями на тестовые 50 RPS и опять меня ждал сюрприз — несмотря на то, что мы взяли рекомендованный (пусть и минимальный) тариф для интенсивных вычислений, количество успешно выполненных запросов составило целых 0 единиц:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>2750</code>, ok = <code>0</code>, RPS = <code>0</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Оказывается, что для сетапа за почти 200$ (150$ БД + 49.57$ веб сайт) 50RPS это слишком много. И дело 100% не в самом веб приложении, оно держит и 1000 RPS — проблема явно в той части за 150$ т. е. в базе данных и проверить это не сложно — Azure предоставляет большое количество метрик в том числе и по расходу DTU и это было первое что я пошел проверять:</p><br/>
+<p><img src="/img/image-loader.svg" alt="нужно больше золота" data-src="https://habrastorage.org/webt/2o/hn/zk/2ohnzk1dc4_alhara5sptfgvfjg.png"/></p><br/>
+<p>Использование DTU — 100%. Получается, что проблема действительно с тарифом базы данных. Возможно, нужно просто дать еще сантик? К счастью, у нас выделяют бюджет на подобные эксперименты и я могу не опасаться за свой кошелек. Поэтому я просто увеличил тариф в четыре раза до S6 с 400 DTU за каких-то несчастных 600$ долларов в месяц и снова нагрузил его в 50 RPS. Спустя несколько заходов выяснилось, что сетап за 650$ такую нагрузку держит, а иногда вывозит даже целых 60RPS:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>3597</code>, ok = <code>3597</code>, RPS = <code>60</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>641.15</code>, mean = <code>1184.47</code>, max = <code>2440.76</code>, StdDev = <code>453.31</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>990.72</code>, 75% = <code>1434.62</code>, 95% = <code>2073.6</code>, 99% = <code>2265.09</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Сказать, что я был счастлив означает ничего не сказать. Это же просто "вау" думал я в тот момент. Всего 650 баксов в месяц и это работает "почти" как мой ноут (правда в случае с Azure не надо обслуживать железо, ОС и возиться с лицензиями что конечно плюс). Но даже с учетом этого радужными эти цифры не были. А ведь наша цель не 50, а 100 RPS.</p><br/>
+<p>Поэтому я снова пошел смотреть на метрики. Как выяснилось, в этот раз мы не исчерпали все выделенные DTU — судя по тому же графику, в пике мы использовали только 82% от их максимального количества. Но это наверняка не проблема с самим веб приложением, т. к. как мы уже знаем, что оно держит более 1000 запросов в секунду. Конечно, трансляция LinQ в SQL, десериализация, рендер самой страницы тоже занимает какое-то время, но вот не верю я в то, что проблема на уровне веб приложения. Тем более что проверить это достаточно просто — достаточно бросить еще одну монетку и взять тариф подороже. Если я прав — мы увидим рост производительности. Если нет — все останется, как и было и тогда я попробую взять побольше мощностей уже для веб приложения.</p><br/>
+<p>Сказано — сделано, берем тариф еще дороже: S7, 800 DTU, 1200$ в месяц. И нагружаем ее с тех же несчастных 50 RPS. Спустя несколько попыток результат получился следующий:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>6574</code>, ok = <code>6574</code>, RPS = <code>109.6</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>692.16</code>, mean = <code>968.23</code>, max = <code>2067.65</code>, StdDev = <code>288.53</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>911.36</code>, 75% = <code>989.18</code>, 95% = <code>1766.4</code>, 99% = <code>1941.5</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>109RPS, максимальное время ожидания 1941мс, отличные результаты и за всего ничего — 1200$. Причем, если посмотреть графики потребления DTU/CPU/IOPS у нас везде есть запас. Например, DTU мы выбрали всего на 70%. </p><br/>
+<p>Почему так? Возможно, я просто выбрал неправильный подход? Ведь Azure предоставляет тарифы, основанные как на DTU, так и на виртуальных ядрах. За 1140$ можно взять 10 VCore и это явно стоит попробовать. Поэтому я поменял тип плана с DTU на VCore и снова дал нагрузку. Результат не удивил: меньше платишь — меньше получаешь. Теперь приложение держит только 97.6 RPS да и наихудшее время ожидания выросло до 2326мс:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>5853</code>, ok = <code>5853</code>, RPS = <code>97.6</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>774.8</code>, mean = <code>1154.58</code>, max = <code>2362.44</code>, StdDev = <code>423.61</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>983.04</code>, 75% = <code>1180.67</code>, 95% = <code>2121.73</code>, 99% = <code>2326.53</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Больше 97 RPS выжать мне не удалось, так что предлагаю зафиксировать следующий результат:</p><br/>
+<p>Для того, чтобы держать 100 RPS, используя Azure, ASP .NET Core MVC, .NET Core 5, и MS SQL на запросе вида</p><br/>
+<pre><code class="cs">var users =  _ctx.Users
+                .Where(x => x.DisplayName.StartsWith(key))
+                .OrderBy(x => x.DisplayName)
+                .Take(25)
+                .ToArray();</code></pre><br/>
+<p>Нам нужно потратить 49.57$ на хостинг самого веб приложения и 1200$ на БД. Много это или мало пусть каждый решает сам, но, если что — мое мнение обо всем происходящем можно найти в тегах.</p><br/>
+<h2 id="oblachno---proglyadyvaet-solnce">Облачно — проглядывает солнце</h2><br/>
+<p>1250$ за 100RPS звучит откровенно прискорбно. И, если честно, если бы я не видел это все своими глазами, то первым моим предположением было бы что кто-то изрядно накосячил. С другой стороны, быть может, я действительно где-то накосячил? Если вы помните, то проблема на относительно дешевом тарифе S3 была связана с исчерпанием квоты вычислительных ресурсов, что намекает на интенсивные вычисления на уровне БД. Но разве StartsWith такое уж сложное выражение? Давайте посмотрим запрос, в который было транслировано наше LinQ выражение (это можно сделать и в самом Azure или просто вызвав <code>.ToQueryString()</code>):</p><br/>
+<pre><code class="sql">(@__key_0 nvarchar(4000),@__p_1 int)
+SELECT TOP(@__p_1) *
+FROM [Users] AS [u]
+WHERE (@__key_0 = N'') OR (LEFT([u].[DisplayName], LEN(@__key_0)) = @__key_0)
+ORDER BY [u].[DisplayName]</code></pre><br/>
+<p>Вам не кажется, что WHERE выглядит немного сложно? Наверняка Entity Framework знает лучше меня (где я, а где зубры из EntityFramework) но что если переписать этот запрос на что-то попроще и выполнять его напрямую вместо трансляции из LinQ выражения, например на такое:</p><br/>
+<pre><code class="plaintext">var p1 = new SqlParameter("@DisplayName", $"{key}%");
+var query = _ctx.Users.FromSqlRaw(
+    $"SELECT TOP 25 * FROM USERS WITH (NOLOCK) WHERE DisplayName LIKE @DisplayName ORDER BY DisplayName", p1
+    );</code></pre><br/>
+<p>Да, я еще и схитрил, добавив NOLOCK конструкцию, но чего не сделаешь ради красивых цифр. Кстати, вместо того что бы писать SQL напрямую, можно было бы использовать <code>Microsoft.EntityFrameworkCore.EF.Functions.Like</code> для подсказки EF что нужно использовать именно <code>Like</code> конструкцию вместо <code>Left</code>/<code>Len</code>.</p><br/>
+<p>Так что я изменил код, передеплоил приложение и снова вернулся к старо доброй S3 базе за 150$. Даю нагрузку в 50RPS и — база держит, и держит весьма неплохо — наихудший результат всего 540мс:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>3000</code>, ok = <code>3000</code>, RPS = <code>50</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>107.72</code>, mean = <code>228.22</code>, max = <code>617.06</code>, StdDev = <code>110.14</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>197.89</code>, 75% = <code>295.17</code>, 95% = <code>491.01</code>, 99% = <code>540.67</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Использование DTU тоже резко снизилось, на 50RPS мы используем всего 23%. </p><br/>
+<p><img src="/img/image-loader.svg" alt="теперь можно построить зиккурат" data-src="https://habrastorage.org/webt/2w/hz/id/2whzidblbdqpspapgeh0vsozyzm.png"/></p><br/>
+<p>Похоже, что проблема действительно была в запросе, но с этим можно будет разобраться попозже. А сейчас я просто добавлю еще нагрузку и посмотрим сколько она сможет выдержать: 75RPS, 100RPS, 150RPS, 300RPS! Нет, до 300 мы все-таки не дотянули, но 283 запроса в секунду вытянуть смогли. И это на тарифе, который до этого не держал даже 50RPS:</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>17018</code>, ok = <code>17018</code>, RPS = <code>283.6</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>217.56</code>, mean = <code>1572.22</code>, max = <code>4386.47</code>, StdDev = <code>882.05</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>1172.48</code>, 75% = <code>2332.67</code>, 95% = <code>3295.23</code>, 99% = <code>4112.38</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>Но нам же столько не надо! Если вы помните, задача стояла выяснить цену 100RPS, так что я начал поэтапно уменьшать тарифный план и выяснил, что с новым запросом, для 100RPS достаточно и базы данных уровня S1 — 20 DTU за 30$, причем с не самым плохим временем отклика — 776мс в наихудшем случае.</p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>6000</code>, ok = <code>6000</code>, RPS = <code>100</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>212.99</code>, mean = <code>376.42</code>, max = <code>1219.67</code>, StdDev = <code>153.35</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>320.51</code>, 75% = <code>445.44</code>, 95% = <code>736.77</code>, 99% = <code>776.7</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<p>При этом мы почти уперлись в лимит DTU, использовав около 84%, так что похоже я нашел оптимальный план для выбранной нагрузки.</p><br/>
+<h2 id="vyvody">Выводы?</h2><br/>
+<p>С выводами все неоднозначно. С одной стороны, мне понадобилась 1250$ для того, чтобы выдержать с виду вполне безобидный запрос на не самой большой нагрузке. С другой стороны, с помощью той же Azure мне удалось сначала решить задачу и получить свои 100 RPS (пусть это и стоило денег), а потом уже найти узкое место и исправить его. С третьей :) стороны даже полторы тысячи долларов в месяц — это не самая большая сумма для предприятия. С четвертой стороны, 100 запросов в секунду тоже не хайлоад.</p><br/>
+<p>Одно понятно точно — с базой данных и EF нужно быть осторожным, положить свое собственное приложение совсем не сложно.</p><br/>
+<p>Спасибо за внимание, надеюсь было интересно. Для желающих повторить мои приключения исходники доступны по <a href="https://github.com/Drag13/AzurePerformanceTest" rel="nofollow noopener noreferrer">ссылке</a> на GitHub. </p><br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Обновленные планы выполнения запросов</b>
+                        <div class="spoiler_text"><p>Для Entity Framework:</p><br/>
+<p><img src="/img/image-loader.svg" alt="Index scan" data-src="https://habrastorage.org/webt/km/da/_m/kmda_m2uyzbjjmhrcvducljumhm.png"/></p><br/>
+<p>Для прямого SQL:<br/>
+<img src="/img/image-loader.svg" alt="Index seek" data-src="https://habrastorage.org/webt/d9/w7/mz/d9w7mzciusv5oo_wdi4jrhkn2pi.png"/></p></div>
+                    </div><br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Еще статистика по локальному тестированию</b>
+                        <div class="spoiler_text"><h3 id="ef-async">EF ASYNC</h3><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>9523</code>, ok = <code>9523</code>, RPS = <code>158.7</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>31.1</code>, mean = <code>1018.09</code>, max = <code>3319.5</code>, StdDev = <code>461.32</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>978.94</code>, 75% = <code>1325.06</code>, 95% = <code>1795.07</code>, 99% = <code>2140.16</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<h3 id="sql-sync">SQL Sync</h3><br/>
+<p>Rate: <code>2300</code>, during: <code>00:01:00</code></p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>138000</code>, ok = <code>125883</code>, RPS = <code>2098</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>3.1</code>, mean = <code>698.66</code>, max = <code>8232.34</code>, StdDev = <code>1336.41</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>125.38</code>, 75% = <code>479.49</code>, 95% = <code>3049.47</code>, 99% = <code>7213.06</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>fail stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>138000</code>, fail = <code>12117</code>, RPS = <code>202</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>378.79</code>, mean = <code>5606.03</code>, max = <code>8208.32</code>, StdDev = <code>1144.1</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>5529.6</code>, 75% = <code>6074.37</code>, 95% = <code>7249.92</code>, 99% = <code>7536.64</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<h3 id="sql-async">SQL Async</h3><br/>
+<p>Rate: <code>2400</code>, during: <code>00:01:00</code></p><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>ok stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>request count</td>
+<td>all = <code>144000</code>, ok = <code>136391</code>, RPS = <code>2273.2</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>1.91</code>, mean = <code>1308.2</code>, max = <code>7596.02</code>, StdDev = <code>1579.3</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>492.03</code>, 75% = <code>1988.61</code>, 95% = <code>4415.49</code>, 99% = <code>6520.83</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<div class="scrollable-table"><table>
+<thead>
+<tr>
+<th>step</th>
+<th>fail stats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td><code>index.html</code></td>
+</tr>
+<tr>
+<td>request count</td>
+<td>all = <code>144000</code>, fail = <code>7609</code>, RPS = <code>126.8</code></td>
+</tr>
+<tr>
+<td>latency</td>
+<td>min = <code>181.63</code>, mean = <code>6122.8</code>, max = <code>7573.97</code>, StdDev = <code>762.05</code></td>
+</tr>
+<tr>
+<td>latency percentile</td>
+<td>50% = <code>6316.03</code>, 75% = <code>6590.46</code>, 95% = <code>7204.86</code>, 99% = <code>7340.03</code></td>
+</tr>
+</tbody>
+</table></div><br/>
+<blockquote>status codes for scenario: <code>simple_http</code></blockquote></div>
+                    </div><br/>
+<p><strong>Апдейт</strong> </p><br/>
+<p>Cтатья обновлена в части локального тестирования из-за допущеных ошибок. Часть, посвященная облачному тестированию, перепроверена и осталась без изменений. Я так же благодарю <a href="https://habr.com/ru/users/mvv-rus/" class="user_link">mvv-rus</a>, <a href="https://habr.com/ru/users/nobody8/" class="user_link">nobody8</a>, @Fullborg и других хабровчан, которые своими детальными комментариями подтолкнули меня протестировать все еще раз и найти ошибку. </p><br/>
+<p>Спасибо вам большое!</p><br/>
+<p><a href="https://drag13.io/" rel="nofollow noopener noreferrer">Drag13</a></p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bazure%5D" class="tm-tags-list__link">azure</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bload%20testing%5D" class="tm-tags-list__link">load testing</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnetcore%5D" class="tm-tags-list__link">netcore</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bsql%5D" class="tm-tags-list__link">sql</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bnbomber%5D" class="tm-tags-list__link">nbomber</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%8D%D1%82%D0%BE%20%D0%BF%D1%80%D0%B8%D1%81%D0%BA%D0%BE%D1%80%D0%B1%D0%BD%D0%BE%5D" class="tm-tags-list__link">это прискорбно</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B3%D1%80%D0%B0%D0%B6%D0%B4%D0%B0%D0%BD%D1%81%D0%BA%D0%B0%D1%8F%20%D0%BE%D0%B1%D0%BE%D1%80%D0%BE%D0%BD%D0%B0%5D" class="tm-tags-list__link">гражданская оборона</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B2%D0%B5%D0%B4%D1%8C%D0%BC%D0%B0%D0%BA%5D" class="tm-tags-list__link">ведьмак</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BD%D0%B5%D0%B7%D0%BD%D0%B0%D0%B9%D0%BA%D0%B0%20%D0%BD%D0%B0%20%D0%BB%D1%83%D0%BD%D0%B5%5D" class="tm-tags-list__link">незнайка на луне</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/hi/" class="tm-hubs-list__link">
+    Высокая производительность
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/webdev/" class="tm-hubs-list__link">
+    Разработка веб-сайтов
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cloud_computing/" class="tm-hubs-list__link">
+    Облачные вычисления
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/mssql/" class="tm-hubs-list__link">
+    Microsoft SQL Server
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/web_testing/" class="tm-hubs-list__link">
+    Тестирование веб-сервисов
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 58: ↑57 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 58: ↑57 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+56</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">14K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    43
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Drag13/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/abc/4a4/fa0/abc4a4fa0e705dc40b55583a42921419.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 329 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    206.5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">56.5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/Drag13/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Drag13
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Full-Stack developer JS + .NET</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://drag13.io" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583084/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 78 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583084/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583084/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583084":{"id":"583084","timePublished":"2021-10-15T07:03:52+00:00","isCorporative":false,"lang":"ru","titleHtml":"[Пятничное] Сколько стоит держать 100 запросов в секунду в Azure на .NET Core MVC и MSSQL","leadData":{"textHtml":"\u003Cp\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F6h\u002F56\u002Fvg\u002F6h56vgajsm1p51c-qqga5j0fwc4.jpeg\" alt=\"How much does it cost to handle 100RPS with .NET MVC and Azure\"\u003E\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EЭта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его словам, они провозились почти все выходные, но добиться приемлемого времени отклика от БД им не удалось, несмотря на все попытки. Даже переход на существенно более дорогой тариф не принес ощутимых результатов. Помню, я тогда еще подумал, что было бы неплохо протестировать все это самому, но времени не было и идея осталась не реализованной, хотя сам разговор я запомнил хорошо.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EИ вот, спустя пять лет случается флешбэк — выходит \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F578192\u002F\"\u003Eстатья о нагрузочном тестировании Azure\u003C\u002Fa\u003E, в которой автор добивается 4 запроса в секунду за 250$ в месяц. Тут уж я просто не мог пройти мимо. Ведь не может такого быть, чтобы второе по величине облако давало так мало за не самые маленькие деньги, правильно? Поэтому я очень быстро набросал простейшее веб приложение на .NET, накатил базу StackOverflow за 2010 год, запустил туда скромную нагрузку в 100 RPS и стал судорожно протирать свои глаза. Даже такую нагрузку мое приложение не держало, причем вообще. 50 RPS тоже оказались слишком высокой планкой, как, впрочем, и 25. И тут я понял, что так дело не пойдет — к вопросу надо подходить системно.\u003C\u002Fp\u003E\u003Cbr\u003E\r\n\u003Cp\u003EИтак, кому интересно сколько стоит 100 RPS в Azure с .NET Core MVC + .NET 5 + MSSQL на Kestrel — берите кофей и прошу под кат.\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":206.5,"votesCount":329},"rating":56.5,"relatedData":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fdrag13.io","value":"https:\u002F\u002Fdrag13.io"}],"authorContacts":[{"title":"Сайт","url":"https:\u002F\u002Fdrag13.io","value":"https:\u002F\u002Fdrag13.io"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"574551","alias":"Drag13","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Fabc\u002F4a4\u002Ffa0\u002Fabc4a4fa0e705dc40b55583a42921419.jpg","speciality":"Full-Stack developer JS + .NET"},"statistics":{"commentsCount":78,"favoritesCount":43,"readingCount":13786,"score":56,"votesCount":58},"hubs":[{"relatedData":null,"id":"4","alias":"hi","type":"collective","title":"Высокая производительность","titleHtml":"Высокая производительность","isProfiled":true},{"relatedData":null,"id":"91","alias":"webdev","type":"collective","title":"Разработка веб-сайтов","titleHtml":"Разработка веб-сайтов","isProfiled":true},{"relatedData":null,"id":"16120","alias":"cloud_computing","type":"collective","title":"Облачные вычисления","titleHtml":"Облачные вычисления","isProfiled":true},{"relatedData":null,"id":"17378","alias":"mssql","type":"collective","title":"Microsoft SQL Server","titleHtml":"Microsoft SQL Server","isProfiled":true},{"relatedData":null,"id":"19279","alias":"web_testing","type":"collective","title":"Тестирование веб-сервисов","titleHtml":"Тестирование веб-сервисов","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002F6h\u002F56\u002Fvg\u002F6h56vgajsm1p51c-qqga5j0fwc4.jpeg\" alt=\"How much does it cost to handle 100RPS with .NET MVC and Azure\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F6h\u002F56\u002Fvg\u002F6h56vgajsm1p51c-qqga5j0fwc4.jpeg\" data-blurred=\"true\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЭта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его словам, они провозились почти все выходные, но добиться приемлемого времени отклика от БД им не удалось, несмотря на все попытки. Даже переход на существенно более дорогой тариф не принес ощутимых результатов. Помню, я тогда еще подумал, что было бы неплохо протестировать все это самому, но времени не было и идея осталась не реализованной, хотя сам разговор я запомнил хорошо.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИ вот, спустя пять лет случается флешбэк — выходит \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F578192\u002F\"\u003Eстатья о нагрузочном тестировании Azure\u003C\u002Fa\u003E, в которой автор добивается 4 запроса в секунду за 250$ в месяц. Тут уж я просто не мог пройти мимо. Ведь не может такого быть, чтобы второе по величине облако давало так мало за не самые маленькие деньги, правильно? Поэтому я очень быстро набросал простейшее веб приложение на .NET, накатил базу StackOverflow за 2010 год, запустил туда скромную нагрузку в 100 RPS и стал судорожно протирать свои глаза. Даже такую нагрузку мое приложение не держало, причем вообще. 50 RPS тоже оказались слишком высокой планкой, как, впрочем, и 25. И тут я понял, что так дело не пойдет — к вопросу надо подходить системно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИтак, кому интересно сколько стоит 100 RPS в Azure с .NET Core MVC + .NET 5 + MSSQL на Kestrel — берите кофей и прошу под кат.\u003C\u002Fp\u003E\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EДисклеймер\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E\u003Cp\u003EСтатья написана в пятничном формате и не претендует на абсолютную полноту и достоверность. И, хотя я и пытался получить наиболее точные результаты, они, естественно, могут отличаться от вашего случая. Поэтому я прошу не делать сколь-либо далеко идущих выводов на основании данной статьи, а воспринимать ее скорее, как информацию к размышлению.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПеред тем как начинать тестирование, неплохо было бы понимать, что мы будем тестировать, как мы будем тестировать и чем. Если этап подготовки вам не слишком интересен, смело пропускайте следующую часть.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"chto-testiruem\"\u003EЧто тестируем\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля тестирования я создал \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FDrag13\u002FAzurePerformanceTest\" rel=\"nofollow noopener noreferrer\"\u003E.NET Core 5 MVC\u003C\u002Fa\u003E приложение с двумя Razor страницами. Первая страница практически пуста, без логики, с минимальной разметкой и CSS, который добавляется по умолчанию. С помощью этой страницы я хочу узнать сколько RPS приложение держит в принципе. Вторая страница содержит список из 25 пользователей имена (DisplayName) которых начинаются со случайно выбранных трех букв английского алфавита. Пользователей я буду брать из базы данных \u003Ca href=\"https:\u002F\u002Fdownloads.brentozar.com\u002FStackOverflow2010.7z\" rel=\"nofollow noopener noreferrer\"\u003EStackOverflow за 2010 год\u003C\u002Fa\u003E, всего в ней насчитывается 299_398 пользователей, что не очень много. Дополнительно я создал индекс на соответствующую колонку.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ коде это выглядит примерно так:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cs\"\u003E var size = _symbols.Length; \n var randomSymbols = new char[] {\n                  _symbols[_rnd.Next(size)]\n                , _symbols[_rnd.Next(size)]\n                , _symbols[_rnd.Next(size)]\n                };\n\nvar key = new string(randomSymbols);\n\nvar users = _ctx.Users\n                            .Where(x =\u003E x.DisplayName.StartsWith(key))\n                            .OrderBy(x =\u003E x.DisplayName)\n                            .Take(25)\n                            .ToArray();\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТест немного искусственный, но сам сценарий поиска пользователя по имени (а не первичному ключу) вполне реален. Так что как некая попугаемерка тест подойдет.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"kak-testiruem\"\u003EКак тестируем\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТестировать я буду в два этапа. Сначала я запущу все локально, чтобы получить ориентировочные значения. После этого я задеплою проект в Azure и начну тестировать там, повышая или понижая мощность конфигурации пока не достигну 100 RPS. Характеристики моего ноутбука не самые топовые (Core i5-9400H @ 2.50GHz, 16GB RAM и SDD), так что будет интересно сравнить \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСамо тестирование будет идти по примерно следующему алгоритму:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Col\u003E\r\n\u003Cli\u003EДаем желаемую нагрузку\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли приложение с нагрузкой справляется, фиксируем результат\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли приложение с нагрузкой не справляется, уменьшаем нагрузку в два раза\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли приложение справляется с уменьшенной нагрузкой — увеличиваем ее на ~25% и повторяем цикл до тех пор, пока не зафиксируем значительное проседание RPS, после чего фиксируем предыдущий результат.\u003C\u002Fli\u003E\r\n\u003Cli\u003EЕсли приложение не справляется с уменьшенной нагрузкой, снова уменьшаем ее в два раза и переходим в п. 4. Если после повторного уменьшения приложение все равно не справляется — фиксируем результат\u003C\u002Fli\u003E\r\n\u003C\u002Fol\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТакой подход позволит нам более точно определить нагрузку, которую держит наше приложение. К тому же, я заметил, что после изменения тарифного плана базы данных производительность всегда падает (возможно умирает кэш самой БД или статистика). Подача нагрузки постепенно также нивелирует эту проблему.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"chem-testiruem\"\u003EЧем тестируем\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИнструментов для тестирования немало — тут и \u003Ca href=\"https:\u002F\u002Fgatling.io\u002F\" rel=\"nofollow noopener noreferrer\"\u003EGatling\u003C\u002Fa\u003E и \u003Ca href=\"https:\u002F\u002Fjmeter.apache.org\u002F\" rel=\"nofollow noopener noreferrer\"\u003EJMeter\u003C\u002Fa\u003E. Я же давно хотел попробовать \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FPragmaticFlow\u002FNBomber\" rel=\"nofollow noopener noreferrer\"\u003ENBomber\u003C\u002Fa\u003E — очень простой фреймворк для нагрузочного тестирования, который написан на 100% \u003Ca href=\"https:\u002F\u002Ffsharpforfunandprofit.com\u002F\" rel=\"nofollow noopener noreferrer\"\u003EF#\u003C\u002Fa\u003E. Как язык, F# мне давно нравится, и идея использовать его хоть как-то показалась мне очень заманчивой (спойлер — кода на F# было написано максимум десять строк, так что поиграться с F# так и не вышло)\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСобственно, сам NBomber прост. Сначала мы описываем “шаги” нагрузочного тестирования, в которых указываем ресурсы, которые мы хотим \"дернуть\", а затем, на основе шагов, конфигурируем сценарий, указывая количество запросов и длительность тестирования.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EВыглядит это примерно так (причем все взято из документации):\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E\u003Cpre\u003E\u003Ccode class=\"cs\"\u003E let step = Step.create(\"index.html\", \n                            timeout = seconds 5,\n                            clientFactory = HttpClientFactory.create(), \n                            execute = fun context -\u003E \n                            Http.createRequest \"GET\" url\n                            |\u003E Http.withHeader \"Accept\" \"text\u002Fhtml\"\n                            |\u003E Http.send context)\n\n    let scenario = \n        Scenario.create \"simple_http\" [step]       \n        |\u003E Scenario.withWarmUpDuration(seconds 1)\n        |\u003E Scenario.withLoadSimulations [\n                   InjectPerSec(rate = rate, during = seconds loadingTimeSeconds)\n               ]    \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВ результате мы получаем пять файлов — логи, результаты в текстовом прдеставлении, те же результаты в маркдаун, в csv и html с красивыми графиками\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"красивое\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Ft6\u002Fpn\u002Ffl\u002Ft6pnfl5a-ltnt5-k84x9lhdhtam.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОт себя я написал какой-то унылый код, который парсит аргументы консольной строки в лоб, но гордиться тут особо нечем.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"u-menya-lokalno-vse-rabotaet\"\u003EУ меня локально все работает\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПеред тем как тестировать локально, не забудьте включить ноутбук в розетку. Это может улучшить результаты (если план потребления электроэнергии настроен на экономию батареи) и буквально не оставит вас с черным экраном, если батарея вдруг сядет. Звучит смешно, но все случается впервые.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИтак, я подключил ноут к электросети, стартовал приложение и открыл страничку, чтобы проверить приложение. Сюрпризов не было, страница с пользователями открывалась за 250-300мс. Убедившись, что все работает, я начал давать нагрузку на пустую страницу. И вот первый результат: NBomber работает, мы уверенно держим 1000 RPS:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E60000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E60000\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E1000\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E0.64\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E152.91\u003C\u002Fcode\u003E, max = \u003Ccode\u003E857.91\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E145.81\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E120.32\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E174.34\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E527.87\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E788.99\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТут мне стало интересно, какой максимум я смогу выжать из своего ноута и это оказалось около 2000 RPS (на самом деле нет)\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E120000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E118669\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E1977.8\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E0.96\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E250.03\u003C\u002Fcode\u003E, max = \u003Ccode\u003E5486.01\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E460.46\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E176.26\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E259.71\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E454.14\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E3129.34\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПосле этого мне пришлось приостановить тестирование, так как кулера уже гудели как шмели, и я начал опасаться троттлинга. Дав ноутбуку передохнуть, я начал тестировать страницу с пользователями. Давать 1000 RPS я как-то постеснялся и решил начать с сотни. Результат меня удивил — под нагрузкой в 100 RPS успешно завершилось всего 10% запросов:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E5561\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E580\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E9.7\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E228.51\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E3030.77\u003C\u002Fcode\u003E, max = \u003Ccode\u003E4965.96\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E1223.88\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E3094.53\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E3872.77\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E4935.68\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E4968.45\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E — Сюююююрприз — сказал бы мой ноутбук, если бы мог говорить, и добавил бы, что 100 RPS держать он не собирается. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТут я понял, что совершил типичную ошибку дилетанта — тестирую дебаг версию да еще и подключился не к той базе данных (это была вторая база данных, без индекса). Позор и еще раз позор мне. Но лучше признавать свои ошибки чем гордо делать вид что так и должно быть.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВыбрав правильную БД, и запустив приложение в режиме релиза я смог добиться почти 150RPS:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E8976\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E8976\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E149.6\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E24.44\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E1080.12\u003C\u002Fcode\u003E, max = \u003Ccode\u003E2173.79\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E399.85\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E1029.63\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E1117.18\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E2068.48\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E2146.3\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНа пустой странице, максимальное количество запросов в секунду которых удалось добиться, составило 2784 (релиз нам принес почти +40%, разница очевидна):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E180000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E167058\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E2784.3\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E0.39\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E339.22\u003C\u002Fcode\u003E, max = \u003Ccode\u003E7625.08\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E1242.98\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E12.16\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E31.76\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E3411.97\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E6942.72\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТак что можем фиксировать результаты: локально мой ноутбук держит 2.7K RPS на пустой странице и 150 RPS на странице с выборкой пользователей из базы данных. Время двигаться к облакам, ведь там \"все будет хорошо\" (С)\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"oblachno---tuchi-sguschayutsya\"\u003EОблачно — тучи сгущаются\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТеперь, когда есть от чего отталкиваться, можно посмотреть, что предлагает Azure. Интересно же сравнить свое родное железо с тем, облачным.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля начала нужно создать \"Web App\" — \"слот\" для размещения веб приложения и выбрать для него тариф. От тарифа зависит вычислительные мощности, которые мы сможем использовать и некоторые дополнительные возможности, например геобалансировку. Я взял самый дешевый тарифный план, который поддерживает выделенные ресурсы — B1 со следующими характеристиками:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EВычислительная мощность — 100 ACU\u003C\u002Fli\u003E\r\n\u003Cli\u003EПамять — 1.75GB\u003C\u002Fli\u003E\r\n\u003Cli\u003EЦена — 32$\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧто такое ACU — \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fazure\u002Fvirtual-machines\u002Facu\" rel=\"nofollow noopener noreferrer\"\u003Eникому не понятно\u003C\u002Fa\u003E. Рабочая частота, тип процессора, тип памяти, тип диска — все это тщательно скрыто. Единственное что понятно, что ACU это некие попугаи в которых можно сравнивать производительность между разными тарифными планами внутри самой Azure. Естественно, сравнить производительность, например с Amazon, не выйдет. Понятно зачем это сделано, но раздражает сильно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПосле разворота самого приложения нам нужно еще развернуть SQL сервер и SQL базу данных. Здесь все аналогично предыдущему пункту, только вместо CPU и Memory мы имеем DTU и размер хранилища. Несмотря на наличие бенчмарков от Microsoft, что такое \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fazure\u002Fazure-sql\u002Fdatabase\u002Fservice-tiers-dtu\" rel=\"nofollow noopener noreferrer\"\u003EDTU\u003C\u002Fa\u003E понятно чуть менее чем никак. Т.е. ничего не понятно кроме того, что 1 DTU стоит 1.5 доллара в месяц, а для базы данных которую ожидает серьезная нагрузка на CPU \u003Ca href=\"https:\u002F\u002Fdocs.microsoft.com\u002Fen-us\u002Fazure\u002Fazure-sql\u002Fdatabase\u002Fresource-limits-dtu-single-databases#single-database-storage-sizes-and-compute-sizes\" rel=\"nofollow noopener noreferrer\"\u003Eнужно брать уровень S3 или выше\u003C\u002Fa\u003E. S3 это 100 DTU, 150$ в месяц только за одну базу. Ну что ж, поверим специалистам и возьмем сразу S3, посмотрим, насколько она превзойдет мой ноутбук.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПодняв SQL сервер и восстановив базу из бэкапа (я так же накатил индекс, проверил его наличие и увеличил максимальное кол-во соединений с БД на всякий случай) я запустил еще чистенькую виртуалку в том же регионе. Для виртуалки я взял B4ms с 4 ядрами и 16GB оперативной памяти с Windows Server 2019 Datacenter gen 1 на борту. По идее это должно дать более-менее честную картинку, и мы не встрянем в проблему исчерпания TCP\u002FIP соединений.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"oblachno---nachinaetsya-liven\"\u003EОблачно — начинается ливень\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПриложение я поднял, базу данных развернул, страницу открыл — все работает как надо. Страница с пользователями открывается даже быстрее чем на моем ноутбуке — 200-250мс, что внушает надежду. Напомню, что мой ноут держит 2700 RPS на пустой странице и 150RPS на тестовой странице с пользователями. Предлагаю с чего-то подобного и начать:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДаем нагрузку в 2000 RPS на пустую страницу и… ничего. Такую нагрузку B1 не держит от слова совсем. Что хотя и обидно, но понятно, B1 все-таки рекомендуется для разработки, а не для нагрузочного тестирования. После нескольких итераций оказалось, что B1 справляется только с 300RPS\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E18000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E18000\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E300\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E3.95\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E419.46\u003C\u002Fcode\u003E, max = \u003Ccode\u003E2070.85\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E198.27\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E375.81\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E419.58\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E935.94\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E1068.03\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EЧто, ж не будем мучать котов, и возьмем тариф посерьезнее, например P1V2 — 210 ACU, 3.5GB оперативной памяти за 49.57$.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНа этом тарифном плане мы держим уже 1000RPS с наихудшим результатом в 1833мс. (а вот 1200 уже не держим)\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E60000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E60000\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E1000\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E3.21\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E565.14\u003C\u002Fcode\u003E, max = \u003Ccode\u003E2547.46\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E338.81\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E549.89\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E605.18\u003C\u002Fcode\u003E, 95% = 1319.94, 99% = \u003Ccode\u003E1833.98\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНе так хорошо, как мой ноутбук (надеюсь это прозвучало достаточно пафосно), но для экспериментов хватит. Зато наглядно видно, как смена тарифа влияет на способность держать нагрузку — в данном конкретном случае 20$ увеличили потолок по нагрузке более чем на 200%.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПосле этого я попробовал нагрузить страницу с пользователями на тестовые 50 RPS и опять меня ждал сюрприз — несмотря на то, что мы взяли рекомендованный (пусть и минимальный) тариф для интенсивных вычислений, количество успешно выполненных запросов составило целых 0 единиц:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E2750\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E0\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E0\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОказывается, что для сетапа за почти 200$ (150$ БД + 49.57$ веб сайт) 50RPS это слишком много. И дело 100% не в самом веб приложении, оно держит и 1000 RPS — проблема явно в той части за 150$ т. е. в базе данных и проверить это не сложно — Azure предоставляет большое количество метрик в том числе и по расходу DTU и это было первое что я пошел проверять:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"нужно больше золота\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F2o\u002Fhn\u002Fzk\u002F2ohnzk1dc4_alhara5sptfgvfjg.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИспользование DTU — 100%. Получается, что проблема действительно с тарифом базы данных. Возможно, нужно просто дать еще сантик? К счастью, у нас выделяют бюджет на подобные эксперименты и я могу не опасаться за свой кошелек. Поэтому я просто увеличил тариф в четыре раза до S6 с 400 DTU за каких-то несчастных 600$ долларов в месяц и снова нагрузил его в 50 RPS. Спустя несколько заходов выяснилось, что сетап за 650$ такую нагрузку держит, а иногда вывозит даже целых 60RPS:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E3597\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E3597\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E60\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E641.15\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E1184.47\u003C\u002Fcode\u003E, max = \u003Ccode\u003E2440.76\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E453.31\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E990.72\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E1434.62\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E2073.6\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E2265.09\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСказать, что я был счастлив означает ничего не сказать. Это же просто \"вау\" думал я в тот момент. Всего 650 баксов в месяц и это работает \"почти\" как мой ноут (правда в случае с Azure не надо обслуживать железо, ОС и возиться с лицензиями что конечно плюс). Но даже с учетом этого радужными эти цифры не были. А ведь наша цель не 50, а 100 RPS.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПоэтому я снова пошел смотреть на метрики. Как выяснилось, в этот раз мы не исчерпали все выделенные DTU — судя по тому же графику, в пике мы использовали только 82% от их максимального количества. Но это наверняка не проблема с самим веб приложением, т. к. как мы уже знаем, что оно держит более 1000 запросов в секунду. Конечно, трансляция LinQ в SQL, десериализация, рендер самой страницы тоже занимает какое-то время, но вот не верю я в то, что проблема на уровне веб приложения. Тем более что проверить это достаточно просто — достаточно бросить еще одну монетку и взять тариф подороже. Если я прав — мы увидим рост производительности. Если нет — все останется, как и было и тогда я попробую взять побольше мощностей уже для веб приложения.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСказано — сделано, берем тариф еще дороже: S7, 800 DTU, 1200$ в месяц. И нагружаем ее с тех же несчастных 50 RPS. Спустя несколько попыток результат получился следующий:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E6574\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E6574\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E109.6\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E692.16\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E968.23\u003C\u002Fcode\u003E, max = \u003Ccode\u003E2067.65\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E288.53\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E911.36\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E989.18\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E1766.4\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E1941.5\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E109RPS, максимальное время ожидания 1941мс, отличные результаты и за всего ничего — 1200$. Причем, если посмотреть графики потребления DTU\u002FCPU\u002FIOPS у нас везде есть запас. Например, DTU мы выбрали всего на 70%. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПочему так? Возможно, я просто выбрал неправильный подход? Ведь Azure предоставляет тарифы, основанные как на DTU, так и на виртуальных ядрах. За 1140$ можно взять 10 VCore и это явно стоит попробовать. Поэтому я поменял тип плана с DTU на VCore и снова дал нагрузку. Результат не удивил: меньше платишь — меньше получаешь. Теперь приложение держит только 97.6 RPS да и наихудшее время ожидания выросло до 2326мс:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E5853\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E5853\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E97.6\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E774.8\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E1154.58\u003C\u002Fcode\u003E, max = \u003Ccode\u003E2362.44\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E423.61\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E983.04\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E1180.67\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E2121.73\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E2326.53\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EБольше 97 RPS выжать мне не удалось, так что предлагаю зафиксировать следующий результат:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля того, чтобы держать 100 RPS, используя Azure, ASP .NET Core MVC, .NET Core 5, и MS SQL на запросе вида\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"cs\"\u003Evar users =  _ctx.Users\n                .Where(x =\u003E x.DisplayName.StartsWith(key))\n                .OrderBy(x =\u003E x.DisplayName)\n                .Take(25)\n                .ToArray();\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНам нужно потратить 49.57$ на хостинг самого веб приложения и 1200$ на БД. Много это или мало пусть каждый решает сам, но, если что — мое мнение обо всем происходящем можно найти в тегах.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"oblachno---proglyadyvaet-solnce\"\u003EОблачно — проглядывает солнце\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E1250$ за 100RPS звучит откровенно прискорбно. И, если честно, если бы я не видел это все своими глазами, то первым моим предположением было бы что кто-то изрядно накосячил. С другой стороны, быть может, я действительно где-то накосячил? Если вы помните, то проблема на относительно дешевом тарифе S3 была связана с исчерпанием квоты вычислительных ресурсов, что намекает на интенсивные вычисления на уровне БД. Но разве StartsWith такое уж сложное выражение? Давайте посмотрим запрос, в который было транслировано наше LinQ выражение (это можно сделать и в самом Azure или просто вызвав \u003Ccode\u003E.ToQueryString()\u003C\u002Fcode\u003E):\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E(@__key_0 nvarchar(4000),@__p_1 int)\nSELECT TOP(@__p_1) *\nFROM [Users] AS [u]\nWHERE (@__key_0 = N'') OR (LEFT([u].[DisplayName], LEN(@__key_0)) = @__key_0)\nORDER BY [u].[DisplayName]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EВам не кажется, что WHERE выглядит немного сложно? Наверняка Entity Framework знает лучше меня (где я, а где зубры из EntityFramework) но что если переписать этот запрос на что-то попроще и выполнять его напрямую вместо трансляции из LinQ выражения, например на такое:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"plaintext\"\u003Evar p1 = new SqlParameter(\"@DisplayName\", $\"{key}%\");\nvar query = _ctx.Users.FromSqlRaw(\n    $\"SELECT TOP 25 * FROM USERS WITH (NOLOCK) WHERE DisplayName LIKE @DisplayName ORDER BY DisplayName\", p1\n    );\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДа, я еще и схитрил, добавив NOLOCK конструкцию, но чего не сделаешь ради красивых цифр. Кстати, вместо того что бы писать SQL напрямую, можно было бы использовать \u003Ccode\u003EMicrosoft.EntityFrameworkCore.EF.Functions.Like\u003C\u002Fcode\u003E для подсказки EF что нужно использовать именно \u003Ccode\u003ELike\u003C\u002Fcode\u003E конструкцию вместо \u003Ccode\u003ELeft\u003C\u002Fcode\u003E\u002F\u003Ccode\u003ELen\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EТак что я изменил код, передеплоил приложение и снова вернулся к старо доброй S3 базе за 150$. Даю нагрузку в 50RPS и — база держит, и держит весьма неплохо — наихудший результат всего 540мс:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E3000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E3000\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E50\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E107.72\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E228.22\u003C\u002Fcode\u003E, max = \u003Ccode\u003E617.06\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E110.14\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E197.89\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E295.17\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E491.01\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E540.67\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EИспользование DTU тоже резко снизилось, на 50RPS мы используем всего 23%. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"теперь можно построить зиккурат\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F2w\u002Fhz\u002Fid\u002F2whzidblbdqpspapgeh0vsozyzm.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПохоже, что проблема действительно была в запросе, но с этим можно будет разобраться попозже. А сейчас я просто добавлю еще нагрузку и посмотрим сколько она сможет выдержать: 75RPS, 100RPS, 150RPS, 300RPS! Нет, до 300 мы все-таки не дотянули, но 283 запроса в секунду вытянуть смогли. И это на тарифе, который до этого не держал даже 50RPS:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E17018\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E17018\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E283.6\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E217.56\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E1572.22\u003C\u002Fcode\u003E, max = \u003Ccode\u003E4386.47\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E882.05\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E1172.48\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E2332.67\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E3295.23\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E4112.38\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EНо нам же столько не надо! Если вы помните, задача стояла выяснить цену 100RPS, так что я начал поэтапно уменьшать тарифный план и выяснил, что с новым запросом, для 100RPS достаточно и базы данных уровня S1 — 20 DTU за 30$, причем с не самым плохим временем отклика — 776мс в наихудшем случае.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E6000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E6000\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E100\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E212.99\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E376.42\u003C\u002Fcode\u003E, max = \u003Ccode\u003E1219.67\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E153.35\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E320.51\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E445.44\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E736.77\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E776.7\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EПри этом мы почти уперлись в лимит DTU, использовав около 84%, так что похоже я нашел оптимальный план для выбранной нагрузки.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2 id=\"vyvody\"\u003EВыводы?\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EС выводами все неоднозначно. С одной стороны, мне понадобилась 1250$ для того, чтобы выдержать с виду вполне безобидный запрос на не самой большой нагрузке. С другой стороны, с помощью той же Azure мне удалось сначала решить задачу и получить свои 100 RPS (пусть это и стоило денег), а потом уже найти узкое место и исправить его. С третьей :) стороны даже полторы тысячи долларов в месяц — это не самая большая сумма для предприятия. С четвертой стороны, 100 запросов в секунду тоже не хайлоад.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EОдно понятно точно — с базой данных и EF нужно быть осторожным, положить свое собственное приложение совсем не сложно.\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСпасибо за внимание, надеюсь было интересно. Для желающих повторить мои приключения исходники доступны по \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FDrag13\u002FAzurePerformanceTest\" rel=\"nofollow noopener noreferrer\"\u003Eссылке\u003C\u002Fa\u003E на GitHub. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EОбновленные планы выполнения запросов\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E\u003Cp\u003EДля Entity Framework:\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Index scan\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fkm\u002Fda\u002F_m\u002Fkmda_m2uyzbjjmhrcvducljumhm.png\"\u002F\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EДля прямого SQL:\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Index seek\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fd9\u002Fw7\u002Fmz\u002Fd9w7mzciusv5oo_wdi4jrhkn2pi.png\"\u002F\u003E\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EЕще статистика по локальному тестированию\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E\u003Ch3 id=\"ef-async\"\u003EEF ASYNC\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E9523\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E9523\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E158.7\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E31.1\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E1018.09\u003C\u002Fcode\u003E, max = \u003Ccode\u003E3319.5\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E461.32\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E978.94\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E1325.06\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E1795.07\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E2140.16\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"sql-sync\"\u003ESQL Sync\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003ERate: \u003Ccode\u003E2300\u003C\u002Fcode\u003E, during: \u003Ccode\u003E00:01:00\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E138000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E125883\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E2098\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E3.1\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E698.66\u003C\u002Fcode\u003E, max = \u003Ccode\u003E8232.34\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E1336.41\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E125.38\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E479.49\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E3049.47\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E7213.06\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Efail stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E138000\u003C\u002Fcode\u003E, fail = \u003Ccode\u003E12117\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E202\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E378.79\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E5606.03\u003C\u002Fcode\u003E, max = \u003Ccode\u003E8208.32\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E1144.1\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E5529.6\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E6074.37\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E7249.92\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E7536.64\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Ch3 id=\"sql-async\"\u003ESQL Async\u003C\u002Fh3\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003ERate: \u003Ccode\u003E2400\u003C\u002Fcode\u003E, during: \u003Ccode\u003E00:01:00\u003C\u002Fcode\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Eok stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E144000\u003C\u002Fcode\u003E, ok = \u003Ccode\u003E136391\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E2273.2\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E1.91\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E1308.2\u003C\u002Fcode\u003E, max = \u003Ccode\u003E7596.02\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E1579.3\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E492.03\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E1988.61\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E4415.49\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E6520.83\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"scrollable-table\"\u003E\u003Ctable\u003E\r\n\u003Cthead\u003E\r\n\u003Ctr\u003E\r\n\u003Cth\u003Estep\u003C\u002Fth\u003E\r\n\u003Cth\u003Efail stats\u003C\u002Fth\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Fthead\u003E\r\n\u003Ctbody\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Ename\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E\u003Ccode\u003Eindex.html\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Erequest count\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Eall = \u003Ccode\u003E144000\u003C\u002Fcode\u003E, fail = \u003Ccode\u003E7609\u003C\u002Fcode\u003E, RPS = \u003Ccode\u003E126.8\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency\u003C\u002Ftd\u003E\r\n\u003Ctd\u003Emin = \u003Ccode\u003E181.63\u003C\u002Fcode\u003E, mean = \u003Ccode\u003E6122.8\u003C\u002Fcode\u003E, max = \u003Ccode\u003E7573.97\u003C\u002Fcode\u003E, StdDev = \u003Ccode\u003E762.05\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003Ctr\u003E\r\n\u003Ctd\u003Elatency percentile\u003C\u002Ftd\u003E\r\n\u003Ctd\u003E50% = \u003Ccode\u003E6316.03\u003C\u002Fcode\u003E, 75% = \u003Ccode\u003E6590.46\u003C\u002Fcode\u003E, 95% = \u003Ccode\u003E7204.86\u003C\u002Fcode\u003E, 99% = \u003Ccode\u003E7340.03\u003C\u002Fcode\u003E\u003C\u002Ftd\u003E\r\n\u003C\u002Ftr\u003E\r\n\u003C\u002Ftbody\u003E\r\n\u003C\u002Ftable\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cblockquote\u003Estatus codes for scenario: \u003Ccode\u003Esimple_http\u003C\u002Fcode\u003E\u003C\u002Fblockquote\u003E\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EАпдейт\u003C\u002Fstrong\u003E \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003ECтатья обновлена в части локального тестирования из-за допущеных ошибок. Часть, посвященная облачному тестированию, перепроверена и осталась без изменений. Я так же благодарю \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fusers\u002Fmvv-rus\u002F\" class=\"user_link\"\u003Emvv-rus\u003C\u002Fa\u003E, \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fusers\u002Fnobody8\u002F\" class=\"user_link\"\u003Enobody8\u003C\u002Fa\u003E, @Fullborg и других хабровчан, которые своими детальными комментариями подтолкнули меня протестировать все еще раз и найти ошибку. \u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003EСпасибо вам большое!\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fdrag13.io\u002F\" rel=\"nofollow noopener noreferrer\"\u003EDrag13\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"azure"},{"titleHtml":"load testing"},{"titleHtml":"netcore"},{"titleHtml":"sql"},{"titleHtml":"nbomber"},{"titleHtml":"это прискорбно"},{"titleHtml":"гражданская оборона"},{"titleHtml":"ведьмак"},{"titleHtml":"незнайка на луне"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F583084\u002F3bd9f157b5cb4c11d8793971b4781ff3\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F583084\u002F3bd9f157b5cb4c11d8793971b4781ff3\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583084\\\u002F\"},\"headline\":\"[Пятничное] Сколько стоит держать 100 запросов в секунду в Azure на .NET Core MVC и MSSQL\",\"datePublished\":\"2021-10-15T10:03:52+03:00\",\"dateModified\":\"2021-10-18T20:23:51+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Drag13\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность баз...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583084\\\u002F#post-content-body\",\"about\":[\"h_hi\",\"h_webdev\",\"h_cloud_computing\",\"h_mssql\",\"h_web_testing\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F6h\\\u002F56\\\u002Fvg\\\u002F6h56vgajsm1p51c-qqga5j0fwc4.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Ft6\\\u002Fpn\\\u002Ffl\\\u002Ft6pnfl5a-ltnt5-k84x9lhdhtam.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F2o\\\u002Fhn\\\u002Fzk\\\u002F2ohnzk1dc4_alhara5sptfgvfjg.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F2w\\\u002Fhz\\\u002Fid\\\u002F2whzidblbdqpspapgeh0vsozyzm.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fkm\\\u002Fda\\\u002F_m\\\u002Fkmda_m2uyzbjjmhrcvducljumhm.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fd9\\\u002Fw7\\\u002Fmz\\\u002Fd9w7mzciusv5oo_wdi4jrhkn2pi.png\"]}","metaDescription":"Эта пятничная история началась еще пять лет назад. Один мой друг, который в то время помогал запускаться разным стартапам, пожаловался на производительность базы данных, размещенной в Azure. По его...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"hi,webdev,cloud_computing,mssql,web_testing"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

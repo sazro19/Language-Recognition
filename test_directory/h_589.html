@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Распознание длинных аудио сервисом Yandex SpeechKit из командной строки bash/shell через API / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583230\/"},"headline":"Распознание длинных аудио сервисом Yandex SpeechKit из командной строки bash\/shell через API","datePublished":"2021-10-13T14:05:38+03:00","dateModified":"2021-10-14T10:28:26+03:00","author":{"@type":"Person","name":"Александр Третьяков"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на...","url":"https:\/\/habr.com\/ru\/post\/583230\/#post-content-body","about":["h_programming","h_yandex_api","h_linux_dev","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583230\/0e9ab5403cc060b01a620118c8a9a6fc\/"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Распознание длинных аудио сервисом Yandex SpeechKit из командной строки bash/shell через API" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Распознание длинных аудио сервисом Yandex SpeechKit из командной строки bash/shell через API" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Распознание длинных аудио сервисом Yandex SpeechKit из командной строки bash/shell через API" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/94a/7a2/393/94a7a23939bcbe802e54a67648400608.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/94a/7a2/393/94a7a23939bcbe802e54a67648400608.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/94a/7a2/393/94a7a23939bcbe802e54a67648400608.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/94a/7a2/393/94a7a23939bcbe802e54a67648400608.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/94a/7a2/393/94a7a23939bcbe802e54a67648400608.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583230" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-13T11:05:38.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583230/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583230/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/94a/7a2/393/94a7a23939bcbe802e54a67648400608.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583230/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Story-teller/" title="Story-teller" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/Story-teller/" class="tm-user-info__username">
+      Story-teller
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-13T11:05:38.000Z" title="2021-10-13, 14:05">13  октября   в 14:05</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Распознание длинных аудио сервисом Yandex SpeechKit из командной строки bash/shell через API</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/yandex_api/" class="tm-article-snippet__hubs-item-link"><span>Яндекс API</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка под Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который позволяет через консоль взаимодействовать с Яндексом.</p><h2>Как это работает и зачем вообще нужно</h2><p>Есть много разных (в том числе бесплатных) возможностей как синтеза, так и распознания речи. Яндекс и Сбер предлагают свои сервисы по распознанию, у Яндекса это speech-kit, у Сбера <a href="https://sberdevices.ru/smartspeech/" rel="noopener noreferrer nofollow">SmartSpeech</a> (до конца 2021 года даёт бесплатный доступ). </p><p>Экономика распознания очень простая: на рынке услуги стоят от 10 рублей за минуту, плюс вопросы к скорости и качеству и много чего ещё. Бесплатные варианты не рассматривали, так как нужно было решение сразу более-менее готовое. Яндекс предлагает цену в 1 рубль за минуту, при скорости распознания в 10 раз быстрее чем длительность дорожки. Если скорость не важна, то цена вообще 25 копеек. </p><p>Полученный результат в чистом виде использовать нельзя, это просто набор строчек, разбитых по паузам (более-менее соответствует предложениям), без знаков препинания. Кстати сервис Сбера обещает расставлять запятые, но его пока не пробовал. </p><p>Итак, то, что предлагает Яндекс (и другие), пока что просто вспомогательный инструмент, который, впрочем, может значительно ускорить определенные процессы. На рынке уже появились организации, которые на основе их решений предлагают транскрибацию. Если коротко, то получается так: загружается дорожка, получается сырой текст, который берет в работу человек, пересушивает, вносит правки. Экономия времени – нужно меньше печатать. </p><p>К сожалению, пока внятного интерфейса для работы с сервисом нет, поэтому, чтобы дать возможность, сотрудникам взаимодействовать с ним, написал скрипт для командной строки. Начиналось всё, как тестовое использование, в целом, конечно, лучше сделать более дружелюбный способ. Но тут думаю, больше будет интересны моменты как подключаться.</p><p>Чтобы начать, нужно:</p><ul><li><p>Создать платёжный аккаунт (Яндекс даёт гранты на тестовое использование)</p></li><li><p>Создать сервисный аккаунт</p></li><li><p>Создать бакет на Яндекс-облаке</p></li></ul><h2>Два простых запроса</h2><p>У Яндекса есть свой CLI для работы с командой строкой, нужно его <a href="https://cloud.yandex.ru/docs/cli/" rel="noopener noreferrer nofollow">поставить</a>. Дальше в целом тут всё просто, один запрос на распознание, второй запрос на получение результата. Собственно, всё строится вокруг деталей этих двух запросов. </p><p>Запрос на распознание:</p><pre><code class="bash">curl -sX POST \
+    -H "Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта>" \ 
+    -d '@params.json' \
+    https://transcribe.api.cloud.yandex.net/speech/stt/v2/longRunningRecognize</code></pre><p>В заголовке передаём ключ-api от сервисного аккаунта, и нужно сформировать файл params.json. В нём прописываются: язык распознания, модель (<a href="https://cloud.yandex.ru/docs/speechkit/stt/models" rel="noopener noreferrer nofollow">доступно 4 вида</a>) и ссылка на файл для распознания.</p><pre><code class="bash">cat > params.json &lt;&lt; -EOF
+{
+    "config": {
+    "specification": {
+        "languageCode": "ru-RU", 
+        "model": "hqa"
+        }
+    },
+        "audio": {
+            "uri": "https://storage.yandexcloud.net/&lt;имя-бакета>/&lt;путь-к-файлу>"
+        }
+    }
+-EOF</code></pre><p>Если с языком и моделью всё в целом, ясно, то с адресом файла возникают определенные сложности. Сам Яндекс подробно описывает как можно закинуть файл в облако с<a href="https://cloud.yandex.ru/docs/storage/operations/objects/upload" rel="noopener noreferrer nofollow">воими руками прямо в браузере</a>, а вот, как это делать из командной строки, выяснить сложнее. </p><p>Оказывается, Яндекс-облако работает на CLI Амазона, который <a href="https://cloud.yandex.ru/docs/storage/tools/aws-cli" rel="noopener noreferrer nofollow">тоже нужно поставить</a> отдельно, другого способа закинуть файл в бакет, я не нашёл. </p><p>После установки, получаем следующую строчку для загрузки файла:</p><pre><code class="bash">aws --endpoint-url=https://storage.yandexcloud.net \
+    s3 cp &lt;название-файла> s3://&lt;имя-бакета>/&lt;название-файла></code></pre><p>Запрос на результат распознания:</p><pre><code class="bash">curl -sH "Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта>" \
+    https://operation.api.cloud.yandex.net/operations/{operationId} </code></pre><p>Чтобы его отправить нам нужно знать id операции {operationID}, но об этом ниже. </p><p>Получаем набор из трёх команд:</p><ol><li><p>Загрузка файла</p></li><li><p>Запрос на распознание</p></li><li><p>Запрос на результат распознания</p></li></ol><h2>Ответ на запрос на распознание, извлечение id операции</h2><p>Загружаем файл (получаем адрес его ссылки), отправляем запрос на распознание, дальше опять начинаются детали. После отправки запроса на распознание приходит вот такой ответ:</p><pre><code class="bash">{
+ "done": false,
+ "id": "e03sup6d5h7rq574ht8g",
+ "createdAt": "2019-04-21T22:49:29Z",
+ "createdBy": "ajes08feato88ehbbhqq",
+ "modifiedAt": "2019-04-21T22:49:29Z"
+}</code></pre><p>Нам нужно отсюда извлечь id, без него не получится сформировать запрос на получение результата. Поэтому, вывод запроса на распознание лучше перенаправить в файл, а дальше уже извлекать id.</p><pre><code class="bash">grep 'id' &lt;имя-файла> | sed 's/^.*: "//' | sed 's/",*$//'</code></pre><p>Теперь можно сформировать запрос на получение результата.</p><h2>Запрос результата</h2><p>Ответ на запрос приходит двух видов: готов ("done": true) и не готов ("done": false),  возникает необходимость проверки условия, если результат не готов, то нужно отправить ещё запрос, если готов, то можно извлекать текст. </p><p>Можно работать с тем же файлом, куда сохранялся результат вывода запроса на распознание, можно перенаправить вывод в другой файл. Теперь при помощи grep можно проверить статус операции и если результата нет гонять её по кругу, пока не будет получен успех.</p><pre><code class="bash">curl -sH "Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта>" \
+    https://operation.api.cloud.yandex.net/operations/{operationID} > log.txt
+
+isready=$(grep 'done' log.txt | sed 's/^.*: //' | sed 's/,*$//')
+
+if [[ $isready == "false" ]]; then
+    while [[ $isready == "false" ]]; do
+        curl -sH "Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта>" \
+            https://operation.api.cloud.yandex.net/operations/{operationID} > log.txt
+        isready=$(grep 'done' log.txt | sed 's/^.*: //' | sed 's/,*$//')
+        sleep 60 # пожалеем сервер не будем спамить без конца
+        if [[ $isready == "true" ]]; then		
+            break
+        fi	
+    done
+fi</code></pre><p>Если распознание завершено, придёт ответ, который нужно привести в нормальный вид. При помощи grep и sed оставляем строчки с текстом, сохраняем в файл result.txt.</p><pre><code class="bash">grep "text" log.txt | sed 's/^.*: "//' | sed 's/",*$//' | sed -e G > result.txt</code></pre><p>В итоге получаем вот такой нехитрый набор из 5 команд, который можно собрать в скрипт:</p><pre><code class="bash">#Загрузка файла в облако
+aws --endpoint-url=https://storage.yandexcloud.net \
+            s3 cp &lt;название-файла> s3://&lt;имя-бакета>/&lt;название-файла> 
+
+#Создание файла с параметрами
+cat > params.json &lt;&lt; -EOF
+{
+    "config": {
+    "specification": {
+        "languageCode": "ru-RU", 
+        "model": "hqa"
+    }
+},
+    "audio": {
+         "uri": "https://storage.yandexcloud.net/&lt;имя-бакета>/&lt;путь-к-файлу>"
+     }
+}
+-EOF
+
+#Запрос на распознание
+curl -sX POST \
+    -H "Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта>" \ 
+    -d '@params.json' \
+        https://transcribe.api.cloud.yandex.net/speech/stt/v2/longRunningRecognize > log.txt
+
+#Запрос результата распознания
+isready=$(grep 'done' log.txt | sed 's/^.*: //' | sed 's/,*$//')
+if [[ $isready == "false" ]]; then
+    while [[ $isready == "false" ]]; do
+        curl -sH "Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта>" \
+            https://operation.api.cloud.yandex.net/operations/{operationID} > log.txt 
+        isready=$(grep 'done' log.txt | sed 's/^.*: //' | sed 's/,*$//')
+        sleep 60 
+        if [[ $isready == "true" ]]; then
+            grep "text" log.txt | sed 's/^.*: "//' | sed 's/",*$//' | sed -e G > result.txt
+            exit
+        fi
+    done
+fi
+</code></pre><p>Как видно, просто вручную это всё делать не очень удобно, хотя команд и не много, но хочется всё автоматизировать и сделать в виде скрипта. Основной затык в месте проверки статуса операции без этого цикла совсем печаль. </p><p>Выложил на <a href="https://github.com/Sstoryteller2/spttx" rel="noopener noreferrer nofollow">github </a>более-менее законченную версию с минимальным учётом всех возможных сценариев работы, если кому-то надо. </p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%80%D0%B0%D1%81%D0%BF%D0%BE%D0%B7%D0%BD%D0%B0%D0%BD%D0%B8%D0%B5%20%D1%80%D0%B5%D1%87%D0%B8%5D" class="tm-tags-list__link">распознание речи</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bspeechkit%5D" class="tm-tags-list__link">speechkit</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bspeech%20to%20text%5D" class="tm-tags-list__link">speech to text</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Byandex%20api%5D" class="tm-tags-list__link">yandex api</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Byandex%20speechkit%5D" class="tm-tags-list__link">yandex speechkit</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81%D1%8B%5D" class="tm-tags-list__link">интерфейсы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D1%84%D0%B5%D0%B9%D1%81%D1%8B%20%D0%B8%20%D1%8E%D0%B7%D0%B0%D0%B1%D0%B8%D0%BB%D0%B8%D1%82%D0%B8%5D" class="tm-tags-list__link">интерфейсы и юзабилити</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bbash-%D1%81%D0%BA%D1%80%D0%B8%D0%BF%D1%82%5D" class="tm-tags-list__link">bash-скрипт</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bbash-%D0%BF%D1%80%D0%BE%D0%B3%D1%80%D0%B0%D0%BC%D0%BC%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">bash-программирование</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/yandex_api/" class="tm-hubs-list__link">
+    Яндекс API
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/linux_dev/" class="tm-hubs-list__link">
+    Разработка под Linux
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 4: ↑4 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 4: ↑4 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+4</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.9K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    32
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Story-teller/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 4 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    2
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">5.5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Александр Третьяков</span> <a href="/ru/users/Story-teller/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Story-teller
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583230/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 9 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583230/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583230/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583230":{"id":"583230","timePublished":"2021-10-13T11:05:38+00:00","isCorporative":false,"lang":"ru","titleHtml":"Распознание длинных аудио сервисом Yandex SpeechKit из командной строки bash\u002Fshell через API","leadData":{"textHtml":"\u003Cp\u003EДовольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который позволяет через консоль отправлять запросы и получать результаты.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F94a\u002F7a2\u002F393\u002F94a7a23939bcbe802e54a67648400608.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F94a\u002F7a2\u002F393\u002F94a7a23939bcbe802e54a67648400608.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":2,"votesCount":4},"rating":5.5,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2218268","alias":"Story-teller","fullname":"Александр Третьяков","avatarUrl":null,"speciality":null},"statistics":{"commentsCount":9,"favoritesCount":32,"readingCount":1866,"score":4,"votesCount":4},"hubs":[{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"17696","alias":"yandex_api","type":"collective","title":"Яндекс API","titleHtml":"Яндекс API","isProfiled":true},{"relatedData":null,"id":"19727","alias":"linux_dev","type":"collective","title":"Разработка под Linux","titleHtml":"Разработка под Linux","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EДовольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который позволяет через консоль взаимодействовать с Яндексом.\u003C\u002Fp\u003E\u003Ch2\u003EКак это работает и зачем вообще нужно\u003C\u002Fh2\u003E\u003Cp\u003EЕсть много разных (в том числе бесплатных) возможностей как синтеза, так и распознания речи. Яндекс и Сбер предлагают свои сервисы по распознанию, у Яндекса это speech-kit, у Сбера \u003Ca href=\"https:\u002F\u002Fsberdevices.ru\u002Fsmartspeech\u002F\" rel=\"noopener noreferrer nofollow\"\u003ESmartSpeech\u003C\u002Fa\u003E (до конца 2021 года даёт бесплатный доступ). \u003C\u002Fp\u003E\u003Cp\u003EЭкономика распознания очень простая: на рынке услуги стоят от 10 рублей за минуту, плюс вопросы к скорости и качеству и много чего ещё. Бесплатные варианты не рассматривали, так как нужно было решение сразу более-менее готовое. Яндекс предлагает цену в 1 рубль за минуту, при скорости распознания в 10 раз быстрее чем длительность дорожки. Если скорость не важна, то цена вообще 25 копеек. \u003C\u002Fp\u003E\u003Cp\u003EПолученный результат в чистом виде использовать нельзя, это просто набор строчек, разбитых по паузам (более-менее соответствует предложениям), без знаков препинания. Кстати сервис Сбера обещает расставлять запятые, но его пока не пробовал. \u003C\u002Fp\u003E\u003Cp\u003EИтак, то, что предлагает Яндекс (и другие), пока что просто вспомогательный инструмент, который, впрочем, может значительно ускорить определенные процессы. На рынке уже появились организации, которые на основе их решений предлагают транскрибацию. Если коротко, то получается так: загружается дорожка, получается сырой текст, который берет в работу человек, пересушивает, вносит правки. Экономия времени – нужно меньше печатать. \u003C\u002Fp\u003E\u003Cp\u003EК сожалению, пока внятного интерфейса для работы с сервисом нет, поэтому, чтобы дать возможность, сотрудникам взаимодействовать с ним, написал скрипт для командной строки. Начиналось всё, как тестовое использование, в целом, конечно, лучше сделать более дружелюбный способ. Но тут думаю, больше будет интересны моменты как подключаться.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы начать, нужно:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EСоздать платёжный аккаунт (Яндекс даёт гранты на тестовое использование)\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСоздать сервисный аккаунт\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСоздать бакет на Яндекс-облаке\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Ch2\u003EДва простых запроса\u003C\u002Fh2\u003E\u003Cp\u003EУ Яндекса есть свой CLI для работы с командой строкой, нужно его \u003Ca href=\"https:\u002F\u002Fcloud.yandex.ru\u002Fdocs\u002Fcli\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eпоставить\u003C\u002Fa\u003E. Дальше в целом тут всё просто, один запрос на распознание, второй запрос на получение результата. Собственно, всё строится вокруг деталей этих двух запросов. \u003C\u002Fp\u003E\u003Cp\u003EЗапрос на распознание:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Ecurl -sX POST \\\n    -H \"Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта\u003E\" \\ \n    -d '@params.json' \\\n    https:\u002F\u002Ftranscribe.api.cloud.yandex.net\u002Fspeech\u002Fstt\u002Fv2\u002FlongRunningRecognize\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ заголовке передаём ключ-api от сервисного аккаунта, и нужно сформировать файл params.json. В нём прописываются: язык распознания, модель (\u003Ca href=\"https:\u002F\u002Fcloud.yandex.ru\u002Fdocs\u002Fspeechkit\u002Fstt\u002Fmodels\" rel=\"noopener noreferrer nofollow\"\u003Eдоступно 4 вида\u003C\u002Fa\u003E) и ссылка на файл для распознания.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Ecat \u003E params.json &lt;&lt; -EOF\n{\n    \"config\": {\n    \"specification\": {\n        \"languageCode\": \"ru-RU\", \n        \"model\": \"hqa\"\n        }\n    },\n        \"audio\": {\n            \"uri\": \"https:\u002F\u002Fstorage.yandexcloud.net\u002F&lt;имя-бакета\u003E\u002F&lt;путь-к-файлу\u003E\"\n        }\n    }\n-EOF\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЕсли с языком и моделью всё в целом, ясно, то с адресом файла возникают определенные сложности. Сам Яндекс подробно описывает как можно закинуть файл в облако с\u003Ca href=\"https:\u002F\u002Fcloud.yandex.ru\u002Fdocs\u002Fstorage\u002Foperations\u002Fobjects\u002Fupload\" rel=\"noopener noreferrer nofollow\"\u003Eвоими руками прямо в браузере\u003C\u002Fa\u003E, а вот, как это делать из командной строки, выяснить сложнее. \u003C\u002Fp\u003E\u003Cp\u003EОказывается, Яндекс-облако работает на CLI Амазона, который \u003Ca href=\"https:\u002F\u002Fcloud.yandex.ru\u002Fdocs\u002Fstorage\u002Ftools\u002Faws-cli\" rel=\"noopener noreferrer nofollow\"\u003Eтоже нужно поставить\u003C\u002Fa\u003E отдельно, другого способа закинуть файл в бакет, я не нашёл. \u003C\u002Fp\u003E\u003Cp\u003EПосле установки, получаем следующую строчку для загрузки файла:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eaws --endpoint-url=https:\u002F\u002Fstorage.yandexcloud.net \\\n    s3 cp &lt;название-файла\u003E s3:\u002F\u002F&lt;имя-бакета\u003E\u002F&lt;название-файла\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗапрос на результат распознания:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Ecurl -sH \"Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта\u003E\" \\\n    https:\u002F\u002Foperation.api.cloud.yandex.net\u002Foperations\u002F{operationId} \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЧтобы его отправить нам нужно знать id операции {operationID}, но об этом ниже. \u003C\u002Fp\u003E\u003Cp\u003EПолучаем набор из трёх команд:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EЗагрузка файла\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЗапрос на распознание\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЗапрос на результат распознания\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Ch2\u003EОтвет на запрос на распознание, извлечение id операции\u003C\u002Fh2\u003E\u003Cp\u003EЗагружаем файл (получаем адрес его ссылки), отправляем запрос на распознание, дальше опять начинаются детали. После отправки запроса на распознание приходит вот такой ответ:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E{\n \"done\": false,\n \"id\": \"e03sup6d5h7rq574ht8g\",\n \"createdAt\": \"2019-04-21T22:49:29Z\",\n \"createdBy\": \"ajes08feato88ehbbhqq\",\n \"modifiedAt\": \"2019-04-21T22:49:29Z\"\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНам нужно отсюда извлечь id, без него не получится сформировать запрос на получение результата. Поэтому, вывод запроса на распознание лучше перенаправить в файл, а дальше уже извлекать id.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Egrep 'id' &lt;имя-файла\u003E | sed 's\u002F^.*: \"\u002F\u002F' | sed 's\u002F\",*$\u002F\u002F'\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь можно сформировать запрос на получение результата.\u003C\u002Fp\u003E\u003Ch2\u003EЗапрос результата\u003C\u002Fh2\u003E\u003Cp\u003EОтвет на запрос приходит двух видов: готов (\"done\": true) и не готов (\"done\": false),  возникает необходимость проверки условия, если результат не готов, то нужно отправить ещё запрос, если готов, то можно извлекать текст. \u003C\u002Fp\u003E\u003Cp\u003EМожно работать с тем же файлом, куда сохранялся результат вывода запроса на распознание, можно перенаправить вывод в другой файл. Теперь при помощи grep можно проверить статус операции и если результата нет гонять её по кругу, пока не будет получен успех.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Ecurl -sH \"Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта\u003E\" \\\n    https:\u002F\u002Foperation.api.cloud.yandex.net\u002Foperations\u002F{operationID} \u003E log.txt\n\nisready=$(grep 'done' log.txt | sed 's\u002F^.*: \u002F\u002F' | sed 's\u002F,*$\u002F\u002F')\n\nif [[ $isready == \"false\" ]]; then\n    while [[ $isready == \"false\" ]]; do\n        curl -sH \"Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта\u003E\" \\\n            https:\u002F\u002Foperation.api.cloud.yandex.net\u002Foperations\u002F{operationID} \u003E log.txt\n        isready=$(grep 'done' log.txt | sed 's\u002F^.*: \u002F\u002F' | sed 's\u002F,*$\u002F\u002F')\n        sleep 60 # пожалеем сервер не будем спамить без конца\n        if [[ $isready == \"true\" ]]; then\t\t\n            break\n        fi\t\n    done\nfi\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЕсли распознание завершено, придёт ответ, который нужно привести в нормальный вид. При помощи grep и sed оставляем строчки с текстом, сохраняем в файл result.txt.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Egrep \"text\" log.txt | sed 's\u002F^.*: \"\u002F\u002F' | sed 's\u002F\",*$\u002F\u002F' | sed -e G \u003E result.txt\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ итоге получаем вот такой нехитрый набор из 5 команд, который можно собрать в скрипт:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E#Загрузка файла в облако\naws --endpoint-url=https:\u002F\u002Fstorage.yandexcloud.net \\\n            s3 cp &lt;название-файла\u003E s3:\u002F\u002F&lt;имя-бакета\u003E\u002F&lt;название-файла\u003E \n\n#Создание файла с параметрами\ncat \u003E params.json &lt;&lt; -EOF\n{\n    \"config\": {\n    \"specification\": {\n        \"languageCode\": \"ru-RU\", \n        \"model\": \"hqa\"\n    }\n},\n    \"audio\": {\n         \"uri\": \"https:\u002F\u002Fstorage.yandexcloud.net\u002F&lt;имя-бакета\u003E\u002F&lt;путь-к-файлу\u003E\"\n     }\n}\n-EOF\n\n#Запрос на распознание\ncurl -sX POST \\\n    -H \"Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта\u003E\" \\ \n    -d '@params.json' \\\n        https:\u002F\u002Ftranscribe.api.cloud.yandex.net\u002Fspeech\u002Fstt\u002Fv2\u002FlongRunningRecognize \u003E log.txt\n\n#Запрос результата распознания\nisready=$(grep 'done' log.txt | sed 's\u002F^.*: \u002F\u002F' | sed 's\u002F,*$\u002F\u002F')\nif [[ $isready == \"false\" ]]; then\n    while [[ $isready == \"false\" ]]; do\n        curl -sH \"Authorization: Api-Key &lt;ключ-api-сервисного-аккаунта\u003E\" \\\n            https:\u002F\u002Foperation.api.cloud.yandex.net\u002Foperations\u002F{operationID} \u003E log.txt \n        isready=$(grep 'done' log.txt | sed 's\u002F^.*: \u002F\u002F' | sed 's\u002F,*$\u002F\u002F')\n        sleep 60 \n        if [[ $isready == \"true\" ]]; then\n            grep \"text\" log.txt | sed 's\u002F^.*: \"\u002F\u002F' | sed 's\u002F\",*$\u002F\u002F' | sed -e G \u003E result.txt\n            exit\n        fi\n    done\nfi\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКак видно, просто вручную это всё делать не очень удобно, хотя команд и не много, но хочется всё автоматизировать и сделать в виде скрипта. Основной затык в месте проверки статуса операции без этого цикла совсем печаль. \u003C\u002Fp\u003E\u003Cp\u003EВыложил на \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FSstoryteller2\u002Fspttx\" rel=\"noopener noreferrer nofollow\"\u003Egithub \u003C\u002Fa\u003Eболее-менее законченную версию с минимальным учётом всех возможных сценариев работы, если кому-то надо. \u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"распознание речи"},{"titleHtml":"speechkit"},{"titleHtml":"speech to text"},{"titleHtml":"yandex api"},{"titleHtml":"yandex speechkit"},{"titleHtml":"интерфейсы"},{"titleHtml":"интерфейсы и юзабилити"},{"titleHtml":"bash-скрипт"},{"titleHtml":"bash-программирование"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F94a\u002F7a2\u002F393\u002F94a7a23939bcbe802e54a67648400608.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F94a\u002F7a2\u002F393\u002F94a7a23939bcbe802e54a67648400608.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583230\\\u002F\"},\"headline\":\"Распознание длинных аудио сервисом Yandex SpeechKit из командной строки bash\\\u002Fshell через API\",\"datePublished\":\"2021-10-13T14:05:38+03:00\",\"dateModified\":\"2021-10-14T10:28:26+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Александр Третьяков\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583230\\\u002F#post-content-body\",\"about\":[\"h_programming\",\"h_yandex_api\",\"h_linux_dev\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583230\\\u002F0e9ab5403cc060b01a620118c8a9a6fc\\\u002F\"]}","metaDescription":"Довольно давно Яндекс предоставляет платные сервисы по синтезу и распознанию речи. К сожалению, интерфейса для регулярного использования сервисов нет, поэтому на досуге написал скрипт, который...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"programming,yandex_api,linux_dev"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

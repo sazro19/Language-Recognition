@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Техническая экспертиза: настраиваем CI на М1 с командой Welps / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/selectel\/blog\/585384\/"},"headline":"Техническая экспертиза: настраиваем CI на М1 с командой Welps","datePublished":"2021-10-25T17:22:51+03:00","dateModified":"2021-10-25T17:50:10+03:00","author":{"@type":"Person","name":"Seleditor"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.   Сегодня встречайте Виталия Волкова из компа...","url":"https:\/\/habr.com\/ru\/company\/selectel\/blog\/585384\/#post-content-body","about":["c_selectel","h_lifehacks","h_network_hardware","h_network_technologies","h_hosting","f_admin","f_popsci"],"image":["https:\/\/habrastorage.org\/webt\/ck\/qj\/vx\/ckqjvxjfrr10bnvycobihpvef4a.png","https:\/\/habrastorage.org\/webt\/ug\/oz\/cs\/ugozcslbs1rle70f3aec1iifpfg.png","https:\/\/habrastorage.org\/webt\/ei\/6j\/jp\/ei6jjpuwbtsr8kvfkvwi0d6t0rw.png","https:\/\/habrastorage.org\/webt\/ph\/8z\/sc\/ph8zsc5cwhhb8dh0mzzz-ifc58k.png","https:\/\/habrastorage.org\/webt\/ig\/g1\/yv\/igg1yvpi1-apfpatmnvm17frh_w.png","https:\/\/habrastorage.org\/webt\/an\/tz\/g7\/antzg7-tqdng7a16qlptw1ilrhq.png","https:\/\/habrastorage.org\/webt\/n6\/r-\/ed\/n6r-ed5tvww32opiwfj-ged-xs8.png","https:\/\/habrastorage.org\/webt\/8c\/od\/pd\/8codpd1bt42b8v1n-a7dbcze2va.png","https:\/\/habrastorage.org\/webt\/ps\/wh\/u6\/pswhu6kz2hakf9ab0a8h5gaqvua.png","https:\/\/habrastorage.org\/webt\/gz\/2o\/ah\/gz2oahv4ckxn2tvztno4z6ofzqo.png","https:\/\/habrastorage.org\/webt\/i1\/2s\/bp\/i12sbpx0btq2qkopfvrkucn9fes.png","https:\/\/habrastorage.org\/webt\/bc\/ev\/lc\/bcevlcwdt9h5d1faa0daz8jzdec.png","https:\/\/habrastorage.org\/webt\/_m\/7d\/5d\/_m7d5dmcfzmmzlvhzcyci-6d6l4.png","https:\/\/habrastorage.org\/webt\/p_\/co\/7t\/p_co7tvtqqws6sdhcjhgmgie1oq.png","https:\/\/habrastorage.org\/webt\/g1\/zq\/yh\/g1zqyht_dnorsgjcl4mbr0zsbum.png","https:\/\/habrastorage.org\/webt\/v_\/vf\/ds\/v_vfdsfzidegziiot9_f5y2_rok.png","https:\/\/habrastorage.org\/webt\/o6\/wz\/wz\/o6wzwz5ocihzi90gd8by0o_m8qw.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Техническая экспертиза: настраиваем CI на М1 с командой Welps" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Техническая экспертиза: настраиваем CI на М1 с командой Welps" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Техническая экспертиза: настраиваем CI на М1 с командой Welps" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.
+ 
+Сегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.
+ 
+Сегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.
+ 
+Сегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.
+ 
+Сегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.
+ 
+Сегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/585384/b326896f6cb034efb21b71e35a65e2dd/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/585384/b326896f6cb034efb21b71e35a65e2dd/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/585384/b326896f6cb034efb21b71e35a65e2dd/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/585384/b326896f6cb034efb21b71e35a65e2dd/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/585384/b326896f6cb034efb21b71e35a65e2dd/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="585384" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-25T14:22:51.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/585384/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/selectel/blog/585384/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/585384/b326896f6cb034efb21b71e35a65e2dd/" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/585384/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="selectel" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/selectel/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/66a/f7d/039/66af7d03979b6d18654293d8f1e72837.png" width="48" class="tm-entity-image__pic"></div></a> <a href="https://career.habr.com/companies/selectel" rel="noopener" target="_blank" class="tm-grade tm-company-card__rating"><div class="tm-rating"><div class="tm-rating__header"><svg height="24" width="24" class="tm-svg-img tm-svg-grade__icon"><title>Оценка компании на Хабр Карьере</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#grade"></use></svg> <div class="tm-rating__counter tm-rating__counter_variant-grade">4.73</div></div> <div class="tm-rating__text tm-rating__text_variant-grade">
+    Оценка
+  </div></div></a> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">1480.89</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/selectel/profile/" class="tm-company-card__name">
+        Selectel
+      </a> <div class="tm-company-card__description">IT-инфраструктура для бизнеса</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Seleditor/" title="Seleditor" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/f21/4b9/a3d/f214b9a3df13c490cbb6110700b95965.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Seleditor/" class="tm-user-info__username">
+      Seleditor
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-25T14:22:51.000Z" title="2021-10-25, 17:22">сегодня в 17:22</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Техническая экспертиза: настраиваем CI на М1 с командой Welps</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/selectel/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Selectel</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/lifehacks/" class="tm-article-snippet__hubs-item-link"><span>Лайфхаки для гиков</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/network_hardware/" class="tm-article-snippet__hubs-item-link"><span>Сетевое оборудование</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/network_technologies/" class="tm-article-snippet__hubs-item-link"><span>Сетевые технологии</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/hosting/" class="tm-article-snippet__hubs-item-link"><span>Хостинг</span> <!----></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ck/qj/vx/ckqjvxjfrr10bnvycobihpvef4a.png"/></div> <br/>
+Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.<br/>
+ <br/>
+Сегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом разработки. Компания создает wellness-приложения и постоянно оптимизирует процессы разработки. Один из таких процессов и раскрывается автором — Виталий рассказывает, как поднять Cl на М1 с использованием <a href="https://selectel.ru/services/dedicated/mac/?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Article_251021_Welp">инфраструктуры Selectel</a>. Поехали!<br/>
+<a name="habracut"></a> <br/>
+<font color="#EB4247"><h3>Просто о сложном</h3></font> <br/>
+Что такое Cl? Это подход к программированию, где разработка ведется итерациями. В этом случае отводятся фича-ветки, которые в дальнейшем мерджатся с главной веткой. На каждой итерации необходимо производить автоматические проверки. Это помогает добиться стабильности продукта.<br/>
+<br/>
+Как это работает на практике? Сначала разработчики пушат изменения в репозиторий. Последний отрабатывает триггер с последующим запуском проверок. Они выполняются либо в облаке, либо на локальных офисных машинах. Ну а по результатам сборки команда принимает решение о валидности изменений.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ug/oz/cs/ugozcslbs1rle70f3aec1iifpfg.png"/></div> <br/>
+Вопросом автоматизации задались уже давно, за это время было написано много различных решений. Среди них: Gitlab CI, Circle CI, Jenkins и другие. Для решения наших задач мы использовали Github Actions и Fastlane. Fastlane – это набор Ruby-библиотек, которые автоматизируют взаимодействие с проектом. <br/>
+ <br/>
+<font color="#EB4247"><h3>Настраиваем автоматизацию проверок</h3></font> <br/>
+Сразу определимся, что нужно автоматизировать в первую очередь. Описанное ниже является нашим кейсом, однако с легкостью может быть доработано под ваши нужды.<br/>
+ <br/>
+В рамках этого проекта мы автоматизируем проверку кода и выпуск релизов. Что нам нужно от проверки кода? Проводить unit и ui тесты, а также проверять код линтером на опечатки. Релиз в идеале должен отправляться по нажатию на магическую кнопку с последующей отсылкой уведомления в slack.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ei/6j/jp/ei6jjpuwbtsr8kvfkvwi0d6t0rw.png"/></div> <br/>
+Проверка кода выполняется по такому алгоритму:<br/>
+<ul>
+<li>Разработчик пушит изменения в GitHub.</li>
+<li>GitHub уведомляет экшены о том, что есть изменения.</li>
+<li>Actions отправляет команду на Worker — конечно, в зависимости от того, срабатывают ли триггеры.</li>
+<li>Ну а Worker выполняет заданные разработчиками манипуляции с проектом.</li>
+<li>Fastlane показывает в обратном порядке весь аутпут из командной строки.</li>
+<li>Разработчик видит простой бинарный ответ — «ок» или «не ок».</li>
+</ul><br/>
+ Плюс алгоритма в том, что если возникли проблемы на пути внедрения изменений, то можно посмотреть, на каком этапе возникли проблемы, что является причиной, а потом при помощи Shell получить уже детальную информацию.<br/>
+ <br/>
+Но это то, что касается изменений. С релизами все чуть сложнее, здесь иной алгоритм:<br/>
+<ul>
+<li>Разработчик релизит приложение и мерджит изменения в главную ветку репо.</li>
+<li>GitHub сообщает об этом экшнам.</li>
+<li>Последние создают уже ручной триггер — это нечто вроде кнопки, которая висит в интерфейсе GitHub и ждет, когда на нее нажмут.</li>
+</ul> <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ph/8z/sc/ph8zsc5cwhhb8dh0mzzz-ifc58k.png"/></div> <br/>
+Когда потребуется зарелизить проект, разработчик этой кнопкой запускает всю цепочку процессов. Единственная разница по сравнению с предыдущим моментом — Fastlane отправляет еще и отбивку в FAQ, помогая сотрудникам быть в курсе загрузки новой версии.<br/>
+ <br/>
+<font color="#EB4247"><h3>Подготовка проекта</h3></font> <br/>
+Ну а теперь о самом интересном — подготовке проекта. Главный момент — наличие Fastlane, это можно проверить при помощи Homebrew, менеджера зависимостей. Написав в папке с проектом fastlane init получаем набор конфигфайлов. Их, правда, нужно отредактировать для того, чтобы все работало, как нужно.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ig/g1/yv/igg1yvpi1-apfpatmnvm17frh_w.png"/></div> <br/>
+Для редактирования конфигов требуется перейти в папку Fastlane, где открыть основной конфигурационный файл с названием Fastfile. Здесь прописываем два публичный лейна — первый отвечает за тесты, второй — <a href="https://ru.wikipedia.org/wiki/%D0%9B%D0%B8%D0%BD%D1%82%D0%B5%D1%80">за линтер</a>. Соответственно, если система обнаружит внесенные изменения, то запустится и тест, и линтер.<br/>
+ <br/>
+После редактирования конфигурационных файлов нужно прописать в папке с проектом (из командной строки) Fastlane test и lint. Таким образом выполняется запуск набора команд, а также тестов и линтера с отображением результатов тестирования.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/an/tz/g7/antzg7-tqdng7a16qlptw1ilrhq.png"/></div> <br/>
+<b>Ну а теперь добавляем еще и отбивку в Slack</b>, для чего потребуется создание приватного лейна, который можно будет использовать в рамках других публичных лейнов. Собственно, нам нужен «лейн-универсал», который сможет принимать схему приложения, получать актуальные версии билдов и отправлять в Slack сообщения о загрузке.<br/>
+ <br/>
+<b>Как только все будет готово, можно переходить к загрузке в Appstore</b> — здесь потребуется написать универсальную функцию, которая будет состоять из нескольких этапов:<br/>
+<br/>
+<ul>
+<li>Вызов match — готовый скрипт, который отвечает за получение сертификатов, провайдинг-профайлов и т.п. Если их нет, он установит их на рабочую машину, с тем, чтобы можно было собрать и отправить все необходимое в AppStore. Скрипт tell_uploaded_to_slack отправит в зависимости от схемы нужное сообщение в Slack. Важный нюанс — Fastlane в своем скрипте match предлагает хранить сертификаты в репозитории.</li>
+</ul> <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/n6/r-/ed/n6r-ed5tvww32opiwfj-ged-xs8.png"/></div> <br/>
+<ul>
+<li>Создание приватного репозитория, добавив все машины, которым нужен доступ к сертификату и их SSH-ключи. Это нужно для того, чтобы все Cl смогли получать актуальные и новые сертификаты.</li>
+<li>Открываем три конфига: Matchfile, Deliverfile и Appfile. Они находятся в той же папке, где и Fastfile. Matchfile нужен для сздания URL репозитория с сертификатами. Deliverfile для указания App ID, для которого будет совершаться загрузка. Appfile нужен для использования актуального сертификата. Не забудьте уточнить apple_id и team_id, после чего все заработает.</li>
+<li>Теперь пишем публичные лейны, обработчик ошибок (отбивает ошибки из консоли в Slack) и, при необходимости, автоматическую загрузку dsym. Последнее — символы отладки, которые используют аналитики, крэшлитики для расшифровки логов падения приложений. Первый лейн загружает dsym для Live-версии в Appstore, то есть для актуальной на текущий момент времени. А dsym_all просто загружает все dsym подряд начиная с установленной даты.</li>
+</ul><br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/8c/od/pd/8codpd1bt42b8v1n-a7dbcze2va.png"/></div> <br/>
+<font color="#EB4247"><h3>Учим GitHub командовать нашей машиной</h3></font> <br/>
+Для того, чтобы это сделать, требуется перейти к папке с проектом в скрытой директорию .github, где выбираем директорию workflows. Здесь нужно создать несколько yml-файлов, описывающих определенные скрипты, которые запускаются при наступлении определенных условий.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ps/wh/u6/pswhu6kz2hakf9ab0a8h5gaqvua.png"/></div> <br/>
+Первым делом нужно создать дефолтный yml-файл, который будет запускать все проверки, которые мы описывали в самом начале – это линтер и тесты. В структуре файла нужно объяснить значение ряда элементов:<br/>
+<br/>
+<ul>
+<li>Name декларирует имя текущего workflow. Он указывает на условия, при которых будет срабатывать этот workflow.</li>
+<li>Дальше у нас идет перечисление job со своими шагами. Любой элемент job должен начинаться с шага actions/checkout. Он указывает на то, что мы сейчас тянем актуальные изменения из репозитория. Причем мы готовы к запусканию обычного shell-скрипта, то есть fastlane ios lint запустит линтер и faslane ios tests запустит тесты.</li>
+<li>Upload_prod и upload-dsym будут устроены несколько сложнее. Здесь появляется другое условие – on: [workflow_dispatch]. Оно говорит нам о том, что данный workflow может быть запущен только вручную.</li>
+</ul> <br/>
+Для того, чтобы Fastline корректно взаимодействовал с iTunes Connect, нужно хранить и каким-то образом шерить сессию, особенно, если есть больше одной Cl-машины. Чтобы обеспечить корректную работу можно предлагаю хранить кукисы от spaceship внутри вашего репозитория. Да, это достаточно опасно с точки зрения ИБ, но главное — понять механику, а потом уже можно придумать собственный механизм передачи кукисов.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/gz/2o/ah/gz2oahv4ckxn2tvztno4z6ofzqo.png"/></div> <br/>
+Для решения проблемы запускаем команду Fastlane Spaceship с указанием юзера для создания папки .fastlane, внутри нее папочка spaceship с e-mail вашего аккаунта. Ну а здесь уже и размещается куки-файл. Его можно брать и помещать в папку репо, после чего научить GitHub обновлять токен. Т.е. доставать из репозитория актуальные куки и копировать ее в соответствующую папку Fastlane, Spaceship и класть на конкретную машину, на которой будет запускаться CI.<br/>
+ <br/>
+Для того, чтобы сделать процесс менее опасным, можно для текущего workflow включить ручную передачу какого-то параметра, которым будет как раз эта сессия. То есть, через интерфейс GitHub передавать в конкретный момент времени актуальную сессию.<br/>
+ <br/>
+<font color="#EB4247"><h3>Ну а теперь — о выборе места запуска Cl</h3></font> <br/>
+ Здесь может быть несколько вариантов.<br/>
+ <br/>
+<b>Использование GitHub раннеров.</b> Это проблема, поскольку раннеры шареные, значит, ими пользуются команды по всему миру. Машины же универсальные и не заточены под конкретный проект. Все это означает увеличение времени на проверки, плюс может понадобится ждать, когда освободится машина.<br/>
+ <br/>
+<b>Локальное размещение — дома или в офисе. </b>Если нет опыта, лучше так не делать, поскольку обеспечить бесперебойную работу для раннеров крайне сложно. А перезагрузки будут влиять на работу системы. Кроме того, Mac Mini и MacOS – это не совсем серверные операционные системы. Возможно, придется чуть-чуть допиливать систему, то есть отключать автоматические обновления, возможно, какие-то лишние службы. И конечно же, нужно будет иметь удаленный доступ к машине, и он должен быть безопасным.<br/>
+ <br/>
+<b>Третий вариант — это как раз <a href="https://selectel.ru/services/dedicated/mac/?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Banner_Article_251021_Welp-link-in-text">хостинг с macOS® на M1 от Selectel</a>. </b>О нем подробнее, поскольку мы воспользовались именно им.<br/>
+ <br/>
+<font color="#EB4247"><h3>Подробности настройки хостинга от Selectel</h3></font> <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/i1/2s/bp/i12sbpx0btq2qkopfvrkucn9fes.png"/></div> <br/>
+Здесь все просто — мы воспользовались <a href="https://my.selectel.ru/?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Banner_Article_251021_Welp-link-in-text-1">конфигуратором в панели управления Selectel</a>, где выбрали нужный сервер и подходящий тарифный план — 5 ТБ в месяц. <br/>
+<br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/bc/ev/lc/bcevlcwdt9h5d1faa0daz8jzdec.png"/></div><br/>
+После подтверждения выбора выполняется конфигурация сервера, которая занимает 15 минут, и заказчик получает доступы. Все необходимые пакеты, включая Ruby, Homebrew, уже установлены.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/_m/7d/5d/_m7d5dmcfzmmzlvhzcyci-6d6l4.png"/></div> <br/>
+Рекомендация — обновить Homebrew, а затем Aria2, это умный загрузчик.<br/>
+ <br/>
+Благодаря тому, что проект размещается на хостинге, скорость работы ускоряется в разы. Проект качается в считанные минуты. Ну а когда XIP уже на жестком диске, нужно разархивировать проект, переместить его в папку с приложениями, затем указать адрес Xcode. Ну и после этого — установить Fastlane и скопировать SSH-ключ для доступа к репозиторию сертификатам, потому что нам необходим будет доступ с этой машины, чтобы match мог подтянуть все сертификаты.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/p_/co/7t/p_co7tvtqqws6sdhcjhgmgie1oq.png"/></div> <br/>
+Следующий этап — запуск GitHub раннера при помощи форка, который поддерживает новую версию .NET Framework. В седьмой версии есть поддержка сборки под ARM. Все, что нужно сделать — перейти в папку с исходниками и запустить dev.sh. После этого в папке _layout будут артефакты от сборки, то есть готовый бинарь, который будет собран именно под arm-архитектуру. И вот после этого шага все можно делать уже по инструкции с GitHub. Последний шах — запуск раннера.<br/>
+ <br/>
+Важный нюанс — проблем с софтом на М1 практически нет. Почему? Все просто:<br/>
+<ul>
+<li>Ruby прекрасно работает нативно. Homebrew также работает нативно, потому что он под капотом использует Ruby.</li>
+<li>JVM работает нативно на Arm.</li>
+<li>И естественно, Fastlane тоже работает нативно, потому что это набор Ruby-скриптов.</li>
+<li>Даже CocoaPods тоже работает нативно.</li>
+</ul> <br/>
+Рай, да и только.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/g1/zq/yh/g1zqyht_dnorsgjcl4mbr0zsbum.png"/></div> <br/>
+Проблема может возникнуть лишь с Unit и UI-тестами. Причину проблемы в этом случае можно найти благодаря поиску по проекту.<br/>
+ <br/>
+<font color="#EB4247"><h3>В качестве вывода</h3></font> <br/>
+Что касается нашей компании, то используем М1 не только мы, iOS-разработчики, но и Android-команда.<br/>
+ <br/>
+<div style="text-align:center;"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/v_/vf/ds/v_vfdsfzidegziiot9_f5y2_rok.png"/></div> <br/>
+Результаты впечатляют — в случае со сборкой iOS-проекта под тесты мы получили плюс 40%, а в случае со сборкой Android – 45%. Это clean build, поэтому разрыв весьма впечатляющий.<br/>
+ <br/>
+В целом, M1 бояться не стоит. Наоборот, если изначально казалось, что это один большой костыль, то потом, разобравшись, стало понятно, что очень много всего поддерживается нативно. Соответственно, при переезде на М1 можно получить существенный прирост производительности.<br/>
+<br/>
+<a href="https://selectel.ru/services/dedicated/mac/?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Banner_Article_251021_Welp"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/o6/wz/wz/o6wzwz5ocihzi90gd8by0o_m8qw.png"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcl%20%D0%BD%D0%B0%20m1%5D" class="tm-tags-list__link">cl на m1</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BD%D0%B0%D1%81%D1%82%D1%80%D0%BE%D0%B9%D0%BA%D0%B0%5D" class="tm-tags-list__link">настройка</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%85%D0%BE%D1%81%D1%82%D0%B8%D0%BD%D0%B3%5D" class="tm-tags-list__link">хостинг</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%81%D0%BE%D0%B2%D0%B5%D1%82%D1%8B%5D" class="tm-tags-list__link">советы</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/selectel/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Selectel
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/lifehacks/" class="tm-hubs-list__link">
+    Лайфхаки для гиков
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/network_hardware/" class="tm-hubs-list__link">
+    Сетевое оборудование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/network_technologies/" class="tm-hubs-list__link">
+    Сетевые технологии
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/hosting/" class="tm-hubs-list__link">
+    Хостинг
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 3: ↑3 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 3: ↑3 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+3</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">200</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    1
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/selectel/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/66a/f7d/039/66af7d03979b6d18654293d8f1e72837.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/selectel/profile/" class="tm-company-snippet__title">Selectel</a> <div class="tm-company-snippet__description">IT-инфраструктура для бизнеса</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://facebook.com/selectel" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://vk.com/selectel" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://telegram.me/SelectelNews" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Seleditor/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/f21/4b9/a3d/f214b9a3df13c490cbb6110700b95965.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 278 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    160.5
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">22</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/Seleditor/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Seleditor
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/selectel/blog/585384/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментировать 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2007-09-10T20:00:00.000Z" title="2007-09-11, 00:00">11  сентября  2007</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://selectel.ru/" target="_blank" class="tm-company-basic-info__link">
+      selectel.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    501–1 000 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2010-03-15T19:29:17.000Z" title="2010-03-15, 22:29">15  марта  2010</time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/selectel/blog/585384/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/selectel/blog/585384/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"585384":{"id":"585384","timePublished":"2021-10-25T14:22:51+00:00","isCorporative":true,"lang":"ru","titleHtml":"Техническая экспертиза: настраиваем CI на М1 с командой Welps","leadData":{"textHtml":"\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fck\u002Fqj\u002Fvx\u002Fckqjvxjfrr10bnvycobihpvef4a.png\"\u003E\u003C\u002Fdiv\u003E \u003Cbr\u003E\r\nПривет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.\u003Cbr\u003E\r\n \u003Cbr\u003E\r\nСегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом разработки. Компания создает wellness-приложения и постоянно оптимизирует процессы разработки. Один из таких процессов и раскрывается автором — Виталий рассказывает, как поднять Cl на М1 с использованием \u003Ca href=\"https:\u002F\u002Fselectel.ru\u002Fservices\u002Fdedicated\u002Fmac\u002F?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Article_251021_Welp\" rel=\"nofollow noopener noreferrer\"\u003Eинфраструктуры Selectel\u003C\u002Fa\u003E. Поехали!\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":160.5,"votesCount":278},"rating":22,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2393003","alias":"Seleditor","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Ff21\u002F4b9\u002Fa3d\u002Ff214b9a3df13c490cbb6110700b95965.png","speciality":"Пользователь"},"statistics":{"commentsCount":0,"favoritesCount":1,"readingCount":200,"score":3,"votesCount":3},"hubs":[{"relatedData":null,"id":"14740","alias":"selectel","type":"corporative","title":"Блог компании Selectel","titleHtml":"Блог компании Selectel","isProfiled":false},{"relatedData":null,"id":"21982","alias":"lifehacks","type":"collective","title":"Лайфхаки для гиков","titleHtml":"Лайфхаки для гиков","isProfiled":false},{"relatedData":null,"id":"21958","alias":"network_hardware","type":"collective","title":"Сетевое оборудование","titleHtml":"Сетевое оборудование","isProfiled":false},{"relatedData":null,"id":"17123","alias":"network_technologies","type":"collective","title":"Сетевые технологии","titleHtml":"Сетевые технологии","isProfiled":true},{"relatedData":null,"id":"20","alias":"hosting","type":"collective","title":"Хостинг","titleHtml":"Хостинг","isProfiled":false}],"flows":[{"id":"6","alias":"admin","title":"Администрирование"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fck\u002Fqj\u002Fvx\u002Fckqjvxjfrr10bnvycobihpvef4a.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nПривет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\nСегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом разработки. Компания создает wellness-приложения и постоянно оптимизирует процессы разработки. Один из таких процессов и раскрывается автором — Виталий рассказывает, как поднять Cl на М1 с использованием \u003Ca href=\"https:\u002F\u002Fselectel.ru\u002Fservices\u002Fdedicated\u002Fmac\u002F?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Article_251021_Welp\"\u003Eинфраструктуры Selectel\u003C\u002Fa\u003E. Поехали!\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E \u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#EB4247\"\u003E\u003Ch3\u003EПросто о сложном\u003C\u002Fh3\u003E\u003C\u002Ffont\u003E \u003Cbr\u002F\u003E\r\nЧто такое Cl? Это подход к программированию, где разработка ведется итерациями. В этом случае отводятся фича-ветки, которые в дальнейшем мерджатся с главной веткой. На каждой итерации необходимо производить автоматические проверки. Это помогает добиться стабильности продукта.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКак это работает на практике? Сначала разработчики пушат изменения в репозиторий. Последний отрабатывает триггер с последующим запуском проверок. Они выполняются либо в облаке, либо на локальных офисных машинах. Ну а по результатам сборки команда принимает решение о валидности изменений.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fug\u002Foz\u002Fcs\u002Fugozcslbs1rle70f3aec1iifpfg.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nВопросом автоматизации задались уже давно, за это время было написано много различных решений. Среди них: Gitlab CI, Circle CI, Jenkins и другие. Для решения наших задач мы использовали Github Actions и Fastlane. Fastlane – это набор Ruby-библиотек, которые автоматизируют взаимодействие с проектом. \u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#EB4247\"\u003E\u003Ch3\u003EНастраиваем автоматизацию проверок\u003C\u002Fh3\u003E\u003C\u002Ffont\u003E \u003Cbr\u002F\u003E\r\nСразу определимся, что нужно автоматизировать в первую очередь. Описанное ниже является нашим кейсом, однако с легкостью может быть доработано под ваши нужды.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\nВ рамках этого проекта мы автоматизируем проверку кода и выпуск релизов. Что нам нужно от проверки кода? Проводить unit и ui тесты, а также проверять код линтером на опечатки. Релиз в идеале должен отправляться по нажатию на магическую кнопку с последующей отсылкой уведомления в slack.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fei\u002F6j\u002Fjp\u002Fei6jjpuwbtsr8kvfkvwi0d6t0rw.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nПроверка кода выполняется по такому алгоритму:\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EРазработчик пушит изменения в GitHub.\u003C\u002Fli\u003E\r\n\u003Cli\u003EGitHub уведомляет экшены о том, что есть изменения.\u003C\u002Fli\u003E\r\n\u003Cli\u003EActions отправляет команду на Worker — конечно, в зависимости от того, срабатывают ли триггеры.\u003C\u002Fli\u003E\r\n\u003Cli\u003EНу а Worker выполняет заданные разработчиками манипуляции с проектом.\u003C\u002Fli\u003E\r\n\u003Cli\u003EFastlane показывает в обратном порядке весь аутпут из командной строки.\u003C\u002Fli\u003E\r\n\u003Cli\u003EРазработчик видит простой бинарный ответ — «ок» или «не ок».\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n Плюс алгоритма в том, что если возникли проблемы на пути внедрения изменений, то можно посмотреть, на каком этапе возникли проблемы, что является причиной, а потом при помощи Shell получить уже детальную информацию.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\nНо это то, что касается изменений. С релизами все чуть сложнее, здесь иной алгоритм:\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EРазработчик релизит приложение и мерджит изменения в главную ветку репо.\u003C\u002Fli\u003E\r\n\u003Cli\u003EGitHub сообщает об этом экшнам.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПоследние создают уже ручной триггер — это нечто вроде кнопки, которая висит в интерфейсе GitHub и ждет, когда на нее нажмут.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fph\u002F8z\u002Fsc\u002Fph8zsc5cwhhb8dh0mzzz-ifc58k.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nКогда потребуется зарелизить проект, разработчик этой кнопкой запускает всю цепочку процессов. Единственная разница по сравнению с предыдущим моментом — Fastlane отправляет еще и отбивку в FAQ, помогая сотрудникам быть в курсе загрузки новой версии.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#EB4247\"\u003E\u003Ch3\u003EПодготовка проекта\u003C\u002Fh3\u003E\u003C\u002Ffont\u003E \u003Cbr\u002F\u003E\r\nНу а теперь о самом интересном — подготовке проекта. Главный момент — наличие Fastlane, это можно проверить при помощи Homebrew, менеджера зависимостей. Написав в папке с проектом fastlane init получаем набор конфигфайлов. Их, правда, нужно отредактировать для того, чтобы все работало, как нужно.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fig\u002Fg1\u002Fyv\u002Figg1yvpi1-apfpatmnvm17frh_w.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nДля редактирования конфигов требуется перейти в папку Fastlane, где открыть основной конфигурационный файл с названием Fastfile. Здесь прописываем два публичный лейна — первый отвечает за тесты, второй — \u003Ca href=\"https:\u002F\u002Fru.wikipedia.org\u002Fwiki\u002F%D0%9B%D0%B8%D0%BD%D1%82%D0%B5%D1%80\"\u003Eза линтер\u003C\u002Fa\u003E. Соответственно, если система обнаружит внесенные изменения, то запустится и тест, и линтер.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\nПосле редактирования конфигурационных файлов нужно прописать в папке с проектом (из командной строки) Fastlane test и lint. Таким образом выполняется запуск набора команд, а также тестов и линтера с отображением результатов тестирования.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fan\u002Ftz\u002Fg7\u002Fantzg7-tqdng7a16qlptw1ilrhq.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\n\u003Cb\u003EНу а теперь добавляем еще и отбивку в Slack\u003C\u002Fb\u003E, для чего потребуется создание приватного лейна, который можно будет использовать в рамках других публичных лейнов. Собственно, нам нужен «лейн-универсал», который сможет принимать схему приложения, получать актуальные версии билдов и отправлять в Slack сообщения о загрузке.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cb\u003EКак только все будет готово, можно переходить к загрузке в Appstore\u003C\u002Fb\u003E — здесь потребуется написать универсальную функцию, которая будет состоять из нескольких этапов:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EВызов match — готовый скрипт, который отвечает за получение сертификатов, провайдинг-профайлов и т.п. Если их нет, он установит их на рабочую машину, с тем, чтобы можно было собрать и отправить все необходимое в AppStore. Скрипт tell_uploaded_to_slack отправит в зависимости от схемы нужное сообщение в Slack. Важный нюанс — Fastlane в своем скрипте match предлагает хранить сертификаты в репозитории.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fn6\u002Fr-\u002Fed\u002Fn6r-ed5tvww32opiwfj-ged-xs8.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EСоздание приватного репозитория, добавив все машины, которым нужен доступ к сертификату и их SSH-ключи. Это нужно для того, чтобы все Cl смогли получать актуальные и новые сертификаты.\u003C\u002Fli\u003E\r\n\u003Cli\u003EОткрываем три конфига: Matchfile, Deliverfile и Appfile. Они находятся в той же папке, где и Fastfile. Matchfile нужен для сздания URL репозитория с сертификатами. Deliverfile для указания App ID, для которого будет совершаться загрузка. Appfile нужен для использования актуального сертификата. Не забудьте уточнить apple_id и team_id, после чего все заработает.\u003C\u002Fli\u003E\r\n\u003Cli\u003EТеперь пишем публичные лейны, обработчик ошибок (отбивает ошибки из консоли в Slack) и, при необходимости, автоматическую загрузку dsym. Последнее — символы отладки, которые используют аналитики, крэшлитики для расшифровки логов падения приложений. Первый лейн загружает dsym для Live-версии в Appstore, то есть для актуальной на текущий момент времени. А dsym_all просто загружает все dsym подряд начиная с установленной даты.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F8c\u002Fod\u002Fpd\u002F8codpd1bt42b8v1n-a7dbcze2va.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#EB4247\"\u003E\u003Ch3\u003EУчим GitHub командовать нашей машиной\u003C\u002Fh3\u003E\u003C\u002Ffont\u003E \u003Cbr\u002F\u003E\r\nДля того, чтобы это сделать, требуется перейти к папке с проектом в скрытой директорию .github, где выбираем директорию workflows. Здесь нужно создать несколько yml-файлов, описывающих определенные скрипты, которые запускаются при наступлении определенных условий.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fps\u002Fwh\u002Fu6\u002Fpswhu6kz2hakf9ab0a8h5gaqvua.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nПервым делом нужно создать дефолтный yml-файл, который будет запускать все проверки, которые мы описывали в самом начале – это линтер и тесты. В структуре файла нужно объяснить значение ряда элементов:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EName декларирует имя текущего workflow. Он указывает на условия, при которых будет срабатывать этот workflow.\u003C\u002Fli\u003E\r\n\u003Cli\u003EДальше у нас идет перечисление job со своими шагами. Любой элемент job должен начинаться с шага actions\u002Fcheckout. Он указывает на то, что мы сейчас тянем актуальные изменения из репозитория. Причем мы готовы к запусканию обычного shell-скрипта, то есть fastlane ios lint запустит линтер и faslane ios tests запустит тесты.\u003C\u002Fli\u003E\r\n\u003Cli\u003EUpload_prod и upload-dsym будут устроены несколько сложнее. Здесь появляется другое условие – on: [workflow_dispatch]. Оно говорит нам о том, что данный workflow может быть запущен только вручную.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E \u003Cbr\u002F\u003E\r\nДля того, чтобы Fastline корректно взаимодействовал с iTunes Connect, нужно хранить и каким-то образом шерить сессию, особенно, если есть больше одной Cl-машины. Чтобы обеспечить корректную работу можно предлагаю хранить кукисы от spaceship внутри вашего репозитория. Да, это достаточно опасно с точки зрения ИБ, но главное — понять механику, а потом уже можно придумать собственный механизм передачи кукисов.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fgz\u002F2o\u002Fah\u002Fgz2oahv4ckxn2tvztno4z6ofzqo.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nДля решения проблемы запускаем команду Fastlane Spaceship с указанием юзера для создания папки .fastlane, внутри нее папочка spaceship с e-mail вашего аккаунта. Ну а здесь уже и размещается куки-файл. Его можно брать и помещать в папку репо, после чего научить GitHub обновлять токен. Т.е. доставать из репозитория актуальные куки и копировать ее в соответствующую папку Fastlane, Spaceship и класть на конкретную машину, на которой будет запускаться CI.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\nДля того, чтобы сделать процесс менее опасным, можно для текущего workflow включить ручную передачу какого-то параметра, которым будет как раз эта сессия. То есть, через интерфейс GitHub передавать в конкретный момент времени актуальную сессию.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#EB4247\"\u003E\u003Ch3\u003EНу а теперь — о выборе места запуска Cl\u003C\u002Fh3\u003E\u003C\u002Ffont\u003E \u003Cbr\u002F\u003E\r\n Здесь может быть несколько вариантов.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cb\u003EИспользование GitHub раннеров.\u003C\u002Fb\u003E Это проблема, поскольку раннеры шареные, значит, ими пользуются команды по всему миру. Машины же универсальные и не заточены под конкретный проект. Все это означает увеличение времени на проверки, плюс может понадобится ждать, когда освободится машина.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cb\u003EЛокальное размещение — дома или в офисе. \u003C\u002Fb\u003EЕсли нет опыта, лучше так не делать, поскольку обеспечить бесперебойную работу для раннеров крайне сложно. А перезагрузки будут влиять на работу системы. Кроме того, Mac Mini и MacOS – это не совсем серверные операционные системы. Возможно, придется чуть-чуть допиливать систему, то есть отключать автоматические обновления, возможно, какие-то лишние службы. И конечно же, нужно будет иметь удаленный доступ к машине, и он должен быть безопасным.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cb\u003EТретий вариант — это как раз \u003Ca href=\"https:\u002F\u002Fselectel.ru\u002Fservices\u002Fdedicated\u002Fmac\u002F?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Banner_Article_251021_Welp-link-in-text\"\u003Eхостинг с macOS® на M1 от Selectel\u003C\u002Fa\u003E. \u003C\u002Fb\u003EО нем подробнее, поскольку мы воспользовались именно им.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#EB4247\"\u003E\u003Ch3\u003EПодробности настройки хостинга от Selectel\u003C\u002Fh3\u003E\u003C\u002Ffont\u003E \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fi1\u002F2s\u002Fbp\u002Fi12sbpx0btq2qkopfvrkucn9fes.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nЗдесь все просто — мы воспользовались \u003Ca href=\"https:\u002F\u002Fmy.selectel.ru\u002F?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Banner_Article_251021_Welp-link-in-text-1\"\u003Eконфигуратором в панели управления Selectel\u003C\u002Fa\u003E, где выбрали нужный сервер и подходящий тарифный план — 5 ТБ в месяц. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fbc\u002Fev\u002Flc\u002Fbcevlcwdt9h5d1faa0daz8jzdec.png\"\u002F\u003E\u003C\u002Fdiv\u003E\u003Cbr\u002F\u003E\r\nПосле подтверждения выбора выполняется конфигурация сервера, которая занимает 15 минут, и заказчик получает доступы. Все необходимые пакеты, включая Ruby, Homebrew, уже установлены.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F_m\u002F7d\u002F5d\u002F_m7d5dmcfzmmzlvhzcyci-6d6l4.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nРекомендация — обновить Homebrew, а затем Aria2, это умный загрузчик.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\nБлагодаря тому, что проект размещается на хостинге, скорость работы ускоряется в разы. Проект качается в считанные минуты. Ну а когда XIP уже на жестком диске, нужно разархивировать проект, переместить его в папку с приложениями, затем указать адрес Xcode. Ну и после этого — установить Fastlane и скопировать SSH-ключ для доступа к репозиторию сертификатам, потому что нам необходим будет доступ с этой машины, чтобы match мог подтянуть все сертификаты.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fp_\u002Fco\u002F7t\u002Fp_co7tvtqqws6sdhcjhgmgie1oq.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nСледующий этап — запуск GitHub раннера при помощи форка, который поддерживает новую версию .NET Framework. В седьмой версии есть поддержка сборки под ARM. Все, что нужно сделать — перейти в папку с исходниками и запустить dev.sh. После этого в папке _layout будут артефакты от сборки, то есть готовый бинарь, который будет собран именно под arm-архитектуру. И вот после этого шага все можно делать уже по инструкции с GitHub. Последний шах — запуск раннера.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\nВажный нюанс — проблем с софтом на М1 практически нет. Почему? Все просто:\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003ERuby прекрасно работает нативно. Homebrew также работает нативно, потому что он под капотом использует Ruby.\u003C\u002Fli\u003E\r\n\u003Cli\u003EJVM работает нативно на Arm.\u003C\u002Fli\u003E\r\n\u003Cli\u003EИ естественно, Fastlane тоже работает нативно, потому что это набор Ruby-скриптов.\u003C\u002Fli\u003E\r\n\u003Cli\u003EДаже CocoaPods тоже работает нативно.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E \u003Cbr\u002F\u003E\r\nРай, да и только.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fg1\u002Fzq\u002Fyh\u002Fg1zqyht_dnorsgjcl4mbr0zsbum.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nПроблема может возникнуть лишь с Unit и UI-тестами. Причину проблемы в этом случае можно найти благодаря поиску по проекту.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cfont color=\"#EB4247\"\u003E\u003Ch3\u003EВ качестве вывода\u003C\u002Fh3\u003E\u003C\u002Ffont\u003E \u003Cbr\u002F\u003E\r\nЧто касается нашей компании, то используем М1 не только мы, iOS-разработчики, но и Android-команда.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\n\u003Cdiv style=\"text-align:center;\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fv_\u002Fvf\u002Fds\u002Fv_vfdsfzidegziiot9_f5y2_rok.png\"\u002F\u003E\u003C\u002Fdiv\u003E \u003Cbr\u002F\u003E\r\nРезультаты впечатляют — в случае со сборкой iOS-проекта под тесты мы получили плюс 40%, а в случае со сборкой Android – 45%. Это clean build, поэтому разрыв весьма впечатляющий.\u003Cbr\u002F\u003E\r\n \u003Cbr\u002F\u003E\r\nВ целом, M1 бояться не стоит. Наоборот, если изначально казалось, что это один большой костыль, то потом, разобравшись, стало понятно, что очень много всего поддерживается нативно. Соответственно, при переезде на М1 можно получить существенный прирост производительности.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fselectel.ru\u002Fservices\u002Fdedicated\u002Fmac\u002F?utm_source=habr.com&amp;utm_medium=referral&amp;utm_campaign=Brand_Banner_Article_251021_Welp\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fo6\u002Fwz\u002Fwz\u002Fo6wzwz5ocihzi90gd8by0o_m8qw.png\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"cl на m1"},{"titleHtml":"настройка"},{"titleHtml":"хостинг"},{"titleHtml":"советы"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F585384\u002Fb326896f6cb034efb21b71e35a65e2dd\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F585384\u002Fb326896f6cb034efb21b71e35a65e2dd\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fselectel\\\u002Fblog\\\u002F585384\\\u002F\"},\"headline\":\"Техническая экспертиза: настраиваем CI на М1 с командой Welps\",\"datePublished\":\"2021-10-25T17:22:51+03:00\",\"dateModified\":\"2021-10-25T17:50:10+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Seleditor\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.   Сегодня встречайте Виталия Волкова из компа...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fselectel\\\u002Fblog\\\u002F585384\\\u002F#post-content-body\",\"about\":[\"c_selectel\",\"h_lifehacks\",\"h_network_hardware\",\"h_network_technologies\",\"h_hosting\",\"f_admin\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fck\\\u002Fqj\\\u002Fvx\\\u002Fckqjvxjfrr10bnvycobihpvef4a.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fug\\\u002Foz\\\u002Fcs\\\u002Fugozcslbs1rle70f3aec1iifpfg.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fei\\\u002F6j\\\u002Fjp\\\u002Fei6jjpuwbtsr8kvfkvwi0d6t0rw.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fph\\\u002F8z\\\u002Fsc\\\u002Fph8zsc5cwhhb8dh0mzzz-ifc58k.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fig\\\u002Fg1\\\u002Fyv\\\u002Figg1yvpi1-apfpatmnvm17frh_w.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fan\\\u002Ftz\\\u002Fg7\\\u002Fantzg7-tqdng7a16qlptw1ilrhq.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fn6\\\u002Fr-\\\u002Fed\\\u002Fn6r-ed5tvww32opiwfj-ged-xs8.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F8c\\\u002Fod\\\u002Fpd\\\u002F8codpd1bt42b8v1n-a7dbcze2va.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fps\\\u002Fwh\\\u002Fu6\\\u002Fpswhu6kz2hakf9ab0a8h5gaqvua.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fgz\\\u002F2o\\\u002Fah\\\u002Fgz2oahv4ckxn2tvztno4z6ofzqo.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fi1\\\u002F2s\\\u002Fbp\\\u002Fi12sbpx0btq2qkopfvrkucn9fes.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fbc\\\u002Fev\\\u002Flc\\\u002Fbcevlcwdt9h5d1faa0daz8jzdec.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F_m\\\u002F7d\\\u002F5d\\\u002F_m7d5dmcfzmmzlvhzcyci-6d6l4.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fp_\\\u002Fco\\\u002F7t\\\u002Fp_co7tvtqqws6sdhcjhgmgie1oq.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fg1\\\u002Fzq\\\u002Fyh\\\u002Fg1zqyht_dnorsgjcl4mbr0zsbum.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fv_\\\u002Fvf\\\u002Fds\\\u002Fv_vfdsfzidegziiot9_f5y2_rok.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fo6\\\u002Fwz\\\u002Fwz\\\u002Fo6wzwz5ocihzi90gd8by0o_m8qw.png\"]}","metaDescription":"Привет, Хабр! Мы начинаем серию статей, в которых наши партнеры рассказывают о разных нюансах сетевых технологий.\r\n \r\nСегодня встречайте Виталия Волкова из компании Welps, где он работает тимлидом...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"selectel":{"alias":"selectel","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F66a\u002Ff7d\u002F039\u002F66af7d03979b6d18654293d8f1e72837.png","titleHtml":"Selectel","descriptionHtml":"IT-инфраструктура для бизнеса","relatedData":null,"statistics":{"postsCount":941,"newsCount":37,"vacanciesCount":7,"employeesCount":113,"careerRating":4.73,"subscribersCount":27336,"rating":1480.89,"invest":null},"foundationDate":{"year":"2007","month":"09","day":"11"},"location":{"city":{"id":"447733","title":"Санкт-Петербург"},"region":{"id":"1948","title":"Санкт-Петербург и область"},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fselectel.ru\u002F","staffNumber":"501–1 000 человек","registrationDate":"2010-03-15T19:29:17+00:00","representativeUser":null,"contacts":[{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fselectel"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fselectel"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002FSelectelNews"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-8163992-13"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"Selectel, Санкт-Петербург - IT-инфраструктура для бизнеса с 11 сентября 2007 г.","title":"Selectel, Санкт-Петербург - IT-инфраструктура для бизнеса с 11 сентября 2007 г.","keywords":["Компьютерное железо","Будущее здесь","Научно-популярное","Гаджеты","История IT"],"descriptionHtml":"941 статья от авторов компании Selectel","description":"941 статья от авторов компании Selectel"},"aDeskSettings":null,"careerAlias":"selectel","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

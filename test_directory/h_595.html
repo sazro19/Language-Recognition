@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Hi-tech на железной дороге: математически обоснованная логистика при помощи «Навигатора» / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/pgk\/blog\/583208\/"},"headline":"Hi-tech на железной дороге: математически обоснованная логистика при помощи «Навигатора»","datePublished":"2021-10-13T12:59:18+03:00","dateModified":"2021-10-14T00:55:59+03:00","author":{"@type":"Person","name":"Дмитрий Крупенин"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами...","url":"https:\/\/habr.com\/ru\/company\/pgk\/blog\/583208\/#post-content-body","about":["c_pgk","h_pm","h_productpm","h_soft","h_transport","f_management","f_popsci"],"image":["https:\/\/habr.com\/share\/publication\/583208\/806f25e7db5e4c41b05c70d6136e272f\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/d88\/7ea\/bd6\/d887eabd6cb975918d715cd006d94d66.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/2a1\/e10\/d49\/2a1e10d49c4c467a8b3e9c9b8db9c640.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/236\/6ed\/473\/2366ed473d88f1074b6f68250fc7328a.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Hi-tech на железной дороге: математически обоснованная логистика при помощи «Навигатора»" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Hi-tech на железной дороге: математически обоснованная логистика при помощи «Навигатора»" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Hi-tech на железной дороге: математически обоснованная логистика при помощи «Навигатора»" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/d88/7ea/bd6/d887eabd6cb975918d715cd006d94d66.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/d88/7ea/bd6/d887eabd6cb975918d715cd006d94d66.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/d88/7ea/bd6/d887eabd6cb975918d715cd006d94d66.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/d88/7ea/bd6/d887eabd6cb975918d715cd006d94d66.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/d88/7ea/bd6/d887eabd6cb975918d715cd006d94d66.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583208" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-13T09:59:18.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583208/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/pgk/blog/583208/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/d88/7ea/bd6/d887eabd6cb975918d715cd006d94d66.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583208/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="pgk" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/pgk/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/d49/05f/702/d4905f7029b7323219738fc4f497c2e1.jpg" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">59.94</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/pgk/profile/" class="tm-company-card__name">
+        Первая грузовая компания (ПГК)
+      </a> <div class="tm-company-card__description"></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/DKrupenin/" title="DKrupenin" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/DKrupenin/" class="tm-user-info__username">
+      DKrupenin
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-13T09:59:18.000Z" title="2021-10-13, 12:59">13  октября   в 12:59</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Hi-tech на железной дороге: математически обоснованная логистика при помощи «Навигатора»</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/pgk/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Первая грузовая компания (ПГК)</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/pm/" class="tm-article-snippet__hubs-item-link"><span>Управление проектами</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/productpm/" class="tm-article-snippet__hubs-item-link"><span>Управление продуктом</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/soft/" class="tm-article-snippet__hubs-item-link"><span>Софт</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/transport/" class="tm-article-snippet__hubs-item-link"><span>Транспорт</span> <!----></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="1080" data-src="https://habrastorage.org/getpro/habr/upload_files/d88/7ea/bd6/d887eabd6cb975918d715cd006d94d66.png" data-width="1920"/><figcaption></figcaption></figure><p>Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных дорог. Он называется "Навигатор", а его основная задача - повышение эффективности управления парком за счет оптимального распределения вагонов по нашим заказам, разбросанным по стране и СНГ.</p><p> Мы написали программу с нуля, и это было непросто. Зато сейчас она позволяет автоматизировать большое количество задач, которые ранее либо выполнялись вручную, либо были автоматизированы, но не полностью. О подробностях - под катом.</p><hr/><h2>Что такое "Навигатор"? </h2><p>В первую очередь, это цифровой продукт, который помогает специалистам в динамично меняющихся условиях определить оптимальные варианты отправки вагонов для снижения затрат при обеспечении планируемого  количества заказов. Система анализирует и выбирает те вагоны, которые могут быстрее и с меньшими затратами прибыть на нужную станцию.  Понятно, платформа не угадывает, решения принимаются на основе тщательного анализа таких данных:</p><p>•    месторасположение и состояние вагонов <br/>•    прогноз прибытия вагонов <br/>•    прогноз высвобождения из-под грузовых операций<br/>•    дефицит и профицит вагонов на местах <br/>•    обстановка на железной дороге <br/>•    существующие ограничения по отправкам вагонов по тем или иным направлениям <br/>•    спрос на вагоны со стороны грузоотправителей <br/>•    стоимость тарифов</p><p>В ходе анализа система учитывает около 3,5 млн вариантов. После всего этого "Навигатор" автоматически просчитывает оптимальные варианты по времени и по стоимости, плюс сопоставляет баланс парка вагонов по филиалам и станциям. Данные направляются сотруднику компании для утверждения - да, окончательное решение должен принимать человек.</p><p> Как только решение принято, система тут же формирует заявку на отправку вагона в SAP - в полностью автоматическом режиме. На данный момент "Навигатор" тестируется, но уже в ноябре его ждет полноценный запуск. </p><figure class="full-width "><img src="/img/image-loader.svg" height="388" data-src="https://habrastorage.org/getpro/habr/upload_files/2a1/e10/d49/2a1e10d49c4c467a8b3e9c9b8db9c640.png" data-width="886"/><figcaption></figcaption></figure><p>Интересный момент - сразу мы хотели сделать решение, которое можно было бы назвать цифровым диспетчером. То есть программа, которая управляла бы парком самостоятельно. Но потом поняли, что лучше всего сделать цифровой советчик - симбиоз машины и человека -  продукт, который бы служил вспомогательным инструментом для специалистов, снимая с них рутинную нагрузку и оставляя к разбору только сложные ситуации, которые невозможно предсказать алгоритмами.. Так и получилось  - сейчас "Навигатор" представляет собой именно такую систему, которая, ко всему, адаптируется нами под постоянно меняющиеся условия на железной дороге. Мы сняли с наших диспетчеров необходимость решать рутинные задачи, оставив лишь обязанность решать неожиданные случаи, инциденты. </p><h2>Когда и как началась разработка продукта</h2><p>Сейчас сложно сказать, поскольку этапов разработки было немало, но начало всему было положено в 2019 году. Идея, которая лежала в основе "Навигатора" (который и не был еще "Навигатором) - экономия расходов, в основном, на "порожнем пробеге". Если коротко, то чем больше по рельсам катается пустых вагонов, тем больше убытков терпит компания, на которую эти вагоны работают. </p><p>Сначала мы разработали тестовый, относительно небольшой продукт. В 2020 году, после его готовности, оказалось, что экономический потенциал его использования весьма неплохой, поэтому решили дорабатывать продукт до варианта, который может заинтересовать средний и крупный бизнес. Но для разработки нужна была команда, которой изначально не было, и ее пришлось формировать. В конце 2020 года началась полноценная работа над продуктом, и вот сейчас все уже близится к своему завершению. </p><p>Важный момент, которым хотелось бы поделиться - продукт у нас довольно масштабный, а вот команда, которая его делает - относительно небольшая. В нее входит около 20 человек. </p><h2>Технологии, которые мы используем</h2><p>"Навигатор" - это сложное веб приложение. Бэкенд у нас базируется на Python, а фронт - на JavaScript и фреймворке Angular. Несколько ML-моделей помогают нам с задачами прогнозирования, а саму оптимизационную задачу мы решаем с помощью Gurobi. Интерфейсы мы прорабатываем в Figma и утверждаем с заказчиком до разработки.</p><p> У нас полноценный CI/CD, релизимся не реже раза в неделю. Мы умеем в Docker контейнеры и Kubernetes. Zabbix работает для мониторинга, а ELK стек - для логирования.</p><p> Что касается исходных данных, то довольно большой их объем получаем от РЖД. Сюда входят информация о состоянии вагонов, и и их местонахождении. По России качество данных неплохое. К сожалению, если говорить об СНГ, то есть определенные проблемы, но мы постепенно разрабатываем обходные решения, которые позволяют избавиться от некоторых неприятных проблем. Но, в целом, мы получаем большой объем информации, узнаем о тысячах вагонов, станций и т.п.</p><p> На выходе программа дает рекомендации к заадресации вагонов, которые понятны диспетчеру, работающему с ними. С UX, в целом, проблем нет, тестировщики вполне довольны результатом. </p><figure class=""><img src="/img/image-loader.svg" height="229" data-src="https://habrastorage.org/getpro/habr/upload_files/236/6ed/473/2366ed473d88f1074b6f68250fc7328a.png" data-width="512"/><figcaption></figcaption></figure><h2>Что в итоге?</h2><p>Программа помогает обрабатывать огромные массивы данных, которые человек, даже целая команда профессионалов-диспетчеров, вряд ли способны охватить и проанализировать. "Навигатор" помогает собрать все исходники вместе и помочь принять решение. Например, система позволит довести точность графиков подачи вагонов под погрузку до 80% (сейчас этот показатель гораздо ниже). </p><p>Стоит отметить, что профессионалы тоже способны принимать корректные и очень эффективные решения. В ходе тестирования программы мы пригласили группу экспертов и дали им для решения простую задачу. Исходные условия включали десять станций, заказы и вагоны. Нужно было распределить парк таким образом, чтобы обеспечить минимальный пробег для обеспечения этих станций. </p><p>Справились и люди, и программа. Эксперты решили задачу лишь на 0,1%-0,2% хуже, чем "Навигатор", то есть, практически, на одном уровне. Но вот система сделала это за 0,2 секунды, а профессионалы коллективно решали ее 40 минут. И, напомню, это очень простая, можно сказать, рутинная задача. </p><p>"Навигатор" помогает движенцам (это сотрудники ПГК, которые организуют и управляют перевозками на железнодорожном транспорте), эффективнее справляться с логистикой. Например, если сейчас многие отчеты в филиалах составляются вручную, то "Навигатор" делает все автоматически. </p><p>Так, для каждой станции платформа отображает наличие парка и статус вагонов, включая число порожних, погруженных, неизрасходованную потребность, прогнозное наличие и т.п. А для каждого вагона указывается рекомендованная отправка с указанием станции отправления, станции назначения, тарифа, даты отправления и прибытия. </p><p>В будущем планируем добавить к возможностям еще и "модуль ремонта", то есть часть функционала, которая будет отвечать за учет проблемных вагонов, инцидентов и т.п. </p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%5D" class="tm-tags-list__link">продукт</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D0%B4%D1%83%D0%BA%D1%82%20%D0%BC%D0%B5%D0%BD%D0%B5%D0%B4%D0%B6%D0%BC%D0%B5%D0%BD%D1%82%5D" class="tm-tags-list__link">продукт менеджмент</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BB%D0%BE%D0%B3%D0%B8%D1%81%D1%82%D0%B8%D0%BA%D0%B0%5D" class="tm-tags-list__link">логистика</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%82%D1%80%D0%B0%D0%BD%D1%81%D0%BF%D0%BE%D1%80%D1%82%5D" class="tm-tags-list__link">транспорт</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B6%D0%B5%D0%BB%D0%B5%D0%B7%D0%BD%D0%B0%D1%8F%20%D0%B4%D0%BE%D1%80%D0%BE%D0%B3%D0%B0%5D" class="tm-tags-list__link">железная дорога</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/pgk/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Первая грузовая компания (ПГК)
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/pm/" class="tm-hubs-list__link">
+    Управление проектами
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/productpm/" class="tm-hubs-list__link">
+    Управление продуктом
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/soft/" class="tm-hubs-list__link">
+    Софт
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/transport/" class="tm-hubs-list__link">
+    Транспорт
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 5: ↑5 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 5: ↑5 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+5</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">3.3K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    10
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/pgk/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/d49/05f/702/d4905f7029b7323219738fc4f497c2e1.jpg" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/pgk/profile/" class="tm-company-snippet__title">Первая грузовая компания (ПГК)</a> <div class="tm-company-snippet__description">Компания</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://pgkweb.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/DKrupenin/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 4 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    2
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Дмитрий Крупенин</span> <a href="/ru/users/DKrupenin/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @DKrupenin
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">CPO</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/pgk/blog/583208/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 6 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2007-07-25T20:00:00.000Z" title="2007-07-26, 00:00">26  июля  2007</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://pgkweb.ru/" target="_blank" class="tm-company-basic-info__link">
+      pgkweb.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    1 001–5 000 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2021-07-06T03:20:55.000Z" title="2021-07-06, 06:20">6  июля  </time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/pgk/blog/583208/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/pgk/blog/583208/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583208":{"id":"583208","timePublished":"2021-10-13T09:59:18+00:00","isCorporative":true,"lang":"ru","titleHtml":"Hi-tech на железной дороге: математически обоснованная логистика при помощи «Навигатора»","leadData":{"textHtml":"\u003Cp\u003EПривет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных дорог. Он называется \"Навигатор\", а его основная задача - повышение эффективности управления парком за счет оптимального распределения вагонов по нашим заказам, разбросанным по стране и СНГ.\u003C\u002Fp\u003E\u003Cp\u003E&nbsp;Мы написали программу с нуля, и это было непросто. Зато сейчас она позволяет автоматизировать большое количество задач, которые ранее либо выполнялись вручную, либо были автоматизированы, но не полностью. О подробностях - под катом.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd88\u002F7ea\u002Fbd6\u002Fd887eabd6cb975918d715cd006d94d66.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd88\u002F7ea\u002Fbd6\u002Fd887eabd6cb975918d715cd006d94d66.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":2,"votesCount":4},"rating":5,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2750305","alias":"DKrupenin","fullname":"Дмитрий Крупенин","avatarUrl":null,"speciality":"CPO"},"statistics":{"commentsCount":6,"favoritesCount":10,"readingCount":3329,"score":5,"votesCount":5},"hubs":[{"relatedData":null,"id":"22766","alias":"pgk","type":"corporative","title":"Блог компании Первая грузовая компания (ПГК)","titleHtml":"Блог компании Первая грузовая компания (ПГК)","isProfiled":false},{"relatedData":null,"id":"20682","alias":"pm","type":"collective","title":"Управление проектами","titleHtml":"Управление проектами","isProfiled":true},{"relatedData":null,"id":"20726","alias":"productpm","type":"collective","title":"Управление продуктом","titleHtml":"Управление продуктом","isProfiled":true},{"relatedData":null,"id":"21918","alias":"soft","type":"collective","title":"Софт","titleHtml":"Софт","isProfiled":false},{"relatedData":null,"id":"22004","alias":"transport","type":"collective","title":"Транспорт","titleHtml":"Транспорт","isProfiled":false}],"flows":[{"id":"3","alias":"management","title":"Менеджмент"},{"id":"7","alias":"popsci","title":"Научпоп"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"1080\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd88\u002F7ea\u002Fbd6\u002Fd887eabd6cb975918d715cd006d94d66.png\" data-width=\"1920\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПривет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных дорог. Он называется \"Навигатор\", а его основная задача - повышение эффективности управления парком за счет оптимального распределения вагонов по нашим заказам, разбросанным по стране и СНГ.\u003C\u002Fp\u003E\u003Cp\u003E Мы написали программу с нуля, и это было непросто. Зато сейчас она позволяет автоматизировать большое количество задач, которые ранее либо выполнялись вручную, либо были автоматизированы, но не полностью. О подробностях - под катом.\u003C\u002Fp\u003E\u003Chr\u002F\u003E\u003Ch2\u003EЧто такое \"Навигатор\"? \u003C\u002Fh2\u003E\u003Cp\u003EВ первую очередь, это цифровой продукт, который помогает специалистам в динамично меняющихся условиях определить оптимальные варианты отправки вагонов для снижения затрат при обеспечении планируемого  количества заказов. Система анализирует и выбирает те вагоны, которые могут быстрее и с меньшими затратами прибыть на нужную станцию.  Понятно, платформа не угадывает, решения принимаются на основе тщательного анализа таких данных:\u003C\u002Fp\u003E\u003Cp\u003E•    месторасположение и состояние вагонов \u003Cbr\u002F\u003E•    прогноз прибытия вагонов \u003Cbr\u002F\u003E•    прогноз высвобождения из-под грузовых операций\u003Cbr\u002F\u003E•    дефицит и профицит вагонов на местах \u003Cbr\u002F\u003E•    обстановка на железной дороге \u003Cbr\u002F\u003E•    существующие ограничения по отправкам вагонов по тем или иным направлениям \u003Cbr\u002F\u003E•    спрос на вагоны со стороны грузоотправителей \u003Cbr\u002F\u003E•    стоимость тарифов\u003C\u002Fp\u003E\u003Cp\u003EВ ходе анализа система учитывает около 3,5 млн вариантов. После всего этого \"Навигатор\" автоматически просчитывает оптимальные варианты по времени и по стоимости, плюс сопоставляет баланс парка вагонов по филиалам и станциям. Данные направляются сотруднику компании для утверждения - да, окончательное решение должен принимать человек.\u003C\u002Fp\u003E\u003Cp\u003E Как только решение принято, система тут же формирует заявку на отправку вагона в SAP - в полностью автоматическом режиме. На данный момент \"Навигатор\" тестируется, но уже в ноябре его ждет полноценный запуск. \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"388\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F2a1\u002Fe10\u002Fd49\u002F2a1e10d49c4c467a8b3e9c9b8db9c640.png\" data-width=\"886\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EИнтересный момент - сразу мы хотели сделать решение, которое можно было бы назвать цифровым диспетчером. То есть программа, которая управляла бы парком самостоятельно. Но потом поняли, что лучше всего сделать цифровой советчик - симбиоз машины и человека -  продукт, который бы служил вспомогательным инструментом для специалистов, снимая с них рутинную нагрузку и оставляя к разбору только сложные ситуации, которые невозможно предсказать алгоритмами.. Так и получилось  - сейчас \"Навигатор\" представляет собой именно такую систему, которая, ко всему, адаптируется нами под постоянно меняющиеся условия на железной дороге. Мы сняли с наших диспетчеров необходимость решать рутинные задачи, оставив лишь обязанность решать неожиданные случаи, инциденты. \u003C\u002Fp\u003E\u003Ch2\u003EКогда и как началась разработка продукта\u003C\u002Fh2\u003E\u003Cp\u003EСейчас сложно сказать, поскольку этапов разработки было немало, но начало всему было положено в 2019 году. Идея, которая лежала в основе \"Навигатора\" (который и не был еще \"Навигатором) - экономия расходов, в основном, на \"порожнем пробеге\". Если коротко, то чем больше по рельсам катается пустых вагонов, тем больше убытков терпит компания, на которую эти вагоны работают. \u003C\u002Fp\u003E\u003Cp\u003EСначала мы разработали тестовый, относительно небольшой продукт. В 2020 году, после его готовности, оказалось, что экономический потенциал его использования весьма неплохой, поэтому решили дорабатывать продукт до варианта, который может заинтересовать средний и крупный бизнес. Но для разработки нужна была команда, которой изначально не было, и ее пришлось формировать. В конце 2020 года началась полноценная работа над продуктом, и вот сейчас все уже близится к своему завершению. \u003C\u002Fp\u003E\u003Cp\u003EВажный момент, которым хотелось бы поделиться - продукт у нас довольно масштабный, а вот команда, которая его делает - относительно небольшая. В нее входит около 20 человек. \u003C\u002Fp\u003E\u003Ch2\u003EТехнологии, которые мы используем\u003C\u002Fh2\u003E\u003Cp\u003E\"Навигатор\" - это сложное веб приложение. Бэкенд у нас базируется на Python, а фронт - на JavaScript и фреймворке Angular. Несколько ML-моделей помогают нам с задачами прогнозирования, а саму оптимизационную задачу мы решаем с помощью Gurobi. Интерфейсы мы прорабатываем в Figma и утверждаем с заказчиком до разработки.\u003C\u002Fp\u003E\u003Cp\u003E У нас полноценный CI\u002FCD, релизимся не реже раза в неделю. Мы умеем в Docker контейнеры и Kubernetes. Zabbix работает для мониторинга, а ELK стек - для логирования.\u003C\u002Fp\u003E\u003Cp\u003E Что касается исходных данных, то довольно большой их объем получаем от РЖД. Сюда входят информация о состоянии вагонов, и и их местонахождении. По России качество данных неплохое. К сожалению, если говорить об СНГ, то есть определенные проблемы, но мы постепенно разрабатываем обходные решения, которые позволяют избавиться от некоторых неприятных проблем. Но, в целом, мы получаем большой объем информации, узнаем о тысячах вагонов, станций и т.п.\u003C\u002Fp\u003E\u003Cp\u003E На выходе программа дает рекомендации к заадресации вагонов, которые понятны диспетчеру, работающему с ними. С UX, в целом, проблем нет, тестировщики вполне довольны результатом. \u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"229\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F236\u002F6ed\u002F473\u002F2366ed473d88f1074b6f68250fc7328a.png\" data-width=\"512\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch2\u003EЧто в итоге?\u003C\u002Fh2\u003E\u003Cp\u003EПрограмма помогает обрабатывать огромные массивы данных, которые человек, даже целая команда профессионалов-диспетчеров, вряд ли способны охватить и проанализировать. \"Навигатор\" помогает собрать все исходники вместе и помочь принять решение. Например, система позволит довести точность графиков подачи вагонов под погрузку до 80% (сейчас этот показатель гораздо ниже). \u003C\u002Fp\u003E\u003Cp\u003EСтоит отметить, что профессионалы тоже способны принимать корректные и очень эффективные решения. В ходе тестирования программы мы пригласили группу экспертов и дали им для решения простую задачу. Исходные условия включали десять станций, заказы и вагоны. Нужно было распределить парк таким образом, чтобы обеспечить минимальный пробег для обеспечения этих станций. \u003C\u002Fp\u003E\u003Cp\u003EСправились и люди, и программа. Эксперты решили задачу лишь на 0,1%-0,2% хуже, чем \"Навигатор\", то есть, практически, на одном уровне. Но вот система сделала это за 0,2 секунды, а профессионалы коллективно решали ее 40 минут. И, напомню, это очень простая, можно сказать, рутинная задача. \u003C\u002Fp\u003E\u003Cp\u003E\"Навигатор\" помогает движенцам (это сотрудники ПГК, которые организуют и управляют перевозками на железнодорожном транспорте), эффективнее справляться с логистикой. Например, если сейчас многие отчеты в филиалах составляются вручную, то \"Навигатор\" делает все автоматически. \u003C\u002Fp\u003E\u003Cp\u003EТак, для каждой станции платформа отображает наличие парка и статус вагонов, включая число порожних, погруженных, неизрасходованную потребность, прогнозное наличие и т.п. А для каждого вагона указывается рекомендованная отправка с указанием станции отправления, станции назначения, тарифа, даты отправления и прибытия. \u003C\u002Fp\u003E\u003Cp\u003EВ будущем планируем добавить к возможностям еще и \"модуль ремонта\", то есть часть функционала, которая будет отвечать за учет проблемных вагонов, инцидентов и т.п. \u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"продукт"},{"titleHtml":"продукт менеджмент"},{"titleHtml":"логистика"},{"titleHtml":"транспорт"},{"titleHtml":"железная дорога"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd88\u002F7ea\u002Fbd6\u002Fd887eabd6cb975918d715cd006d94d66.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd88\u002F7ea\u002Fbd6\u002Fd887eabd6cb975918d715cd006d94d66.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fpgk\\\u002Fblog\\\u002F583208\\\u002F\"},\"headline\":\"Hi-tech на железной дороге: математически обоснованная логистика при помощи «Навигатора»\",\"datePublished\":\"2021-10-13T12:59:18+03:00\",\"dateModified\":\"2021-10-14T00:55:59+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Дмитрий Крупенин\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fpgk\\\u002Fblog\\\u002F583208\\\u002F#post-content-body\",\"about\":[\"c_pgk\",\"h_pm\",\"h_productpm\",\"h_soft\",\"h_transport\",\"f_management\",\"f_popsci\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583208\\\u002F806f25e7db5e4c41b05c70d6136e272f\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fd88\\\u002F7ea\\\u002Fbd6\\\u002Fd887eabd6cb975918d715cd006d94d66.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F2a1\\\u002Fe10\\\u002Fd49\\\u002F2a1e10d49c4c467a8b3e9c9b8db9c640.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F236\\\u002F6ed\\\u002F473\\\u002F2366ed473d88f1074b6f68250fc7328a.png\"]}","metaDescription":"Привет, Хабр! Меня зовут Дмитрий Крупенин, я руковожу продуктовой разработкой в Первой грузовой компании (ПГК). Сегодня хотел бы рассказать о разработанном нами продукте для оператора вагонов железных...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"pgk":{"alias":"pgk","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Fd49\u002F05f\u002F702\u002Fd4905f7029b7323219738fc4f497c2e1.jpg","titleHtml":"Первая грузовая компания (ПГК)","descriptionHtml":null,"relatedData":null,"statistics":{"postsCount":9,"newsCount":0,"vacanciesCount":0,"employeesCount":7,"careerRating":null,"subscribersCount":27,"rating":59.94,"invest":null},"foundationDate":{"year":"2007","month":"07","day":"26"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fpgkweb.ru\u002F","staffNumber":"1 001–5 000 человек","registrationDate":"2021-07-06T03:20:55+00:00","representativeUser":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fpgkweb.ru\u002F"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"85932608"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"Первая грузовая компания (ПГК), Москва -  с 26 июля 2007 г.","title":"Первая грузовая компания (ПГК), Москва -  с 26 июля 2007 г.","keywords":["Управление продуктом","Транспорт","Карьера в IT-индустрии","Машинное обучение","Софт"],"descriptionHtml":"9 статей от авторов компании Первая грузовая компания (ПГК)","description":"9 статей от авторов компании Первая грузовая компания (ПГК)"},"aDeskSettings":null,"careerAlias":null,"maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

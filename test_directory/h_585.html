@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Пишем свой Google, или асинхронный краулер с rate limits на Python / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/kts\/blog\/583036\/"},"headline":"Пишем свой Google, или асинхронный краулер с rate limits на Python","datePublished":"2021-10-13T16:19:30+03:00","dateModified":"2021-10-14T01:26:58+03:00","author":{"@type":"Person","name":"alexopryshko"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Привет!Меня зовут Александр, я руковожу backend-разработкой в КТS. Сегодня расскажу, как написать асинхронный краулер.Такая задача часто встречается на практике,...","url":"https:\/\/habr.com\/ru\/company\/kts\/blog\/583036\/#post-content-body","about":["c_kts","h_python","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/583036\/442bebf935095a5fa89f2ac23bdbdd4d\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/8db\/1f0\/ca0\/8db1f0ca0e9a337d30aee3800d3b92fc.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/af3\/325\/23c\/af332523c7a1e1656a511b7272a33a40.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/901\/288\/0f6\/9012880f61a256f73434d0a6b0b85082.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/4fb\/e7c\/dc9\/4fbe7cdc9e34e61906ac8e0e0c4911e5.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/dcf\/4ed\/b56\/dcf4edb5630306b9666845df2d35623a.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b31\/d65\/4dc\/b31d654dc0486886ea313bff205f385e.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f7e\/3bd\/7d0\/f7e3bd7d0678b93bf3e8de7da68dd03b.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/02e\/362\/9dd\/02e3629ddba3d00ff12fa045147b682c.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/1eb\/4b1\/9a3\/1eb4b19a37f38488bdbda86f7e5259e0.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Пишем свой Google, или асинхронный краулер с rate limits на Python" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Пишем свой Google, или асинхронный краулер с rate limits на Python" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Пишем свой Google, или асинхронный краулер с rate limits на Python" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Привет!Меня зовут Александр, я руковожу backend-разработкой в КТS. Сегодня расскажу, как написать асинхронный краулер.Такая задача часто встречается на практике, когда нужно реализовать периодическую..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Привет!Меня зовут Александр, я руковожу backend-разработкой в КТS. Сегодня расскажу, как написать асинхронный краулер.Такая задача часто встречается на практике, когда нужно реализовать периодическую..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Привет!Меня зовут Александр, я руковожу backend-разработкой в КТS. Сегодня расскажу, как написать асинхронный краулер.Такая задача часто встречается на практике, когда нужно реализовать периодическую..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Привет!Меня зовут Александр, я руковожу backend-разработкой в КТS. Сегодня расскажу, как написать асинхронный краулер.Такая задача часто встречается на практике, когда нужно реализовать периодическую..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Привет!Меня зовут Александр, я руковожу backend-разработкой в КТS. Сегодня расскажу, как написать асинхронный краулер.Такая задача часто встречается на практике, когда нужно реализовать периодическую..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/0bc/7c8/a19/0bc7c8a1979ef2b79336f65b3bcd747c.jpeg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/0bc/7c8/a19/0bc7c8a1979ef2b79336f65b3bcd747c.jpeg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/0bc/7c8/a19/0bc7c8a1979ef2b79336f65b3bcd747c.jpeg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/0bc/7c8/a19/0bc7c8a1979ef2b79336f65b3bcd747c.jpeg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/0bc/7c8/a19/0bc7c8a1979ef2b79336f65b3bcd747c.jpeg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583036" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-13T13:19:30.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583036/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/kts/blog/583036/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/0bc/7c8/a19/0bc7c8a1979ef2b79336f65b3bcd747c.jpeg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583036/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="kts" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/kts/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/729/977/f1b/729977f1bd0ea74d847a7c09fbe148c7.jpg" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">134.64</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/kts/profile/" class="tm-company-card__name">
+        KTS
+      </a> <div class="tm-company-card__description">Помогаем бизнесу создавать it-продукты</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/alexopryshko/" title="alexopryshko" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/067/341/928/067341928ec6f61bee55a660299e9984.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/alexopryshko/" class="tm-user-info__username">
+      alexopryshko
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-13T13:19:30.000Z" title="2021-10-13, 16:19">13  октября   в 16:19</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Пишем свой Google, или асинхронный краулер с rate limits на Python</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/kts/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании KTS</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/python/" class="tm-article-snippet__hubs-item-link"><span>Python</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="1760" data-src="https://habrastorage.org/getpro/habr/upload_files/8db/1f0/ca0/8db1f0ca0e9a337d30aee3800d3b92fc.png" data-width="3120"/><figcaption></figcaption></figure><p>Привет!</p><p>Меня зовут Александр, я руковожу backend-разработкой в <a href="https://habr.com/ru/company/kts/profile/"><u>КТS</u></a>. Сегодня расскажу, как написать асинхронный краулер.</p><p>Такая задача часто встречается на практике, когда нужно реализовать периодическую синхронизацию/обкачку между сервисами. </p><p>Статья написана по мотивам вебинара, который мы провели в рамках нового курса «Асинхронное программирование на Python для начинающих». Курс стартует 18 октября, поэтому, если вам интересно — <a href="http://metaclass.kts.studio/aiohttp?utm_source=habr">загляните посмотреть.</a></p><p>Что будет в статье:</p><ul><li><p><a href="#1">Цель</a></p></li><li><p><a href="#2">Исходный код</a></p></li><li><p><a href="#3">Планировщик</a></p></li><li><p><a href="#4">Задача для краулера</a></p></li><li><p><a href="#5">Пробный запуск</a></p></li><li><p><a href="#6">Промежуточный итог</a></p></li><li><p><a href="#7">Функции put и join</a></p></li><li><p><a href="#8">Semaphore</a></p></li><li><p><a href="#9">Остановка фонового планировщика</a></p></li><li><p><a href="#10">Работа краулера на примере обкачки нашего блога на Хабре</a></p></li></ul><a class="anchor" name="1" id="1"></a><h2>Цель</h2><p>У нас есть краулер, который обкачивает страницы. Это может быть поисковый бот Google, который ходит по сайтам, скачивает данные, кладет в базу и индексирует, или какой-нибудь агрегатор: аптек, маркетплейсов и т.д.</p><p>Задача в том, что краулер должен работать и не положить сервис, который он обкачивает. </p><p>Код для начала работы:</p><pre><code class="python">import asyncio
+from dataclasses import dataclass
+from typing import Optional
+
+class Pool:
+    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):
+        self.max_rate = max_rate
+        self.interval = interval
+        self.concurrent_level = concurrent_level
+        
+async def start(pool):
+  	await asyncio.sleep(5)
+    
+def main():
+    loop = asyncio.get_event_loop()
+    
+    try:
+        loop.run_until_complete(start())
+    except KeyboardInterrupt:
+        loop.close()
+
+if __name__ == '__main__':
+    main()</code></pre><p>Краулеру нужно посетить и скачать много страниц, следовательно, много раз обратиться к ресурсу. Мы можем позволить себе отправлять много запросов, но сервис, на который мы приходим, может не выдержать большой нагрузки. Поэтому к источнику данных нужно ходить управляемо — сделать <em>rate-limit. </em></p><p>Если в какой-то момент задача прервалась, или мы сами решили остановить краулер, нужно сделать корректную и аккуратную остановку работы. Для этого начатые задачи должны завершиться, а новые задачи из очереди должны прекратить поступать. </p><h2>Исходный код</h2><p>У нас есть сущность <em>Pool.</em> Эта сущность умеет управлять количеством запросов в единицу времени. Pool принимает:</p><ul><li><p><em>max_rate</em> — максимальное количество запросов</p></li><li><p><em>interval</em> — интервал. Если мы передаем значения max_rate = 5 и interval = 1, в секунду может исполняться 5 запросов</p></li><li><p><em>concurrent_level</em> — обозначает допустимое количество параллельных запросов</p></li></ul><p>max_rate и concurrent_level могут не совпадать, когда время выполнения запроса больше, чем interval. Например, мы делаем 5 запросов в секунду, как заявлено в переменных, но API все равно отвечает медленнее. Чтобы не положить сервис, мы вводим переменную concurrent_level. </p><a class="anchor" name="3" id="3"></a><h2>Планировщик</h2><p>Для начала нужно написать что-то, что позволит делать ровно 5 запросов в секунду, не обращая внимание на время запроса. Для этого мы запустим планировщик, который назовем <em>scheduler.</em> Он будет просыпаться раз в секунду и ставить количество задач, равное max_rate. Планировщик не ждет их исполнения, просто создает 5 задач каждую секунду. </p><p>Дополним class Pool и напишем функцию scheduler:</p><pre><code class="python">from task import Task
+
+class Pool:
+    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):
+        self.max_rate = max_rate
+        self.interval = interval
+        self.concurrent_level = concurrent_level
+        self.is_running = False
+        
+     async def _scheduler(self):
+        while self.is_running:
+            for _ in range(self.max_rate):
+                pass</code></pre><p>Обратите внимание на две вещи:</p><ul><li><p>функция бесконечная, пока работает наш краулер</p></li><li><p>раз в период функция выполняет max_rate раз какое-то действие </p></li></ul><a class="anchor" name="4" id="4"></a><h2>Задача для краулера</h2><p>Scheduler должен откуда-то взять задачи, которые нужно запланировать. Для этого нам нужно сделать очередь, которую мы возьмем из библиотеки asyncio. Примитив называется asyncio.Queue(). В class Pool дописываем:</p><pre><code class="python">class Pool:
+    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):
+        self.max_rate = max_rate
+        self.interval = interval
+        self.concurrent_level = concurrent_level
+        self.is_running = False
+        self._queue = asyncio.Queue()</code></pre><p>Теперь мы просыпаемся раз в интервал и получаем количество задач, равное max_rate. Но нужно что-то сделать, чтобы они исполнялись.</p><p>Для этого в asyncio есть функция <em>create_task. </em>Она запускает выполнение корутины, но при этом не дожидается ее исполнения, а создает фоновую задачу. В create_task передадим метод <em>perform.</em></p><pre><code class="python">    async def _scheduler(self):
+        while self.is_running:
+            for _ in range(self.max_rate):
+                task = await self._queue.get()
+              	asyncio.create_task(task.perform))
+            await asyncio.sleep(self.interval)</code></pre><a class="anchor" name="5" id="5"></a><h2>Пробный запуск</h2><p>Давайте попробуем все это запустить. Сделаем функцию <em>start</em> и таким же образом запустим scheduler. Нам нужно не ждать его, а просто запустить в фоне корутину с помощью create_task:</p><pre><code class="python">    async def _scheduler(self):
+        while self.is_running:
+            for _ in range(self.max_rate):
+                task = await self._queue.get()
+                asyncio.create_task(self._worker(task))
+            await asyncio.sleep(self.interval)
+    
+    def start(self):
+        self.is_running = True
+        asyncio.create_task(self._scheduler())</code></pre><p>В будущем для корректного завершения работы краулера нужно завершить работу scheduler. Для этого нужно вызвать cancel у задачи, поэтому возвращаемое значение из create_task мы сохраняем в переменную <em>scheduler_task:</em></p><pre><code class="python">class Pool:
+    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):
+        self.max_rate = max_rate
+        self.interval = interval
+        self.concurrent_level = concurrent_level
+        self.is_running = False
+        self._queue = asyncio.Queue()
+        self._scheduler_task: Optional[asyncio.Task] = None</code></pre><p>Выставим rate-limit на 3 и внутри start запустим наш Pool:</p><pre><code class="python">def start(self):
+    self.is_running = True
+    self._scheduler_task = asyncio.create_task(self._scheduler())
+        
+async def start(pool):
+    pool = Pool(3)
+    pool.start()
+    await asyncio.sleep(5)
+
+</code></pre><p>Запускаем и видим, что ничего не произошло:</p><figure class="full-width "><img src="/img/image-loader.svg" height="431" data-src="https://habrastorage.org/getpro/habr/upload_files/af3/325/23c/af332523c7a1e1656a511b7272a33a40.png" data-width="1756"/><figcaption></figcaption></figure><p>Это потому, что внутри очереди ничего нет. Мы сделали старт и поспали 5 секунд, а на момент окончания задачи у нас осталась фоновая задача scheduler.  </p><a class="anchor" name="6" id="6"></a><h2>Промежуточный итог</h2><ol><li><p>У нас есть Pool с параметрами:<br/>— <em>ограничение количества запросов max_rate<br/>— интервал активизации планировщика interval<br/>— максимальное количество параллельных запросов concurrent_level</em></p></li><li><p>Мы написали планировщик scheduler, который работает постоянно, просыпается раз в объявленный интервал, достает из очереди max_rate задач и запускает их исполнение.</p></li><li><p>Задача task — просто дата-класс с функцией perform. Для описания поведения задачи нужно создать класс-наследник и в нем переопределить perform.</p></li><li><p>Еще мы написали функцию start, в которой выставили признак работы is_running и в фоне запустили наш планировщик.</p></li></ol><a class="anchor" name="7" id="7"></a><h2>Функции put и join</h2><p>Перед тем, как запустить <em>Pool,</em> попробуем положить туда задачку. Для этого напишем функцию <em>put,</em> которая принимает задачу и кладет ее в нашу внутреннюю очередь. </p><p>Дополнительно добавим tid (task_id) и print в код задачи:</p><pre><code class="python">import asyncio
+from dataclasses import dataclass
+
+@dataclass
+class Task:
+    tid: int
+
+    async def perform(self, pool):
+        print('start perform', self.tid)
+        await asyncio.sleep(3)
+        print('complete perform', self.tid)</code></pre><p>И добавим 10 задач перед стартом pool:</p><pre><code class="python">async def start(pool):
+    pool = Pool(3)
+    for tid in range(10):
+        await pool.put(Task(tid))
+    pool.start()
+    await asyncio.sleep(5)</code></pre><p>Добавим еще кое-что. У стандартной библиотеки queue есть метод <em>join.</em> Тогда краулер будет ждать не 5 секунд, как мы указали в начале, а до тех пор, пока очередь не опустеет:</p><pre><code class="python">async def start(pool):
+    pool = Pool(3)
+    for tid in range(10):
+        await pool.put(Task(tid))
+    pool.start()
+    await pool.join()</code></pre><p>Запустим и посмотрим, что произойдет:</p><figure class="full-width "><img src="/img/image-loader.svg" height="432" data-src="https://habrastorage.org/getpro/habr/upload_files/901/288/0f6/9012880f61a256f73434d0a6b0b85082.png" data-width="1742"/><figcaption></figcaption></figure><p>Хотя все зависло, планировщик работал. </p><p>Вы можете увидеть, что задача выполняется 3 секунды. И, несмотря на то, что предыдущие задачи еще не завершились, планировщик все равно создает новые. Это плохо, потому что если API отвечает медленнее, чем мы шлем к нему запросы, есть вероятность «положить» сервис. Эту проблему мы решим чуть позже.</p><p>Чтобы join отработал, нужно помечать задачи выполненными. Не будем усложнять код scheduler и сделаем отдельную функцию <em>_worker</em>. В нее перенесем perform и ниже добавим <em>self._queue.task_done()</em>. Это означает, что задачу мы выполнили:</p><pre><code class="python">async def _worker(self, task: Task):
+    await task.perform(self)
+    self._queue.task_done()</code></pre><p>Обратите внимание, что _worker вызывается без await, потому что scheduler не должен ждать его завершения. Иначе он не успеет запланировать задачи. </p><p>В scheduler вместо perform нужно передать _worker и task:</p><pre><code class="python">async def _scheduler(self):
+    while self.is_running:
+        for _ in range(self.max_rate):
+            task = await self._queue.get()
+            asyncio.create_task(self._worker(task))
+        await asyncio.sleep(self.interval)</code></pre><p>Снова попробуем запустить:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="" title="" height="430" data-src="https://habrastorage.org/getpro/habr/upload_files/4fb/e7c/dc9/4fbe7cdc9e34e61906ac8e0e0c4911e5.png" data-width="1759"/><figcaption></figcaption></figure><p>Программа завершилась, но осталось предупреждение о том, что scheduler остался работать в фоне. Функцию stop напишем чуть позже.</p><a class="anchor" name="8" id="8"></a><h2>Semaphore</h2><p>На этом этапе видим, что:</p><ul><li><p><em>метод start запускает наш Pool и планировщик scheduler</em></p></li><li><p><em>планировщик раз в секунду ставит новые задачи и запускает _worker</em></p></li><li><p><em>_worker эти задачи выполняет</em></p></li><li><p><em>метод join ждет, пока очередь не станет пустой</em></p></li></ul><p>Если время выполнения задач больше интервала активизации планировщика (interval), он накидывает дополнительные задачи сверху тех, которые еще не выполнились.</p><p>В таком случае количество параллельных запросов к сервису за interval будет больше rate_limit. Поэтому нужно ограничить количество параллельных запросов. Для этого нам потребуется переменная <em>concurrent_level,</em> которая по умолчанию равна rate_limit.</p><p>В asyncio есть примитив синхронизации <em>Semaphore.</em> С его помощью можно ограничить количество параллельных исполняемых worker. Если количество запланированных задач больше заданного значения, мы ждем их исполнения. В нашем примере задач 3.</p><p>Объявим Semaphore и передадим в него либо concurrent_level, либо max_rate. </p><p>Когда worker начинает исполняться, нам нужно занять Semaphore. Для этого используем «асинхронный контекстный менеджер»: <em>async with self._sem. </em>Мы занимаем Semaphore, пока не закончатся операции ниже — <em>await task.perform(self)</em> и <em>self._queue.task_done().</em> </p><pre><code class="python">async def _worker(self, task: Task):
+    async with self._sem:
+        await task.perform(self)
+        self._queue.task_done()</code></pre><p>Добавим Semaphore внутрь scheduler, чтобы scheduler не запускал новые worker'ы, если количество параллельных worker'ов уже достигло максимума:</p><pre><code class="python">async def _scheduler(self):
+    while self.is_running:
+        for _ in range(self.max_rate):
+            async with self._sem:
+                task = await self._queue.get()
+                asyncio.create_task(self._worker(task))
+        await asyncio.sleep(self.interval)</code></pre><p>Запускаем: </p><figure class="full-width "><img src="/img/image-loader.svg" height="428" data-src="https://habrastorage.org/getpro/habr/upload_files/dcf/4ed/b56/dcf4edb5630306b9666845df2d35623a.png" data-width="1747"/><figcaption></figcaption></figure><p>Мы добавили 3 задачи и ждем, пока они исполнятся. Таким образом мы соблюдаем максимальное параллельное количество запросов. </p><a class="anchor" name="9" id="9"></a><h2>Остановка фонового планировщика</h2><p>У нас осталась проблема с корректным завершением планировщика. После завершения остановки краулера появляется предупреждение о незавершенной корутине.</p><p>Чтобы этого не было, напишем функцию <em>stop:</em></p><pre><code class="python">async def stop(self):
+    self.is_running = False
+    self._scheduler_task.cancel()</code></pre><p>Теперь после того, как внутри пула закончатся задачи, его нужно корректно остановить. Добавим метод stop в конце функции start:</p><pre><code class="python">async def start():
+    pool = Pool(3)
+    for tid in range(10):
+      await pool.put(Task(tid))
+    pool.start()
+    await pool.join()
+    await pool.stop()</code></pre><p>Попробуем:</p><figure class="full-width "><img src="/img/image-loader.svg" height="431" data-src="https://habrastorage.org/getpro/habr/upload_files/b31/d65/4dc/b31d654dc0486886ea313bff205f385e.png" data-width="1734"/><figcaption></figcaption></figure><p>Теперь все работает корректно. </p><p>Мы остановили планировщик, когда задачи в очереди закончились. Но если мы остановим краулер в процессе работы, начнут появляться предупреждения о том, что какая-то задача не завершилась:</p><figure class="full-width "><img src="/img/image-loader.svg" height="432" data-src="https://habrastorage.org/getpro/habr/upload_files/f7e/3bd/7d0/f7e3bd7d0678b93bf3e8de7da68dd03b.png" data-width="1734"/><figcaption></figcaption></figure><p>А чем больше время выполнения perform, тем больше будет таких уведомлений. </p><p>Поэтому нам нужно ожидать, когда все worker завершатся. Для этого введем дополнительную переменную, обозначающую количество параллельно работающих worker: <em>concurrent_workers.</em> Изначально она равна 0. При запуске воркера мы увеличиваем concurrent_workers на 1. При выходе, наоборот, уменьшаем на 1:</p><pre><code class="python">async def _worker(self, task: FetchTask):
+    async with self._sem:
+        self._cuncurrent_workers += 1
+        await task.perform(self)
+        self._queue.task_done()
+    self._cuncurrent_workers -= 1</code></pre><p>Теперь нужно как-то сказать функции stop, что все параллельные worker завершились. Это произойдет, когда is_running будет false и concurrent_workers станет равной 0.</p><p>Для этого есть примитив синхронизации <em>Event. </em>В нашем коде мы добавим его в Pool и назовем <em>stop_event. </em>Это переменная, на которой можно ждать <em>await self._stop_event.wait()</em> до тех пор, пока кто-то не вызовет <em>self._stop_event.set():</em></p><pre><code class="python">class Pool:
+    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):
+        self.max_rate = max_rate
+        self.interval = interval
+        self.concurrent_level = concurrent_level
+        self.is_running = False
+        self._queue = asyncio.Queue()
+        self._scheduler_task: Optional[asyncio.Task] = None
+        self._sem = asyncio.Semaphore(concurrent_level or max_rate)
+        self._cuncurrent_workers = 0
+        self._stop_event = asyncio.Event()</code></pre><p>Если равна, то все worker завершили свою работу, планировщик отменен и не создает новые задачи. В таком случае все компоненты Pool остановлены или завершили свою работу — программу можно завершать.</p><p>Но если concurrent_workers не равна 0, нам нужно внутри метода stop подождать событие stop_event:</p><pre><code class="python">async def stop(self):
+    self.is_running = False
+    self._scheduler_task.cancel()
+    if self._cuncurrent_workers != 0:
+        await self._stop_event.wait()</code></pre><p>Когда Pool остановлен, последний работающий worker должен отправить уведомление:</p><pre><code class="python">    async def _worker(self, task: FetchTask):
+        async with self._sem:
+            self._cuncurrent_workers += 1
+            await task.perform(self)
+            self._queue.task_done()
+        self._cuncurrent_workers -= 1
+        if not self.is_running and self._cuncurrent_workers == 0:
+            self._stop_event.set()</code></pre><p>Обновим функцию main, чтобы все корректно работало:</p><pre><code class="python">def main():
+    loop = asyncio.get_event_loop()
+    pool = Pool(3)
+    try:
+        loop.run_until_complete(start(pool))
+    except KeyboardInterrupt:
+        loop.run_until_complete(pool.stop())
+        loop.close()</code></pre><p>Теперь все работает. После нажатия Ctrl + C выполняются оставшиеся задачи, и программа завершается:</p><figure class="full-width "><img src="/img/image-loader.svg" height="371" data-src="https://habrastorage.org/getpro/habr/upload_files/02e/362/9dd/02e3629ddba3d00ff12fa045147b682c.png" data-width="1731"/><figcaption></figcaption></figure><a class="anchor" name="10" id="10"></a><h2>Работа краулера на примере обкачки нашего блога на Хабре</h2><p>Мы реализовали механику пула на нашей абстрактной задачке task.</p><p>Для следующего этапа я подготовил задачу <em>FetchTask. </em></p><details class="spoiler"><summary>fetch_task</summary><div class="spoiler__content"><pre><code class="python">MAX_DEPTH = 2
+PARSED_URLS = set()
+
+
+@dataclass
+class FetchTask(Task):
+    url: URL
+    depth: int
+
+    def parser(self, data: str) -> List['FetchTask']:
+        if self.depth + 1 > MAX_DEPTH:
+            return []
+        soup = BeautifulSoup(data, 'lxml')
+        res = []
+        for link in soup.find_all('a', href=True):
+            new_url = URL(link['href'])
+            if new_url.host is None and new_url.path.startswith('/'):
+                new_url = URL.build(
+                    scheme=self.url.scheme,
+                    host=self.url.host,
+                    path=new_url.path,
+                    query_string=new_url.query_string
+                )
+                if new_url in PARSED_URLS:
+                    continue
+                PARSED_URLS.add(new_url)
+                res.append(FetchTask(
+                    tid=self.tid,
+                    url=new_url,
+                    depth=self.depth + 1
+                ))
+        return res
+
+    async def perform(self, pool):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.url) as resp:
+                print(self.url, resp.status)
+                data = await resp.text()
+                res: List[FetchTask] = await asyncio.get_running_loop().run_in_executor(
+                    None, self.parser, data
+                )
+                for task in res:
+                    await pool.put(task)</code></pre></div></details><p>Внутри функции parcer есть переменная soup,  которая объявлена как <em>soup = BeautifulSoup(data, ’lxml’). </em>Дам небольшие пояснения. </p><p><strong>BeautifulSoup</strong> — парсер для анализа HTML/XML. </p><p><strong>lxml</strong> — реализация HTML/XML парсера<strong>.</strong> Из-за GIL мы специально запускаем res внутри функции perform через executor:</p><pre><code class="python">async def perform(self, pool):
+    async with aiohttp.ClientSession() as session:
+      async with session.get(self.url) as resp:
+          print(self.url, resp.status)
+          data = await resp.text()
+          res: List[FetchTask] = await asyncio.get_running_loop().run_in_executor(
+            	None, self.parser, data
+          )
+          for task in res:
+            	await pool.put(task)</code></pre><p>GIL — блокировка, которая запрещает параллельные потоки в Python. Но если вы пишите расширение на С, есть возможность «отпустить» GIL.</p><p>Парсер lxml написан на С. У себя под капотом он умеет отпускать GIL и выполняться в отдельном потоке. Это относится и к некоторым другим расширениям: <a href="https://lxml.de/2.0/FAQ.html#id1"><u>https://lxml.de/2.0/FAQ.html#id1</u></a></p><p>В fetch_task также переопределяем функцию perform, в которой нужно сходить в сеть. Для этого я взял aiohttp client.</p><p>В задаче FetchTask мы идем на указанный URL, оттуда получаем данные и запускаем executor для их обработки. Нужно взять все ссылки в документе, перейти на них и тоже обкачать:</p><pre><code class="python">    def parser(self, data: str) -> List['FetchTask']:
+        if self.depth + 1 > MAX_DEPTH:
+            return []
+        soup = BeautifulSoup(data, 'lxml')
+        res = []
+        for link in soup.find_all('a', href=True):
+            new_url = URL(link['href'])
+            if new_url.host is None and new_url.path.startswith('/'):
+                new_url = URL.build(
+                    scheme=self.url.scheme,
+                    host=self.url.host,
+                    path=new_url.path,
+                    query_string=new_url.query_string
+                )
+                if new_url in PARSED_URLS:
+                    continue
+                PARSED_URLS.add(new_url)
+                res.append(FetchTask(
+                    tid=self.tid,
+                    url=new_url,
+                    depth=self.depth + 1
+                ))
+        return res</code></pre><p>В конце мы добавляем в результат новую задачу и увеличиваем на 1 глубину depth.</p><p>Например, когда мы поставили задачку habr.com, глубина была равна 1. Мы скачали этот документ, в котором есть и другие ссылки: блоги Mail.ru, Yandex или KTS. Когда мы стали обкачивать следующие страницы, глубина увеличилась до 2. Этот параметр нужен для ограничения количества обкачиваемых ресурсов, фактически — глубины. </p><p>Обратите внимание, что у нас есть список посещенных страничек <em>PARSED_URLS. </em>Так мы не будем дважды посещать одни и те же страницы.</p><p>Теперь импортируем задачи в краулер из fetch_task и изменяем start:</p><pre><code class="python">async def start(pool):
+    await pool.put(
+        FetchTask(URL('https://habr.com/ru/company/kts/blog/'), 1)
+    )
+    pool.start()
+    await pool.join()
+    await pool.stop()</code></pre><p>Выставляем 3 запроса в секунду и смотрим, как наш краулер потихоньку обкачивает Хабр:</p><figure class="full-width "><img src="/img/image-loader.svg" height="436" data-src="https://habrastorage.org/getpro/habr/upload_files/1eb/4b1/9a3/1eb4b19a37f38488bdbda86f7e5259e0.png" data-width="1752"/><figcaption></figcaption></figure><a class="anchor" name="11" id="11"></a><h2>Спасибо за внимание</h2><p>На этом все! Спасибо всем, кто дочитал статью.</p><p>Если сталкивались с подобными задачами, пожалуйста, поделитесь своим опытом в комментариях.</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcrawler%5D" class="tm-tags-list__link">crawler</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bhtml%5D" class="tm-tags-list__link">html</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bxml%5D" class="tm-tags-list__link">xml</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpython%5D" class="tm-tags-list__link">python</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Basyncio%5D" class="tm-tags-list__link">asyncio</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/kts/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании KTS
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/python/" class="tm-hubs-list__link">
+    Python
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 7: ↑6 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 7: ↑6 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+5</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">5.1K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    85
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/kts/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/729/977/f1b/729977f1bd0ea74d847a7c09fbe148c7.jpg" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/kts/profile/" class="tm-company-snippet__title">KTS</a> <div class="tm-company-snippet__description">Помогаем бизнесу создавать it-продукты</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://kts.studio" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/alexopryshko/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/067/341/928/067341928ec6f61bee55a660299e9984.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 10 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    8
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/alexopryshko/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @alexopryshko
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/kts/blog/583036/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 5 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2015-11-08T21:00:00.000Z" title="2015-11-09, 00:00">9  ноября  2015</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://kts.studio" target="_blank" class="tm-company-basic-info__link">
+      kts.studio
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    51–100 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2021-03-10T13:41:53.000Z" title="2021-03-10, 16:41">10  марта  </time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/kts/blog/583036/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/kts/blog/583036/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583036":{"id":"583036","timePublished":"2021-10-13T13:19:30+00:00","isCorporative":true,"lang":"ru","titleHtml":"Пишем свой Google, или асинхронный краулер с rate limits на Python","leadData":{"textHtml":"\u003Cp\u003EМеня зовут Александр, я руковожу backend-разработкой в \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fkts\u002Fprofile\u002F\"\u003E\u003Cu\u003EКТS\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Сегодня расскажу, как написать асинхронный краулер.\u003C\u002Fp\u003E\u003Cp\u003EТакая задача часто встречается на практике, когда нужно реализовать периодическую синхронизацию\u002Fобкачку между сервисами.&nbsp;\u003C\u002Fp\u003E\u003Cp\u003EСтатья написана по мотивам вебинара, который мы провели в рамках нового курса «Асинхронное программирование на Python для начинающих». Курс стартует 18 октября, поэтому, если вам интересно — \u003Ca href=\"http:\u002F\u002Fmetaclass.kts.studio\u002Faiohttp?utm_source=habr\"\u003Eзагляните посмотреть.\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cp\u003EЧто будет в статье:\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003E1. Цель\u003Cbr\u003E2. Исходный код\u003Cbr\u003E3. Планировщик\u003Cbr\u003E4. Задача для краулера\u003Cbr\u003E5. Пробный запуск\u003Cbr\u003E6. Промежуточный итог\u003Cbr\u003E7. Функции put и join\u003Cbr\u003E8. Semaphore\u003Cbr\u003E9. Остановка фонового планировщика\u003Cbr\u003E10. Работа краулера на примере обкачки нашего блога на Хабре\u003Cbr\u003E11. Заключение\u003C\u002Fem\u003E\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0bc\u002F7c8\u002Fa19\u002F0bc7c8a1979ef2b79336f65b3bcd747c.jpeg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0bc\u002F7c8\u002Fa19\u002F0bc7c8a1979ef2b79336f65b3bcd747c.jpeg","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":8,"votesCount":10},"rating":5,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2642031","alias":"alexopryshko","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F067\u002F341\u002F928\u002F067341928ec6f61bee55a660299e9984.jpg","speciality":"Пользователь"},"statistics":{"commentsCount":5,"favoritesCount":85,"readingCount":5111,"score":5,"votesCount":7},"hubs":[{"relatedData":null,"id":"22694","alias":"kts","type":"corporative","title":"Блог компании KTS","titleHtml":"Блог компании KTS","isProfiled":false},{"relatedData":null,"id":"340","alias":"python","type":"collective","title":"Python","titleHtml":"Python","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"1760\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F8db\u002F1f0\u002Fca0\u002F8db1f0ca0e9a337d30aee3800d3b92fc.png\" data-width=\"3120\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПривет!\u003C\u002Fp\u003E\u003Cp\u003EМеня зовут Александр, я руковожу backend-разработкой в \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fkts\u002Fprofile\u002F\"\u003E\u003Cu\u003EКТS\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Сегодня расскажу, как написать асинхронный краулер.\u003C\u002Fp\u003E\u003Cp\u003EТакая задача часто встречается на практике, когда нужно реализовать периодическую синхронизацию\u002Fобкачку между сервисами. \u003C\u002Fp\u003E\u003Cp\u003EСтатья написана по мотивам вебинара, который мы провели в рамках нового курса «Асинхронное программирование на Python для начинающих». Курс стартует 18 октября, поэтому, если вам интересно — \u003Ca href=\"http:\u002F\u002Fmetaclass.kts.studio\u002Faiohttp?utm_source=habr\"\u003Eзагляните посмотреть.\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cp\u003EЧто будет в статье:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#1\"\u003EЦель\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#2\"\u003EИсходный код\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#3\"\u003EПланировщик\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#4\"\u003EЗадача для краулера\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#5\"\u003EПробный запуск\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#6\"\u003EПромежуточный итог\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#7\"\u003EФункции put и join\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#8\"\u003ESemaphore\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#9\"\u003EОстановка фонового планировщика\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"#10\"\u003EРабота краулера на примере обкачки нашего блога на Хабре\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Ca class=\"anchor\" name=\"1\" id=\"1\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EЦель\u003C\u002Fh2\u003E\u003Cp\u003EУ нас есть краулер, который обкачивает страницы. Это может быть поисковый бот Google, который ходит по сайтам, скачивает данные, кладет в базу и индексирует, или какой-нибудь агрегатор: аптек, маркетплейсов и т.д.\u003C\u002Fp\u003E\u003Cp\u003EЗадача в том, что краулер должен работать и не положить сервис, который он обкачивает. \u003C\u002Fp\u003E\u003Cp\u003EКод для начала работы:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eimport asyncio\nfrom dataclasses import dataclass\nfrom typing import Optional\n\nclass Pool:\n    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):\n        self.max_rate = max_rate\n        self.interval = interval\n        self.concurrent_level = concurrent_level\n        \nasync def start(pool):\n  \tawait asyncio.sleep(5)\n    \ndef main():\n    loop = asyncio.get_event_loop()\n    \n    try:\n        loop.run_until_complete(start())\n    except KeyboardInterrupt:\n        loop.close()\n\nif __name__ == '__main__':\n    main()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКраулеру нужно посетить и скачать много страниц, следовательно, много раз обратиться к ресурсу. Мы можем позволить себе отправлять много запросов, но сервис, на который мы приходим, может не выдержать большой нагрузки. Поэтому к источнику данных нужно ходить управляемо — сделать \u003Cem\u003Erate-limit. \u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cp\u003EЕсли в какой-то момент задача прервалась, или мы сами решили остановить краулер, нужно сделать корректную и аккуратную остановку работы. Для этого начатые задачи должны завершиться, а новые задачи из очереди должны прекратить поступать. \u003C\u002Fp\u003E\u003Ch2\u003EИсходный код\u003C\u002Fh2\u003E\u003Cp\u003EУ нас есть сущность \u003Cem\u003EPool.\u003C\u002Fem\u003E Эта сущность умеет управлять количеством запросов в единицу времени. Pool принимает:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Cem\u003Emax_rate\u003C\u002Fem\u003E — максимальное количество запросов\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cem\u003Einterval\u003C\u002Fem\u003E — интервал. Если мы передаем значения max_rate = 5 и interval = 1, в секунду может исполняться 5 запросов\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cem\u003Econcurrent_level\u003C\u002Fem\u003E — обозначает допустимое количество параллельных запросов\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003Emax_rate и concurrent_level могут не совпадать, когда время выполнения запроса больше, чем interval. Например, мы делаем 5 запросов в секунду, как заявлено в переменных, но API все равно отвечает медленнее. Чтобы не положить сервис, мы вводим переменную concurrent_level. \u003C\u002Fp\u003E\u003Ca class=\"anchor\" name=\"3\" id=\"3\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EПланировщик\u003C\u002Fh2\u003E\u003Cp\u003EДля начала нужно написать что-то, что позволит делать ровно 5 запросов в секунду, не обращая внимание на время запроса. Для этого мы запустим планировщик, который назовем \u003Cem\u003Escheduler.\u003C\u002Fem\u003E Он будет просыпаться раз в секунду и ставить количество задач, равное max_rate. Планировщик не ждет их исполнения, просто создает 5 задач каждую секунду. \u003C\u002Fp\u003E\u003Cp\u003EДополним class Pool и напишем функцию scheduler:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Efrom task import Task\n\nclass Pool:\n    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):\n        self.max_rate = max_rate\n        self.interval = interval\n        self.concurrent_level = concurrent_level\n        self.is_running = False\n        \n     async def _scheduler(self):\n        while self.is_running:\n            for _ in range(self.max_rate):\n                pass\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОбратите внимание на две вещи:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003Eфункция бесконечная, пока работает наш краулер\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eраз в период функция выполняет max_rate раз какое-то действие \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Ca class=\"anchor\" name=\"4\" id=\"4\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EЗадача для краулера\u003C\u002Fh2\u003E\u003Cp\u003EScheduler должен откуда-то взять задачи, которые нужно запланировать. Для этого нам нужно сделать очередь, которую мы возьмем из библиотеки asyncio. Примитив называется asyncio.Queue(). В class Pool дописываем:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eclass Pool:\n    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):\n        self.max_rate = max_rate\n        self.interval = interval\n        self.concurrent_level = concurrent_level\n        self.is_running = False\n        self._queue = asyncio.Queue()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь мы просыпаемся раз в интервал и получаем количество задач, равное max_rate. Но нужно что-то сделать, чтобы они исполнялись.\u003C\u002Fp\u003E\u003Cp\u003EДля этого в asyncio есть функция \u003Cem\u003Ecreate_task. \u003C\u002Fem\u003EОна запускает выполнение корутины, но при этом не дожидается ее исполнения, а создает фоновую задачу. В create_task передадим метод \u003Cem\u003Eperform.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E    async def _scheduler(self):\n        while self.is_running:\n            for _ in range(self.max_rate):\n                task = await self._queue.get()\n              \tasyncio.create_task(task.perform))\n            await asyncio.sleep(self.interval)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ca class=\"anchor\" name=\"5\" id=\"5\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EПробный запуск\u003C\u002Fh2\u003E\u003Cp\u003EДавайте попробуем все это запустить. Сделаем функцию \u003Cem\u003Estart\u003C\u002Fem\u003E и таким же образом запустим scheduler. Нам нужно не ждать его, а просто запустить в фоне корутину с помощью create_task:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E    async def _scheduler(self):\n        while self.is_running:\n            for _ in range(self.max_rate):\n                task = await self._queue.get()\n                asyncio.create_task(self._worker(task))\n            await asyncio.sleep(self.interval)\n    \n    def start(self):\n        self.is_running = True\n        asyncio.create_task(self._scheduler())\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ будущем для корректного завершения работы краулера нужно завершить работу scheduler. Для этого нужно вызвать cancel у задачи, поэтому возвращаемое значение из create_task мы сохраняем в переменную \u003Cem\u003Escheduler_task:\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eclass Pool:\n    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):\n        self.max_rate = max_rate\n        self.interval = interval\n        self.concurrent_level = concurrent_level\n        self.is_running = False\n        self._queue = asyncio.Queue()\n        self._scheduler_task: Optional[asyncio.Task] = None\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВыставим rate-limit на 3 и внутри start запустим наш Pool:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Edef start(self):\n    self.is_running = True\n    self._scheduler_task = asyncio.create_task(self._scheduler())\n        \nasync def start(pool):\n    pool = Pool(3)\n    pool.start()\n    await asyncio.sleep(5)\n\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗапускаем и видим, что ничего не произошло:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"431\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Faf3\u002F325\u002F23c\u002Faf332523c7a1e1656a511b7272a33a40.png\" data-width=\"1756\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EЭто потому, что внутри очереди ничего нет. Мы сделали старт и поспали 5 секунд, а на момент окончания задачи у нас осталась фоновая задача scheduler.  \u003C\u002Fp\u003E\u003Ca class=\"anchor\" name=\"6\" id=\"6\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EПромежуточный итог\u003C\u002Fh2\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EУ нас есть Pool с параметрами:\u003Cbr\u002F\u003E— \u003Cem\u003Eограничение количества запросов max_rate\u003Cbr\u002F\u003E— интервал активизации планировщика interval\u003Cbr\u002F\u003E— максимальное количество параллельных запросов concurrent_level\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EМы написали планировщик scheduler, который работает постоянно, просыпается раз в объявленный интервал, достает из очереди max_rate задач и запускает их исполнение.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЗадача task — просто дата-класс с функцией perform. Для описания поведения задачи нужно создать класс-наследник и в нем переопределить perform.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЕще мы написали функцию start, в которой выставили признак работы is_running и в фоне запустили наш планировщик.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Ca class=\"anchor\" name=\"7\" id=\"7\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EФункции put и join\u003C\u002Fh2\u003E\u003Cp\u003EПеред тем, как запустить \u003Cem\u003EPool,\u003C\u002Fem\u003E попробуем положить туда задачку. Для этого напишем функцию \u003Cem\u003Eput,\u003C\u002Fem\u003E которая принимает задачу и кладет ее в нашу внутреннюю очередь. \u003C\u002Fp\u003E\u003Cp\u003EДополнительно добавим tid (task_id) и print в код задачи:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eimport asyncio\nfrom dataclasses import dataclass\n\n@dataclass\nclass Task:\n    tid: int\n\n    async def perform(self, pool):\n        print('start perform', self.tid)\n        await asyncio.sleep(3)\n        print('complete perform', self.tid)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ добавим 10 задач перед стартом pool:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def start(pool):\n    pool = Pool(3)\n    for tid in range(10):\n        await pool.put(Task(tid))\n    pool.start()\n    await asyncio.sleep(5)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДобавим еще кое-что. У стандартной библиотеки queue есть метод \u003Cem\u003Ejoin.\u003C\u002Fem\u003E Тогда краулер будет ждать не 5 секунд, как мы указали в начале, а до тех пор, пока очередь не опустеет:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def start(pool):\n    pool = Pool(3)\n    for tid in range(10):\n        await pool.put(Task(tid))\n    pool.start()\n    await pool.join()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗапустим и посмотрим, что произойдет:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"432\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F901\u002F288\u002F0f6\u002F9012880f61a256f73434d0a6b0b85082.png\" data-width=\"1742\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EХотя все зависло, планировщик работал. \u003C\u002Fp\u003E\u003Cp\u003EВы можете увидеть, что задача выполняется 3 секунды. И, несмотря на то, что предыдущие задачи еще не завершились, планировщик все равно создает новые. Это плохо, потому что если API отвечает медленнее, чем мы шлем к нему запросы, есть вероятность «положить» сервис. Эту проблему мы решим чуть позже.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы join отработал, нужно помечать задачи выполненными. Не будем усложнять код scheduler и сделаем отдельную функцию \u003Cem\u003E_worker\u003C\u002Fem\u003E. В нее перенесем perform и ниже добавим \u003Cem\u003Eself._queue.task_done()\u003C\u002Fem\u003E. Это означает, что задачу мы выполнили:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def _worker(self, task: Task):\n    await task.perform(self)\n    self._queue.task_done()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОбратите внимание, что _worker вызывается без await, потому что scheduler не должен ждать его завершения. Иначе он не успеет запланировать задачи. \u003C\u002Fp\u003E\u003Cp\u003EВ scheduler вместо perform нужно передать _worker и task:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def _scheduler(self):\n    while self.is_running:\n        for _ in range(self.max_rate):\n            task = await self._queue.get()\n            asyncio.create_task(self._worker(task))\n        await asyncio.sleep(self.interval)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСнова попробуем запустить:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"\" title=\"\" height=\"430\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F4fb\u002Fe7c\u002Fdc9\u002F4fbe7cdc9e34e61906ac8e0e0c4911e5.png\" data-width=\"1759\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПрограмма завершилась, но осталось предупреждение о том, что scheduler остался работать в фоне. Функцию stop напишем чуть позже.\u003C\u002Fp\u003E\u003Ca class=\"anchor\" name=\"8\" id=\"8\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003ESemaphore\u003C\u002Fh2\u003E\u003Cp\u003EНа этом этапе видим, что:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Cem\u003Eметод start запускает наш Pool и планировщик scheduler\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cem\u003Eпланировщик раз в секунду ставит новые задачи и запускает _worker\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cem\u003E_worker эти задачи выполняет\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Cem\u003Eметод join ждет, пока очередь не станет пустой\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EЕсли время выполнения задач больше интервала активизации планировщика (interval), он накидывает дополнительные задачи сверху тех, которые еще не выполнились.\u003C\u002Fp\u003E\u003Cp\u003EВ таком случае количество параллельных запросов к сервису за interval будет больше rate_limit. Поэтому нужно ограничить количество параллельных запросов. Для этого нам потребуется переменная \u003Cem\u003Econcurrent_level,\u003C\u002Fem\u003E которая по умолчанию равна rate_limit.\u003C\u002Fp\u003E\u003Cp\u003EВ asyncio есть примитив синхронизации \u003Cem\u003ESemaphore.\u003C\u002Fem\u003E С его помощью можно ограничить количество параллельных исполняемых worker. Если количество запланированных задач больше заданного значения, мы ждем их исполнения. В нашем примере задач 3.\u003C\u002Fp\u003E\u003Cp\u003EОбъявим Semaphore и передадим в него либо concurrent_level, либо max_rate. \u003C\u002Fp\u003E\u003Cp\u003EКогда worker начинает исполняться, нам нужно занять Semaphore. Для этого используем «асинхронный контекстный менеджер»: \u003Cem\u003Easync with self._sem. \u003C\u002Fem\u003EМы занимаем Semaphore, пока не закончатся операции ниже — \u003Cem\u003Eawait task.perform(self)\u003C\u002Fem\u003E и \u003Cem\u003Eself._queue.task_done().\u003C\u002Fem\u003E \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def _worker(self, task: Task):\n    async with self._sem:\n        await task.perform(self)\n        self._queue.task_done()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДобавим Semaphore внутрь scheduler, чтобы scheduler не запускал новые worker'ы, если количество параллельных worker'ов уже достигло максимума:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def _scheduler(self):\n    while self.is_running:\n        for _ in range(self.max_rate):\n            async with self._sem:\n                task = await self._queue.get()\n                asyncio.create_task(self._worker(task))\n        await asyncio.sleep(self.interval)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЗапускаем: \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"428\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fdcf\u002F4ed\u002Fb56\u002Fdcf4edb5630306b9666845df2d35623a.png\" data-width=\"1747\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EМы добавили 3 задачи и ждем, пока они исполнятся. Таким образом мы соблюдаем максимальное параллельное количество запросов. \u003C\u002Fp\u003E\u003Ca class=\"anchor\" name=\"9\" id=\"9\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EОстановка фонового планировщика\u003C\u002Fh2\u003E\u003Cp\u003EУ нас осталась проблема с корректным завершением планировщика. После завершения остановки краулера появляется предупреждение о незавершенной корутине.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы этого не было, напишем функцию \u003Cem\u003Estop:\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def stop(self):\n    self.is_running = False\n    self._scheduler_task.cancel()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь после того, как внутри пула закончатся задачи, его нужно корректно остановить. Добавим метод stop в конце функции start:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def start():\n    pool = Pool(3)\n    for tid in range(10):\n      await pool.put(Task(tid))\n    pool.start()\n    await pool.join()\n    await pool.stop()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПопробуем:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"431\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb31\u002Fd65\u002F4dc\u002Fb31d654dc0486886ea313bff205f385e.png\" data-width=\"1734\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EТеперь все работает корректно. \u003C\u002Fp\u003E\u003Cp\u003EМы остановили планировщик, когда задачи в очереди закончились. Но если мы остановим краулер в процессе работы, начнут появляться предупреждения о том, что какая-то задача не завершилась:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"432\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff7e\u002F3bd\u002F7d0\u002Ff7e3bd7d0678b93bf3e8de7da68dd03b.png\" data-width=\"1734\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EА чем больше время выполнения perform, тем больше будет таких уведомлений. \u003C\u002Fp\u003E\u003Cp\u003EПоэтому нам нужно ожидать, когда все worker завершатся. Для этого введем дополнительную переменную, обозначающую количество параллельно работающих worker: \u003Cem\u003Econcurrent_workers.\u003C\u002Fem\u003E Изначально она равна 0. При запуске воркера мы увеличиваем concurrent_workers на 1. При выходе, наоборот, уменьшаем на 1:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def _worker(self, task: FetchTask):\n    async with self._sem:\n        self._cuncurrent_workers += 1\n        await task.perform(self)\n        self._queue.task_done()\n    self._cuncurrent_workers -= 1\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь нужно как-то сказать функции stop, что все параллельные worker завершились. Это произойдет, когда is_running будет false и concurrent_workers станет равной 0.\u003C\u002Fp\u003E\u003Cp\u003EДля этого есть примитив синхронизации \u003Cem\u003EEvent. \u003C\u002Fem\u003EВ нашем коде мы добавим его в Pool и назовем \u003Cem\u003Estop_event. \u003C\u002Fem\u003EЭто переменная, на которой можно ждать \u003Cem\u003Eawait self._stop_event.wait()\u003C\u002Fem\u003E до тех пор, пока кто-то не вызовет \u003Cem\u003Eself._stop_event.set():\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Eclass Pool:\n    def __init__(self, max_rate: int, interval: int = 1, concurrent_level: Optional[int] = None):\n        self.max_rate = max_rate\n        self.interval = interval\n        self.concurrent_level = concurrent_level\n        self.is_running = False\n        self._queue = asyncio.Queue()\n        self._scheduler_task: Optional[asyncio.Task] = None\n        self._sem = asyncio.Semaphore(concurrent_level or max_rate)\n        self._cuncurrent_workers = 0\n        self._stop_event = asyncio.Event()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЕсли равна, то все worker завершили свою работу, планировщик отменен и не создает новые задачи. В таком случае все компоненты Pool остановлены или завершили свою работу — программу можно завершать.\u003C\u002Fp\u003E\u003Cp\u003EНо если concurrent_workers не равна 0, нам нужно внутри метода stop подождать событие stop_event:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def stop(self):\n    self.is_running = False\n    self._scheduler_task.cancel()\n    if self._cuncurrent_workers != 0:\n        await self._stop_event.wait()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКогда Pool остановлен, последний работающий worker должен отправить уведомление:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E    async def _worker(self, task: FetchTask):\n        async with self._sem:\n            self._cuncurrent_workers += 1\n            await task.perform(self)\n            self._queue.task_done()\n        self._cuncurrent_workers -= 1\n        if not self.is_running and self._cuncurrent_workers == 0:\n            self._stop_event.set()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОбновим функцию main, чтобы все корректно работало:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Edef main():\n    loop = asyncio.get_event_loop()\n    pool = Pool(3)\n    try:\n        loop.run_until_complete(start(pool))\n    except KeyboardInterrupt:\n        loop.run_until_complete(pool.stop())\n        loop.close()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь все работает. После нажатия Ctrl + C выполняются оставшиеся задачи, и программа завершается:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"371\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F02e\u002F362\u002F9dd\u002F02e3629ddba3d00ff12fa045147b682c.png\" data-width=\"1731\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ca class=\"anchor\" name=\"10\" id=\"10\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EРабота краулера на примере обкачки нашего блога на Хабре\u003C\u002Fh2\u003E\u003Cp\u003EМы реализовали механику пула на нашей абстрактной задачке task.\u003C\u002Fp\u003E\u003Cp\u003EДля следующего этапа я подготовил задачу \u003Cem\u003EFetchTask. \u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003Efetch_task\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003EMAX_DEPTH = 2\nPARSED_URLS = set()\n\n\n@dataclass\nclass FetchTask(Task):\n    url: URL\n    depth: int\n\n    def parser(self, data: str) -\u003E List['FetchTask']:\n        if self.depth + 1 \u003E MAX_DEPTH:\n            return []\n        soup = BeautifulSoup(data, 'lxml')\n        res = []\n        for link in soup.find_all('a', href=True):\n            new_url = URL(link['href'])\n            if new_url.host is None and new_url.path.startswith('\u002F'):\n                new_url = URL.build(\n                    scheme=self.url.scheme,\n                    host=self.url.host,\n                    path=new_url.path,\n                    query_string=new_url.query_string\n                )\n                if new_url in PARSED_URLS:\n                    continue\n                PARSED_URLS.add(new_url)\n                res.append(FetchTask(\n                    tid=self.tid,\n                    url=new_url,\n                    depth=self.depth + 1\n                ))\n        return res\n\n    async def perform(self, pool):\n        async with aiohttp.ClientSession() as session:\n            async with session.get(self.url) as resp:\n                print(self.url, resp.status)\n                data = await resp.text()\n                res: List[FetchTask] = await asyncio.get_running_loop().run_in_executor(\n                    None, self.parser, data\n                )\n                for task in res:\n                    await pool.put(task)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EВнутри функции parcer есть переменная soup,  которая объявлена как \u003Cem\u003Esoup = BeautifulSoup(data, ’lxml’). \u003C\u002Fem\u003EДам небольшие пояснения. \u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003EBeautifulSoup\u003C\u002Fstrong\u003E — парсер для анализа HTML\u002FXML. \u003C\u002Fp\u003E\u003Cp\u003E\u003Cstrong\u003Elxml\u003C\u002Fstrong\u003E — реализация HTML\u002FXML парсера\u003Cstrong\u003E.\u003C\u002Fstrong\u003E Из-за GIL мы специально запускаем res внутри функции perform через executor:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def perform(self, pool):\n    async with aiohttp.ClientSession() as session:\n      async with session.get(self.url) as resp:\n          print(self.url, resp.status)\n          data = await resp.text()\n          res: List[FetchTask] = await asyncio.get_running_loop().run_in_executor(\n            \tNone, self.parser, data\n          )\n          for task in res:\n            \tawait pool.put(task)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EGIL — блокировка, которая запрещает параллельные потоки в Python. Но если вы пишите расширение на С, есть возможность «отпустить» GIL.\u003C\u002Fp\u003E\u003Cp\u003EПарсер lxml написан на С. У себя под капотом он умеет отпускать GIL и выполняться в отдельном потоке. Это относится и к некоторым другим расширениям: \u003Ca href=\"https:\u002F\u002Flxml.de\u002F2.0\u002FFAQ.html#id1\"\u003E\u003Cu\u003Ehttps:\u002F\u002Flxml.de\u002F2.0\u002FFAQ.html#id1\u003C\u002Fu\u003E\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003Cp\u003EВ fetch_task также переопределяем функцию perform, в которой нужно сходить в сеть. Для этого я взял aiohttp client.\u003C\u002Fp\u003E\u003Cp\u003EВ задаче FetchTask мы идем на указанный URL, оттуда получаем данные и запускаем executor для их обработки. Нужно взять все ссылки в документе, перейти на них и тоже обкачать:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003E    def parser(self, data: str) -\u003E List['FetchTask']:\n        if self.depth + 1 \u003E MAX_DEPTH:\n            return []\n        soup = BeautifulSoup(data, 'lxml')\n        res = []\n        for link in soup.find_all('a', href=True):\n            new_url = URL(link['href'])\n            if new_url.host is None and new_url.path.startswith('\u002F'):\n                new_url = URL.build(\n                    scheme=self.url.scheme,\n                    host=self.url.host,\n                    path=new_url.path,\n                    query_string=new_url.query_string\n                )\n                if new_url in PARSED_URLS:\n                    continue\n                PARSED_URLS.add(new_url)\n                res.append(FetchTask(\n                    tid=self.tid,\n                    url=new_url,\n                    depth=self.depth + 1\n                ))\n        return res\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ конце мы добавляем в результат новую задачу и увеличиваем на 1 глубину depth.\u003C\u002Fp\u003E\u003Cp\u003EНапример, когда мы поставили задачку habr.com, глубина была равна 1. Мы скачали этот документ, в котором есть и другие ссылки: блоги Mail.ru, Yandex или KTS. Когда мы стали обкачивать следующие страницы, глубина увеличилась до 2. Этот параметр нужен для ограничения количества обкачиваемых ресурсов, фактически — глубины. \u003C\u002Fp\u003E\u003Cp\u003EОбратите внимание, что у нас есть список посещенных страничек \u003Cem\u003EPARSED_URLS. \u003C\u002Fem\u003EТак мы не будем дважды посещать одни и те же страницы.\u003C\u002Fp\u003E\u003Cp\u003EТеперь импортируем задачи в краулер из fetch_task и изменяем start:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"python\"\u003Easync def start(pool):\n    await pool.put(\n        FetchTask(URL('https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fkts\u002Fblog\u002F'), 1)\n    )\n    pool.start()\n    await pool.join()\n    await pool.stop()\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВыставляем 3 запроса в секунду и смотрим, как наш краулер потихоньку обкачивает Хабр:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"436\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F1eb\u002F4b1\u002F9a3\u002F1eb4b19a37f38488bdbda86f7e5259e0.png\" data-width=\"1752\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ca class=\"anchor\" name=\"11\" id=\"11\"\u003E\u003C\u002Fa\u003E\u003Ch2\u003EСпасибо за внимание\u003C\u002Fh2\u003E\u003Cp\u003EНа этом все! Спасибо всем, кто дочитал статью.\u003C\u002Fp\u003E\u003Cp\u003EЕсли сталкивались с подобными задачами, пожалуйста, поделитесь своим опытом в комментариях.\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"crawler"},{"titleHtml":"html"},{"titleHtml":"xml"},{"titleHtml":"python"},{"titleHtml":"asyncio"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0bc\u002F7c8\u002Fa19\u002F0bc7c8a1979ef2b79336f65b3bcd747c.jpeg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F0bc\u002F7c8\u002Fa19\u002F0bc7c8a1979ef2b79336f65b3bcd747c.jpeg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fkts\\\u002Fblog\\\u002F583036\\\u002F\"},\"headline\":\"Пишем свой Google, или асинхронный краулер с rate limits на Python\",\"datePublished\":\"2021-10-13T16:19:30+03:00\",\"dateModified\":\"2021-10-14T01:26:58+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"alexopryshko\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Привет!Меня зовут Александр, я руковожу backend-разработкой в КТS. Сегодня расскажу, как написать асинхронный краулер.Такая задача часто встречается на практике,...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fkts\\\u002Fblog\\\u002F583036\\\u002F#post-content-body\",\"about\":[\"c_kts\",\"h_python\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583036\\\u002F442bebf935095a5fa89f2ac23bdbdd4d\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F8db\\\u002F1f0\\\u002Fca0\\\u002F8db1f0ca0e9a337d30aee3800d3b92fc.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Faf3\\\u002F325\\\u002F23c\\\u002Faf332523c7a1e1656a511b7272a33a40.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F901\\\u002F288\\\u002F0f6\\\u002F9012880f61a256f73434d0a6b0b85082.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F4fb\\\u002Fe7c\\\u002Fdc9\\\u002F4fbe7cdc9e34e61906ac8e0e0c4911e5.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fdcf\\\u002F4ed\\\u002Fb56\\\u002Fdcf4edb5630306b9666845df2d35623a.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb31\\\u002Fd65\\\u002F4dc\\\u002Fb31d654dc0486886ea313bff205f385e.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff7e\\\u002F3bd\\\u002F7d0\\\u002Ff7e3bd7d0678b93bf3e8de7da68dd03b.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F02e\\\u002F362\\\u002F9dd\\\u002F02e3629ddba3d00ff12fa045147b682c.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F1eb\\\u002F4b1\\\u002F9a3\\\u002F1eb4b19a37f38488bdbda86f7e5259e0.png\"]}","metaDescription":"Привет!Меня зовут Александр, я руковожу backend-разработкой в КТS. Сегодня расскажу, как написать асинхронный краулер.Такая задача часто встречается на практике, когда нужно реализовать периодическую...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"kts":{"alias":"kts","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F729\u002F977\u002Ff1b\u002F729977f1bd0ea74d847a7c09fbe148c7.jpg","titleHtml":"KTS","descriptionHtml":"Помогаем бизнесу создавать it-продукты","relatedData":null,"statistics":{"postsCount":15,"newsCount":4,"vacanciesCount":0,"employeesCount":9,"careerRating":null,"subscribersCount":35,"rating":134.64,"invest":null},"foundationDate":{"year":"2015","month":"11","day":"09"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fkts.studio","staffNumber":"51–100 человек","registrationDate":"2021-03-10T13:41:53+00:00","representativeUser":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fkts.studio"}],"settings":{"analyticsSettings":[],"branding":null,"status":"active"},"metadata":{"titleHtml":"KTS, Москва - Помогаем бизнесу создавать it-продукты с 9 ноября 2015 г.","title":"KTS, Москва - Помогаем бизнесу создавать it-продукты с 9 ноября 2015 г.","keywords":["Python","JavaScript","ReactJS","Учебный процесс в IT","Разработка веб-сайтов"],"descriptionHtml":"15 статей от авторов компании KTS","description":"15 статей от авторов компании KTS"},"aDeskSettings":null,"careerAlias":"ktsstudio","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

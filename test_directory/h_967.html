@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Что должен, но не знает про конкуренцию в PostgreSQL каждый разработчик? / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/581854\/"},"headline":"Что должен, но не знает про конкуренцию в PostgreSQL каждый разработчик?","datePublished":"2021-10-06T12:14:48+03:00","dateModified":"2021-10-07T12:21:10+03:00","author":{"@type":"Person","name":"keddok"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое...","url":"https:\/\/habr.com\/ru\/post\/581854\/#post-content-body","about":["h_webdev","h_postgresql","h_sql","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/581854\/af8e0acedd0bc43223b16b073bab071f\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/79d\/f18\/578\/79df18578980681e747f9b6f6ff66ef4.jpg"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Что должен, но не знает про конкуренцию в PostgreSQL каждый разработчик?" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Что должен, но не знает про конкуренцию в PostgreSQL каждый разработчик?" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Что должен, но не знает про конкуренцию в PostgreSQL каждый разработчик?" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/79d/f18/578/79df18578980681e747f9b6f6ff66ef4.jpg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/79d/f18/578/79df18578980681e747f9b6f6ff66ef4.jpg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/79d/f18/578/79df18578980681e747f9b6f6ff66ef4.jpg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/79d/f18/578/79df18578980681e747f9b6f6ff66ef4.jpg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/79d/f18/578/79df18578980681e747f9b6f6ff66ef4.jpg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="581854" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-06T09:14:48.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/581854/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/581854/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/79d/f18/578/79df18578980681e747f9b6f6ff66ef4.jpg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/581854/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/keddok/" title="keddok" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/keddok/" class="tm-user-info__username">
+      keddok
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-06T09:14:48.000Z" title="2021-10-06, 12:14">6  октября   в 12:14</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Что должен, но не знает про конкуренцию в PostgreSQL каждый разработчик?</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/webdev/" class="tm-article-snippet__hubs-item-link"><span>Разработка веб-сайтов</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/postgresql/" class="tm-article-snippet__hubs-item-link"><span>PostgreSQL</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/sql/" class="tm-article-snippet__hubs-item-link"><span>SQL</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Из песочницы
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/79d/f18/578/79df18578980681e747f9b6f6ff66ef4.jpg" width="1116" height="1037" data-src="https://habrastorage.org/getpro/habr/upload_files/79d/f18/578/79df18578980681e747f9b6f6ff66ef4.jpg" data-blurred="true"/><figcaption></figcaption></figure><p>Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является многопользовательским и так или иначе использует блокировки при доступе к данным в БД. При неправильном использовании эти блокировки могут больно бить по пользователям, а иногда и по системе в целом. Поэтому рано или поздно каждый разработчик многопользовательских систем должен задуматься о том, как ему начать работать с БД так, чтобы пользователи не мешали другу другу. Многие считают, что это сложно, давайте вместе убедимся, что это не так.</p><p>Я очень обрадовался, когда нашёл статью <a href="http://big-elephants.com/2013-09/exploring-query-locks-in-postgres/" rel="noopener noreferrer nofollow">http://big-elephants.com/2013-09/exploring-query-locks-in-postgres/</a>, где доступным языком на простых примерах рассказывается о блокировках в СУБД PostgreSQL. Но этой статье скоро уже будет 10 лет, поэтому стоит проверить её на последней версии PostrgeSQL. Как раз вчера вышла 14 версия.</p><p>Итак, приступим.</p><h3>Песочница</h3><p>Для начала нам понадобится установленная <a href="https://www.postgresql.org/" rel="noopener noreferrer nofollow">СУБД PostgreSQL</a> и место в ней, где мы будем играть. Это будет наша песочница:</p><pre><code class="sql">CREATE DATABASE sandbox;</code></pre><p>Добавим в песочницу игрушки:</p><pre><code class="sql">CREATE TABLE toys (
+  id serial NOT NULL,
+  name character varying(32),
+  usage integer NOT NULL DEFAULT 0,
+  CONSTRAINT toys_pkey PRIMARY KEY (id)
+);
+INSERT INTO toys(name) VALUES ('машинка'), ('лопатка'), ('ведёрко');</code></pre><p>Отлично! Мы создали песочницу, и в ней появились машинка, лопатка и ведёрко. Теперь нам нужны те, кто будет играть с ними. Назовем их случайным образом, например, Айнур и Алина. Это будут два клиента нашей СУБД, для представления которых мы будем использовать консольную утилиту <code>psql</code>, которая входит в состав базовой установки. Запустим первую консоль <code>psql</code> в базе sandbox и выполним в ней:</p><details class="spoiler"><summary>Установка кириллической кодовой страницы в psql на Windows</summary><div class="spoiler__content"><p>\! chcp 1251</p></div></details><pre><code class="bash">sandbox=# \set PROMPT1 '[Алина] %/%R%# '</code></pre><p>Пусть Алина посмотрит какие же игрушки есть в песочнице:</p><pre><code class="sql">[Алина] sandbox=# BEGIN;
+BEGIN
+[Алина] sandbox=# SELECT * FROM toys;
+ id |  name   | usage
+----+---------+-------
+  1 | машинка |     0
+  2 | лопатка |     0
+  3 | ведерко |     0
+(3 rows)</code></pre><p>Обратите внимание, что мы использовали оператор <code>BEGIN</code> для явного управления транзакциями. Транзакция будет открыта пока мы ее не зафиксируем или не откатим.</p><p>Откроем вторую консоль <code>psql</code> и назовём её:</p><pre><code class="bash">sandbox=# \set PROMPT1 '[Айнур] %/%R%# '</code></pre><p>Айнур полез в песочницу и увидел то же самое:</p><pre><code class="sql">[Айнур] sandbox=# BEGIN;
+BEGIN
+[Айнур] sandbox=# SELECT * FROM toys;
+ id |  name   | usage
+----+---------+-------
+  1 | машинка |     0
+  2 | лопатка |     0
+  3 | ведерко |     0
+(3 rows)</code></pre><p>На этом примере мы видим, что операторы <code>SELECT</code> не пересекаются и могут выполняться параллельно, не блокируя друг друга. Это именно то, чего мы ожидаем от высокопроизводительной промышленной СУБД.</p><h3>pg_locks</h3><p>Итак, наши транзакции открыты, а мы идем дальше и запускаем третью консоль, которую назовем Люция:</p><pre><code class="bash">sandbox=# \set PROMPT1 '[Люция] %/%R%# '</code></pre><p>В ней мы можем наблюдать за текущими блокировками:</p><pre><code class="sql">[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,
+virtualtransaction AS vtid, pid, granted
+FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db
+ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)
+AND NOT pid = pg_backend_pid();
+  locktype  | relation  |      mode       | tid |   vtid   |  pid  | granted
+------------+-----------+-----------------+-----+----------+-------+---------
+ relation   | toys_pkey | AccessShareLock |     | 5/185417 | 13792 | t
+ relation   | toys      | AccessShareLock |     | 5/185417 | 13792 | t
+ virtualxid |           | ExclusiveLock   |     | 5/185417 | 13792 | t
+ relation   | toys_pkey | AccessShareLock |     | 7/8300   | 16944 | t
+ relation   | toys      | AccessShareLock |     | 7/8300   | 16944 | t
+ virtualxid |           | ExclusiveLock   |     | 7/8300   | 16944 | t
+(6 строк)</code></pre><p>Все активные блокировки можно видеть в системном представлении <code>pg_catalog.pg_locks</code>. Чтобы видеть только блокировки из нашей песочницы добавлено условие на имя БД.</p><p>Чтобы не видеть блокировки, которые вызваны нашим запросом, добавлено условие на идентификатор процесса: <code>NOT pid = pg_backend_pid()</code>.</p><p>Преобразование типа <code>relation::regclass</code> удобно использовать для получения человекочитаемого имени таблицы.</p><p>Давайте посмотрим на пятую строку выборки поближе:</p><pre><code class="sql">  locktype  | relation  |      mode       | tid |   vtid   |  pid  | granted
+------------+-----------+-----------------+-----+----------+-------+---------
+ relation   | toys      | AccessShareLock |     | 7/8300   | 16944 | t</code></pre><p>Это значит, что на таблицу toys успешно получена блокировка AccessShareLock от виртуальной транзакции 7/8300  и идентификатора процесса pid=16944. Есть ещё одна аналогичная блокировка во второй строке.</p><p>Блокировки получены и все отлично. Алина и Айнур довольны тем, что могут видеть все игрушки в песочнице, и они не мешают друг другу.</p><p>Заметим, что каждая транзакция получила <code>ExclusiveLock</code> на виртуальную транзакцию.</p><p>Далее Алина берет машинку:</p><pre><code class="sql">[Алина] sandbox=# UPDATE toys SET usage = usage+1 WHERE "name" = 'машинка';</code></pre><p>И, можно видеть, что у нее это естественно получилось. Люция проверяет все ли в порядке в песочнице. Смотрим таблицу блокировок:</p><pre><code class="sql">[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,
+ virtualtransaction AS vtid, pid, granted
+ FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db
+ ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)
+ AND NOT pid = pg_backend_pid();
+   locktype    | relation  |       mode       | tid |   vtid   |  pid  | granted
+---------------+-----------+------------------+-----+----------+-------+---------
+ relation      | toys_pkey | AccessShareLock  |     | 5/185417 | 13792 | t
+ relation      | toys      | AccessShareLock  |     | 5/185417 | 13792 | t
+ virtualxid    |           | ExclusiveLock    |     | 5/185417 | 13792 | t
+ relation      | toys_pkey | AccessShareLock  |     | 7/8300   | 16944 | t
+ relation      | toys_pkey | RowExclusiveLock |     | 7/8300   | 16944 | t
+ relation      | toys      | AccessShareLock  |     | 7/8300   | 16944 | t
+ relation      | toys      | RowExclusiveLock |     | 7/8300   | 16944 | t
+ virtualxid    |           | ExclusiveLock    |     | 7/8300   | 16944 | t
+ transactionid |           | ExclusiveLock    | 841 | 7/8300   | 16944 | t
+(9 строк)</code></pre><p>Добавилось 3 блокировки, их стало 9. Алина получила <code>RowExclusiveLock</code> на таблицу <code>toys</code>, когда взяла машинку. Также появился реальный идентификатор транзакции с <code>ExclusiveLock</code>, так как произошло потенциальное изменение состояния базы данных.</p><p>Уже можно заметить, что блокировки вешаются на объекты при выполнении соответствующего запроса и не снимаются до конца транзакции.</p><h3>MVCC</h3><p>Но Айнур не знает, что машинка уже занята Алиной, так как это изменение еще не было зафиксировано и он видит старые данные:</p><pre><code class="sql">[Айнур] sandbox=# SELECT * FROM toys;
+ id |  name   | usage
+----+---------+-------
+  1 | машинка |     0
+  2 | лопатка |     0
+  3 | ведерко |     0
+(3 rows)</code></pre><p>Так работает механизм MVCC - <a href="https://www.postgresql.org/docs/current/mvcc.html" rel="noopener noreferrer nofollow">Multi Version Concurrency Control</a>, который используется в PostgreSQL для отображения консистентного состояния БД для каждой транзакции. Пока транзакция не будет зафиксирована или отменена, все остальные транзакции будут видеть состояние БД, как если бы эта транзакция не стартовала вообще. </p><h3>Блокирование запросов</h3><p>Теперь допустим, что Айнур тоже захотел поиграть с машинкой, что вполне обычно для детей, играющих в песочницах.</p><pre><code class="sql">[Айнур] sandbox=# UPDATE toys SET usage = usage+1 WHERE "name" = 'машинка';</code></pre><p>Ничего не произошло. По крайней мере внешне. На самом деле Айнур пытаясь получить машинку наткнулся на блокировку Алины и теперь вынужден ждать, пока Алина освободит ее. Что видит Люция:</p><pre><code class="sql">[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,
+ virtualtransaction AS vtid, pid, granted
+ FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db
+ ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)
+ AND NOT pid = pg_backend_pid();
+   locktype    | relation  |       mode       | tid |   vtid   |  pid  | granted
+---------------+-----------+------------------+-----+----------+-------+---------
+ relation      | toys_pkey | AccessShareLock  |     | 5/185417 | 13792 | t
+ relation      | toys_pkey | RowExclusiveLock |     | 5/185417 | 13792 | t
+ relation      | toys      | AccessShareLock  |     | 5/185417 | 13792 | t
+ relation      | toys      | RowExclusiveLock |     | 5/185417 | 13792 | t
+ virtualxid    |           | ExclusiveLock    |     | 5/185417 | 13792 | t
+ relation      | toys_pkey | AccessShareLock  |     | 7/8300   | 16944 | t
+ relation      | toys_pkey | RowExclusiveLock |     | 7/8300   | 16944 | t
+ relation      | toys      | AccessShareLock  |     | 7/8300   | 16944 | t
+ relation      | toys      | RowExclusiveLock |     | 7/8300   | 16944 | t
+ virtualxid    |           | ExclusiveLock    |     | 7/8300   | 16944 | t
+ transactionid |           | ExclusiveLock    | 842 | 5/185417 | 13792 | t
+ tuple         | toys      | ExclusiveLock    |     | 5/185417 | 13792 | t
+ transactionid |           | ShareLock        | 841 | 5/185417 | 13792 | f
+ transactionid |           | ExclusiveLock    | 841 | 7/8300   | 16944 | t
+(14 строк) </code></pre><p>Люция видит еще плюс 5 блокировок. Добавлена транзакция Айнура, так как он тоже пытается изменить данные. Айнур также получил <code>RowExclusiveLock</code> на игрушки. И транзакцией Айнура добавлен запрос на <code>ShareLock</code> на транзакцию Алины, что обозначает его претензии на игрушки, которые заняла Алина. Эта блокировка не получена(granted = false), так как <code>ShareLock</code> конфликтует с <code>ExclusiveLock</code> на эту же транзакцию. Таким образом, Айнур ждет пока Алина освободит свою транзакцию зафиксировав или отменив ее.</p><h3>pg_stat_activity</h3><p>Еще одно интересное системное представление - это <code>pg_stat_activity</code>, которое показывает запросы и транзакции:</p><pre><code class="sql">[Люция] sandbox=# SELECT query, state, coalesce(wait_event_type='Lock', 'f') as waiting, pid FROM pg_stat_activity 
+ WHERE datname = 'sandbox' AND NOT (state = 'idle' OR pid = pg_backend_pid());
+                        query                              |        state        | waiting |  pid
+-----------------------------------------------------------+---------------------+---------+-------
+ UPDATE toys SET usage = usage+1 WHERE "name" = 'машинка'; | active              | t       | 13792
+ UPDATE toys SET usage = usage+1 WHERE "name" = 'машинка'; | idle in transaction | f       | 16944
+(2 строки)</code></pre><p>Видно, что запрос Айнура активен и ждет освобождения машинки, а запрос Алины неактивен и ее транзакция не закрыта.</p><p>Можно совместить выборку из <code>pg_locks</code> и <code>pg_stat_activity</code>:</p><pre><code class="sql">[Люция] sandbox=# SELECT blockeda.pid AS blocked_pid, blockeda.query as blocked_query,
+   blockinga.pid AS blocking_pid, blockinga.query as blocking_query
+ FROM pg_catalog.pg_locks blockedl
+ JOIN pg_stat_activity blockeda ON blockedl.pid = blockeda.pid
+ JOIN pg_catalog.pg_locks blockingl ON (blockingl.transactionid=blockedl.transactionid
+   AND blockedl.pid != blockingl.pid)
+ JOIN pg_stat_activity blockinga ON blockingl.pid = blockinga.pid
+ WHERE NOT blockedl.granted AND blockinga.datname = 'sandbox';
+ blocked_pid |                       blocked_query                       | blocking_pid |                     blocking_query
+-------------+-----------------------------------------------------------+--------------+-------------------------------------------------------------
+       13792 | UPDATE toys SET usage = usage+1 WHERE "name" = 'машинка'; |        16944 | UPDATE toys SET usage = usage+1 WHERE "name" = 'машинка';
+(1 строка)</code></pre><p>В результате Люция видит, кто кого блокирует.</p><p>Если вдруг Алина вспомнит, что не любит играть с машинками, и передумает брать её, то она откатит транзакцию:</p><pre><code class="sql">[Алина] sandbox=# ROLLBACK;</code></pre><p>Тогда Айнур сможет завершить свою попытку взять машинку и поиграть с ней:</p><pre><code class="sql">UPDATE 1
+[Айнур] sandbox=# COMMIT;
+COMMIT
+[Айнур] sandbox=# select * from toys;
+ id |  name   | usage
+----+---------+-------
+  2 | лопатка |     0
+  3 | ведерко |     0
+  1 | машинка |     1
+(3 строки)</code></pre><p>Количество использований машинки зависит от того, будет ли транзакция Алины зафиксирована, либо отменена. В нашем случае транзакция отменена и зафиксировано только то, что с машинкой поиграл Айнур.</p><p>А Алина в то же время может свободно и без ожидания играть, например, с ведёрком.</p><p>Смотрим, что происходит в песочнице:</p><pre><code class="sql">[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,
+ virtualtransaction AS vtid, pid, granted
+ FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db
+ ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)
+ AND NOT pid = pg_backend_pid();
+ locktype | relation | mode | tid | vtid | pid | granted
+----------+----------+------+-----+------+-----+---------
+(0 строк)</code></pre><p>Блокировок нет, а значит и конфликтов нет, все довольны.</p><h3>Явные блокировки (explicit locks)</h3><p>Еще одна обычная ситуация для песочницы, когда кто-то из детей пытается получить все подряд без разбора.</p><p>Допустим Алина решила получить эксклюзивный доступ ко всем игрушкам в песочнице.</p><pre><code class="sql">[Алина] sandbox=# BEGIN;
+BEGIN
+[Алина] sandbox=# LOCK TABLE toys IN EXCLUSIVE MODE;
+LOCK TABLE</code></pre><p>В таком случае Айнуру приходится ждать несмотря на то, что Алина на самом деле не взяла ни одну игрушку. </p><pre><code class="sql">[Айнур] sandbox=# BEGIN; UPDATE toys SET usage = usage+1 WHERE "name" = 'лопатка';
+BEGIN</code></pre><p>Таблица блокировок будет выглядеть так:</p><pre><code class="sql">[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,
+ virtualtransaction AS vtid, pid, granted
+ FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db
+ ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)
+ AND NOT pid = pg_backend_pid();
+  locktype     | relation |        mode         | tid |   vtid   |  pid  | granted
+---------------+----------+---------------------+-----+----------+-------+---------
+ virtualxid    |          | ExclusiveLock       |     | 5/185423 | 13792 | t
+ virtualxid    |          | ExclusiveLock       |     | 7/8303   | 16944 | t
+ relation      | toys     | ExclusiveLock       |     | 7/8303   | 16944 | t
+ relation      | toys     | RowExclusiveLock    |     | 5/185423 | 13792 | f
+(4 строки)</code></pre><p>Так как реальных изменений состояния не происходит, то нет и блокировок на реальную транзакцию(<code>locktype=transactionid</code>). И так как Айнур не получил еще <code>RowExclusiveLock</code> на лопатку(<code>granted=false</code>), у него тоже нет блокировки на реальную транзакцию.</p><p>В таком случае наш запрос, который мы составили выше, не покажет никаких взаимных блокировок, так как мы делали объединение по идентификатору реальной транзакции. И Люция будет думать, что все в порядке, хотя на самом деле, если посмотреть на список ожидающих запросов:</p><pre><code class="sql">[Люция] sandbox=# SELECT pid, query, now() - query_start  AS waiting_duration
+ FROM pg_catalog.pg_stat_activity WHERE datname='sandbox'
+ AND wait_event_type='Lock';   
+  pid  |                           query                           | waiting_duration
+-------+-----------------------------------------------------------+------------------
+ 13792 | UPDATE toys SET usage = usage+1 WHERE "name" = 'лопатка'; | 00:03:44.066
+(1 строка)</code></pre><p>Мы видим, что на самом деле Айнур ждет лопатку уже 3 минуты и у него кончается терпение. </p><p>Если изменить исходный запрос и добавить объединение по таблице, то Люция сможет выяснить, кто не дает Айнуру лопатку: </p><pre><code class="sql">[Люция] sandbox=# SELECT blockingl.relation::regclass,
+   blockeda.pid AS blocked_pid, blockeda.query as blocked_query,
+   blockedl.mode as blocked_mode,
+   blockinga.pid AS blocking_pid, blockinga.query as blocking_query,
+   blockingl.mode as blocking_mode
+ FROM pg_catalog.pg_locks blockedl
+ JOIN pg_stat_activity blockeda ON blockedl.pid = blockeda.pid
+ JOIN pg_catalog.pg_locks blockingl ON(blockingl.relation=blockedl.relation
+  AND blockingl.locktype=blockedl.locktype AND blockedl.pid != blockingl.pid)
+ JOIN pg_stat_activity blockinga ON blockingl.pid = blockinga.pid
+ WHERE NOT blockedl.granted AND blockinga.datname='sandbox';
+ relation | blocked_pid |                       blocked_query                       |   blocked_mode   | blocking_pid |           blocking_query           | blocking_mode
+----------+-------------+-----------------------------------------------------------+------------------+--------------+------------------------------------+-------------------
+ toys     |       13792 | UPDATE toys SET usage = usage+1 WHERE "name" = 'лопатка'; | RowExclusiveLock |        16944 | LOCK TABLE toys IN EXCLUSIVE MODE; | ExclusiveLock
+(1 строка)</code></pre><p>Когда Алине было сказано, что нехорошо забирать все игрушки себе без необходимости, она закрывает свою бессмысленную транзакцию:</p><pre><code class="sql">[Алина] sandbox=# COMMIT;
+COMMIT</code></pre><p>Теперь Айнур сможет взять свою игрушку. При этом он получает блокировку на реальную транзакцию:</p><pre><code class="sql">[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,
+ virtualtransaction AS vtid, pid, granted
+ FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db
+ ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)
+ AND NOT pid = pg_backend_pid();
+    locktype    | relation  |       mode       | tid |   vtid   |  pid  | granted
+---------------+-----------+------------------+-----+------+-------+---------
+ relation      | toys_pkey | RowExclusiveLock |     | 5/185423  | 13792 | t
+ virtualxid    |           | ExclusiveLock    |     | 5/185423  | 13792 | t
+ transactionid |           | ExclusiveLock    | 845 | 5/185423  | 13792 | t
+ relation      | toys      | RowExclusiveLock |     | 5/185423  | 13792 | t
+(4 строки)</code></pre><p>Айнур доволен и, поиграв с лопаткой, тоже завершает свою транзакцию:</p><pre><code class="sql">[Айнур] sandbox=# COMMIT;
+COMMIT</code></pre><h3>RowExclusiveLock</h3><p>После того, как Алине запретили забирать все игрушки, она решила применить другой подход.</p><pre><code class="sql">[Алина] sandbox=# BEGIN; SELECT * FROM toys FOR UPDATE;
+BEGIN
+ id |  name   | usage
+----+---------+-------
+  3 | ведерко |     0
+  1 | машинка |     1
+  2 | лопатка |     1
+(3 строки)</code></pre><p>Этот подход называется "я хочу видеть все игрушки и, возможно, я возьму какую-нибудь, но пока я не решила какую взять, и поэтому не хочу чтобы их кто-либо трогал". И, надо признать, что это тоже распространенный подход в песочницах.</p><p>В итоге Айнур снова не может получить свою игрушку:</p><pre><code class="sql">[Айнур] sandbox=# UPDATE toys SET usage = usage+1 WHERE "name" = 'лопатка';</code></pre><p>А Люция видит следующую ситуацию:</p><pre><code class="sql">[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,
+ virtualtransaction AS vtid, pid, granted
+ FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db
+ ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)
+ AND NOT pid = pg_backend_pid();
+   locktype    | relation  |       mode       | tid |   vtid   |  pid  | granted
+---------------+-----------+------------------+---------+----------+-------+---------
+ relation      | toys_pkey | RowExclusiveLock |     | 5/185424 | 13792 | t
+ relation      | toys      | RowExclusiveLock |     | 5/185424 | 13792 | t
+ virtualxid    |           | ExclusiveLock    |     | 5/185424 | 13792 | t
+ relation      | toys_pkey | AccessShareLock  |     | 7/8304   | 16944 | t
+ relation      | toys      | RowShareLock     |     | 7/8304   | 16944 | t
+ virtualxid    |           | ExclusiveLock    |     | 7/8304   | 16944 | t
+ transactionid |           | ShareLock        | 848 | 5/185424 | 13792 | f
+ transactionid |           | ExclusiveLock    | 848 | 7/8304   | 16944 | t
+ transactionid |           | ExclusiveLock    | 849 | 5/185424 | 13792 | t
+ tuple         | toys      | ExclusiveLock    |     | 5/185424 | 13792 | t
+(10 строк)</code></pre><p>Все очень похоже на то, что мы уже видели выше, когда Айнур и Алина пытались одновременно играть с машинкой. Айнур ждет транзакцию Алины.</p><p>Если Люция проверит блокировку по таблице, то ничего не увидит:</p><pre><code class="sql">[Люция] sandbox=# SELECT blockingl.relation::regclass,
+   blockeda.pid AS blocked_pid, blockeda.query as blocked_query,
+   blockedl.mode as blocked_mode,
+   blockinga.pid AS blocking_pid, blockinga.query as blocking_query,
+   blockingl.mode as blocking_mode
+ FROM pg_catalog.pg_locks blockedl
+ JOIN pg_stat_activity blockeda ON blockedl.pid = blockeda.pid
+ JOIN pg_catalog.pg_locks blockingl ON(blockingl.relation=blockedl.relation
+  AND blockingl.locktype=blockedl.locktype AND blockedl.pid != blockingl.pid)
+ JOIN pg_stat_activity blockinga ON blockingl.pid = blockinga.pid
+ WHERE NOT blockedl.granted AND blockinga.datname='sandbox';
+ relation | blocked_pid |                 blocked_query                 |   blocked_mode   | blocking_pid |              blocking_query               |    blocking_mode
+----------+-------------+-----------------------------------------------+------------------+--------------+-------------------------------------------+---------------------
+(0 строк)</code></pre><p>Сейчас ей нужен запрос с блокировкой по транзакции.</p><h3>Всё вместе</h3><p>Чтобы увидеть все рассмотренные выше виды блокировок, нужно составить комбинированный запрос:</p><pre><code class="sql">[Люция] sandbox=# SELECT
+   COALESCE(blockingl.relation::regclass::text,blockingl.locktype) as locked_item,
+   blockeda.pid AS blocked_pid, blockeda.query as blocked_query,
+   blockedl.mode as blocked_mode, blockinga.pid AS blocking_pid,
+   blockinga.query as blocking_query, blockingl.mode as blocking_mode
+ FROM pg_catalog.pg_locks blockedl
+ JOIN pg_stat_activity blockeda ON blockedl.pid = blockeda.pid
+ JOIN pg_catalog.pg_locks blockingl ON(
+   ( (blockingl.transactionid=blockedl.transactionid) OR
+     (blockingl.relation=blockedl.relation AND blockingl.locktype=blockedl.locktype)
+   ) AND blockedl.pid != blockingl.pid)
+ JOIN pg_stat_activity blockinga ON blockingl.pid = blockinga.pid
+ WHERE NOT blockedl.granted
+ AND blockinga.datname=current_database();
+  locked_item  | blocked_pid |                       blocked_query                       | blocked_mode | blocking_pid |         blocking_query         | blocking_mode
+---------------+-------------+-----------------------------------------------------------+--------------+--------------+--------------------------------+-----------------
+ transactionid |       13792 | UPDATE toys SET usage = usage+1 WHERE "name" = 'лопатка'; | ShareLock    |        16944 | SELECT * FROM toys FOR UPDATE; | ExclusiveLock
+(1 строка)</code></pre><p>Для удобства в него добавлена функция <code>current_database()</code>.</p><p>Теперь Люция всегда может видеть, что происходит в песочнице, и что именно не поделили дети. Она налила себе чашечку латте макиато и решила почитать <a href="http://www.postgresql.org/docs/current/static/explicit-locking.html" rel="noopener noreferrer nofollow">http://www.postgresql.org/docs/current/static/explicit-locking.html</a>, чтобы узнать еще больше интересного про блокировки.</p><h2>Итог</h2><p>Статья практически не потеряла актуальности, что говорит о хорошей стабильности и совместимости версий PostgreSQL между собой. Но и нельзя сказать, что СУБД не развивается, в процессе проверки я заметил несколько изменений:</p><ol><li><p>С версии 9.6 поле <code>waiting</code> в <code>pg_stat_activity</code> было заменено на два других, более информативных: <code>wait_event_type</code> и <code>wait_event</code>.</p></li><li><p>С 10 версии при явной блокировке таблицы в режиме <code>ACCESS EXCLUSIVE</code> добавился <code>ExclusiveLock</code> на текущую реальную транзакцию. Это изменение связано с тем, что в 10 версии были по умолчанию включены некоторые настройки для поточной репликации.</p></li><li><p>В 11 версии было добавлено поле backend_type в представление <code>pg_stat_activity</code>, которое даст понимание источника активности: вакуум, репликация или обычный клиент приложения.</p></li><li><p>В 14 версии в представление <code>pg_locks</code> добавлено поле <code>waitstart</code>, в котором отображается время начала ожидания получения блокировки, а в <code>pg_stat_activity </code> добавлено поле <code>query_id</code> - уникальный идентификатор запроса, который позволяет получить статистику по запросу из <code>pg_stat_statements</code>.</p></li></ol></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpostgresql%5D" class="tm-tags-list__link">postgresql</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Blocks%5D" class="tm-tags-list__link">locks</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bconcurrency%5D" class="tm-tags-list__link">concurrency</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bweb%5D" class="tm-tags-list__link">web</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/webdev/" class="tm-hubs-list__link">
+    Разработка веб-сайтов
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/postgresql/" class="tm-hubs-list__link">
+    PostgreSQL
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/sql/" class="tm-hubs-list__link">
+    SQL
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 44: ↑43 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 44: ↑43 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+42</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">14K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    187
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/keddok/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_lilac"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 12 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    10
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">42</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/keddok/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @keddok
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/581854/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 6 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/581854/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/581854/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"581854":{"id":"581854","timePublished":"2021-10-06T09:14:48+00:00","isCorporative":false,"lang":"ru","titleHtml":"Что должен, но не знает про конкуренцию в PostgreSQL каждый разработчик?","leadData":{"textHtml":"\u003Cp\u003EОпыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является многопользовательским и так или иначе использует блокировки при доступе к данным в БД. При неправильном использовании эти блокировки могут больно бить по пользователям, а иногда и по системе в целом. Поэтому рано или поздно каждый разработчик многопользовательских систем должен задуматься о том, как ему начать работать с БД так, чтобы пользователи не мешали другу другу. Многие считают, что это сложно, давайте вместе убедимся, что это не так.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F79d\u002Ff18\u002F578\u002F79df18578980681e747f9b6f6ff66ef4.jpg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F79d\u002Ff18\u002F578\u002F79df18578980681e747f9b6f6ff66ef4.jpg","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"sandbox","data":null}],"author":{"scoreStats":{"score":10,"votesCount":12},"rating":42,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1837943","alias":"keddok","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":6,"favoritesCount":187,"readingCount":14381,"score":42,"votesCount":44},"hubs":[{"relatedData":null,"id":"91","alias":"webdev","type":"collective","title":"Разработка веб-сайтов","titleHtml":"Разработка веб-сайтов","isProfiled":true},{"relatedData":null,"id":"358","alias":"postgresql","type":"collective","title":"PostgreSQL","titleHtml":"PostgreSQL","isProfiled":true},{"relatedData":null,"id":"594","alias":"sql","type":"collective","title":"SQL","titleHtml":"SQL","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F79d\u002Ff18\u002F578\u002F79df18578980681e747f9b6f6ff66ef4.jpg\" width=\"1116\" height=\"1037\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F79d\u002Ff18\u002F578\u002F79df18578980681e747f9b6f6ff66ef4.jpg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EОпыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является многопользовательским и так или иначе использует блокировки при доступе к данным в БД. При неправильном использовании эти блокировки могут больно бить по пользователям, а иногда и по системе в целом. Поэтому рано или поздно каждый разработчик многопользовательских систем должен задуматься о том, как ему начать работать с БД так, чтобы пользователи не мешали другу другу. Многие считают, что это сложно, давайте вместе убедимся, что это не так.\u003C\u002Fp\u003E\u003Cp\u003EЯ очень обрадовался, когда нашёл статью \u003Ca href=\"http:\u002F\u002Fbig-elephants.com\u002F2013-09\u002Fexploring-query-locks-in-postgres\u002F\" rel=\"noopener noreferrer nofollow\"\u003Ehttp:\u002F\u002Fbig-elephants.com\u002F2013-09\u002Fexploring-query-locks-in-postgres\u002F\u003C\u002Fa\u003E, где доступным языком на простых примерах рассказывается о блокировках в СУБД PostgreSQL. Но этой статье скоро уже будет 10 лет, поэтому стоит проверить её на последней версии PostrgeSQL. Как раз вчера вышла 14 версия.\u003C\u002Fp\u003E\u003Cp\u003EИтак, приступим.\u003C\u002Fp\u003E\u003Ch3\u003EПесочница\u003C\u002Fh3\u003E\u003Cp\u003EДля начала нам понадобится установленная \u003Ca href=\"https:\u002F\u002Fwww.postgresql.org\u002F\" rel=\"noopener noreferrer nofollow\"\u003EСУБД PostgreSQL\u003C\u002Fa\u003E и место в ней, где мы будем играть. Это будет наша песочница:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ECREATE DATABASE sandbox;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДобавим в песочницу игрушки:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ECREATE TABLE toys (\n  id serial NOT NULL,\n  name character varying(32),\n  usage integer NOT NULL DEFAULT 0,\n  CONSTRAINT toys_pkey PRIMARY KEY (id)\n);\nINSERT INTO toys(name) VALUES ('машинка'), ('лопатка'), ('ведёрко');\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОтлично! Мы создали песочницу, и в ней появились машинка, лопатка и ведёрко. Теперь нам нужны те, кто будет играть с ними. Назовем их случайным образом, например, Айнур и Алина. Это будут два клиента нашей СУБД, для представления которых мы будем использовать консольную утилиту \u003Ccode\u003Epsql\u003C\u002Fcode\u003E, которая входит в состав базовой установки. Запустим первую консоль \u003Ccode\u003Epsql\u003C\u002Fcode\u003E в базе sandbox и выполним в ней:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EУстановка кириллической кодовой страницы в psql на Windows\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cp\u003E\\! chcp 1251\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esandbox=# \\set PROMPT1 '[Алина] %\u002F%R%# '\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПусть Алина посмотрит какие же игрушки есть в песочнице:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Алина] sandbox=# BEGIN;\nBEGIN\n[Алина] sandbox=# SELECT * FROM toys;\n id |  name   | usage\n----+---------+-------\n  1 | машинка |     0\n  2 | лопатка |     0\n  3 | ведерко |     0\n(3 rows)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОбратите внимание, что мы использовали оператор \u003Ccode\u003EBEGIN\u003C\u002Fcode\u003E для явного управления транзакциями. Транзакция будет открыта пока мы ее не зафиксируем или не откатим.\u003C\u002Fp\u003E\u003Cp\u003EОткроем вторую консоль \u003Ccode\u003Epsql\u003C\u002Fcode\u003E и назовём её:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esandbox=# \\set PROMPT1 '[Айнур] %\u002F%R%# '\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EАйнур полез в песочницу и увидел то же самое:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Айнур] sandbox=# BEGIN;\nBEGIN\n[Айнур] sandbox=# SELECT * FROM toys;\n id |  name   | usage\n----+---------+-------\n  1 | машинка |     0\n  2 | лопатка |     0\n  3 | ведерко |     0\n(3 rows)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНа этом примере мы видим, что операторы \u003Ccode\u003ESELECT\u003C\u002Fcode\u003E не пересекаются и могут выполняться параллельно, не блокируя друг друга. Это именно то, чего мы ожидаем от высокопроизводительной промышленной СУБД.\u003C\u002Fp\u003E\u003Ch3\u003Epg_locks\u003C\u002Fh3\u003E\u003Cp\u003EИтак, наши транзакции открыты, а мы идем дальше и запускаем третью консоль, которую назовем Люция:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Esandbox=# \\set PROMPT1 '[Люция] %\u002F%R%# '\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ ней мы можем наблюдать за текущими блокировками:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,\nvirtualtransaction AS vtid, pid, granted\nFROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db\nON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)\nAND NOT pid = pg_backend_pid();\n  locktype  | relation  |      mode       | tid |   vtid   |  pid  | granted\n------------+-----------+-----------------+-----+----------+-------+---------\n relation   | toys_pkey | AccessShareLock |     | 5\u002F185417 | 13792 | t\n relation   | toys      | AccessShareLock |     | 5\u002F185417 | 13792 | t\n virtualxid |           | ExclusiveLock   |     | 5\u002F185417 | 13792 | t\n relation   | toys_pkey | AccessShareLock |     | 7\u002F8300   | 16944 | t\n relation   | toys      | AccessShareLock |     | 7\u002F8300   | 16944 | t\n virtualxid |           | ExclusiveLock   |     | 7\u002F8300   | 16944 | t\n(6 строк)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВсе активные блокировки можно видеть в системном представлении \u003Ccode\u003Epg_catalog.pg_locks\u003C\u002Fcode\u003E. Чтобы видеть только блокировки из нашей песочницы добавлено условие на имя БД.\u003C\u002Fp\u003E\u003Cp\u003EЧтобы не видеть блокировки, которые вызваны нашим запросом, добавлено условие на идентификатор процесса: \u003Ccode\u003ENOT pid = pg_backend_pid()\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EПреобразование типа \u003Ccode\u003Erelation::regclass\u003C\u002Fcode\u003E удобно использовать для получения человекочитаемого имени таблицы.\u003C\u002Fp\u003E\u003Cp\u003EДавайте посмотрим на пятую строку выборки поближе:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E  locktype  | relation  |      mode       | tid |   vtid   |  pid  | granted\n------------+-----------+-----------------+-----+----------+-------+---------\n relation   | toys      | AccessShareLock |     | 7\u002F8300   | 16944 | t\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭто значит, что на таблицу toys успешно получена блокировка AccessShareLock от виртуальной транзакции 7\u002F8300  и идентификатора процесса pid=16944. Есть ещё одна аналогичная блокировка во второй строке.\u003C\u002Fp\u003E\u003Cp\u003EБлокировки получены и все отлично. Алина и Айнур довольны тем, что могут видеть все игрушки в песочнице, и они не мешают друг другу.\u003C\u002Fp\u003E\u003Cp\u003EЗаметим, что каждая транзакция получила \u003Ccode\u003EExclusiveLock\u003C\u002Fcode\u003E на виртуальную транзакцию.\u003C\u002Fp\u003E\u003Cp\u003EДалее Алина берет машинку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Алина] sandbox=# UPDATE toys SET usage = usage+1 WHERE \"name\" = 'машинка';\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ, можно видеть, что у нее это естественно получилось. Люция проверяет все ли в порядке в песочнице. Смотрим таблицу блокировок:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,\n virtualtransaction AS vtid, pid, granted\n FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db\n ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)\n AND NOT pid = pg_backend_pid();\n   locktype    | relation  |       mode       | tid |   vtid   |  pid  | granted\n---------------+-----------+------------------+-----+----------+-------+---------\n relation      | toys_pkey | AccessShareLock  |     | 5\u002F185417 | 13792 | t\n relation      | toys      | AccessShareLock  |     | 5\u002F185417 | 13792 | t\n virtualxid    |           | ExclusiveLock    |     | 5\u002F185417 | 13792 | t\n relation      | toys_pkey | AccessShareLock  |     | 7\u002F8300   | 16944 | t\n relation      | toys_pkey | RowExclusiveLock |     | 7\u002F8300   | 16944 | t\n relation      | toys      | AccessShareLock  |     | 7\u002F8300   | 16944 | t\n relation      | toys      | RowExclusiveLock |     | 7\u002F8300   | 16944 | t\n virtualxid    |           | ExclusiveLock    |     | 7\u002F8300   | 16944 | t\n transactionid |           | ExclusiveLock    | 841 | 7\u002F8300   | 16944 | t\n(9 строк)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДобавилось 3 блокировки, их стало 9. Алина получила \u003Ccode\u003ERowExclusiveLock\u003C\u002Fcode\u003E на таблицу \u003Ccode\u003Etoys\u003C\u002Fcode\u003E, когда взяла машинку. Также появился реальный идентификатор транзакции с \u003Ccode\u003EExclusiveLock\u003C\u002Fcode\u003E, так как произошло потенциальное изменение состояния базы данных.\u003C\u002Fp\u003E\u003Cp\u003EУже можно заметить, что блокировки вешаются на объекты при выполнении соответствующего запроса и не снимаются до конца транзакции.\u003C\u002Fp\u003E\u003Ch3\u003EMVCC\u003C\u002Fh3\u003E\u003Cp\u003EНо Айнур не знает, что машинка уже занята Алиной, так как это изменение еще не было зафиксировано и он видит старые данные:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Айнур] sandbox=# SELECT * FROM toys;\n id |  name   | usage\n----+---------+-------\n  1 | машинка |     0\n  2 | лопатка |     0\n  3 | ведерко |     0\n(3 rows)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТак работает механизм MVCC - \u003Ca href=\"https:\u002F\u002Fwww.postgresql.org\u002Fdocs\u002Fcurrent\u002Fmvcc.html\" rel=\"noopener noreferrer nofollow\"\u003EMulti Version Concurrency Control\u003C\u002Fa\u003E, который используется в PostgreSQL для отображения консистентного состояния БД для каждой транзакции. Пока транзакция не будет зафиксирована или отменена, все остальные транзакции будут видеть состояние БД, как если бы эта транзакция не стартовала вообще. \u003C\u002Fp\u003E\u003Ch3\u003EБлокирование запросов\u003C\u002Fh3\u003E\u003Cp\u003EТеперь допустим, что Айнур тоже захотел поиграть с машинкой, что вполне обычно для детей, играющих в песочницах.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Айнур] sandbox=# UPDATE toys SET usage = usage+1 WHERE \"name\" = 'машинка';\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНичего не произошло. По крайней мере внешне. На самом деле Айнур пытаясь получить машинку наткнулся на блокировку Алины и теперь вынужден ждать, пока Алина освободит ее. Что видит Люция:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,\n virtualtransaction AS vtid, pid, granted\n FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db\n ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)\n AND NOT pid = pg_backend_pid();\n   locktype    | relation  |       mode       | tid |   vtid   |  pid  | granted\n---------------+-----------+------------------+-----+----------+-------+---------\n relation      | toys_pkey | AccessShareLock  |     | 5\u002F185417 | 13792 | t\n relation      | toys_pkey | RowExclusiveLock |     | 5\u002F185417 | 13792 | t\n relation      | toys      | AccessShareLock  |     | 5\u002F185417 | 13792 | t\n relation      | toys      | RowExclusiveLock |     | 5\u002F185417 | 13792 | t\n virtualxid    |           | ExclusiveLock    |     | 5\u002F185417 | 13792 | t\n relation      | toys_pkey | AccessShareLock  |     | 7\u002F8300   | 16944 | t\n relation      | toys_pkey | RowExclusiveLock |     | 7\u002F8300   | 16944 | t\n relation      | toys      | AccessShareLock  |     | 7\u002F8300   | 16944 | t\n relation      | toys      | RowExclusiveLock |     | 7\u002F8300   | 16944 | t\n virtualxid    |           | ExclusiveLock    |     | 7\u002F8300   | 16944 | t\n transactionid |           | ExclusiveLock    | 842 | 5\u002F185417 | 13792 | t\n tuple         | toys      | ExclusiveLock    |     | 5\u002F185417 | 13792 | t\n transactionid |           | ShareLock        | 841 | 5\u002F185417 | 13792 | f\n transactionid |           | ExclusiveLock    | 841 | 7\u002F8300   | 16944 | t\n(14 строк) \u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЛюция видит еще плюс 5 блокировок. Добавлена транзакция Айнура, так как он тоже пытается изменить данные. Айнур также получил \u003Ccode\u003ERowExclusiveLock\u003C\u002Fcode\u003E на игрушки. И транзакцией Айнура добавлен запрос на \u003Ccode\u003EShareLock\u003C\u002Fcode\u003E на транзакцию Алины, что обозначает его претензии на игрушки, которые заняла Алина. Эта блокировка не получена(granted = false), так как \u003Ccode\u003EShareLock\u003C\u002Fcode\u003E конфликтует с \u003Ccode\u003EExclusiveLock\u003C\u002Fcode\u003E на эту же транзакцию. Таким образом, Айнур ждет пока Алина освободит свою транзакцию зафиксировав или отменив ее.\u003C\u002Fp\u003E\u003Ch3\u003Epg_stat_activity\u003C\u002Fh3\u003E\u003Cp\u003EЕще одно интересное системное представление - это \u003Ccode\u003Epg_stat_activity\u003C\u002Fcode\u003E, которое показывает запросы и транзакции:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT query, state, coalesce(wait_event_type='Lock', 'f') as waiting, pid FROM pg_stat_activity \n WHERE datname = 'sandbox' AND NOT (state = 'idle' OR pid = pg_backend_pid());\n                        query                              |        state        | waiting |  pid\n-----------------------------------------------------------+---------------------+---------+-------\n UPDATE toys SET usage = usage+1 WHERE \"name\" = 'машинка'; | active              | t       | 13792\n UPDATE toys SET usage = usage+1 WHERE \"name\" = 'машинка'; | idle in transaction | f       | 16944\n(2 строки)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВидно, что запрос Айнура активен и ждет освобождения машинки, а запрос Алины неактивен и ее транзакция не закрыта.\u003C\u002Fp\u003E\u003Cp\u003EМожно совместить выборку из \u003Ccode\u003Epg_locks\u003C\u002Fcode\u003E и \u003Ccode\u003Epg_stat_activity\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT blockeda.pid AS blocked_pid, blockeda.query as blocked_query,\n   blockinga.pid AS blocking_pid, blockinga.query as blocking_query\n FROM pg_catalog.pg_locks blockedl\n JOIN pg_stat_activity blockeda ON blockedl.pid = blockeda.pid\n JOIN pg_catalog.pg_locks blockingl ON (blockingl.transactionid=blockedl.transactionid\n   AND blockedl.pid != blockingl.pid)\n JOIN pg_stat_activity blockinga ON blockingl.pid = blockinga.pid\n WHERE NOT blockedl.granted AND blockinga.datname = 'sandbox';\n blocked_pid |                       blocked_query                       | blocking_pid |                     blocking_query\n-------------+-----------------------------------------------------------+--------------+-------------------------------------------------------------\n       13792 | UPDATE toys SET usage = usage+1 WHERE \"name\" = 'машинка'; |        16944 | UPDATE toys SET usage = usage+1 WHERE \"name\" = 'машинка';\n(1 строка)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ результате Люция видит, кто кого блокирует.\u003C\u002Fp\u003E\u003Cp\u003EЕсли вдруг Алина вспомнит, что не любит играть с машинками, и передумает брать её, то она откатит транзакцию:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Алина] sandbox=# ROLLBACK;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТогда Айнур сможет завершить свою попытку взять машинку и поиграть с ней:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003EUPDATE 1\n[Айнур] sandbox=# COMMIT;\nCOMMIT\n[Айнур] sandbox=# select * from toys;\n id |  name   | usage\n----+---------+-------\n  2 | лопатка |     0\n  3 | ведерко |     0\n  1 | машинка |     1\n(3 строки)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКоличество использований машинки зависит от того, будет ли транзакция Алины зафиксирована, либо отменена. В нашем случае транзакция отменена и зафиксировано только то, что с машинкой поиграл Айнур.\u003C\u002Fp\u003E\u003Cp\u003EА Алина в то же время может свободно и без ожидания играть, например, с ведёрком.\u003C\u002Fp\u003E\u003Cp\u003EСмотрим, что происходит в песочнице:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,\n virtualtransaction AS vtid, pid, granted\n FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db\n ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)\n AND NOT pid = pg_backend_pid();\n locktype | relation | mode | tid | vtid | pid | granted\n----------+----------+------+-----+------+-----+---------\n(0 строк)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EБлокировок нет, а значит и конфликтов нет, все довольны.\u003C\u002Fp\u003E\u003Ch3\u003EЯвные блокировки (explicit locks)\u003C\u002Fh3\u003E\u003Cp\u003EЕще одна обычная ситуация для песочницы, когда кто-то из детей пытается получить все подряд без разбора.\u003C\u002Fp\u003E\u003Cp\u003EДопустим Алина решила получить эксклюзивный доступ ко всем игрушкам в песочнице.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Алина] sandbox=# BEGIN;\nBEGIN\n[Алина] sandbox=# LOCK TABLE toys IN EXCLUSIVE MODE;\nLOCK TABLE\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ таком случае Айнуру приходится ждать несмотря на то, что Алина на самом деле не взяла ни одну игрушку. \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Айнур] sandbox=# BEGIN; UPDATE toys SET usage = usage+1 WHERE \"name\" = 'лопатка';\nBEGIN\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТаблица блокировок будет выглядеть так:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,\n virtualtransaction AS vtid, pid, granted\n FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db\n ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)\n AND NOT pid = pg_backend_pid();\n  locktype     | relation |        mode         | tid |   vtid   |  pid  | granted\n---------------+----------+---------------------+-----+----------+-------+---------\n virtualxid    |          | ExclusiveLock       |     | 5\u002F185423 | 13792 | t\n virtualxid    |          | ExclusiveLock       |     | 7\u002F8303   | 16944 | t\n relation      | toys     | ExclusiveLock       |     | 7\u002F8303   | 16944 | t\n relation      | toys     | RowExclusiveLock    |     | 5\u002F185423 | 13792 | f\n(4 строки)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТак как реальных изменений состояния не происходит, то нет и блокировок на реальную транзакцию(\u003Ccode\u003Elocktype=transactionid\u003C\u002Fcode\u003E). И так как Айнур не получил еще \u003Ccode\u003ERowExclusiveLock\u003C\u002Fcode\u003E на лопатку(\u003Ccode\u003Egranted=false\u003C\u002Fcode\u003E), у него тоже нет блокировки на реальную транзакцию.\u003C\u002Fp\u003E\u003Cp\u003EВ таком случае наш запрос, который мы составили выше, не покажет никаких взаимных блокировок, так как мы делали объединение по идентификатору реальной транзакции. И Люция будет думать, что все в порядке, хотя на самом деле, если посмотреть на список ожидающих запросов:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT pid, query, now() - query_start  AS waiting_duration\n FROM pg_catalog.pg_stat_activity WHERE datname='sandbox'\n AND wait_event_type='Lock';   \n  pid  |                           query                           | waiting_duration\n-------+-----------------------------------------------------------+------------------\n 13792 | UPDATE toys SET usage = usage+1 WHERE \"name\" = 'лопатка'; | 00:03:44.066\n(1 строка)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EМы видим, что на самом деле Айнур ждет лопатку уже 3 минуты и у него кончается терпение. \u003C\u002Fp\u003E\u003Cp\u003EЕсли изменить исходный запрос и добавить объединение по таблице, то Люция сможет выяснить, кто не дает Айнуру лопатку: \u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT blockingl.relation::regclass,\n   blockeda.pid AS blocked_pid, blockeda.query as blocked_query,\n   blockedl.mode as blocked_mode,\n   blockinga.pid AS blocking_pid, blockinga.query as blocking_query,\n   blockingl.mode as blocking_mode\n FROM pg_catalog.pg_locks blockedl\n JOIN pg_stat_activity blockeda ON blockedl.pid = blockeda.pid\n JOIN pg_catalog.pg_locks blockingl ON(blockingl.relation=blockedl.relation\n  AND blockingl.locktype=blockedl.locktype AND blockedl.pid != blockingl.pid)\n JOIN pg_stat_activity blockinga ON blockingl.pid = blockinga.pid\n WHERE NOT blockedl.granted AND blockinga.datname='sandbox';\n relation | blocked_pid |                       blocked_query                       |   blocked_mode   | blocking_pid |           blocking_query           | blocking_mode\n----------+-------------+-----------------------------------------------------------+------------------+--------------+------------------------------------+-------------------\n toys     |       13792 | UPDATE toys SET usage = usage+1 WHERE \"name\" = 'лопатка'; | RowExclusiveLock |        16944 | LOCK TABLE toys IN EXCLUSIVE MODE; | ExclusiveLock\n(1 строка)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EКогда Алине было сказано, что нехорошо забирать все игрушки себе без необходимости, она закрывает свою бессмысленную транзакцию:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Алина] sandbox=# COMMIT;\nCOMMIT\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТеперь Айнур сможет взять свою игрушку. При этом он получает блокировку на реальную транзакцию:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,\n virtualtransaction AS vtid, pid, granted\n FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db\n ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)\n AND NOT pid = pg_backend_pid();\n    locktype    | relation  |       mode       | tid |   vtid   |  pid  | granted\n---------------+-----------+------------------+-----+------+-------+---------\n relation      | toys_pkey | RowExclusiveLock |     | 5\u002F185423  | 13792 | t\n virtualxid    |           | ExclusiveLock    |     | 5\u002F185423  | 13792 | t\n transactionid |           | ExclusiveLock    | 845 | 5\u002F185423  | 13792 | t\n relation      | toys      | RowExclusiveLock |     | 5\u002F185423  | 13792 | t\n(4 строки)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EАйнур доволен и, поиграв с лопаткой, тоже завершает свою транзакцию:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Айнур] sandbox=# COMMIT;\nCOMMIT\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003ERowExclusiveLock\u003C\u002Fh3\u003E\u003Cp\u003EПосле того, как Алине запретили забирать все игрушки, она решила применить другой подход.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Алина] sandbox=# BEGIN; SELECT * FROM toys FOR UPDATE;\nBEGIN\n id |  name   | usage\n----+---------+-------\n  3 | ведерко |     0\n  1 | машинка |     1\n  2 | лопатка |     1\n(3 строки)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭтот подход называется \"я хочу видеть все игрушки и, возможно, я возьму какую-нибудь, но пока я не решила какую взять, и поэтому не хочу чтобы их кто-либо трогал\". И, надо признать, что это тоже распространенный подход в песочницах.\u003C\u002Fp\u003E\u003Cp\u003EВ итоге Айнур снова не может получить свою игрушку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Айнур] sandbox=# UPDATE toys SET usage = usage+1 WHERE \"name\" = 'лопатка';\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА Люция видит следующую ситуацию:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT locktype, relation::regclass, mode, transactionid AS tid,\n virtualtransaction AS vtid, pid, granted\n FROM pg_catalog.pg_locks l LEFT JOIN pg_catalog.pg_database db\n ON db.oid = l.database WHERE (db.datname = 'sandbox' OR db.datname IS NULL)\n AND NOT pid = pg_backend_pid();\n   locktype    | relation  |       mode       | tid |   vtid   |  pid  | granted\n---------------+-----------+------------------+---------+----------+-------+---------\n relation      | toys_pkey | RowExclusiveLock |     | 5\u002F185424 | 13792 | t\n relation      | toys      | RowExclusiveLock |     | 5\u002F185424 | 13792 | t\n virtualxid    |           | ExclusiveLock    |     | 5\u002F185424 | 13792 | t\n relation      | toys_pkey | AccessShareLock  |     | 7\u002F8304   | 16944 | t\n relation      | toys      | RowShareLock     |     | 7\u002F8304   | 16944 | t\n virtualxid    |           | ExclusiveLock    |     | 7\u002F8304   | 16944 | t\n transactionid |           | ShareLock        | 848 | 5\u002F185424 | 13792 | f\n transactionid |           | ExclusiveLock    | 848 | 7\u002F8304   | 16944 | t\n transactionid |           | ExclusiveLock    | 849 | 5\u002F185424 | 13792 | t\n tuple         | toys      | ExclusiveLock    |     | 5\u002F185424 | 13792 | t\n(10 строк)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВсе очень похоже на то, что мы уже видели выше, когда Айнур и Алина пытались одновременно играть с машинкой. Айнур ждет транзакцию Алины.\u003C\u002Fp\u003E\u003Cp\u003EЕсли Люция проверит блокировку по таблице, то ничего не увидит:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT blockingl.relation::regclass,\n   blockeda.pid AS blocked_pid, blockeda.query as blocked_query,\n   blockedl.mode as blocked_mode,\n   blockinga.pid AS blocking_pid, blockinga.query as blocking_query,\n   blockingl.mode as blocking_mode\n FROM pg_catalog.pg_locks blockedl\n JOIN pg_stat_activity blockeda ON blockedl.pid = blockeda.pid\n JOIN pg_catalog.pg_locks blockingl ON(blockingl.relation=blockedl.relation\n  AND blockingl.locktype=blockedl.locktype AND blockedl.pid != blockingl.pid)\n JOIN pg_stat_activity blockinga ON blockingl.pid = blockinga.pid\n WHERE NOT blockedl.granted AND blockinga.datname='sandbox';\n relation | blocked_pid |                 blocked_query                 |   blocked_mode   | blocking_pid |              blocking_query               |    blocking_mode\n----------+-------------+-----------------------------------------------+------------------+--------------+-------------------------------------------+---------------------\n(0 строк)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСейчас ей нужен запрос с блокировкой по транзакции.\u003C\u002Fp\u003E\u003Ch3\u003EВсё вместе\u003C\u002Fh3\u003E\u003Cp\u003EЧтобы увидеть все рассмотренные выше виды блокировок, нужно составить комбинированный запрос:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E[Люция] sandbox=# SELECT\n   COALESCE(blockingl.relation::regclass::text,blockingl.locktype) as locked_item,\n   blockeda.pid AS blocked_pid, blockeda.query as blocked_query,\n   blockedl.mode as blocked_mode, blockinga.pid AS blocking_pid,\n   blockinga.query as blocking_query, blockingl.mode as blocking_mode\n FROM pg_catalog.pg_locks blockedl\n JOIN pg_stat_activity blockeda ON blockedl.pid = blockeda.pid\n JOIN pg_catalog.pg_locks blockingl ON(\n   ( (blockingl.transactionid=blockedl.transactionid) OR\n     (blockingl.relation=blockedl.relation AND blockingl.locktype=blockedl.locktype)\n   ) AND blockedl.pid != blockingl.pid)\n JOIN pg_stat_activity blockinga ON blockingl.pid = blockinga.pid\n WHERE NOT blockedl.granted\n AND blockinga.datname=current_database();\n  locked_item  | blocked_pid |                       blocked_query                       | blocked_mode | blocking_pid |         blocking_query         | blocking_mode\n---------------+-------------+-----------------------------------------------------------+--------------+--------------+--------------------------------+-----------------\n transactionid |       13792 | UPDATE toys SET usage = usage+1 WHERE \"name\" = 'лопатка'; | ShareLock    |        16944 | SELECT * FROM toys FOR UPDATE; | ExclusiveLock\n(1 строка)\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДля удобства в него добавлена функция \u003Ccode\u003Ecurrent_database()\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003Cp\u003EТеперь Люция всегда может видеть, что происходит в песочнице, и что именно не поделили дети. Она налила себе чашечку латте макиато и решила почитать \u003Ca href=\"http:\u002F\u002Fwww.postgresql.org\u002Fdocs\u002Fcurrent\u002Fstatic\u002Fexplicit-locking.html\" rel=\"noopener noreferrer nofollow\"\u003Ehttp:\u002F\u002Fwww.postgresql.org\u002Fdocs\u002Fcurrent\u002Fstatic\u002Fexplicit-locking.html\u003C\u002Fa\u003E, чтобы узнать еще больше интересного про блокировки.\u003C\u002Fp\u003E\u003Ch2\u003EИтог\u003C\u002Fh2\u003E\u003Cp\u003EСтатья практически не потеряла актуальности, что говорит о хорошей стабильности и совместимости версий PostgreSQL между собой. Но и нельзя сказать, что СУБД не развивается, в процессе проверки я заметил несколько изменений:\u003C\u002Fp\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EС версии 9.6 поле \u003Ccode\u003Ewaiting\u003C\u002Fcode\u003E в \u003Ccode\u003Epg_stat_activity\u003C\u002Fcode\u003E было заменено на два других, более информативных: \u003Ccode\u003Ewait_event_type\u003C\u002Fcode\u003E и \u003Ccode\u003Ewait_event\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EС 10 версии при явной блокировке таблицы в режиме \u003Ccode\u003EACCESS EXCLUSIVE\u003C\u002Fcode\u003E добавился \u003Ccode\u003EExclusiveLock\u003C\u002Fcode\u003E на текущую реальную транзакцию. Это изменение связано с тем, что в 10 версии были по умолчанию включены некоторые настройки для поточной репликации.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ 11 версии было добавлено поле backend_type в представление \u003Ccode\u003Epg_stat_activity\u003C\u002Fcode\u003E, которое даст понимание источника активности: вакуум, репликация или обычный клиент приложения.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВ 14 версии в представление \u003Ccode\u003Epg_locks\u003C\u002Fcode\u003E добавлено поле \u003Ccode\u003Ewaitstart\u003C\u002Fcode\u003E, в котором отображается время начала ожидания получения блокировки, а в \u003Ccode\u003Epg_stat_activity \u003C\u002Fcode\u003E добавлено поле \u003Ccode\u003Equery_id\u003C\u002Fcode\u003E - уникальный идентификатор запроса, который позволяет получить статистику по запросу из \u003Ccode\u003Epg_stat_statements\u003C\u002Fcode\u003E.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"postgresql"},{"titleHtml":"locks"},{"titleHtml":"concurrency"},{"titleHtml":"web"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F79d\u002Ff18\u002F578\u002F79df18578980681e747f9b6f6ff66ef4.jpg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F79d\u002Ff18\u002F578\u002F79df18578980681e747f9b6f6ff66ef4.jpg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F581854\\\u002F\"},\"headline\":\"Что должен, но не знает про конкуренцию в PostgreSQL каждый разработчик?\",\"datePublished\":\"2021-10-06T12:14:48+03:00\",\"dateModified\":\"2021-10-07T12:21:10+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"keddok\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F581854\\\u002F#post-content-body\",\"about\":[\"h_webdev\",\"h_postgresql\",\"h_sql\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F581854\\\u002Faf8e0acedd0bc43223b16b073bab071f\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F79d\\\u002Ff18\\\u002F578\\\u002F79df18578980681e747f9b6f6ff66ef4.jpg\"]}","metaDescription":"Опыт показывает, что разработчики редко задумываются о проблемах, которые могут возникать при многопользовательском доступе к данным. При этом практически любое web-приложение является...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"webdev,postgresql,sql"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

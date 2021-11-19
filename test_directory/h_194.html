@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Адаптация Qt-приложений под мониторы высокой чёткости. Часть 2 / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/584760\/"},"headline":"Адаптация Qt-приложений под мониторы высокой чёткости. Часть 2","datePublished":"2021-10-21T15:06:48+03:00","dateModified":"2021-10-21T16:38:25+03:00","author":{"@type":"Person","name":"kalirgum"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"В прошлой статье мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четко...","url":"https:\/\/habr.com\/ru\/post\/584760\/#post-content-body","about":["h_programming","h_cpp","h_qt_software","h_oop","h_win_dev","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/584760\/55536a9ce3cf2e0ba75cf0230177df2b\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/7c8\/1e2\/8d0\/7c81e28d0d6e5a81ebef2d205cea4d65.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e88\/83b\/8c7\/e8883b8c72ccdf9b2cb6223d0416457d.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/af0\/212\/024\/af02120241bcd1bf2a02aa786f889f50.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e47\/f11\/568\/e47f11568a38b3371db6c19cfdccf946.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/050\/394\/1b3\/0503941b3cd04e51e15df3ca7b4b54d4.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b3d\/830\/c88\/b3d830c88b3d4e92a4d920c498405b14.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e96\/d69\/f7a\/e96d69f7a8f2f4b9370a8cc777d56993.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/30c\/0d1\/bab\/30c0d1bab8ab3f22f3bb8fed0e170f32.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/514\/947\/814\/514947814b04ff28e06023969e4ca0d7.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Адаптация Qt-приложений под мониторы высокой чёткости. Часть 2" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Адаптация Qt-приложений под мониторы высокой чёткости. Часть 2" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Адаптация Qt-приложений под мониторы высокой чёткости. Часть 2" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="В прошлой статье мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.Суть в том, что в ОС Windows давно..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="В прошлой статье мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.Суть в том, что в ОС Windows давно..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="В прошлой статье мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.Суть в том, что в ОС Windows давно..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="В прошлой статье мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.Суть в том, что в ОС Windows давно..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="В прошлой статье мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.Суть в том, что в ОС Windows давно..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/7c8/1e2/8d0/7c81e28d0d6e5a81ebef2d205cea4d65.png" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/7c8/1e2/8d0/7c81e28d0d6e5a81ebef2d205cea4d65.png" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/7c8/1e2/8d0/7c81e28d0d6e5a81ebef2d205cea4d65.png" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/7c8/1e2/8d0/7c81e28d0d6e5a81ebef2d205cea4d65.png" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/7c8/1e2/8d0/7c81e28d0d6e5a81ebef2d205cea4d65.png" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="584760" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-21T12:06:48.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/584760/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/584760/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/7c8/1e2/8d0/7c81e28d0d6e5a81ebef2d205cea4d65.png" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/584760/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/kalirgum/" title="kalirgum" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/kalirgum/" class="tm-user-info__username">
+      kalirgum
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-21T12:06:48.000Z" title="2021-10-21, 15:06">21  октября   в 15:06</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Адаптация Qt-приложений под мониторы высокой чёткости. Часть 2</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cpp/" class="tm-article-snippet__hubs-item-link"><span>C++</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/qt_software/" class="tm-article-snippet__hubs-item-link"><span>Qt</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/oop/" class="tm-article-snippet__hubs-item-link"><span>ООП</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/win_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка под Windows</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>В <a href="https://habr.com/ru/post/582180/" rel="noopener noreferrer nofollow">прошлой статье</a> мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.</p><p>Суть в том, что в ОС Windows давно есть такие настройки, как масштабирование шрифта и изображений (масштаб экрана), которые применяются для увеличения слишком малых элементов GUI на мониторах с высокой чёткостью (High DPI). Однако не каждое приложение, написанное на Qt, способно адекватно учитывать, применять этот самый масштаб экрана. Частая ситуация – приложение хорошо выглядит на Full HD (1920x1080), но стоит поставить монитор 4K (3840x2160) и увеличить масштаб экрана, то появляются многочисленные артефакты.</p><figure class="full-width "><img src="/img/image-loader.svg" height="459" data-src="https://habrastorage.org/getpro/habr/upload_files/7c8/1e2/8d0/7c81e28d0d6e5a81ebef2d205cea4d65.png" data-width="734"/><figcaption></figcaption></figure><p>В этой статье мы продолжим разбор примеров и изложение рецептов. Будем делать это для более сложных случаев, связанных с сохранением размеров между запусками приложения, а именно с сохранением тех настроек пользователя, что связаны с размерами.</p><p>Исходный код примеров был протестирован на Qt5 и Qt6 (более точно – 5.15 и 6.2), на операционках Windows 10 и Windows 7. В основном в статье описаны реалии и будни Qt5 (поскольку именно на Qt5 проблема стоит особенно остро), но рецепты можно с успехом применять и на Qt6 – ничего от этого не поломается.</p><p>Нумерацию примеров оставим сквозной и будем основываться на уже разобранных примерах (и ссылаться на них). Так что при необходимости освежите в памяти <a href="https://habr.com/ru/post/582180/" rel="noopener noreferrer nofollow">нашу прошлую статью</a>.</p><h3>Пример 7. Колонки таблицы</h3><p>Предположим, мы создаем текстовую таблицу, удобную для восприятия пользователя. Под удобством будем предполагать то, что размер колонок будет устанавливаться не по умолчанию, а будет адаптирован либо под длину заголовков колонок, либо под длину содержимого в ячейках колонки. Пусть для простоты под длину заголовков. В реальной жизни заполнение таблицы будет, скорее всего, динамическим (например, из базы данных), но мы для простоты сделаем статическое заполнение. Таким образом, в соответствии с <a href="https://habr.com/ru/post/582180/#recept3" rel="noopener noreferrer nofollow">рецептом 3</a> имеем право написать вот такой код:</p><details class="spoiler"><summary>Показать код</summary><div class="spoiler__content"><pre><code class="cpp">TableWidget::TableWidget(QWidget* parent)
+	: QTableWidget(parent)
+{
+	setSelectionBehavior(QAbstractItemView::SelectRows);
+	setSelectionMode(QAbstractItemView::ExtendedSelection);
+	setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
+	setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+	verticalHeader()->setVisible(false);
+
+	setRowCount(2);
+	setColumnCount(3);
+
+	QStringList headers;
+	headers &lt;&lt; "Short" &lt;&lt; "Middle header" &lt;&lt; "Long long long long header";
+	setHorizontalHeaderLabels(headers);
+
+	QFont font(horizontalHeader()->font());
+	// A header will draw a bold font after row selecting. Take it into account.
+	font.setBold(true); 
+	QFontMetrics fm(font);
+	int space = fm.horizontalAdvance("a"); // one symbol width
+
+	for (int i = 0; i &lt; headers.size(); i++)
+	{
+		int w = fm.horizontalAdvance(headers[i]) + 2 * space;
+		setColumnWidth(i, w);
+	}
+}</code></pre></div></details><p>Здесь мы использовали метрику шрифтов, чтобы высчитать такие размеры заголовков, чтобы текст (заголовков) всегда помещался в рамки.</p><p>Добавим еще пару строк кода, чтобы более-менее корректно отрисовывать такой табличный виджет:</p><details class="spoiler"><summary>Показать код</summary><div class="spoiler__content"><pre><code class="cpp">QSize TableWidget::sizeHint() const
+{
+	const double scale = screen()->logicalDotsPerInchX() / 96.0;
+	return QSize(qRound(320 * scale), qRound(100 * scale));
+}
+</code></pre></div></details><p>Здесь мы довольно грубо нарушили верную логику: здесь считать размеры надо было из метрики шрифтов (и элементов стилей), а не из масштаба экрана, то есть применять <a href="https://habr.com/ru/post/582180/#recept3" rel="noopener noreferrer nofollow">рецепт 3</a> вместо <a href="https://habr.com/ru/post/582180/#recept6" rel="noopener noreferrer nofollow">рецепта 6</a>. Что ж, реальная жизнь нам этого не простит, а для учебного примера пойдет.</p><p>В  результате получим вот такой виджет:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Windows7, масштаб экрана 100%,  150%." title="Windows7, масштаб экрана 100%,  150%." height="206" data-src="https://habrastorage.org/getpro/habr/upload_files/e88/83b/8c7/e8883b8c72ccdf9b2cb6223d0416457d.png" data-width="840"/><figcaption>Windows7, масштаб экрана 100%,  150%.</figcaption></figure><p>Казалось бы, все хорошо, виджет выглядит адекватно при любых масштабах экрана. Чего же боле?</p><p>Дело в том, что, в отличие от нашего примера, таблица будет заполняться динамически, может быть много строк и колонок, а текст в ячейках может быть как длинным, так и коротким. Пользователь неизбежно захочет менять размеры (имеем в виду ширину, конечно) колонок. А, поменяв, неизбежно захочет, чтобы размер колонок сохранялся между запусками приложения. А иначе зачем ему такая таблица с таким GUI? Таким образом, те размеры, которые мы научились считать из текста заголовков – это не более чем начальное приближение, а в процессе работы пользователь будет подстраивать GUI «под себя».</p><p>Итак, сохраняем настройки колонок в реестре:</p><pre><code class="cpp">TableWidget::~TableWidget()
+{
+	QSettings settings("Test company name", "Test product name");
+	settings.setValue("TableColumns", horizontalHeader()->saveState());
+}</code></pre><p>А в конструкторе будем эти настройки загружать. Для этого просто в конец конструктора добавим такой код:</p><pre><code class="cpp">	QSettings settings("Test company name", "Test product name");
+	QVariant var = settings.value("TableColumns");
+	if (!var.isNull())
+		horizontalHeader()->restoreState(var.toByteArray());</code></pre><p>И только теперь мы подошли к проблеме. Это всё будет прекрасно работать, но только до тех пор, пока масштаб экрана не изменится (а это произойдет, как только пользователь купит новый монитор 4K 27" и  увеличит для него масштаб экрана):</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Windows7, масштаб экрана 100%,  150%." title="Windows7, масштаб экрана 100%,  150%." height="208" data-src="https://habrastorage.org/getpro/habr/upload_files/af0/212/024/af02120241bcd1bf2a02aa786f889f50.png" data-width="840"/><figcaption>Windows7, масштаб экрана 100%,  150%.</figcaption></figure><p>Получить такую картинку неудивительно, ведь из реестра грузятся те размеры колонок, которые были приемлемы для тех, «старых» размеров шрифтов.</p><p> Решить эту проблему можно двумя путями. Рассмотрим их подробно.</p><a class="anchor" name="recept7" id="recept7"></a><p><strong><em>Рецепт 7. Ведите несколько веток реестра для разных масштабов экрана.</em></strong></p><p>Наиболее очевидно решение – для каждого масштаба экрана сделать свою ветку реестра, из которой бы загружалось прошлое значение. Для монитора 24" FullHD с масштабом экрана 100% будет своя ветка, а для 27" 4K с масштабом экрана 200%  – своя. Вот как это реализовывается. В конструкторе заменим код работы с реестром на следующий:</p><pre><code class="cpp">const int scale = qRound(screen()->logicalDotsPerInchX() / 96.0 * 100);
+	QSettings settings("Test company name", "Test product name");
+	QVariant var = settings.value(QString("TableColumns/scale%1").arg(scale));
+	if (!var.isNull())
+		horizontalHeader()->restoreState(var.toByteArray());</code></pre><p>А деструктор заменим на это:</p><pre><code class="cpp">TableWidget::~TableWidget()
+{
+	const int scale = qRound(screen()->logicalDotsPerInchX() / 96.0 * 100);
+	QSettings settings("Test company name", "Test product name");
+	settings.setValue(QString("TableColumns/scale%1").arg(scale), horizontalHeader()->saveState());
+}</code></pre><p>В результате получим, что при любых размерах экрана наша таблица и сохраняет настройки пользователя, и корректно выглядит даже при смене масштаба экрана:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Windows7, масштаб экрана 100%,  150%." title="Windows7, масштаб экрана 100%,  150%." height="206" data-src="https://habrastorage.org/getpro/habr/upload_files/e47/f11/568/e47f11568a38b3371db6c19cfdccf946.png" data-width="840"/><figcaption>Windows7, масштаб экрана 100%,  150%.</figcaption></figure><p>Как нетрудно видеть, у такого решения есть минус: при переключении масштаба экрана пользователь потеряет всю историю своих действий, все графические настройки таблицы (размеры колонок, перемещение колонок, сортировку). К счастью, изменение масштаба экрана в реальной жизни случается очень-очень редко, как привило, только после установки нового монитора. То есть пользователь, возможно, будет готов простить такой недочет, раз уж он произойдет лишь единожды.</p><p>Однако, тем не менее, существует ли способ обойти и этот, на первый взгляд незначительный, минус? Да.</p><h3>Рецепт 8. Корректируйте размеры после загрузки их из реестра</h3><p>Благодаря наличию функции <code>QTableView::setColumnWidth</code>, описанную проблему решить довольно просто – надо размеры колонок растянуть на коэффициент, равный отношению прошлого масштаба экрана (то есть в момент, когда закрывали приложение) к текущему масштабу. При этом вести вторую (и последующие) ветки в реестре не потребуется.</p><p>Таким образом, в деструктор надо добавить сохранение масштаба:</p><pre><code class="cpp">TableWidget::~TableWidget()
+{
+	QSettings settings("Test company name", "Test product name");
+	settings.setValue("TableColumns", horizontalHeader()->saveState());
+
+	const double scale = screen()->logicalDotsPerInchX() / 96.0;
+	settings.setValue("Scale", scale); 
+}</code></pre><p>А в конструктор, в конец, надо добавить окончательную корректировку размеров (дополнительное растяжение размеров колонок) после вызова <code>restoreState</code>:</p><pre><code class="cpp">	QVariant vScale = settings.value("Scale");
+	if (!vScale.isNull())
+	{
+		const double currentScale = screen()->logicalDotsPerInchX() / 96.0;
+		double lastScale = vScale.toDouble();
+		if (!qFuzzyCompare(currentScale, lastScale))
+		{
+			for (int i = 0; i &lt; headers.size(); i++)
+				setColumnWidth(i, qRound(columnWidth(i) * currentScale / lastScale));
+		}
+	}</code></pre><p>В результате получим, что при любых размерах экрана наша таблица и сохраняет настройки пользователя, и корректно выглядит даже при смене масштаба экрана:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Windows7, масштаб экрана 100%,  150%." title="Windows7, масштаб экрана 100%,  150%." height="206" data-src="https://habrastorage.org/getpro/habr/upload_files/050/394/1b3/0503941b3cd04e51e15df3ca7b4b54d4.png" data-width="840"/><figcaption>Windows7, масштаб экрана 100%,  150%.</figcaption></figure><p>Практика показывает, что в серьезных приложениях необходимо сохранять буквально любые действия пользователя: какой ползунок и куда передвинул, какой файл выбрал последним, как настроил размеры колонок в таблице, куда передвинул сплиттер и т.д. Поэтому сохранение всех этих данных в реестре и последующее извлечение их оттуда – большая, но необходимая работа. Пользователь будет благодарен (вернее, не будет проклинать Вас), если после перехода на новый монитор Вы обеспечите ему восстановление всех его незаметных настроек, а не тихо их похороните.  Посему применимость этого рецепта на самом деле больше, чем может показаться на первый взгляд, и мы рекомендуем применять именно этот рецепт вместо предыдущего (<a href="#recept7" rel="noopener noreferrer nofollow">рецепта 7</a>).</p><p>На закрепление покажем еще один пример и то, как применять на нем этот рецепт.</p><h3>Пример 8. Главный виджет и всё, что в нем</h3><p>Давайте оторвемся от маленьких виджетов и попробуем замахнуться на что-то более крупное. Пусть это будет главный виджет приложения, производный от QMainWindow и содержащий внутри себя несколько QDockWidget`ов. Например, такой:</p><details class="spoiler"><summary>Показать код</summary><div class="spoiler__content"><pre><code class="cpp">MainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags)
+	: QMainWindow(parent, flags)
+{
+	QLabel* imageLabel = new QLabel;
+	imageLabel->setPixmap(QPixmap("nature.jpg"));
+	auto scrollArea = new QScrollArea;
+	scrollArea->setWidget(imageLabel);
+
+	auto dock1 = new QDockWidget("Dock1 Title");
+	dock1->setWidget(new TableWidget);
+	auto dock2 = new QDockWidget("Dock2 Title");
+	dock2->setWidget(new QWidget);
+	auto dock3 = new QDockWidget("Dock3 Title");
+	dock3->setWidget(new QWidget);
+	auto dock4 = new QDockWidget("Dock4 Title");
+	dock4->setWidget(new ScaleWgt);
+
+	setCentralWidget(scrollArea);
+	addDockWidget(Qt::TopDockWidgetArea, dock1);
+	addDockWidget(Qt::TopDockWidgetArea, dock2);
+	addDockWidget(Qt::BottomDockWidgetArea, dock3);
+	addDockWidget(Qt::BottomDockWidgetArea, dock4);
+
+	setStyleSheet("QMainWindow::separator {background: gray;}");
+}</code></pre></div></details><figure class=""><img src="/img/image-loader.svg" alt="Windows7, масштаб экрана 100%." title="Windows7, масштаб экрана 100%." height="600" data-src="https://habrastorage.org/getpro/habr/upload_files/b3d/830/c88/b3d830c88b3d4e92a4d920c498405b14.png" data-width="484"/><figcaption>Windows7, масштаб экрана 100%.</figcaption></figure><p>Поскольку в этом приложении все сделано в соответствии с вышеприведенными базовыми рецептами (см. <a href="https://habr.com/ru/post/582180/" rel="noopener noreferrer nofollow">здесь</a>), то всё выглядит адекватно при любых масштабах экрана. Однако пользователь неизбежно захочет менять размещение вкладок, то есть размеры и местоположение QDockWidget`ов. А, поменяв, неизбежно захочет, чтобы всё сохранялось между запусками приложения. Таким образом, полученное выше размещение вкладок – это не более чем начальное приближение, а в процессе работы пользователь будет подстраивать GUI «под себя».</p><p> В соответствии с этим, сохраняем настройки gui в реестре:</p><pre><code class="cpp">MainWindow::~MainWindow()
+{
+	QSettings settings("Test company name", "Test product name");
+	settings.setValue("geometry", saveGeometry());
+	settings.setValue("windowState", saveState());
+}</code></pre><p>А в конструктор, в конец, надо добавить окончательную корректировку размеров:</p><pre><code class="cpp">	QSettings settings("Test company name", "Test product name");
+
+	QVariant state = settings.value("windowState");
+	if(!state.isNull())
+		restoreState(state.toByteArray());
+
+	QVariant geometry = settings.value("geometry");
+	if (!geometry.isNull())
+		restoreGeometry(geometry.toByteArray());</code></pre><p>И мы снова подошли к проблеме. Купив новый монитор 4K и поставив его на замену старому FullHD (попутно подняв масштаб экрана, конечно), пользователь обнаружит, что его любимое приложение выглядит совсем не так хорошо, как раньше. </p><figure class="full-width "><img src="/img/image-loader.svg" alt="Windows7, масштаб экрана 100%,  150%." title="Windows7, масштаб экрана 100%,  150%." height="903" data-src="https://habrastorage.org/getpro/habr/upload_files/e96/d69/f7a/e96d69f7a8f2f4b9370a8cc777d56993.png" data-width="565"/><figcaption>Windows7, масштаб экрана 100%,  150%.</figcaption></figure><p>И это снова неудивительно, ведь из реестра грузятся те размеры, которые были приемлемы для того, «старого» масштаба экрана. Таким образом, и здесь тоже требуется корректировка размеров после того, как они были загружены из реестра и применены. Размеры вкладок нужно растянуть на коэффициент, равный отношению прошлого масштаба экрана (то есть в момент, когда закрывали приложение) к текущему масштабу. Размеры окна нужно так же растянуть. Для простоты не будем рассматривать случай, когда после растяжения размеры окна становятся больше размеров экрана (а в реальной жизни, конечно, надо, точно так же, как надо и учесть случай открытия на полный экран и случай нескольких экранов).</p><p>Итак, растянуть размеры окна довольно просто. Для этого в деструктор добавляем сохранение размеров плюс текущий (при вызове деструктора) масштаб экрана:</p><pre><code class="cpp">	const double scale = screen()->logicalDotsPerInchX() / 96.0;
+	settings.setValue("Scale", scale);
+
+	settings.setValue("MainWindow/Width", size().width());
+	settings.setValue("MainWindow/Height", size().height());</code></pre><p>А в конструктор добавляем соответствующую проверку и растяжение:</p><pre><code class="cpp">double currentScale = screen()->logicalDotsPerInchX() / 96.0;
+	QVariant vScale = settings.value("Scale");
+	QVariant vW = settings.value("MainWindow/Width");
+	QVariant vH = settings.value("MainWindow/Height");
+	if (!vScale.isNull())
+	{
+		double lastScale = vScale.toDouble();
+		if (!qFuzzyCompare(currentScale, lastScale) &amp;&amp; !vW.isNull() &amp;&amp; !vH.isNull())
+		{
+			resize(qRound(vW.toInt() * currentScale / lastScale), 
+				qRound(vH.toInt() * currentScale / lastScale));
+		}
+	}</code></pre><p>После этого размеры окна растянутся (на самом деле необязательно растянутся, но это отдельный случай, для простоты опустим его), а вот размеры вкладок изменятся, как повезёт:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Windows7, масштаб экрана 100%,  150%." title="Windows7, масштаб экрана 100%,  150%." height="585" data-src="https://habrastorage.org/getpro/habr/upload_files/30c/0d1/bab/30c0d1bab8ab3f22f3bb8fed0e170f32.png" data-width="1384"/><figcaption>Windows7, масштаб экрана 100%,  150%.</figcaption></figure><p>Остается корректно установить размеры вкладок. К сожалению, нельзя для этого применять те же операции <code>restoreState/saveState</code>, что уже применяли. Однако достаточно применить функцию <code>QMainWindow::resizeDocks</code>. К сожалению, с ней придется повозиться. Функция капризная.</p><p>Для начала поместим все наши доки в вектор <code>_docks</code> (в конструкторе). Потом в деструкторе научимся запоминать прошлые размеры доков и то, какие вкладки закрыты:</p><details class="spoiler"><summary>Показать код</summary><div class="spoiler__content"><pre><code class="cpp">std::vector&lt;QSize> dockSizes(_docks.size());
+	for (size_t i = 0; i &lt; _docks.size(); i++)
+		dockSizes[i] = _docks[i]->size();
+
+	QByteArray array((char*)&amp;dockSizes[0], dockSizes.size() * sizeof(QSize));
+	settings.setValue("MainWindow/Docks/All", array);
+
+	std::vector&lt;int> hidden = tabifiedHidden();
+	array = hidden.empty() 
+		? QByteArray() : QByteArray((char*)&amp;hidden[0], hidden.size() * sizeof(int));
+	settings.setValue("MainWindow/Docks/HiddenIndexes", array);</code></pre></div></details><p>Наконец, в конструктор, в конец, дописываем код, который делает окончательную настройку вкладок:</p><details class="spoiler"><summary>Показать код</summary><div class="spoiler__content"><pre><code class="cpp">	QByteArray array = settings.value("MainWindow/Docks/All").toByteArray();
+	QByteArray hiddenArray = settings.value("MainWindow/Docks/HiddenIndexes").toByteArray();
+	std::vector&lt;int> hiddenIndexes;
+	if (!hiddenArray.isNull() &amp;&amp; !hiddenArray.isEmpty())
+	{
+		int size = hiddenArray.size() / sizeof(int);
+		hiddenIndexes.resize(size);
+		memcpy(&amp;hiddenIndexes[0], hiddenArray.data(), hiddenArray.size());
+	}
+
+	if (!array.isNull() &amp;&amp; array.size() >= _docks.size() * sizeof(QSize))
+	{
+		double lastScale = vScale.toDouble();
+		QList&lt;int> vWidth;
+		QList&lt;int> vHeight;
+		if (!qFuzzyCompare(currentScale, lastScale) &amp;&amp; !vW.isNull() &amp;&amp; !vH.isNull())
+		{
+			QList&lt;QDockWidget*> ldw;
+			for (size_t i = 0; i &lt; _docks.size(); i++)
+			{
+				if (std::find(hiddenIndexes.begin(), hiddenIndexes.end(), i) != hiddenIndexes.end())
+					continue;
+				ldw.push_back(_docks[i]);
+				QSize* ptrSize = (QSize*)array.data() + i;
+				vWidth.push_back((*ptrSize).width() * currentScale / lastScale);
+				vHeight.push_back((*ptrSize).height() * currentScale / lastScale);
+			}
+
+			resizeDocks(ldw, vWidth, Qt::Horizontal);
+			resizeDocks(ldw, vHeight, Qt::Vertical);
+		}
+	}
+</code></pre></div></details><p>Запоминание скрытых вкладок нам нужно просто для того, чтобы корректно работала функция <code>QMainWindow::resizeDocks</code>. Да, без этого было бы сильно проще. Функцию <code>tabifiedHidden</code> можно написать разными способами, все они будут так или иначе привязываться к реализации классов внутри <code>QMainWindow</code>, но ничего не поделаешь. Мне самой корректной реализацией показалась такая:</p><details class="spoiler"><summary>Показать код</summary><div class="spoiler__content"><pre><code class="cpp">std::vector&lt;int> MainWindow::tabifiedHidden() const
+{
+	std::vector&lt;int> result;
+	QList &lt;QTabBar*>lst = findChildren&lt;QTabBar*>();
+	foreach(QTabBar * tab, lst)
+	{
+		for (int i = 0; i &lt; tab->count(); i++)
+		{
+			if (i == tab->currentIndex())
+				continue;
+
+			quintptr wId = qvariant_cast&lt;quintptr>(tab->tabData(i));
+			QDockWidget* widget = reinterpret_cast&lt;QDockWidget*>(wId);
+			auto iter = std::find(_docks.begin(), _docks.end(), widget);
+			if (iter != _docks.end())
+				result.push_back(std::distance(_docks.begin(), iter));
+		}
+	}
+	return result;
+}</code></pre></div></details><p>Итак, после всех этих манипуляций мы добились того, чтобы все размеры корректно сохранялись в реестре и адекватно применялись после загрузки оттуда, даже при изменении масштаба экрана между запусками приложения:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Windows7, масштаб экрана 100%,  150%." title="Windows7, масштаб экрана 100%,  150%." height="585" data-src="https://habrastorage.org/getpro/habr/upload_files/514/947/814/514947814b04ff28e06023969e4ca0d7.png" data-width="1384"/><figcaption>Windows7, масштаб экрана 100%,  150%.</figcaption></figure><hr/><p>Всем не болеть!</p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BQt%5D" class="tm-tags-list__link">Qt</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bqt5%5D" class="tm-tags-list__link">qt5</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bc%2B%2B%5D" class="tm-tags-list__link">c++</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bgui%5D" class="tm-tags-list__link">gui</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdes%5D" class="tm-tags-list__link">des</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bwindows%5D" class="tm-tags-list__link">windows</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bhigh%20dpi%5D" class="tm-tags-list__link">high dpi</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B4k%5D" class="tm-tags-list__link">4k</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cpp/" class="tm-hubs-list__link">
+    C++
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/qt_software/" class="tm-hubs-list__link">
+    Qt
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/oop/" class="tm-hubs-list__link">
+    ООП
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/win_dev/" class="tm-hubs-list__link">
+    Разработка под Windows
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 8: ↑8 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 8: ↑8 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+8</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.8K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    21
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/kalirgum/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 18 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    16
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">28</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/kalirgum/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @kalirgum
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/584760/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 1 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/584760/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/584760/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"584760":{"id":"584760","timePublished":"2021-10-21T12:06:48+00:00","isCorporative":false,"lang":"ru","titleHtml":"Адаптация Qt-приложений под мониторы высокой чёткости. Часть 2","leadData":{"textHtml":"\u003Cp\u003EВ \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582180\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eпрошлой статье\u003C\u002Fa\u003E мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.\u003C\u002Fp\u003E\u003Cp\u003EСуть в том, что в ОС Windows давно есть такие настройки, как масштабирование шрифта и изображений (масштаб экрана), которые применяются для увеличения слишком малых элементов GUI на мониторах с высокой чёткостью (High DPI). Однако не каждое приложение, написанное на Qt, способно адекватно учитывать, применять этот самый масштаб экрана. Частая ситуация – приложение хорошо выглядит на Full HD (1920x1080), но стоит поставить монитор 4K (3840x2160) и увеличить масштаб экрана, то появляются многочисленные артефакты.\u003C\u002Fp\u003E\u003Cp\u003EВ этой статье мы продолжим разбор примеров и изложение рецептов. Будем делать это для более сложных случаев, связанных с сохранением размеров между запусками приложения, а именно с сохранением тех настроек пользователя, что связаны с размерами.\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F7c8\u002F1e2\u002F8d0\u002F7c81e28d0d6e5a81ebef2d205cea4d65.png","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F7c8\u002F1e2\u002F8d0\u002F7c81e28d0d6e5a81ebef2d205cea4d65.png","fit":"cover","positionY":88.409090909091,"positionX":11.666666666667}},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":16,"votesCount":18},"rating":28,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2375071","alias":"kalirgum","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":1,"favoritesCount":21,"readingCount":1817,"score":8,"votesCount":8},"hubs":[{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"559","alias":"cpp","type":"collective","title":"C++","titleHtml":"C++","isProfiled":true},{"relatedData":null,"id":"7330","alias":"qt_software","type":"collective","title":"Qt","titleHtml":"Qt","isProfiled":true},{"relatedData":null,"id":"17719","alias":"oop","type":"collective","title":"ООП","titleHtml":"ООП","isProfiled":true},{"relatedData":null,"id":"21456","alias":"win_dev","type":"collective","title":"Разработка под Windows","titleHtml":"Разработка под Windows","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EВ \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582180\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eпрошлой статье\u003C\u002Fa\u003E мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.\u003C\u002Fp\u003E\u003Cp\u003EСуть в том, что в ОС Windows давно есть такие настройки, как масштабирование шрифта и изображений (масштаб экрана), которые применяются для увеличения слишком малых элементов GUI на мониторах с высокой чёткостью (High DPI). Однако не каждое приложение, написанное на Qt, способно адекватно учитывать, применять этот самый масштаб экрана. Частая ситуация – приложение хорошо выглядит на Full HD (1920x1080), но стоит поставить монитор 4K (3840x2160) и увеличить масштаб экрана, то появляются многочисленные артефакты.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"459\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F7c8\u002F1e2\u002F8d0\u002F7c81e28d0d6e5a81ebef2d205cea4d65.png\" data-width=\"734\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВ этой статье мы продолжим разбор примеров и изложение рецептов. Будем делать это для более сложных случаев, связанных с сохранением размеров между запусками приложения, а именно с сохранением тех настроек пользователя, что связаны с размерами.\u003C\u002Fp\u003E\u003Cp\u003EИсходный код примеров был протестирован на Qt5 и Qt6 (более точно – 5.15 и 6.2), на операционках Windows 10 и Windows 7. В основном в статье описаны реалии и будни Qt5 (поскольку именно на Qt5 проблема стоит особенно остро), но рецепты можно с успехом применять и на Qt6 – ничего от этого не поломается.\u003C\u002Fp\u003E\u003Cp\u003EНумерацию примеров оставим сквозной и будем основываться на уже разобранных примерах (и ссылаться на них). Так что при необходимости освежите в памяти \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582180\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eнашу прошлую статью\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Ch3\u003EПример 7. Колонки таблицы\u003C\u002Fh3\u003E\u003Cp\u003EПредположим, мы создаем текстовую таблицу, удобную для восприятия пользователя. Под удобством будем предполагать то, что размер колонок будет устанавливаться не по умолчанию, а будет адаптирован либо под длину заголовков колонок, либо под длину содержимого в ячейках колонки. Пусть для простоты под длину заголовков. В реальной жизни заполнение таблицы будет, скорее всего, динамическим (например, из базы данных), но мы для простоты сделаем статическое заполнение. Таким образом, в соответствии с \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582180\u002F#recept3\" rel=\"noopener noreferrer nofollow\"\u003Eрецептом 3\u003C\u002Fa\u003E имеем право написать вот такой код:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПоказать код\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ETableWidget::TableWidget(QWidget* parent)\n\t: QTableWidget(parent)\n{\n\tsetSelectionBehavior(QAbstractItemView::SelectRows);\n\tsetSelectionMode(QAbstractItemView::ExtendedSelection);\n\tsetHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);\n\tsetVerticalScrollMode(QAbstractItemView::ScrollPerPixel);\n\tverticalHeader()-\u003EsetVisible(false);\n\n\tsetRowCount(2);\n\tsetColumnCount(3);\n\n\tQStringList headers;\n\theaders &lt;&lt; \"Short\" &lt;&lt; \"Middle header\" &lt;&lt; \"Long long long long header\";\n\tsetHorizontalHeaderLabels(headers);\n\n\tQFont font(horizontalHeader()-\u003Efont());\n\t\u002F\u002F A header will draw a bold font after row selecting. Take it into account.\n\tfont.setBold(true); \n\tQFontMetrics fm(font);\n\tint space = fm.horizontalAdvance(\"a\"); \u002F\u002F one symbol width\n\n\tfor (int i = 0; i &lt; headers.size(); i++)\n\t{\n\t\tint w = fm.horizontalAdvance(headers[i]) + 2 * space;\n\t\tsetColumnWidth(i, w);\n\t}\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EЗдесь мы использовали метрику шрифтов, чтобы высчитать такие размеры заголовков, чтобы текст (заголовков) всегда помещался в рамки.\u003C\u002Fp\u003E\u003Cp\u003EДобавим еще пару строк кода, чтобы более-менее корректно отрисовывать такой табличный виджет:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПоказать код\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EQSize TableWidget::sizeHint() const\n{\n\tconst double scale = screen()-\u003ElogicalDotsPerInchX() \u002F 96.0;\n\treturn QSize(qRound(320 * scale), qRound(100 * scale));\n}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EЗдесь мы довольно грубо нарушили верную логику: здесь считать размеры надо было из метрики шрифтов (и элементов стилей), а не из масштаба экрана, то есть применять \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582180\u002F#recept3\" rel=\"noopener noreferrer nofollow\"\u003Eрецепт 3\u003C\u002Fa\u003E вместо \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582180\u002F#recept6\" rel=\"noopener noreferrer nofollow\"\u003Eрецепта 6\u003C\u002Fa\u003E. Что ж, реальная жизнь нам этого не простит, а для учебного примера пойдет.\u003C\u002Fp\u003E\u003Cp\u003EВ  результате получим вот такой виджет:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Windows7, масштаб экрана 100%,  150%.\" title=\"Windows7, масштаб экрана 100%,  150%.\" height=\"206\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe88\u002F83b\u002F8c7\u002Fe8883b8c72ccdf9b2cb6223d0416457d.png\" data-width=\"840\"\u002F\u003E\u003Cfigcaption\u003EWindows7, масштаб экрана 100%,  150%.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EКазалось бы, все хорошо, виджет выглядит адекватно при любых масштабах экрана. Чего же боле?\u003C\u002Fp\u003E\u003Cp\u003EДело в том, что, в отличие от нашего примера, таблица будет заполняться динамически, может быть много строк и колонок, а текст в ячейках может быть как длинным, так и коротким. Пользователь неизбежно захочет менять размеры (имеем в виду ширину, конечно) колонок. А, поменяв, неизбежно захочет, чтобы размер колонок сохранялся между запусками приложения. А иначе зачем ему такая таблица с таким GUI? Таким образом, те размеры, которые мы научились считать из текста заголовков – это не более чем начальное приближение, а в процессе работы пользователь будет подстраивать GUI «под себя».\u003C\u002Fp\u003E\u003Cp\u003EИтак, сохраняем настройки колонок в реестре:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ETableWidget::~TableWidget()\n{\n\tQSettings settings(\"Test company name\", \"Test product name\");\n\tsettings.setValue(\"TableColumns\", horizontalHeader()-\u003EsaveState());\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА в конструкторе будем эти настройки загружать. Для этого просто в конец конструктора добавим такой код:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E\tQSettings settings(\"Test company name\", \"Test product name\");\n\tQVariant var = settings.value(\"TableColumns\");\n\tif (!var.isNull())\n\t\thorizontalHeader()-\u003ErestoreState(var.toByteArray());\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ только теперь мы подошли к проблеме. Это всё будет прекрасно работать, но только до тех пор, пока масштаб экрана не изменится (а это произойдет, как только пользователь купит новый монитор 4K 27\" и  увеличит для него масштаб экрана):\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Windows7, масштаб экрана 100%,  150%.\" title=\"Windows7, масштаб экрана 100%,  150%.\" height=\"208\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Faf0\u002F212\u002F024\u002Faf02120241bcd1bf2a02aa786f889f50.png\" data-width=\"840\"\u002F\u003E\u003Cfigcaption\u003EWindows7, масштаб экрана 100%,  150%.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПолучить такую картинку неудивительно, ведь из реестра грузятся те размеры колонок, которые были приемлемы для тех, «старых» размеров шрифтов.\u003C\u002Fp\u003E\u003Cp\u003E Решить эту проблему можно двумя путями. Рассмотрим их подробно.\u003C\u002Fp\u003E\u003Ca class=\"anchor\" name=\"recept7\" id=\"recept7\"\u003E\u003C\u002Fa\u003E\u003Cp\u003E\u003Cstrong\u003E\u003Cem\u003EРецепт 7. Ведите несколько веток реестра для разных масштабов экрана.\u003C\u002Fem\u003E\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cp\u003EНаиболее очевидно решение – для каждого масштаба экрана сделать свою ветку реестра, из которой бы загружалось прошлое значение. Для монитора 24\" FullHD с масштабом экрана 100% будет своя ветка, а для 27\" 4K с масштабом экрана 200%  – своя. Вот как это реализовывается. В конструкторе заменим код работы с реестром на следующий:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Econst int scale = qRound(screen()-\u003ElogicalDotsPerInchX() \u002F 96.0 * 100);\n\tQSettings settings(\"Test company name\", \"Test product name\");\n\tQVariant var = settings.value(QString(\"TableColumns\u002Fscale%1\").arg(scale));\n\tif (!var.isNull())\n\t\thorizontalHeader()-\u003ErestoreState(var.toByteArray());\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА деструктор заменим на это:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ETableWidget::~TableWidget()\n{\n\tconst int scale = qRound(screen()-\u003ElogicalDotsPerInchX() \u002F 96.0 * 100);\n\tQSettings settings(\"Test company name\", \"Test product name\");\n\tsettings.setValue(QString(\"TableColumns\u002Fscale%1\").arg(scale), horizontalHeader()-\u003EsaveState());\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ результате получим, что при любых размерах экрана наша таблица и сохраняет настройки пользователя, и корректно выглядит даже при смене масштаба экрана:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Windows7, масштаб экрана 100%,  150%.\" title=\"Windows7, масштаб экрана 100%,  150%.\" height=\"206\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe47\u002Ff11\u002F568\u002Fe47f11568a38b3371db6c19cfdccf946.png\" data-width=\"840\"\u002F\u003E\u003Cfigcaption\u003EWindows7, масштаб экрана 100%,  150%.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EКак нетрудно видеть, у такого решения есть минус: при переключении масштаба экрана пользователь потеряет всю историю своих действий, все графические настройки таблицы (размеры колонок, перемещение колонок, сортировку). К счастью, изменение масштаба экрана в реальной жизни случается очень-очень редко, как привило, только после установки нового монитора. То есть пользователь, возможно, будет готов простить такой недочет, раз уж он произойдет лишь единожды.\u003C\u002Fp\u003E\u003Cp\u003EОднако, тем не менее, существует ли способ обойти и этот, на первый взгляд незначительный, минус? Да.\u003C\u002Fp\u003E\u003Ch3\u003EРецепт 8. Корректируйте размеры после загрузки их из реестра\u003C\u002Fh3\u003E\u003Cp\u003EБлагодаря наличию функции \u003Ccode\u003EQTableView::setColumnWidth\u003C\u002Fcode\u003E, описанную проблему решить довольно просто – надо размеры колонок растянуть на коэффициент, равный отношению прошлого масштаба экрана (то есть в момент, когда закрывали приложение) к текущему масштабу. При этом вести вторую (и последующие) ветки в реестре не потребуется.\u003C\u002Fp\u003E\u003Cp\u003EТаким образом, в деструктор надо добавить сохранение масштаба:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003ETableWidget::~TableWidget()\n{\n\tQSettings settings(\"Test company name\", \"Test product name\");\n\tsettings.setValue(\"TableColumns\", horizontalHeader()-\u003EsaveState());\n\n\tconst double scale = screen()-\u003ElogicalDotsPerInchX() \u002F 96.0;\n\tsettings.setValue(\"Scale\", scale); \n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА в конструктор, в конец, надо добавить окончательную корректировку размеров (дополнительное растяжение размеров колонок) после вызова \u003Ccode\u003ErestoreState\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E\tQVariant vScale = settings.value(\"Scale\");\n\tif (!vScale.isNull())\n\t{\n\t\tconst double currentScale = screen()-\u003ElogicalDotsPerInchX() \u002F 96.0;\n\t\tdouble lastScale = vScale.toDouble();\n\t\tif (!qFuzzyCompare(currentScale, lastScale))\n\t\t{\n\t\t\tfor (int i = 0; i &lt; headers.size(); i++)\n\t\t\t\tsetColumnWidth(i, qRound(columnWidth(i) * currentScale \u002F lastScale));\n\t\t}\n\t}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВ результате получим, что при любых размерах экрана наша таблица и сохраняет настройки пользователя, и корректно выглядит даже при смене масштаба экрана:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Windows7, масштаб экрана 100%,  150%.\" title=\"Windows7, масштаб экрана 100%,  150%.\" height=\"206\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F050\u002F394\u002F1b3\u002F0503941b3cd04e51e15df3ca7b4b54d4.png\" data-width=\"840\"\u002F\u003E\u003Cfigcaption\u003EWindows7, масштаб экрана 100%,  150%.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПрактика показывает, что в серьезных приложениях необходимо сохранять буквально любые действия пользователя: какой ползунок и куда передвинул, какой файл выбрал последним, как настроил размеры колонок в таблице, куда передвинул сплиттер и т.д. Поэтому сохранение всех этих данных в реестре и последующее извлечение их оттуда – большая, но необходимая работа. Пользователь будет благодарен (вернее, не будет проклинать Вас), если после перехода на новый монитор Вы обеспечите ему восстановление всех его незаметных настроек, а не тихо их похороните.  Посему применимость этого рецепта на самом деле больше, чем может показаться на первый взгляд, и мы рекомендуем применять именно этот рецепт вместо предыдущего (\u003Ca href=\"#recept7\" rel=\"noopener noreferrer nofollow\"\u003Eрецепта 7\u003C\u002Fa\u003E).\u003C\u002Fp\u003E\u003Cp\u003EНа закрепление покажем еще один пример и то, как применять на нем этот рецепт.\u003C\u002Fp\u003E\u003Ch3\u003EПример 8. Главный виджет и всё, что в нем\u003C\u002Fh3\u003E\u003Cp\u003EДавайте оторвемся от маленьких виджетов и попробуем замахнуться на что-то более крупное. Пусть это будет главный виджет приложения, производный от QMainWindow и содержащий внутри себя несколько QDockWidget`ов. Например, такой:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПоказать код\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EMainWindow::MainWindow(QWidget* parent, Qt::WindowFlags flags)\n\t: QMainWindow(parent, flags)\n{\n\tQLabel* imageLabel = new QLabel;\n\timageLabel-\u003EsetPixmap(QPixmap(\"nature.jpg\"));\n\tauto scrollArea = new QScrollArea;\n\tscrollArea-\u003EsetWidget(imageLabel);\n\n\tauto dock1 = new QDockWidget(\"Dock1 Title\");\n\tdock1-\u003EsetWidget(new TableWidget);\n\tauto dock2 = new QDockWidget(\"Dock2 Title\");\n\tdock2-\u003EsetWidget(new QWidget);\n\tauto dock3 = new QDockWidget(\"Dock3 Title\");\n\tdock3-\u003EsetWidget(new QWidget);\n\tauto dock4 = new QDockWidget(\"Dock4 Title\");\n\tdock4-\u003EsetWidget(new ScaleWgt);\n\n\tsetCentralWidget(scrollArea);\n\taddDockWidget(Qt::TopDockWidgetArea, dock1);\n\taddDockWidget(Qt::TopDockWidgetArea, dock2);\n\taddDockWidget(Qt::BottomDockWidgetArea, dock3);\n\taddDockWidget(Qt::BottomDockWidgetArea, dock4);\n\n\tsetStyleSheet(\"QMainWindow::separator {background: gray;}\");\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cfigure class=\"\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Windows7, масштаб экрана 100%.\" title=\"Windows7, масштаб экрана 100%.\" height=\"600\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb3d\u002F830\u002Fc88\u002Fb3d830c88b3d4e92a4d920c498405b14.png\" data-width=\"484\"\u002F\u003E\u003Cfigcaption\u003EWindows7, масштаб экрана 100%.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EПоскольку в этом приложении все сделано в соответствии с вышеприведенными базовыми рецептами (см. \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582180\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eздесь\u003C\u002Fa\u003E), то всё выглядит адекватно при любых масштабах экрана. Однако пользователь неизбежно захочет менять размещение вкладок, то есть размеры и местоположение QDockWidget`ов. А, поменяв, неизбежно захочет, чтобы всё сохранялось между запусками приложения. Таким образом, полученное выше размещение вкладок – это не более чем начальное приближение, а в процессе работы пользователь будет подстраивать GUI «под себя».\u003C\u002Fp\u003E\u003Cp\u003E В соответствии с этим, сохраняем настройки gui в реестре:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003EMainWindow::~MainWindow()\n{\n\tQSettings settings(\"Test company name\", \"Test product name\");\n\tsettings.setValue(\"geometry\", saveGeometry());\n\tsettings.setValue(\"windowState\", saveState());\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА в конструктор, в конец, надо добавить окончательную корректировку размеров:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E\tQSettings settings(\"Test company name\", \"Test product name\");\n\n\tQVariant state = settings.value(\"windowState\");\n\tif(!state.isNull())\n\t\trestoreState(state.toByteArray());\n\n\tQVariant geometry = settings.value(\"geometry\");\n\tif (!geometry.isNull())\n\t\trestoreGeometry(geometry.toByteArray());\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ мы снова подошли к проблеме. Купив новый монитор 4K и поставив его на замену старому FullHD (попутно подняв масштаб экрана, конечно), пользователь обнаружит, что его любимое приложение выглядит совсем не так хорошо, как раньше. \u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Windows7, масштаб экрана 100%,  150%.\" title=\"Windows7, масштаб экрана 100%,  150%.\" height=\"903\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe96\u002Fd69\u002Ff7a\u002Fe96d69f7a8f2f4b9370a8cc777d56993.png\" data-width=\"565\"\u002F\u003E\u003Cfigcaption\u003EWindows7, масштаб экрана 100%,  150%.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EИ это снова неудивительно, ведь из реестра грузятся те размеры, которые были приемлемы для того, «старого» масштаба экрана. Таким образом, и здесь тоже требуется корректировка размеров после того, как они были загружены из реестра и применены. Размеры вкладок нужно растянуть на коэффициент, равный отношению прошлого масштаба экрана (то есть в момент, когда закрывали приложение) к текущему масштабу. Размеры окна нужно так же растянуть. Для простоты не будем рассматривать случай, когда после растяжения размеры окна становятся больше размеров экрана (а в реальной жизни, конечно, надо, точно так же, как надо и учесть случай открытия на полный экран и случай нескольких экранов).\u003C\u002Fp\u003E\u003Cp\u003EИтак, растянуть размеры окна довольно просто. Для этого в деструктор добавляем сохранение размеров плюс текущий (при вызове деструктора) масштаб экрана:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E\tconst double scale = screen()-\u003ElogicalDotsPerInchX() \u002F 96.0;\n\tsettings.setValue(\"Scale\", scale);\n\n\tsettings.setValue(\"MainWindow\u002FWidth\", size().width());\n\tsettings.setValue(\"MainWindow\u002FHeight\", size().height());\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EА в конструктор добавляем соответствующую проверку и растяжение:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Edouble currentScale = screen()-\u003ElogicalDotsPerInchX() \u002F 96.0;\n\tQVariant vScale = settings.value(\"Scale\");\n\tQVariant vW = settings.value(\"MainWindow\u002FWidth\");\n\tQVariant vH = settings.value(\"MainWindow\u002FHeight\");\n\tif (!vScale.isNull())\n\t{\n\t\tdouble lastScale = vScale.toDouble();\n\t\tif (!qFuzzyCompare(currentScale, lastScale) &amp;&amp; !vW.isNull() &amp;&amp; !vH.isNull())\n\t\t{\n\t\t\tresize(qRound(vW.toInt() * currentScale \u002F lastScale), \n\t\t\t\tqRound(vH.toInt() * currentScale \u002F lastScale));\n\t\t}\n\t}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПосле этого размеры окна растянутся (на самом деле необязательно растянутся, но это отдельный случай, для простоты опустим его), а вот размеры вкладок изменятся, как повезёт:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Windows7, масштаб экрана 100%,  150%.\" title=\"Windows7, масштаб экрана 100%,  150%.\" height=\"585\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F30c\u002F0d1\u002Fbab\u002F30c0d1bab8ab3f22f3bb8fed0e170f32.png\" data-width=\"1384\"\u002F\u003E\u003Cfigcaption\u003EWindows7, масштаб экрана 100%,  150%.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EОстается корректно установить размеры вкладок. К сожалению, нельзя для этого применять те же операции \u003Ccode\u003ErestoreState\u002FsaveState\u003C\u002Fcode\u003E, что уже применяли. Однако достаточно применить функцию \u003Ccode\u003EQMainWindow::resizeDocks\u003C\u002Fcode\u003E. К сожалению, с ней придется повозиться. Функция капризная.\u003C\u002Fp\u003E\u003Cp\u003EДля начала поместим все наши доки в вектор \u003Ccode\u003E_docks\u003C\u002Fcode\u003E (в конструкторе). Потом в деструкторе научимся запоминать прошлые размеры доков и то, какие вкладки закрыты:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПоказать код\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estd::vector&lt;QSize\u003E dockSizes(_docks.size());\n\tfor (size_t i = 0; i &lt; _docks.size(); i++)\n\t\tdockSizes[i] = _docks[i]-\u003Esize();\n\n\tQByteArray array((char*)&amp;dockSizes[0], dockSizes.size() * sizeof(QSize));\n\tsettings.setValue(\"MainWindow\u002FDocks\u002FAll\", array);\n\n\tstd::vector&lt;int\u003E hidden = tabifiedHidden();\n\tarray = hidden.empty() \n\t\t? QByteArray() : QByteArray((char*)&amp;hidden[0], hidden.size() * sizeof(int));\n\tsettings.setValue(\"MainWindow\u002FDocks\u002FHiddenIndexes\", array);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EНаконец, в конструктор, в конец, дописываем код, который делает окончательную настройку вкладок:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПоказать код\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003E\tQByteArray array = settings.value(\"MainWindow\u002FDocks\u002FAll\").toByteArray();\n\tQByteArray hiddenArray = settings.value(\"MainWindow\u002FDocks\u002FHiddenIndexes\").toByteArray();\n\tstd::vector&lt;int\u003E hiddenIndexes;\n\tif (!hiddenArray.isNull() &amp;&amp; !hiddenArray.isEmpty())\n\t{\n\t\tint size = hiddenArray.size() \u002F sizeof(int);\n\t\thiddenIndexes.resize(size);\n\t\tmemcpy(&amp;hiddenIndexes[0], hiddenArray.data(), hiddenArray.size());\n\t}\n\n\tif (!array.isNull() &amp;&amp; array.size() \u003E= _docks.size() * sizeof(QSize))\n\t{\n\t\tdouble lastScale = vScale.toDouble();\n\t\tQList&lt;int\u003E vWidth;\n\t\tQList&lt;int\u003E vHeight;\n\t\tif (!qFuzzyCompare(currentScale, lastScale) &amp;&amp; !vW.isNull() &amp;&amp; !vH.isNull())\n\t\t{\n\t\t\tQList&lt;QDockWidget*\u003E ldw;\n\t\t\tfor (size_t i = 0; i &lt; _docks.size(); i++)\n\t\t\t{\n\t\t\t\tif (std::find(hiddenIndexes.begin(), hiddenIndexes.end(), i) != hiddenIndexes.end())\n\t\t\t\t\tcontinue;\n\t\t\t\tldw.push_back(_docks[i]);\n\t\t\t\tQSize* ptrSize = (QSize*)array.data() + i;\n\t\t\t\tvWidth.push_back((*ptrSize).width() * currentScale \u002F lastScale);\n\t\t\t\tvHeight.push_back((*ptrSize).height() * currentScale \u002F lastScale);\n\t\t\t}\n\n\t\t\tresizeDocks(ldw, vWidth, Qt::Horizontal);\n\t\t\tresizeDocks(ldw, vHeight, Qt::Vertical);\n\t\t}\n\t}\n\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EЗапоминание скрытых вкладок нам нужно просто для того, чтобы корректно работала функция \u003Ccode\u003EQMainWindow::resizeDocks\u003C\u002Fcode\u003E. Да, без этого было бы сильно проще. Функцию \u003Ccode\u003EtabifiedHidden\u003C\u002Fcode\u003E можно написать разными способами, все они будут так или иначе привязываться к реализации классов внутри \u003Ccode\u003EQMainWindow\u003C\u002Fcode\u003E, но ничего не поделаешь. Мне самой корректной реализацией показалась такая:\u003C\u002Fp\u003E\u003Cdetails class=\"spoiler\"\u003E\u003Csummary\u003EПоказать код\u003C\u002Fsummary\u003E\u003Cdiv class=\"spoiler__content\"\u003E\u003Cpre\u003E\u003Ccode class=\"cpp\"\u003Estd::vector&lt;int\u003E MainWindow::tabifiedHidden() const\n{\n\tstd::vector&lt;int\u003E result;\n\tQList &lt;QTabBar*\u003Elst = findChildren&lt;QTabBar*\u003E();\n\tforeach(QTabBar * tab, lst)\n\t{\n\t\tfor (int i = 0; i &lt; tab-\u003Ecount(); i++)\n\t\t{\n\t\t\tif (i == tab-\u003EcurrentIndex())\n\t\t\t\tcontinue;\n\n\t\t\tquintptr wId = qvariant_cast&lt;quintptr\u003E(tab-\u003EtabData(i));\n\t\t\tQDockWidget* widget = reinterpret_cast&lt;QDockWidget*\u003E(wId);\n\t\t\tauto iter = std::find(_docks.begin(), _docks.end(), widget);\n\t\t\tif (iter != _docks.end())\n\t\t\t\tresult.push_back(std::distance(_docks.begin(), iter));\n\t\t}\n\t}\n\treturn result;\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E\u003C\u002Fdetails\u003E\u003Cp\u003EИтак, после всех этих манипуляций мы добились того, чтобы все размеры корректно сохранялись в реестре и адекватно применялись после загрузки оттуда, даже при изменении масштаба экрана между запусками приложения:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Windows7, масштаб экрана 100%,  150%.\" title=\"Windows7, масштаб экрана 100%,  150%.\" height=\"585\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F514\u002F947\u002F814\u002F514947814b04ff28e06023969e4ca0d7.png\" data-width=\"1384\"\u002F\u003E\u003Cfigcaption\u003EWindows7, масштаб экрана 100%,  150%.\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Chr\u002F\u003E\u003Cp\u003EВсем не болеть!\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"Qt"},{"titleHtml":"qt5"},{"titleHtml":"c++"},{"titleHtml":"gui"},{"titleHtml":"des"},{"titleHtml":"windows"},{"titleHtml":"high dpi"},{"titleHtml":"4k"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F7c8\u002F1e2\u002F8d0\u002F7c81e28d0d6e5a81ebef2d205cea4d65.png","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F7c8\u002F1e2\u002F8d0\u002F7c81e28d0d6e5a81ebef2d205cea4d65.png","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584760\\\u002F\"},\"headline\":\"Адаптация Qt-приложений под мониторы высокой чёткости. Часть 2\",\"datePublished\":\"2021-10-21T15:06:48+03:00\",\"dateModified\":\"2021-10-21T16:38:25+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"kalirgum\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"В прошлой статье мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четко...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F584760\\\u002F#post-content-body\",\"about\":[\"h_programming\",\"h_cpp\",\"h_qt_software\",\"h_oop\",\"h_win_dev\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F584760\\\u002F55536a9ce3cf2e0ba75cf0230177df2b\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F7c8\\\u002F1e2\\\u002F8d0\\\u002F7c81e28d0d6e5a81ebef2d205cea4d65.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe88\\\u002F83b\\\u002F8c7\\\u002Fe8883b8c72ccdf9b2cb6223d0416457d.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Faf0\\\u002F212\\\u002F024\\\u002Faf02120241bcd1bf2a02aa786f889f50.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe47\\\u002Ff11\\\u002F568\\\u002Fe47f11568a38b3371db6c19cfdccf946.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F050\\\u002F394\\\u002F1b3\\\u002F0503941b3cd04e51e15df3ca7b4b54d4.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb3d\\\u002F830\\\u002Fc88\\\u002Fb3d830c88b3d4e92a4d920c498405b14.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe96\\\u002Fd69\\\u002Ff7a\\\u002Fe96d69f7a8f2f4b9370a8cc777d56993.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F30c\\\u002F0d1\\\u002Fbab\\\u002F30c0d1bab8ab3f22f3bb8fed0e170f32.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F514\\\u002F947\\\u002F814\\\u002F514947814b04ff28e06023969e4ca0d7.png\"]}","metaDescription":"В прошлой статье мы начали рассказ о рецептах, посвященных переводу Qt-приложений на рельсы High DPI, то есть адаптации этих приложений к мониторам высокой четкости.Суть в том, что в ОС Windows давно...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"programming,cpp,qt_software,oop,win_dev"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

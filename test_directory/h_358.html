@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Ускорение Maven сборки в Docker / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/583600\/"},"headline":"Ускорение Maven сборки в Docker","datePublished":"2021-10-18T15:36:33+03:00","dateModified":"2021-10-18T15:36:33+03:00","author":{"@type":"Person","name":"val6852"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Ранее я описал&nbsp;различные методы&nbsp;ускорения ваших Maven сборок.&nbsp;Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&nbsp;внутри Do...","url":"https:\/\/habr.com\/ru\/post\/583600\/#post-content-body","about":["h_java","h_virtualization","f_develop","f_admin"],"image":["https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e67\/928\/d48\/e67928d4869c552748abe295b03ed599.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/55c\/e28\/60b\/55ce2860b5b4461426295af72dcda0f4.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e68\/c42\/e9e\/e68c42e9e920a53e071a4eb74ac320e9.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e79\/bac\/379\/e79bac379c9647698b63a8a53b913528.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/fcc\/9bb\/e1e\/fcc9bbe1ec20437f246b9d9bb289d605.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/98c\/70d\/1ac\/98c70d1ac538bb576ddf6d28ead0a798.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f71\/b60\/c1e\/f71b60c1e4859b9c254354f5afd5bf77.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/d3e\/057\/26d\/d3e05726da6c0458b95a2cde1e93c5e2.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/b40\/3dc\/77b\/b403dc77b193bca7af7f990ee9fb2f6c.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Ускорение Maven сборки в Docker" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Ускорение Maven сборки в Docker" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Ускорение Maven сборки в Docker" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Ранее я описал&amp;nbsp;различные методы&amp;nbsp;ускорения ваших Maven сборок.&amp;nbsp;Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&amp;nbsp;внутри Docker.Между каждым..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Ранее я описал&amp;nbsp;различные методы&amp;nbsp;ускорения ваших Maven сборок.&amp;nbsp;Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&amp;nbsp;внутри Docker.Между каждым..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Ранее я описал&amp;nbsp;различные методы&amp;nbsp;ускорения ваших Maven сборок.&amp;nbsp;Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&amp;nbsp;внутри Docker.Между каждым..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Ранее я описал&amp;nbsp;различные методы&amp;nbsp;ускорения ваших Maven сборок.&amp;nbsp;Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&amp;nbsp;внутри Docker.Между каждым..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Ранее я описал&amp;nbsp;различные методы&amp;nbsp;ускорения ваших Maven сборок.&amp;nbsp;Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&amp;nbsp;внутри Docker.Между каждым..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/583600/c91822d76e69d23cb6ea833eb51c1913/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/583600/c91822d76e69d23cb6ea833eb51c1913/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/583600/c91822d76e69d23cb6ea833eb51c1913/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/583600/c91822d76e69d23cb6ea833eb51c1913/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/583600/c91822d76e69d23cb6ea833eb51c1913/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583600" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-18T12:36:33.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583600/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/583600/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/583600/c91822d76e69d23cb6ea833eb51c1913/" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/583600/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/val6852/" title="val6852" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/val6852/" class="tm-user-info__username">
+      val6852
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-18T12:36:33.000Z" title="2021-10-18, 15:36">18  октября   в 15:36</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Ускорение Maven сборки в Docker</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/java/" class="tm-article-snippet__hubs-item-link"><span>Java</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/virtualization/" class="tm-article-snippet__hubs-item-link"><span>Виртуализация</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://dzone.com/articles/faster-maven-builds-in-docker" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Nicolas Fränkel
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="/img/image-loader.svg" height="160" data-src="https://habrastorage.org/getpro/habr/upload_files/e67/928/d48/e67928d4869c552748abe295b03ed599.png" data-width="595"/><figcaption></figcaption></figure><p>Ранее я описал <a href="https://habr.com/ru/post/582688/" rel="noopener noreferrer nofollow">различные методы</a> ускорения ваших Maven сборок. </p><p>Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven <em>внутри Docker</em>.</p><p>Между каждым запуском мы меняем исходный код, добавляя одну пустую строку; между каждым разделом мы удаляем все построенные образы, в том числе промежуточные, являющиеся результатами многоступенчатой ​​сборки. Идея состоит в том, чтобы избежать повторного использования ранее созданного образа.</p><h3>Исходный уровень</h3><p>Чтобы оценить исходный уровень, нам нужен образец проекта. Я создал для этой цели относительно небольшой <a href="https://github.com/nfrankel/fast-maven-builds" rel="noopener noreferrer nofollow">Kotlin проект</a>.</p><p>Вот соответствующий <code>Dockerfile</code>:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Dockerfile " title="Dockerfile " height="400" data-src="https://habrastorage.org/getpro/habr/upload_files/55c/e28/60b/55ce2860b5b4461426295af72dcda0f4.png" data-width="602"/><figcaption>Dockerfile </figcaption></figure><ol><li><p>Начните с образа JDK для этапа упаковки</p></li><li><p>Добавьте необходимые ресурсы</p></li><li><p>Создайте JAR</p></li><li><p>Начните с JRE для шага создания образа</p></li><li><p>Скопируйте JAR с предыдущего шага</p></li><li><p>Установите точку входа</p></li></ol><p>Выполним сборку:</p><figure class="full-width "><img src="/img/image-loader.svg" height="36" data-src="https://habrastorage.org/getpro/habr/upload_files/e68/c42/e9e/e68c42e9e920a53e071a4eb74ac320e9.png" data-width="584"/><figcaption></figcaption></figure><ol><li><p>Пока забудьте пока о переменной окружения, о ней я расскажу в следующем разделе.</p></li></ol><p>Вот результаты пяти прогонов:</p><pre><code>* 0.36s user 0.53s system 0% cpu 1:53.06 total
+* 0.36s user 0.56s system 0% cpu 1:52.50 total
+* 0.35s user 0.55s system 0% cpu 1:56.92 total
+* 0.36s user 0.56s system 0% cpu 2:04.55 total
+* 0.38s user 0.61s system 0% cpu 2:04.68 total</code></pre><h3>Buildkit для победы</h3><p>В последней командной строке использовалась переменная среды <code>DOCKER_BUILDKIT</code>. Это способ указать Docker использовать устаревший движок. Если вы какое-то время не обновляли Docker, значит, вы используете этот движок. В настоящее время <a href="https://github.com/moby/buildkit" rel="noopener noreferrer nofollow">BuildKit</a> заменил его и стал новым по умолчанию.</p><p>BuildKit обеспечивает несколько улучшений производительности:</p><ul><li><p>Автоматический сбор мусора</p></li><li><p>Разрешение параллельных зависимостей</p></li><li><p>Эффективное кеширование инструкций</p></li><li><p>Импорт/экспорт кэша сборки</p></li><li><p>и т.п.</p></li></ul><p>Повторим предыдущую команду на новом движке:</p><pre><code class="bash">time docker build -t fast-maven:1.1 .</code></pre><p>Вот выдержка из вывода журнала после первого запуска:</p><pre><code class="bash">...
+ => => transferring context: 4.35kB
+ => [build 2/6] COPY .mvn .mvn
+ => [build 3/6] COPY mvnw .
+ => [build 4/6] COPY pom.xml .
+ => [build 5/6] COPY src src
+ => [build 6/6] RUN ./mvnw -B package
+...
+
+0.68s user 1.04s system 1% cpu 2:06.33 total</code></pre><p>Следующие выполнения той же команды имеют несколько другой результат:</p><pre><code class="bash">...
+ => => transferring context: 1.82kB
+ => CACHED [build 2/6] COPY .mvn .mvn
+ => CACHED [build 3/6] COPY mvnw .
+ => CACHED [build 4/6] COPY pom.xml .
+ => [build 5/6] COPY src src
+ => [build 6/6] RUN ./mvnw -B package
+...</code></pre><p>Напоминаю, что мы меняем исходный код между запусками. Файлы, которые мы не меняем, а именно <code>.mvn</code>, <code>mvnw </code>и <code>pom.xml</code>, <em>кэшируются </em>BuildKit. Но эти ресурсы невелики, поэтому кеширование не приводит к значительному сокращению времени сборки.</p><pre><code class="bash">* 0.69s user 1.01s system 1% cpu 2:05.08 total
+* 0.65s user 0.95s system 1% cpu 1:58.51 total
+* 0.68s user 0.99s system 1% cpu 1:59.31 total
+* 0.64s user 0.95s system 1% cpu 1:59.82 total</code></pre><p>Быстрый просмотр журналов показывает, что самым узким местом в сборке является загрузка всех зависимостей (включая плагины). Это происходит каждый раз, когда мы меняем исходный код. Вот почему BuildKit не улучшает производительность.</p><h3>Слои, слои, слои</h3><p>Мы должны сосредоточить наши усилия на зависимостях. Для этого мы можем использовать <em>слои</em> и разделить сборку на два этапа:</p><ul><li><p>На первом этапе скачиваем зависимости</p></li><li><p>Во втором мы создаем нужные пакеты</p></li></ul><p>Каждый шаг создает слой, второй зависит от первого.</p><p>При использовании слоев, если мы изменим исходный код во втором слое, это не повлияет на первый слой, и его можно будет использовать повторно. Нам больше не нужно загружать зависимости. Новый <code>Dockerfile </code>выглядит  так:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Dockerfile " title="Dockerfile " height="465" data-src="https://habrastorage.org/getpro/habr/upload_files/e79/bac/379/e79bac379c9647698b63a8a53b913528.png" data-width="621"/><figcaption>Dockerfile </figcaption></figure><ol><li><p>Maven цель <code>go-offline </code>загружает все зависимости и плагины</p></li><li><p>На данный момент доступны все зависимости</p></li></ol><p>ПРИМЕЧАНИЕ: <code>go-offline </code>не загружает все. Команда не запустится успешно, если вы попытаетесь использовать опцию <code>-o </code>(в автономном режиме). Это <a href="https://issues.apache.org/jira/browse/MDEP-82" rel="noopener noreferrer nofollow">известный старый баг</a>. Во всех случаях это «достаточно хорошо».</p><p>Запустим сборку:</p><pre><code>time docker build -t fast-maven:1.2 .</code></pre><p>Первый запуск занимает значительно больше времени, чем базовый:</p><pre><code>0.84s user 1.21s system 1% cpu 2:35.47 total</code></pre><p>Однако последующие сборки выполняются намного быстрее. Изменение исходного кода влияет только на второй уровень и не запускает загрузку (большинства) зависимостей:</p><pre><code>* 0.23s user 0.36s system 5% cpu 9.913 total
+* 0.21s user 0.33s system 5% cpu 9.923 total
+* 0.22s user 0.38s system 6% cpu 9.990 total
+* 0.21s user 0.34s system 5% cpu 9.814 total
+* 0.22s user 0.37s system 5% cpu 10.454 total</code></pre><h3>Монтирование тома в сборке</h3><p>Слои сборки значительно сократили время сборки. Мы можем изменить исходный код и сохранить его на низком уровне. Однако остается одна проблема. Изменение одной зависимости делает слой не валидным, поэтому нам нужно снова загрузить все зависимости.</p><p>К счастью, BuildKit позволяет <strong>монтировать тома во время сборки</strong> (а не только во время выполнения). Доступно несколько типов монтирования, но нас интересует <a href="https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md#run---mounttypecache" rel="noopener noreferrer nofollow">монтирование кэша</a>. Это <em>экспериментальная</em> функция, поэтому вам нужно явно ее указать:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Dockerfile" title="Dockerfile" height="418" data-src="https://habrastorage.org/getpro/habr/upload_files/fcc/9bb/e1e/fcc9bbe1ec20437f246b9d9bb289d605.png" data-width="617"/><figcaption>Dockerfile</figcaption></figure><ol><li><p>Подключаетесь к экспериментальным функциям</p></li><li><p>Сборка с использованием кэша</p></li></ol><p>Пришло время запустить сборку:</p><pre><code>time docker build -t fast-maven:1.3 .</code></pre><p>Время сборки выше, чем для обычной сборки, но все же ниже, чем для сборки слоев:</p><pre><code class="bash">0.71s user 1.01s system 1% cpu 1:50.50 total</code></pre><p>Следующие сборки соответствуют слоям:</p><pre><code class="bash">* 0.22s user 0.33s system 5% cpu 9.677 total
+* 0.30s user 0.36s system 6% cpu 10.603 total
+* 0.24s user 0.37s system 5% cpu 10.461 total
+* 0.24s user 0.39s system 6% cpu 10.178 total
+* 0.24s user 0.35s system 5% cpu 10.283 total</code></pre><p>Однако, в отличие от слоев, нам нужно загрузить только обновленные зависимости. Здесь давайте изменим версию Kotlin с <code>1.5.30</code>на <code>1.5.31</code>:</p><p><em>pom.xml</em></p><pre><code class="xml">&lt;properties>
+    &lt;kotlin.version>1.5.31&lt;/kotlin.version>
+&lt;/properties></code></pre><p>Это огромное улучшение относительно времени сборки:</p><pre><code>* 0.41s user 0.57s system 2% cpu 44.710 total</code></pre><h3>Рассмотрим использование демона Maven</h3><p>В предыдущем посте, касающемся <a href="https://blog.frankel.ch/faster-maven-builds/1/" rel="noopener noreferrer nofollow">обычных сборок Maven</a>, я упомянул демон Maven. Давайте соответственно изменим нашу сборку:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="Dockerfile" title="Dockerfile" height="600" data-src="https://habrastorage.org/getpro/habr/upload_files/98c/70d/1ac/98c70d1ac538bb576ddf6d28ead0a798.png" data-width="829"/><figcaption>Dockerfile</figcaption></figure><ol><li><p>Загрузить последнюю версию демона Maven</p></li><li><p>Обновить индекс пакета</p></li><li><p>Установить unzip</p></li><li><p>Создать специальную папку</p></li><li><p>Распаковать архив, который мы скачали на шаге &lt;1>.</p></li><li><p>Переместить содержимое извлеченного архива в ранее созданную папку</p></li><li><p>Использовать mvnd вместо оболочки Maven</p></li></ol><p>Теперь запустим сборку:</p><pre><code>docker build -t fast-maven:1.4 .</code></pre><p>Журнал выводит следующее:</p><pre><code>* 0.70s user 1.01s system 1% cpu 1:51.96 total
+* 0.72s user 0.98s system 1% cpu 1:47.93 total
+* 0.66s user 0.93s system 1% cpu 1:46.07 total
+* 0.76s user 1.04s system 1% cpu 1:50.35 total
+* 0.80s user 1.18s system 1% cpu 2:01.45 total</code></pre><p>Существенного улучшения по сравнению с исходным уровнем нет.</p><p>Я попытался создать специальный <code>mvnd </code>образ и использовать его как родительский:</p><figure class="full-width "><img src="/img/image-loader.svg" alt="mvnd.Dockerfile" title="mvnd.Dockerfile" height="256" data-src="https://habrastorage.org/getpro/habr/upload_files/f71/b60/c1e/f71b60c1e4859b9c254354f5afd5bf77.png" data-width="798"/><figcaption>mvnd.Dockerfile</figcaption></figure><figure class="full-width "><img src="/img/image-loader.svg" alt="Dockerfile" title="Dockerfile" height="113" data-src="https://habrastorage.org/getpro/habr/upload_files/d3e/057/26d/d3e05726da6c0458b95a2cde1e93c5e2.png" data-width="659"/><figcaption>Dockerfile</figcaption></figure><p>Такой подход существенно меняет результат.</p><p>Команда <code>mvnd </code>хороша только тогда, когда демон запущен в течение нескольких запусков. Я не нашел способа сделать это с помощью Docker. Если у вас есть идеи, как этого добиться, скажите, пожалуйста, мне.</p><p>Вот сводка всех времен выполнения:</p><figure class="full-width "><img src="/img/image-loader.svg" height="583" data-src="https://habrastorage.org/getpro/habr/upload_files/b40/3dc/77b/b403dc77b193bca7af7f990ee9fb2f6c.png" data-width="721"/><figcaption></figcaption></figure><h3>Заключение</h3><p>Повышение производительности сборок Maven внутри Docker сильно отличается от обычных сборок. В Docker ограничивающим фактором является скорость загрузки зависимостей. Если вы застряли на старой версии, вам нужно использовать слои для кеширования зависимостей.</p><p>С BuildKit я рекомендую использовать новую возможность монтирования кэша, чтобы избежать загрузки всех зависимостей, если уровень недействителен.</p><p>Полный исходный код этого поста можно найти на <a href="https://github.com/ajavageek/fast-maven-builds" rel="noopener noreferrer nofollow">Github</a>.</p><h3>Прочтите, чтобы пойти дальше:</h3><ul><li><p><a href="https://blog.frankel.ch/faster-maven-builds/1/" rel="noopener noreferrer nofollow">Faster Maven builds</a></p></li><li><p><a href="https://blog.mobyproject.org/introducing-buildkit-17e056cc5317" rel="noopener noreferrer nofollow">Introducing BuildKit</a></p></li><li><p><a href="https://mydeveloperplanet.com/2019/03/13/docker-layers-explained/" rel="noopener noreferrer nofollow">Docker Layers Explained</a></p></li><li><p><a href="https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/syntax.md#build-mounts-run---mount" rel="noopener noreferrer nofollow">Build Mounts</a></p></li></ul></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bmaven%5D" class="tm-tags-list__link">maven</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdocker%5D" class="tm-tags-list__link">docker</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bdockerfile%5D" class="tm-tags-list__link">dockerfile</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bbuild%5D" class="tm-tags-list__link">build</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcontinuous%20integration%5D" class="tm-tags-list__link">continuous integration</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bcontainer%5D" class="tm-tags-list__link">container</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/java/" class="tm-hubs-list__link">
+    Java
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/virtualization/" class="tm-hubs-list__link">
+    Виртуализация
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 5: ↑5 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 5: ↑5 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+5</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.9K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    38
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/val6852/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_blue"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 102 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    58
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">30</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/val6852/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @val6852
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/583600/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 3 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/583600/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/583600/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583600":{"id":"583600","timePublished":"2021-10-18T12:36:33+00:00","isCorporative":false,"lang":"ru","titleHtml":"Ускорение Maven сборки в Docker","leadData":{"textHtml":"\u003Cp\u003EРанее я описал&nbsp;\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582688\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eразличные методы\u003C\u002Fa\u003E&nbsp;ускорения ваших Maven сборок.&nbsp;\u003C\u002Fp\u003E\u003Cp\u003EСегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&nbsp;\u003Cem\u003Eвнутри Docker\u003C\u002Fem\u003E.\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Читать далее","image":null},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Nicolas Fränkel","originalUrl":"https:\u002F\u002Fdzone.com\u002Farticles\u002Ffaster-maven-builds-in-docker"}}],"author":{"scoreStats":{"score":58,"votesCount":102},"rating":30,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2187018","alias":"val6852","fullname":null,"avatarUrl":null,"speciality":null},"statistics":{"commentsCount":3,"favoritesCount":38,"readingCount":1863,"score":5,"votesCount":5},"hubs":[{"relatedData":null,"id":"375","alias":"java","type":"collective","title":"Java","titleHtml":"Java","isProfiled":true},{"relatedData":null,"id":"7312","alias":"virtualization","type":"collective","title":"Виртуализация","titleHtml":"Виртуализация","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"160\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe67\u002F928\u002Fd48\u002Fe67928d4869c552748abe295b03ed599.png\" data-width=\"595\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EРанее я описал \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F582688\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eразличные методы\u003C\u002Fa\u003E ускорения ваших Maven сборок. \u003C\u002Fp\u003E\u003Cp\u003EСегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven \u003Cem\u003Eвнутри Docker\u003C\u002Fem\u003E.\u003C\u002Fp\u003E\u003Cp\u003EМежду каждым запуском мы меняем исходный код, добавляя одну пустую строку; между каждым разделом мы удаляем все построенные образы, в том числе промежуточные, являющиеся результатами многоступенчатой ​​сборки. Идея состоит в том, чтобы избежать повторного использования ранее созданного образа.\u003C\u002Fp\u003E\u003Ch3\u003EИсходный уровень\u003C\u002Fh3\u003E\u003Cp\u003EЧтобы оценить исходный уровень, нам нужен образец проекта. Я создал для этой цели относительно небольшой \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fnfrankel\u002Ffast-maven-builds\" rel=\"noopener noreferrer nofollow\"\u003EKotlin проект\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Cp\u003EВот соответствующий \u003Ccode\u003EDockerfile\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Dockerfile \" title=\"Dockerfile \" height=\"400\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F55c\u002Fe28\u002F60b\u002F55ce2860b5b4461426295af72dcda0f4.png\" data-width=\"602\"\u002F\u003E\u003Cfigcaption\u003EDockerfile \u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EНачните с образа JDK для этапа упаковки\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EДобавьте необходимые ресурсы\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСоздайте JAR\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EНачните с JRE для шага создания образа\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСкопируйте JAR с предыдущего шага\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EУстановите точку входа\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EВыполним сборку:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"36\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe68\u002Fc42\u002Fe9e\u002Fe68c42e9e920a53e071a4eb74ac320e9.png\" data-width=\"584\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EПока забудьте пока о переменной окружения, о ней я расскажу в следующем разделе.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EВот результаты пяти прогонов:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E* 0.36s user 0.53s system 0% cpu 1:53.06 total\n* 0.36s user 0.56s system 0% cpu 1:52.50 total\n* 0.35s user 0.55s system 0% cpu 1:56.92 total\n* 0.36s user 0.56s system 0% cpu 2:04.55 total\n* 0.38s user 0.61s system 0% cpu 2:04.68 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EBuildkit для победы\u003C\u002Fh3\u003E\u003Cp\u003EВ последней командной строке использовалась переменная среды \u003Ccode\u003EDOCKER_BUILDKIT\u003C\u002Fcode\u003E. Это способ указать Docker использовать устаревший движок. Если вы какое-то время не обновляли Docker, значит, вы используете этот движок. В настоящее время \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fmoby\u002Fbuildkit\" rel=\"noopener noreferrer nofollow\"\u003EBuildKit\u003C\u002Fa\u003E заменил его и стал новым по умолчанию.\u003C\u002Fp\u003E\u003Cp\u003EBuildKit обеспечивает несколько улучшений производительности:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EАвтоматический сбор мусора\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EРазрешение параллельных зависимостей\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EЭффективное кеширование инструкций\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EИмпорт\u002Fэкспорт кэша сборки\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003Eи т.п.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EПовторим предыдущую команду на новом движке:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Etime docker build -t fast-maven:1.1 .\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВот выдержка из вывода журнала после первого запуска:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E...\n =\u003E =\u003E transferring context: 4.35kB\n =\u003E [build 2\u002F6] COPY .mvn .mvn\n =\u003E [build 3\u002F6] COPY mvnw .\n =\u003E [build 4\u002F6] COPY pom.xml .\n =\u003E [build 5\u002F6] COPY src src\n =\u003E [build 6\u002F6] RUN .\u002Fmvnw -B package\n...\n\n0.68s user 1.04s system 1% cpu 2:06.33 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСледующие выполнения той же команды имеют несколько другой результат:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E...\n =\u003E =\u003E transferring context: 1.82kB\n =\u003E CACHED [build 2\u002F6] COPY .mvn .mvn\n =\u003E CACHED [build 3\u002F6] COPY mvnw .\n =\u003E CACHED [build 4\u002F6] COPY pom.xml .\n =\u003E [build 5\u002F6] COPY src src\n =\u003E [build 6\u002F6] RUN .\u002Fmvnw -B package\n...\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНапоминаю, что мы меняем исходный код между запусками. Файлы, которые мы не меняем, а именно \u003Ccode\u003E.mvn\u003C\u002Fcode\u003E, \u003Ccode\u003Emvnw \u003C\u002Fcode\u003Eи \u003Ccode\u003Epom.xml\u003C\u002Fcode\u003E, \u003Cem\u003Eкэшируются \u003C\u002Fem\u003EBuildKit. Но эти ресурсы невелики, поэтому кеширование не приводит к значительному сокращению времени сборки.\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E* 0.69s user 1.01s system 1% cpu 2:05.08 total\n* 0.65s user 0.95s system 1% cpu 1:58.51 total\n* 0.68s user 0.99s system 1% cpu 1:59.31 total\n* 0.64s user 0.95s system 1% cpu 1:59.82 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EБыстрый просмотр журналов показывает, что самым узким местом в сборке является загрузка всех зависимостей (включая плагины). Это происходит каждый раз, когда мы меняем исходный код. Вот почему BuildKit не улучшает производительность.\u003C\u002Fp\u003E\u003Ch3\u003EСлои, слои, слои\u003C\u002Fh3\u003E\u003Cp\u003EМы должны сосредоточить наши усилия на зависимостях. Для этого мы можем использовать \u003Cem\u003Eслои\u003C\u002Fem\u003E и разделить сборку на два этапа:\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EНа первом этапе скачиваем зависимости\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВо втором мы создаем нужные пакеты\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EКаждый шаг создает слой, второй зависит от первого.\u003C\u002Fp\u003E\u003Cp\u003EПри использовании слоев, если мы изменим исходный код во втором слое, это не повлияет на первый слой, и его можно будет использовать повторно. Нам больше не нужно загружать зависимости. Новый \u003Ccode\u003EDockerfile \u003C\u002Fcode\u003Eвыглядит  так:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Dockerfile \" title=\"Dockerfile \" height=\"465\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe79\u002Fbac\u002F379\u002Fe79bac379c9647698b63a8a53b913528.png\" data-width=\"621\"\u002F\u003E\u003Cfigcaption\u003EDockerfile \u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EMaven цель \u003Ccode\u003Ego-offline \u003C\u002Fcode\u003Eзагружает все зависимости и плагины\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EНа данный момент доступны все зависимости\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EПРИМЕЧАНИЕ: \u003Ccode\u003Ego-offline \u003C\u002Fcode\u003Eне загружает все. Команда не запустится успешно, если вы попытаетесь использовать опцию \u003Ccode\u003E-o \u003C\u002Fcode\u003E(в автономном режиме). Это \u003Ca href=\"https:\u002F\u002Fissues.apache.org\u002Fjira\u002Fbrowse\u002FMDEP-82\" rel=\"noopener noreferrer nofollow\"\u003Eизвестный старый баг\u003C\u002Fa\u003E. Во всех случаях это «достаточно хорошо».\u003C\u002Fp\u003E\u003Cp\u003EЗапустим сборку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Etime docker build -t fast-maven:1.2 .\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПервый запуск занимает значительно больше времени, чем базовый:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E0.84s user 1.21s system 1% cpu 2:35.47 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОднако последующие сборки выполняются намного быстрее. Изменение исходного кода влияет только на второй уровень и не запускает загрузку (большинства) зависимостей:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E* 0.23s user 0.36s system 5% cpu 9.913 total\n* 0.21s user 0.33s system 5% cpu 9.923 total\n* 0.22s user 0.38s system 6% cpu 9.990 total\n* 0.21s user 0.34s system 5% cpu 9.814 total\n* 0.22s user 0.37s system 5% cpu 10.454 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EМонтирование тома в сборке\u003C\u002Fh3\u003E\u003Cp\u003EСлои сборки значительно сократили время сборки. Мы можем изменить исходный код и сохранить его на низком уровне. Однако остается одна проблема. Изменение одной зависимости делает слой не валидным, поэтому нам нужно снова загрузить все зависимости.\u003C\u002Fp\u003E\u003Cp\u003EК счастью, BuildKit позволяет \u003Cstrong\u003Eмонтировать тома во время сборки\u003C\u002Fstrong\u003E (а не только во время выполнения). Доступно несколько типов монтирования, но нас интересует \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fmoby\u002Fbuildkit\u002Fblob\u002Fmaster\u002Ffrontend\u002Fdockerfile\u002Fdocs\u002Fsyntax.md#run---mounttypecache\" rel=\"noopener noreferrer nofollow\"\u003Eмонтирование кэша\u003C\u002Fa\u003E. Это \u003Cem\u003Eэкспериментальная\u003C\u002Fem\u003E функция, поэтому вам нужно явно ее указать:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Dockerfile\" title=\"Dockerfile\" height=\"418\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ffcc\u002F9bb\u002Fe1e\u002Ffcc9bbe1ec20437f246b9d9bb289d605.png\" data-width=\"617\"\u002F\u003E\u003Cfigcaption\u003EDockerfile\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EПодключаетесь к экспериментальным функциям\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСборка с использованием кэша\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EПришло время запустить сборку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Etime docker build -t fast-maven:1.3 .\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EВремя сборки выше, чем для обычной сборки, но все же ниже, чем для сборки слоев:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E0.71s user 1.01s system 1% cpu 1:50.50 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСледующие сборки соответствуют слоям:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"bash\"\u003E* 0.22s user 0.33s system 5% cpu 9.677 total\n* 0.30s user 0.36s system 6% cpu 10.603 total\n* 0.24s user 0.37s system 5% cpu 10.461 total\n* 0.24s user 0.39s system 6% cpu 10.178 total\n* 0.24s user 0.35s system 5% cpu 10.283 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EОднако, в отличие от слоев, нам нужно загрузить только обновленные зависимости. Здесь давайте изменим версию Kotlin с \u003Ccode\u003E1.5.30\u003C\u002Fcode\u003Eна \u003Ccode\u003E1.5.31\u003C\u002Fcode\u003E:\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003Epom.xml\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"xml\"\u003E&lt;properties\u003E\n    &lt;kotlin.version\u003E1.5.31&lt;\u002Fkotlin.version\u003E\n&lt;\u002Fproperties\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЭто огромное улучшение относительно времени сборки:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E* 0.41s user 0.57s system 2% cpu 44.710 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch3\u003EРассмотрим использование демона Maven\u003C\u002Fh3\u003E\u003Cp\u003EВ предыдущем посте, касающемся \u003Ca href=\"https:\u002F\u002Fblog.frankel.ch\u002Ffaster-maven-builds\u002F1\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eобычных сборок Maven\u003C\u002Fa\u003E, я упомянул демон Maven. Давайте соответственно изменим нашу сборку:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Dockerfile\" title=\"Dockerfile\" height=\"600\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F98c\u002F70d\u002F1ac\u002F98c70d1ac538bb576ddf6d28ead0a798.png\" data-width=\"829\"\u002F\u003E\u003Cfigcaption\u003EDockerfile\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Col\u003E\u003Cli\u003E\u003Cp\u003EЗагрузить последнюю версию демона Maven\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EОбновить индекс пакета\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EУстановить unzip\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EСоздать специальную папку\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EРаспаковать архив, который мы скачали на шаге &lt;1\u003E.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПереместить содержимое извлеченного архива в ранее созданную папку\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EИспользовать mvnd вместо оболочки Maven\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Fol\u003E\u003Cp\u003EТеперь запустим сборку:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003Edocker build -t fast-maven:1.4 .\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EЖурнал выводит следующее:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode\u003E* 0.70s user 1.01s system 1% cpu 1:51.96 total\n* 0.72s user 0.98s system 1% cpu 1:47.93 total\n* 0.66s user 0.93s system 1% cpu 1:46.07 total\n* 0.76s user 1.04s system 1% cpu 1:50.35 total\n* 0.80s user 1.18s system 1% cpu 2:01.45 total\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EСущественного улучшения по сравнению с исходным уровнем нет.\u003C\u002Fp\u003E\u003Cp\u003EЯ попытался создать специальный \u003Ccode\u003Emvnd \u003C\u002Fcode\u003Eобраз и использовать его как родительский:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"mvnd.Dockerfile\" title=\"mvnd.Dockerfile\" height=\"256\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff71\u002Fb60\u002Fc1e\u002Ff71b60c1e4859b9c254354f5afd5bf77.png\" data-width=\"798\"\u002F\u003E\u003Cfigcaption\u003Emvnd.Dockerfile\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Dockerfile\" title=\"Dockerfile\" height=\"113\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fd3e\u002F057\u002F26d\u002Fd3e05726da6c0458b95a2cde1e93c5e2.png\" data-width=\"659\"\u002F\u003E\u003Cfigcaption\u003EDockerfile\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EТакой подход существенно меняет результат.\u003C\u002Fp\u003E\u003Cp\u003EКоманда \u003Ccode\u003Emvnd \u003C\u002Fcode\u003Eхороша только тогда, когда демон запущен в течение нескольких запусков. Я не нашел способа сделать это с помощью Docker. Если у вас есть идеи, как этого добиться, скажите, пожалуйста, мне.\u003C\u002Fp\u003E\u003Cp\u003EВот сводка всех времен выполнения:\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"583\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fb40\u002F3dc\u002F77b\u002Fb403dc77b193bca7af7f990ee9fb2f6c.png\" data-width=\"721\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Ch3\u003EЗаключение\u003C\u002Fh3\u003E\u003Cp\u003EПовышение производительности сборок Maven внутри Docker сильно отличается от обычных сборок. В Docker ограничивающим фактором является скорость загрузки зависимостей. Если вы застряли на старой версии, вам нужно использовать слои для кеширования зависимостей.\u003C\u002Fp\u003E\u003Cp\u003EС BuildKit я рекомендую использовать новую возможность монтирования кэша, чтобы избежать загрузки всех зависимостей, если уровень недействителен.\u003C\u002Fp\u003E\u003Cp\u003EПолный исходный код этого поста можно найти на \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fajavageek\u002Ffast-maven-builds\" rel=\"noopener noreferrer nofollow\"\u003EGithub\u003C\u002Fa\u003E.\u003C\u002Fp\u003E\u003Ch3\u003EПрочтите, чтобы пойти дальше:\u003C\u002Fh3\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fblog.frankel.ch\u002Ffaster-maven-builds\u002F1\u002F\" rel=\"noopener noreferrer nofollow\"\u003EFaster Maven builds\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fblog.mobyproject.org\u002Fintroducing-buildkit-17e056cc5317\" rel=\"noopener noreferrer nofollow\"\u003EIntroducing BuildKit\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fmydeveloperplanet.com\u002F2019\u002F03\u002F13\u002Fdocker-layers-explained\u002F\" rel=\"noopener noreferrer nofollow\"\u003EDocker Layers Explained\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003E\u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fmoby\u002Fbuildkit\u002Fblob\u002Fmaster\u002Ffrontend\u002Fdockerfile\u002Fdocs\u002Fsyntax.md#build-mounts-run---mount\" rel=\"noopener noreferrer nofollow\"\u003EBuild Mounts\u003C\u002Fa\u003E\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"maven"},{"titleHtml":"docker"},{"titleHtml":"dockerfile"},{"titleHtml":"build"},{"titleHtml":"continuous integration"},{"titleHtml":"container"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F583600\u002Fc91822d76e69d23cb6ea833eb51c1913\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F583600\u002Fc91822d76e69d23cb6ea833eb51c1913\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583600\\\u002F\"},\"headline\":\"Ускорение Maven сборки в Docker\",\"datePublished\":\"2021-10-18T15:36:33+03:00\",\"dateModified\":\"2021-10-18T15:36:33+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"val6852\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Ранее я описал&nbsp;различные методы&nbsp;ускорения ваших Maven сборок.&nbsp;Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&nbsp;внутри Do...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F583600\\\u002F#post-content-body\",\"about\":[\"h_java\",\"h_virtualization\",\"f_develop\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe67\\\u002F928\\\u002Fd48\\\u002Fe67928d4869c552748abe295b03ed599.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F55c\\\u002Fe28\\\u002F60b\\\u002F55ce2860b5b4461426295af72dcda0f4.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe68\\\u002Fc42\\\u002Fe9e\\\u002Fe68c42e9e920a53e071a4eb74ac320e9.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe79\\\u002Fbac\\\u002F379\\\u002Fe79bac379c9647698b63a8a53b913528.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ffcc\\\u002F9bb\\\u002Fe1e\\\u002Ffcc9bbe1ec20437f246b9d9bb289d605.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F98c\\\u002F70d\\\u002F1ac\\\u002F98c70d1ac538bb576ddf6d28ead0a798.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff71\\\u002Fb60\\\u002Fc1e\\\u002Ff71b60c1e4859b9c254354f5afd5bf77.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fd3e\\\u002F057\\\u002F26d\\\u002Fd3e05726da6c0458b95a2cde1e93c5e2.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fb40\\\u002F3dc\\\u002F77b\\\u002Fb403dc77b193bca7af7f990ee9fb2f6c.png\"]}","metaDescription":"Ранее я описал&nbsp;различные методы&nbsp;ускорения ваших Maven сборок.&nbsp;Сегодня я хотел бы расширить их область применения и сделать то же самое для сборок Maven&nbsp;внутри Docker.Между каждым...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"java,virtualization"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Распознаём позу прямо в браузере в реальном времени / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/skillfactory\/blog\/583752\/"},"headline":"Распознаём позу прямо в браузере в реальном времени","datePublished":"2021-10-15T22:17:48+03:00","dateModified":"2021-10-22T18:21:58+03:00","author":{"@type":"Person","name":"honyaki"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для ф...","url":"https:\/\/habr.com\/ru\/company\/skillfactory\/blog\/583752\/#post-content-body","about":["c_skillfactory","h_video","h_javascript","h_programming","h_tensorflow","f_develop","f_design"],"image":["https:\/\/habr.com\/share\/publication\/583752\/f3301e04950c31f4793a436d66d91489\/","https:\/\/habrastorage.org\/webt\/wi\/k-\/4r\/wik-4rsc5kyha-aoaweerwr8zxo.jpeg","https:\/\/habrastorage.org\/webt\/yi\/tc\/1f\/yitc1flhf9xjzvvmiw7zpihss9k.gif","https:\/\/habrastorage.org\/webt\/d5\/vi\/ic\/d5viichgsvjdi4h-v2ejeehowli.gif","https:\/\/habrastorage.org\/webt\/0q\/vt\/jo\/0qvtjoaqaxhul9zkmsmff47mrzs.gif","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/69d\/9a5\/2ff\/69d9a52ff5b26c71538a8b018a3566dd.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/313\/70c\/99a\/31370c99a378f017d95a136dac95fb83.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/f19\/277\/a5d\/f19277a5ddff65a2398f77c259eb773e.jpeg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/c3d\/5ab\/01b\/c3d5ab01bfbc445938979764ccbf181b.png","https:\/\/habrastorage.org\/webt\/ik\/bl\/oo\/ikbloovbhouaxawegt7p6jrnxl8.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Распознаём позу прямо в браузере в реальном времени" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Распознаём позу прямо в браузере в реальном времени" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Распознаём позу прямо в браузере в реальном времени" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/webt/wi/k-/4r/wik-4rsc5kyha-aoaweerwr8zxo.jpeg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/webt/wi/k-/4r/wik-4rsc5kyha-aoaweerwr8zxo.jpeg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/webt/wi/k-/4r/wik-4rsc5kyha-aoaweerwr8zxo.jpeg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/webt/wi/k-/4r/wik-4rsc5kyha-aoaweerwr8zxo.jpeg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/webt/wi/k-/4r/wik-4rsc5kyha-aoaweerwr8zxo.jpeg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="583752" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-15T19:17:48.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/583752/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/skillfactory/blog/583752/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/webt/wi/k-/4r/wik-4rsc5kyha-aoaweerwr8zxo.jpeg" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="skillfactory" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/skillfactory/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/9bb/5f7/d50/9bb5f7d50871bf0981f64b1970f22fe1.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">146.01</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/skillfactory/profile/" class="tm-company-card__name">
+        SkillFactory
+      </a> <div class="tm-company-card__description">Школа Computer Science. Скидка 45% по коду HABR</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/honyaki/" title="honyaki" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/96e/81d/bc0/96e81dbc01247c6c855b1806b355efa3.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/honyaki/" class="tm-user-info__username">
+      honyaki
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-15T19:17:48.000Z" title="2021-10-15, 22:17">15  октября   в 22:17</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Распознаём позу прямо в браузере в реальном времени</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/skillfactory/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании SkillFactory</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/video/" class="tm-article-snippet__hubs-item-link"><span>Работа с видео</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/javascript/" class="tm-article-snippet__hubs-item-link"><span>JavaScript</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/tensorflow/" class="tm-article-snippet__hubs-item-link"><span>TensorFlow</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://blog.tensorflow.org/2021/05/next-generation-pose-detection-with-movenet-and-tensorflowjs.html" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Ronny Votel, Na Li
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><img src="https://habrastorage.org/r/w780q1/webt/wi/k-/4r/wik-4rsc5kyha-aoaweerwr8zxo.jpeg" data-src="https://habrastorage.org/webt/wi/k-/4r/wik-4rsc5kyha-aoaweerwr8zxo.jpeg" data-blurred="true"/><br/>
+<br/>
+Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой задачей не справлялись даже лучшие детекторы. За подробностями приглащаем под кат, пока у нас начинается флагманский <a href="https://skillfactory.ru/data-scientist-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dspr_151021&amp;utm_term=lead">курс Data Science</a>.<br/>
+<a name="habracut"></a><br/>
+Мы рады представить модель определения позы MoveNet с нашим новым API определения позы в TensorFlow.js. MoveNet — это сверхбыстрая и точная модель, которая определяет 17 ключевых точек тела.<br/>
+<br/>
+Модель предлагается на TF Hub в двух вариантах, известных как Lightning и Thunder. Lightning предназначена для приложений, критичных к задержкам, а Thunder — для требующих высокой точности приложений.<br/>
+<br/>
+Обе модели работают быстрее реального времени (30+ FPS) на большинстве современных настольных компьютеров, ноутбуков и телефонов, что имеет решающее значение для приложений фитнеса, спорта и здоровья.<br/>
+<br/>
+Эффект достигается путём запуска модели полностью на стороне клиента, в браузере с использованием TensorFlow.js, без каких-либо вызовов сервера после первоначальной загрузки страницы и без установки зависимостей.<br/>
+<br/>
+<a href="https://storage.googleapis.com/tfjs-models/demos/pose-detection/index.html?model=movenet">Попробуйте</a> интерактивную демонстрацию!<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/yi/tc/1f/yitc1flhf9xjzvvmiw7zpihss9k.gif"/><i>MoveNet может отслеживать ключевые точки при быстрых движениях и нетипичных позах.</i><br/>
+<br/>
+За последние пять лет оценка позы человека прошла долгий путь, но, к удивлению, до сих пор не нашла широкого применения. Это связано с тем, что больше внимания уделяется созданию более крупных и точных моделей поз, а не инженерной работе по их быстрому и повсеместному развёртыванию.<br/>
+<br/>
+В MoveNet наша задача заключалась в разработке и оптимизации модели, которая задействовала бы лучшие стороны современных архитектур, сохраняя при этом минимальное время вывода. В результате получилась модель, способная точно передавать ключевые точки в самых разных позах, окружениях и аппаратных установках.<br/>
+<br/>
+<h2>Интерактивные приложения для здоровья</h2><br/>
+Чтобы понять, может ли MoveNet помочь открыть для нас удалённое обслуживание для пациентов. Мы объединились с компанией IncludeHealth, которая специализируется на цифровом здравоохранении и эффективности.<br/>
+<br/>
+IncludeHealth разработала интерактивное веб-приложение, которое проводит пациента через различные процедуры при помощи телефона, планшета или ноутбука. Процедуры построены в цифровом формате и предписаны физиотерапевтами, чтобы проверять баланс, силу и размах движения.<br/>
+<br/>
+Такому сервису требуются модели позирования на основе веб-технологий и локального запуска для конфиденциальности, которые могут обеспечить точные ключевые точки при высокой частоте кадров, которые затем используются для количественной и качественной оценки поз и движений человека.<br/>
+<br/>
+Если для простых движений, таких как <a href="https://www.drugs.com/cg/exercises-for-shoulder-abduction-and-adduction.html">отведения плеч</a> или <a href="https://www.aleanlife.com/bodyweight-squats/">присяданий для всего тела</a>, достаточно обычного готового детектора, то более сложные позы, такие как разгибание колена в положении сидя или положение лёжа, вызывают затруднения даже у самых современных детекторов, обученных на ошибочных данных.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/d5/vi/ic/d5viichgsvjdi4h-v2ejeehowli.gif"/><i>Сравнение традиционного детектора (вверху) и MoveNet (внизу) на сложных позах.</i><br/>
+<br/>
+Мы предоставили IncludeHealth раннюю версию MoveNet, доступную через новый API определения позы. Эта модель обучена на фитнесе, танцах и позах йоги (подробнее о наборе данных для обучения см. ниже). IncludeHealth интегрировала модель в своё приложение и провела сравнительный анализ MoveNet по сравнению с другими доступными детекторами позы:<br/>
+<br/>
+«Модель MoveNet обеспечила мощное сочетание скорости и точности, необходимое для оказания предписанной медицинской помощи. В то время как другие модели не достигаю компромисса, предпочитая одно или другое, этот уникальный баланс открывает новое поколение оказания медицинской помощи. Команда Google была фантастическим партнёром в этом стремлении», — рассказывает Райан Эдер, основатель и генеральный директор IncludeHealth.<br/>
+<br/>
+IncludeHealth налаживает партнёрские отношения с больничными системами, страховыми компаниями и вооружёнными силами, чтобы вывести традиционное обслуживание и обучение за привычные рамки.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/0q/vt/jo/0qvtjoaqaxhul9zkmsmff47mrzs.gif"/><i>Демонстрационное приложение IncludeHealth, работающее в браузере и оценивающее баланс и движение с помощью оценки ключевых точек на базе MoveNet и TensorFlow.js</i><br/>
+<br/>
+<h2>Установка</h2><br/>
+Существует два способа задействовать MoveNet с новым API для определения позы:<br/>
+<br/>
+Через NPM:<br/>
+<br/>
+<pre><code class="javascript">import * as poseDetection from '@tensorflow-models/pose-detection';</code></pre><br/>
+Через тег script:<br/>
+<br/>
+<pre><code class="html">&lt;script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core">&lt;/script>
+&lt;script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter">&lt;/script>
+&lt;script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl">&lt;/script>
+&lt;script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection">&lt;/script></code></pre><br/>
+<h2>Попробуйте сами!</h2><br/>
+После установки пакета достаточно выполнить несколько следующих шагов, чтобы начать его использовать:<br/>
+<br/>
+<pre><code class="javascript">// Create a detector.
+const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet);</code></pre><br/>
+По умолчанию детектор использует версию Lightning; чтобы выбрать Thunder, создайте детектор, как показано ниже:<br/>
+<br/>
+<pre><code class="javascript">// Create a detector.
+const detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER});</code></pre><br/>
+<pre><code class="javascript">// Pass in a video stream to the model to detect poses.
+const video = document.getElementById('video');
+const poses = await detector.estimatePoses(video);</code></pre><br/>
+Каждая поза содержит 17 ключевых точек с абсолютными координатами x, y, оценкой достоверности и названием части тела:<br/>
+<br/>
+<pre><code class="javascript">console.log(poses[0].keypoints);
+// Outputs:
+// [
+//    {x: 230, y: 220, score: 0.9, name: "nose"},
+//    {x: 212, y: 190, score: 0.8, name: "left_eye"},
+//    ...
+// ]</code></pre><br/>
+Более подробную информацию об API см. в нашем <a href="https://github.com/tensorflow/tfjs-models/tree/master/pose-detection/src/movenet">README</a>.<br/>
+<br/>
+Если вы сделаете что-то с использованием этой модели, отметьте пост в социальных сетях тегом #MadeWithTFJS, чтобы мы могли найти вашу работу, так как мы будем рады увидеть, что вы создали.<br/>
+<br/>
+<h2>Архитектура MoveNet</h2><br/>
+MoveNet — это модель оценки снизу вверх, использующая тепловые карты для точной локализации ключевых точек человека. Архитектура состоит из двух компонентов: экстрактор признаков и набор головок предсказания. Схема предсказания в общих чертах повторяет CenterNet, с заметными изменениями, которые повышают скорость и точность. Все модели обучены с помощью TensorFlow Object Detection API.<br/>
+<br/>
+Экстрактор признаков в MoveNet — MobileNetV2 с присоединённой сетью пирамид признаков (FPN), что позволяет получить семантически насыщенную карту признаков с высоким разрешением (выходной страйд 4) [Страйд — параметр, изменяющий количество движения]. К экстрактору признаков подключены четыре головки предсказания, которые отвечают за плотное предсказание:<br/>
+<br/>
+<ul>
+<li>Тепловая карта центра человека: предсказывает геометрический центр человека.</li>
+<li>Поле регрессии ключевой точки: прогнозирует полный набор ключевых точек человека, используется для группировки ключевых точек в экземпляры.</li>
+<li>Тепловая карта ключевых точек человека: предсказывает местоположение всех ключевых точек, независимо от людей.</li>
+<li>Двумерное поле смещения каждой ключевой точки: прогнозирует локальные смещения от каждого пикселя выходной карты признаков до точного субпиксельного местоположения каждой ключевой точки.</li>
+</ul><br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/getpro/habr/upload_files/69d/9a5/2ff/69d9a52ff5b26c71538a8b018a3566dd.png"/><i>Архитектура MoveNet</i><br/>
+<br/>
+Хотя эти прогнозы вычисляются параллельно, получить общее представление о работе модели можно, посмотрев на эту последовательность операций:<br/>
+<br/>
+<ul>
+<li>Шаг 1. Тепловая карта центров лиц используется для определения центров всех лиц в кадре, которые определяются как среднее арифметическое всех ключевых точек, принадлежащих лицу. Выбирается место с наивысшей оценкой (взвешенной по обратному расстоянию от центра кадра).</li>
+<li>Шаг 2. Начальный набор ключевых точек человека создаётся путём нарезки регрессии ключевых точек на основе пикселя, соответствующего центру объекта. Поскольку речь идёт о прогнозировании по центру — которое должно работать в разных масштабах — точность раположения регрессированных ключевых точек будет не очень высокой.</li>
+<li>Шаг 3. Каждый пиксель на тепловой карте ключевых точек умножается на вес, который обратно пропорционален расстоянию до соответствующей регрессированной ключевой точки. Это гарантирует, что мы не будем принимать ключевые точки от людей, поскольку они, как правило, не будут находиться вблизи регрессированных ключевых точек и, следовательно, будут иметь низкие результирующие оценки.</li>
+<li>Шаг 4. Окончательный набор прогнозов ключевых точек выбирается путём поиска координат максимальных значений тепловой карты в каждом канале ключевых точек. Затем к этим координатам добавляются прогнозы локального двумерного смещения, чтобы получить уточнённые оценки. На рисунке ниже показаны эти четыре шага.</li>
+</ul><br/>
+<img src="/img/image-loader.svg" alt="Постобработка MoveNet" data-src="https://habrastorage.org/getpro/habr/upload_files/313/70c/99a/31370c99a378f017d95a136dac95fb83.png"/><i>Постобработка MoveNet</i><br/>
+<br/>
+<h2>Тренировочный набор данных</h2><br/>
+MoveNet был обучен на двух наборах данных: на COCO и на внутреннем наборе данных Google под названием Active. Хотя COCO — эталонный набор данных для обнаружения благодаря разнообразию сцен и масштабов, всё же он не подходит для приложений фитнеса и танцев, в которых наблюдаются сложные позы, а движения сильно размываются.<br/>
+<br/>
+Active был создан путём маркировки ключевых точек (приняв стандартные 17 ключевых точек тела COCO) на видеороликах по йоге, фитнесу и танцам с YouTube. Из каждого видео для обучения выбирается не более трёх кадров, чтобы обеспечить разнообразие сцен и лиц.<br/>
+<br/>
+Оценки на наборе данных валидации Active показывают значительный прирост производительности по сравнению с идентичными архитектурами, обученными только на COCO. Это неудивительно: COCO нечасто демонстрирует людей с экстремальными позами (йога, отжимания, стойки на голове и многое другое).<br/>
+<br/>
+Чтобы узнать больше о наборе данных и о том, как MoveNet работает с разными категориями, пожалуйста, ознакомьтесь с <a href="https://storage.googleapis.com/movenet/MoveNet.SinglePose%20Model%20Card.pdf">карточкой модели</a>.<br/>
+<br/>
+<img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/f19/277/a5d/f19277a5ddff65a2398f77c259eb773e.jpeg" alt="img" data-src="https://habrastorage.org/getpro/habr/upload_files/f19/277/a5d/f19277a5ddff65a2398f77c259eb773e.jpeg" data-blurred="true"/><br/>
+<br/>
+<h2>Оптимизация</h2><br/>
+Хотя много усилий было потрачено на разработку архитектуры, логику постобработки и отбор данных, не меньшее внимание было уделено скорости вывода, чтобы MoveNet стал высококачественным детектором.<br/>
+<br/>
+Сначала для латеральных связей в FPN были выбраны слои с низкой производительностью из MobileNetV2. Аналогичным образом, количество фильтров свёртки в каждой головке предсказания было значительно сокращено для ускорения работы с выходными картами признаков. Разделяемые по глубине свёртки используются во всей сети, за исключением первого слоя MobileNetV2.<br/>
+<br/>
+MoveNet неоднократно профилировалась, особенно медленные операторы удалялись. Например, мы заменили tf.math.top_k на tf.math.argmax, поскольку он выполняется значительно быстрее и подходит для работы с одним человеком. <br/>
+<br/>
+Для быстрого выполнения в TensorFlow.js все выходные данные модели были упакованы в один выходной тензор, так что загрузка с GPU на CPU происходит только один раз.<br/>
+<br/>
+Возможно, наиболее значительное ускорение мы получили, используя для модели входных данные 192×192 (256×256 в случае Thunder). Чтобы компенсировать снижение разрешения, применяется интеллектуальное кадрирование, основанное на обнаружении предыдущего кадра. Это позволяет модели уделять внимание и ресурсы главному объекту, а не фону.<br/>
+<br/>
+<h2>Фильтрация во времени</h2><br/>
+Работа с потоком данных камеры с высокой частотой кадров в секунду позволяет применять сглаживание к оценкам ключевых точек. И Lightning, и Thunder применяют надёжный нелинейный фильтр ко входящему потоку прогнозов ключевых точек. <br/>
+<br/>
+Этот фильтр настроен на одновременное подавление высокочастотного шума (т.е. дрожания) и выбросы из модели, при этом он сохраняет высокую пропускную способность на быстрых движениях. Это приводит к плавной визуализации ключевых точек с минимальной задержкой при любых обстоятельствах.<br/>
+<br/>
+<h2>MoveNet и производительность браузера</h2><br/>
+Чтобы количественно оценить скорость вывода MoveNet, модель протестировали на нескольких устройствах. Задержка модели (выраженная в FPS) измерялась на GPU через WebGL, а также через WebAssembly (WASM), — типичный бекенд для устройств с маломощным GPU или без него.<br/>
+<br/>
+<img src="/img/image-loader.svg" alt="img" data-src="https://habrastorage.org/getpro/habr/upload_files/c3d/5ab/01b/c3d5ab01bfbc445938979764ccbf181b.png"/><br/>
+<i>Скорость выводов MoveNet на различных устройствах и бэкендах TF.js. Первая ячейка — Lighting, вторая — Thunder.</i><br/>
+<br/>
+TF.js постоянно оптимизирует свои бэкенды для ускорения выполнения моделей на всех поддерживаемых устройствах. Чтобы помочь моделям достичь такой производительности, мы применили несколько методов, например, <a href="https://github.com/tensorflow/tfjs/blob/master/tfjs-backend-webgl/src/conv_packed_gpu_depthwise.ts">реализовали</a> упакованное ядро WebGL для разделимых по глубине свёрток и улучшили планирование GL для мобильного Chrome.<br/>
+<br/>
+Чтобы увидеть FPS модели на вашем устройстве, попробуйте нашу демонстрацию. Можно менять тип модели и бэкенды в реальном времени, чтобы увидеть, что лучше всего подходит устройству.<br/>
+<br/>
+<h2>Планы</h2><br/>
+Следующий шаг — расширение моделей Lightning и Thunder, чтобы они работали с несколькими людьми. Чтобы модели выполнялись быстрее, путём многократного тестирования и оптимизации бэкенда планируется также ускорить бэкенды TensorFlow.js.<br/>
+<br/>
+Пока нейросети продолжают развиваться, вы можете начать или продолжить их изучение на наших курсах:<br/>
+<br/>
+<ul>
+<li><a href="https://skillfactory.ru/data-scientist-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dspr_151021&amp;utm_term=conc">Профессия Data Scientist (24 месяца)</a></li>
+<li><a href="https://skillfactory.ru/machine-learning-i-deep-learning?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_mldl_151021&amp;utm_term=conc">Курс «Machine Learning и Deep Learning» (6 месяцев)</a></li>
+</ul><br/>
+Чтобы узнать, как мы готовим специалистов в других направлениях, вы можете перейти на страницы курсов <a href="https://skillfactory.ru/catalogue?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=sf_allcourses_151021&amp;utm_term=conc">из каталога</a>.<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/ik/bl/oo/ikbloovbhouaxawegt7p6jrnxl8.png"/><br/>
+<div class="spoiler" role="button" tabindex="0">
+                        <b class="spoiler_title">Другие профессии и курсы</b>
+                        <div class="spoiler_text"><p><strong>Data Science и Machine Learning</strong></p><br/>
+<ul>
+<li><a href="https://skillfactory.ru/data-scientist-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dspr_151021&amp;utm_term=cat">Профессия Data Scientist</a></li>
+<li><a href="https://skillfactory.ru/data-analyst-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=analytics_dapr_151021&amp;utm_term=cat">Профессия Data Analyst</a></li>
+<li><a href="https://skillfactory.ru/matematika-dlya-data-science#syllabus?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_mat_151021&amp;utm_term=cat">Курс «Математика для Data Science»</a></li>
+<li><a href="https://skillfactory.ru/matematika-i-machine-learning-dlya-data-science?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_matml_151021&amp;utm_term=cat">Курс «Математика и Machine Learning для Data Science»</a></li>
+<li><a href="https://skillfactory.ru/data-engineer?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dea_151021&amp;utm_term=cat">Курс по Data Engineering</a></li>
+<li><a href="https://skillfactory.ru/machine-learning-i-deep-learning?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_mldl_151021&amp;utm_term=cat">Курс «Machine Learning и Deep Learning»</a></li>
+<li><a href="https://skillfactory.ru/machine-learning?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_ml_151021&amp;utm_term=cat">Курс по Machine Learning</a></li>
+</ul><br/>
+<p><strong>Python, веб-разработка</strong></p><br/>
+<ul>
+<li><a href="https://skillfactory.ru/python-fullstack-web-developer?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_fpw_151021&amp;utm_term=cat">Профессия Fullstack-разработчик на Python</a></li>
+<li><a href="https://skillfactory.ru/python-for-web-developers?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_pws_151021&amp;utm_term=cat">Курс «Python для веб-разработки»</a></li>
+<li><a href="https://skillfactory.ru/frontend-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_fr_151021&amp;utm_term=cat">Профессия Frontend-разработчик</a></li>
+<li><a href="https://skillfactory.ru/webdev?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_webdev_151021&amp;utm_term=cat">Профессия Веб-разработчик</a></li>
+</ul><br/>
+<p><strong>Мобильная разработка</strong></p><br/>
+<ul>
+<li><a href="https://skillfactory.ru/ios-razrabotchik-s-nulya?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_ios_151021&amp;utm_term=cat">Профессия iOS-разработчик</a></li>
+<li><a href="https://skillfactory.ru/android-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_andr_151021&amp;utm_term=cat">Профессия Android-разработчик</a></li>
+</ul><br/>
+<p><strong>Java и C#</strong></p><br/>
+<ul>
+<li><a href="https://skillfactory.ru/java-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_java_151021&amp;utm_term=cat">Профессия Java-разработчик</a></li>
+<li><a href="https://skillfactory.ru/java-qa-engineer-testirovshik-po?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_qaja_151021&amp;utm_term=cat">Профессия QA-инженер на JAVA</a></li>
+<li><a href="https://skillfactory.ru/c-sharp-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_cdev_151021&amp;utm_term=cat">Профессия C#-разработчик</a></li>
+<li><a href="https://skillfactory.ru/game-razrabotchik-na-unity-i-c-sharp?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_gamedev_151021&amp;utm_term=cat">Профессия Разработчик игр на Unity</a></li>
+</ul><br/>
+<p><strong>От основ — в глубину</strong></p><br/>
+<ul>
+<li><a href="https://skillfactory.ru/algoritmy-i-struktury-dannyh?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_algo_151021&amp;utm_term=cat">Курс «Алгоритмы и структуры данных»</a></li>
+<li><a href="https://skillfactory.ru/c-plus-plus-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_cplus_151021&amp;utm_term=cat">Профессия C++ разработчик</a></li>
+<li><a href="https://skillfactory.ru/cyber-security-etichnij-haker?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_hacker_151021&amp;utm_term=cat">Профессия Этичный хакер</a></li>
+</ul><br/>
+<p><strong>А также:</strong></p><br/>
+<ul>
+<li><a href="https://skillfactory.ru/devops-ingineer?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_devops_151021&amp;utm_term=cat">Курс по DevOps</a></li>
+</ul><br/>
+</div>
+                    </div></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bskillfactory%5D" class="tm-tags-list__link">skillfactory</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bjavascript%5D" class="tm-tags-list__link">javascript</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bwebgl%5D" class="tm-tags-list__link">webgl</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BD%D0%B5%D0%B9%D1%80%D0%BE%D1%81%D0%B5%D1%82%D0%B8%5D" class="tm-tags-list__link">нейросети</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bwebassembly%5D" class="tm-tags-list__link">webassembly</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%80%D0%B0%D1%81%D0%BF%D0%BE%D0%B7%D0%BD%D0%B0%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">распознавание</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%B0%20%D1%81%20%D0%B2%D0%B8%D0%B4%D0%B5%D0%BE%5D" class="tm-tags-list__link">работа с видео</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D0%B0%D0%BA%D1%82%D0%B8%D0%B2%D0%BD%D0%BE%D1%81%D1%82%D1%8C%5D" class="tm-tags-list__link">интерактивность</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B7%D0%B4%D0%BE%D1%80%D0%BE%D0%B2%D1%8C%D0%B5%5D" class="tm-tags-list__link">здоровье</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D0%B8%D0%B7%D0%B2%D0%BE%D0%B4%D0%B8%D1%82%D0%B5%D0%BB%D1%8C%D0%BD%D0%BE%D1%81%D1%82%D1%8C%5D" class="tm-tags-list__link">производительность</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/skillfactory/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании SkillFactory
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/video/" class="tm-hubs-list__link">
+    Работа с видео
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/javascript/" class="tm-hubs-list__link">
+    JavaScript
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/tensorflow/" class="tm-hubs-list__link">
+    TensorFlow
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 8: ↑7 и ↓1</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 8: ↑7 и ↓1" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+6</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">3.8K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    63
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/skillfactory/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/9bb/5f7/d50/9bb5f7d50871bf0981f64b1970f22fe1.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/skillfactory/profile/" class="tm-company-snippet__title">SkillFactory</a> <div class="tm-company-snippet__description">Школа Computer Science. Скидка 45% по коду HABR</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="http://www.skillfactory.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/honyaki/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/96e/81d/bc0/96e81dbc01247c6c855b1806b355efa3.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 106 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    20
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">22.4</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/honyaki/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @honyaki
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Пользователь</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/skillfactory/blog/583752/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 3 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2012-10-31T20:00:00.000Z" title="2012-11-01, 00:00">1  ноября  2012</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="http://www.skillfactory.ru/" target="_blank" class="tm-company-basic-info__link">
+      www.skillfactory.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    201–500 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2012-12-14T13:25:37.000Z" title="2012-12-14, 17:25">14  декабря  2012</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Представитель</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="/ru/users/skillfactory_school/" class="tm-company-basic-info__link">
+      Skillfactory School
+    </a></dd></dl></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/skillfactory/blog/583752/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/skillfactory/blog/583752/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"583752":{"id":"583752","timePublished":"2021-10-15T19:17:48+00:00","isCorporative":true,"lang":"ru","titleHtml":"Распознаём позу прямо в браузере в реальном времени","leadData":{"textHtml":"\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fwi\u002Fk-\u002F4r\u002Fwik-4rsc5kyha-aoaweerwr8zxo.jpeg\"\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nСегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой задачей не справлялись даже лучшие детекторы. За подробностями приглащаем под кат, пока у нас начинается флагманский \u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fdata-scientist-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dspr_151021&amp;utm_term=lead\" rel=\"nofollow noopener noreferrer\"\u003Eкурс Data Science\u003C\u002Fa\u003E.\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Ronny Votel, Na Li","originalUrl":"https:\u002F\u002Fblog.tensorflow.org\u002F2021\u002F05\u002Fnext-generation-pose-detection-with-movenet-and-tensorflowjs.html"}}],"author":{"scoreStats":{"score":20,"votesCount":106},"rating":22.4,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2534597","alias":"honyaki","fullname":null,"avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002F96e\u002F81d\u002Fbc0\u002F96e81dbc01247c6c855b1806b355efa3.jpg","speciality":null},"statistics":{"commentsCount":3,"favoritesCount":63,"readingCount":3774,"score":6,"votesCount":8},"hubs":[{"relatedData":null,"id":"17931","alias":"skillfactory","type":"corporative","title":"Блог компании SkillFactory","titleHtml":"Блог компании SkillFactory","isProfiled":false},{"relatedData":null,"id":"262","alias":"video","type":"collective","title":"Работа с видео","titleHtml":"Работа с видео","isProfiled":true},{"relatedData":null,"id":"357","alias":"javascript","type":"collective","title":"JavaScript","titleHtml":"JavaScript","isProfiled":true},{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"22392","alias":"tensorflow","type":"collective","title":"TensorFlow","titleHtml":"TensorFlow","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"},{"id":"2","alias":"design","title":"Дизайн"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002Fwi\u002Fk-\u002F4r\u002Fwik-4rsc5kyha-aoaweerwr8zxo.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fwi\u002Fk-\u002F4r\u002Fwik-4rsc5kyha-aoaweerwr8zxo.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой задачей не справлялись даже лучшие детекторы. За подробностями приглащаем под кат, пока у нас начинается флагманский \u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fdata-scientist-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dspr_151021&amp;utm_term=lead\"\u003Eкурс Data Science\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nМы рады представить модель определения позы MoveNet с нашим новым API определения позы в TensorFlow.js. MoveNet — это сверхбыстрая и точная модель, которая определяет 17 ключевых точек тела.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМодель предлагается на TF Hub в двух вариантах, известных как Lightning и Thunder. Lightning предназначена для приложений, критичных к задержкам, а Thunder — для требующих высокой точности приложений.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОбе модели работают быстрее реального времени (30+ FPS) на большинстве современных настольных компьютеров, ноутбуков и телефонов, что имеет решающее значение для приложений фитнеса, спорта и здоровья.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭффект достигается путём запуска модели полностью на стороне клиента, в браузере с использованием TensorFlow.js, без каких-либо вызовов сервера после первоначальной загрузки страницы и без установки зависимостей.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fstorage.googleapis.com\u002Ftfjs-models\u002Fdemos\u002Fpose-detection\u002Findex.html?model=movenet\"\u003EПопробуйте\u003C\u002Fa\u003E интерактивную демонстрацию!\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fyi\u002Ftc\u002F1f\u002Fyitc1flhf9xjzvvmiw7zpihss9k.gif\"\u002F\u003E\u003Ci\u003EMoveNet может отслеживать ключевые точки при быстрых движениях и нетипичных позах.\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЗа последние пять лет оценка позы человека прошла долгий путь, но, к удивлению, до сих пор не нашла широкого применения. Это связано с тем, что больше внимания уделяется созданию более крупных и точных моделей поз, а не инженерной работе по их быстрому и повсеместному развёртыванию.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ MoveNet наша задача заключалась в разработке и оптимизации модели, которая задействовала бы лучшие стороны современных архитектур, сохраняя при этом минимальное время вывода. В результате получилась модель, способная точно передавать ключевые точки в самых разных позах, окружениях и аппаратных установках.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EИнтерактивные приложения для здоровья\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nЧтобы понять, может ли MoveNet помочь открыть для нас удалённое обслуживание для пациентов. Мы объединились с компанией IncludeHealth, которая специализируется на цифровом здравоохранении и эффективности.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nIncludeHealth разработала интерактивное веб-приложение, которое проводит пациента через различные процедуры при помощи телефона, планшета или ноутбука. Процедуры построены в цифровом формате и предписаны физиотерапевтами, чтобы проверять баланс, силу и размах движения.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nТакому сервису требуются модели позирования на основе веб-технологий и локального запуска для конфиденциальности, которые могут обеспечить точные ключевые точки при высокой частоте кадров, которые затем используются для количественной и качественной оценки поз и движений человека.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли для простых движений, таких как \u003Ca href=\"https:\u002F\u002Fwww.drugs.com\u002Fcg\u002Fexercises-for-shoulder-abduction-and-adduction.html\"\u003Eотведения плеч\u003C\u002Fa\u003E или \u003Ca href=\"https:\u002F\u002Fwww.aleanlife.com\u002Fbodyweight-squats\u002F\"\u003Eприсяданий для всего тела\u003C\u002Fa\u003E, достаточно обычного готового детектора, то более сложные позы, такие как разгибание колена в положении сидя или положение лёжа, вызывают затруднения даже у самых современных детекторов, обученных на ошибочных данных.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fd5\u002Fvi\u002Fic\u002Fd5viichgsvjdi4h-v2ejeehowli.gif\"\u002F\u003E\u003Ci\u003EСравнение традиционного детектора (вверху) и MoveNet (внизу) на сложных позах.\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nМы предоставили IncludeHealth раннюю версию MoveNet, доступную через новый API определения позы. Эта модель обучена на фитнесе, танцах и позах йоги (подробнее о наборе данных для обучения см. ниже). IncludeHealth интегрировала модель в своё приложение и провела сравнительный анализ MoveNet по сравнению с другими доступными детекторами позы:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n«Модель MoveNet обеспечила мощное сочетание скорости и точности, необходимое для оказания предписанной медицинской помощи. В то время как другие модели не достигаю компромисса, предпочитая одно или другое, этот уникальный баланс открывает новое поколение оказания медицинской помощи. Команда Google была фантастическим партнёром в этом стремлении», — рассказывает Райан Эдер, основатель и генеральный директор IncludeHealth.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nIncludeHealth налаживает партнёрские отношения с больничными системами, страховыми компаниями и вооружёнными силами, чтобы вывести традиционное обслуживание и обучение за привычные рамки.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F0q\u002Fvt\u002Fjo\u002F0qvtjoaqaxhul9zkmsmff47mrzs.gif\"\u002F\u003E\u003Ci\u003EДемонстрационное приложение IncludeHealth, работающее в браузере и оценивающее баланс и движение с помощью оценки ключевых точек на базе MoveNet и TensorFlow.js\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EУстановка\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nСуществует два способа задействовать MoveNet с новым API для определения позы:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧерез NPM:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Eimport * as poseDetection from '@tensorflow-models\u002Fpose-detection';\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nЧерез тег script:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"html\"\u003E&lt;script src=\"https:\u002F\u002Fcdn.jsdelivr.net\u002Fnpm\u002F@tensorflow\u002Ftfjs-core\"\u003E&lt;\u002Fscript\u003E\n&lt;script src=\"https:\u002F\u002Fcdn.jsdelivr.net\u002Fnpm\u002F@tensorflow\u002Ftfjs-converter\"\u003E&lt;\u002Fscript\u003E\n&lt;script src=\"https:\u002F\u002Fcdn.jsdelivr.net\u002Fnpm\u002F@tensorflow\u002Ftfjs-backend-webgl\"\u003E&lt;\u002Fscript\u003E\n&lt;script src=\"https:\u002F\u002Fcdn.jsdelivr.net\u002Fnpm\u002F@tensorflow-models\u002Fpose-detection\"\u003E&lt;\u002Fscript\u003E\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EПопробуйте сами!\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nПосле установки пакета достаточно выполнить несколько следующих шагов, чтобы начать его использовать:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F Create a detector.\nconst detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nПо умолчанию детектор использует версию Lightning; чтобы выбрать Thunder, создайте детектор, как показано ниже:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F Create a detector.\nconst detector = await poseDetection.createDetector(poseDetection.SupportedModels.MoveNet, {modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER});\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003E\u002F\u002F Pass in a video stream to the model to detect poses.\nconst video = document.getElementById('video');\nconst poses = await detector.estimatePoses(video);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nКаждая поза содержит 17 ключевых точек с абсолютными координатами x, y, оценкой достоверности и названием части тела:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"javascript\"\u003Econsole.log(poses[0].keypoints);\n\u002F\u002F Outputs:\n\u002F\u002F [\n\u002F\u002F    {x: 230, y: 220, score: 0.9, name: \"nose\"},\n\u002F\u002F    {x: 212, y: 190, score: 0.8, name: \"left_eye\"},\n\u002F\u002F    ...\n\u002F\u002F ]\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nБолее подробную информацию об API см. в нашем \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftensorflow\u002Ftfjs-models\u002Ftree\u002Fmaster\u002Fpose-detection\u002Fsrc\u002Fmovenet\"\u003EREADME\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЕсли вы сделаете что-то с использованием этой модели, отметьте пост в социальных сетях тегом #MadeWithTFJS, чтобы мы могли найти вашу работу, так как мы будем рады увидеть, что вы создали.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EАрхитектура MoveNet\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nMoveNet — это модель оценки снизу вверх, использующая тепловые карты для точной локализации ключевых точек человека. Архитектура состоит из двух компонентов: экстрактор признаков и набор головок предсказания. Схема предсказания в общих чертах повторяет CenterNet, с заметными изменениями, которые повышают скорость и точность. Все модели обучены с помощью TensorFlow Object Detection API.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭкстрактор признаков в MoveNet — MobileNetV2 с присоединённой сетью пирамид признаков (FPN), что позволяет получить семантически насыщенную карту признаков с высоким разрешением (выходной страйд 4) [Страйд — параметр, изменяющий количество движения]. К экстрактору признаков подключены четыре головки предсказания, которые отвечают за плотное предсказание:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EТепловая карта центра человека: предсказывает геометрический центр человека.\u003C\u002Fli\u003E\r\n\u003Cli\u003EПоле регрессии ключевой точки: прогнозирует полный набор ключевых точек человека, используется для группировки ключевых точек в экземпляры.\u003C\u002Fli\u003E\r\n\u003Cli\u003EТепловая карта ключевых точек человека: предсказывает местоположение всех ключевых точек, независимо от людей.\u003C\u002Fli\u003E\r\n\u003Cli\u003EДвумерное поле смещения каждой ключевой точки: прогнозирует локальные смещения от каждого пикселя выходной карты признаков до точного субпиксельного местоположения каждой ключевой точки.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F69d\u002F9a5\u002F2ff\u002F69d9a52ff5b26c71538a8b018a3566dd.png\"\u002F\u003E\u003Ci\u003EАрхитектура MoveNet\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nХотя эти прогнозы вычисляются параллельно, получить общее представление о работе модели можно, посмотрев на эту последовательность операций:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003EШаг 1. Тепловая карта центров лиц используется для определения центров всех лиц в кадре, которые определяются как среднее арифметическое всех ключевых точек, принадлежащих лицу. Выбирается место с наивысшей оценкой (взвешенной по обратному расстоянию от центра кадра).\u003C\u002Fli\u003E\r\n\u003Cli\u003EШаг 2. Начальный набор ключевых точек человека создаётся путём нарезки регрессии ключевых точек на основе пикселя, соответствующего центру объекта. Поскольку речь идёт о прогнозировании по центру — которое должно работать в разных масштабах — точность раположения регрессированных ключевых точек будет не очень высокой.\u003C\u002Fli\u003E\r\n\u003Cli\u003EШаг 3. Каждый пиксель на тепловой карте ключевых точек умножается на вес, который обратно пропорционален расстоянию до соответствующей регрессированной ключевой точки. Это гарантирует, что мы не будем принимать ключевые точки от людей, поскольку они, как правило, не будут находиться вблизи регрессированных ключевых точек и, следовательно, будут иметь низкие результирующие оценки.\u003C\u002Fli\u003E\r\n\u003Cli\u003EШаг 4. Окончательный набор прогнозов ключевых точек выбирается путём поиска координат максимальных значений тепловой карты в каждом канале ключевых точек. Затем к этим координатам добавляются прогнозы локального двумерного смещения, чтобы получить уточнённые оценки. На рисунке ниже показаны эти четыре шага.\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"Постобработка MoveNet\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F313\u002F70c\u002F99a\u002F31370c99a378f017d95a136dac95fb83.png\"\u002F\u003E\u003Ci\u003EПостобработка MoveNet\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EТренировочный набор данных\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nMoveNet был обучен на двух наборах данных: на COCO и на внутреннем наборе данных Google под названием Active. Хотя COCO — эталонный набор данных для обнаружения благодаря разнообразию сцен и масштабов, всё же он не подходит для приложений фитнеса и танцев, в которых наблюдаются сложные позы, а движения сильно размываются.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nActive был создан путём маркировки ключевых точек (приняв стандартные 17 ключевых точек тела COCO) на видеороликах по йоге, фитнесу и танцам с YouTube. Из каждого видео для обучения выбирается не более трёх кадров, чтобы обеспечить разнообразие сцен и лиц.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОценки на наборе данных валидации Active показывают значительный прирост производительности по сравнению с идентичными архитектурами, обученными только на COCO. Это неудивительно: COCO нечасто демонстрирует людей с экстремальными позами (йога, отжимания, стойки на голове и многое другое).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧтобы узнать больше о наборе данных и о том, как MoveNet работает с разными категориями, пожалуйста, ознакомьтесь с \u003Ca href=\"https:\u002F\u002Fstorage.googleapis.com\u002Fmovenet\u002FMoveNet.SinglePose%20Model%20Card.pdf\"\u003Eкарточкой модели\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff19\u002F277\u002Fa5d\u002Ff19277a5ddff65a2398f77c259eb773e.jpeg\" alt=\"img\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Ff19\u002F277\u002Fa5d\u002Ff19277a5ddff65a2398f77c259eb773e.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EОптимизация\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nХотя много усилий было потрачено на разработку архитектуры, логику постобработки и отбор данных, не меньшее внимание было уделено скорости вывода, чтобы MoveNet стал высококачественным детектором.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСначала для латеральных связей в FPN были выбраны слои с низкой производительностью из MobileNetV2. Аналогичным образом, количество фильтров свёртки в каждой головке предсказания было значительно сокращено для ускорения работы с выходными картами признаков. Разделяемые по глубине свёртки используются во всей сети, за исключением первого слоя MobileNetV2.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nMoveNet неоднократно профилировалась, особенно медленные операторы удалялись. Например, мы заменили tf.math.top_k на tf.math.argmax, поскольку он выполняется значительно быстрее и подходит для работы с одним человеком. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДля быстрого выполнения в TensorFlow.js все выходные данные модели были упакованы в один выходной тензор, так что загрузка с GPU на CPU происходит только один раз.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВозможно, наиболее значительное ускорение мы получили, используя для модели входных данные 192×192 (256×256 в случае Thunder). Чтобы компенсировать снижение разрешения, применяется интеллектуальное кадрирование, основанное на обнаружении предыдущего кадра. Это позволяет модели уделять внимание и ресурсы главному объекту, а не фону.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EФильтрация во времени\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nРабота с потоком данных камеры с высокой частотой кадров в секунду позволяет применять сглаживание к оценкам ключевых точек. И Lightning, и Thunder применяют надёжный нелинейный фильтр ко входящему потоку прогнозов ключевых точек. \u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЭтот фильтр настроен на одновременное подавление высокочастотного шума (т.е. дрожания) и выбросы из модели, при этом он сохраняет высокую пропускную способность на быстрых движениях. Это приводит к плавной визуализации ключевых точек с минимальной задержкой при любых обстоятельствах.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EMoveNet и производительность браузера\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nЧтобы количественно оценить скорость вывода MoveNet, модель протестировали на нескольких устройствах. Задержка модели (выраженная в FPS) измерялась на GPU через WebGL, а также через WebAssembly (WASM), — типичный бекенд для устройств с маломощным GPU или без него.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" alt=\"img\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fc3d\u002F5ab\u002F01b\u002Fc3d5ab01bfbc445938979764ccbf181b.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ci\u003EСкорость выводов MoveNet на различных устройствах и бэкендах TF.js. Первая ячейка — Lighting, вторая — Thunder.\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nTF.js постоянно оптимизирует свои бэкенды для ускорения выполнения моделей на всех поддерживаемых устройствах. Чтобы помочь моделям достичь такой производительности, мы применили несколько методов, например, \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ftensorflow\u002Ftfjs\u002Fblob\u002Fmaster\u002Ftfjs-backend-webgl\u002Fsrc\u002Fconv_packed_gpu_depthwise.ts\"\u003Eреализовали\u003C\u002Fa\u003E упакованное ядро WebGL для разделимых по глубине свёрток и улучшили планирование GL для мобильного Chrome.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧтобы увидеть FPS модели на вашем устройстве, попробуйте нашу демонстрацию. Можно менять тип модели и бэкенды в реальном времени, чтобы увидеть, что лучше всего подходит устройству.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch2\u003EПланы\u003C\u002Fh2\u003E\u003Cbr\u002F\u003E\r\nСледующий шаг — расширение моделей Lightning и Thunder, чтобы они работали с несколькими людьми. Чтобы модели выполнялись быстрее, путём многократного тестирования и оптимизации бэкенда планируется также ускорить бэкенды TensorFlow.js.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПока нейросети продолжают развиваться, вы можете начать или продолжить их изучение на наших курсах:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fdata-scientist-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dspr_151021&amp;utm_term=conc\"\u003EПрофессия Data Scientist (24 месяца)\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fmachine-learning-i-deep-learning?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_mldl_151021&amp;utm_term=conc\"\u003EКурс «Machine Learning и Deep Learning» (6 месяцев)\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\nЧтобы узнать, как мы готовим специалистов в других направлениях, вы можете перейти на страницы курсов \u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fcatalogue?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=sf_allcourses_151021&amp;utm_term=conc\"\u003Eиз каталога\u003C\u002Fa\u003E.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fik\u002Fbl\u002Foo\u002Fikbloovbhouaxawegt7p6jrnxl8.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cdiv class=\"spoiler\" role=\"button\" tabindex=\"0\"\u003E\n                        \u003Cb class=\"spoiler_title\"\u003EДругие профессии и курсы\u003C\u002Fb\u003E\n                        \u003Cdiv class=\"spoiler_text\"\u003E\u003Cp\u003E\u003Cstrong\u003EData Science и Machine Learning\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fdata-scientist-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dspr_151021&amp;utm_term=cat\"\u003EПрофессия Data Scientist\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fdata-analyst-pro?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=analytics_dapr_151021&amp;utm_term=cat\"\u003EПрофессия Data Analyst\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fmatematika-dlya-data-science#syllabus?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_mat_151021&amp;utm_term=cat\"\u003EКурс «Математика для Data Science»\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fmatematika-i-machine-learning-dlya-data-science?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_matml_151021&amp;utm_term=cat\"\u003EКурс «Математика и Machine Learning для Data Science»\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fdata-engineer?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_dea_151021&amp;utm_term=cat\"\u003EКурс по Data Engineering\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fmachine-learning-i-deep-learning?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_mldl_151021&amp;utm_term=cat\"\u003EКурс «Machine Learning и Deep Learning»\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fmachine-learning?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=data-science_ml_151021&amp;utm_term=cat\"\u003EКурс по Machine Learning\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EPython, веб-разработка\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fpython-fullstack-web-developer?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_fpw_151021&amp;utm_term=cat\"\u003EПрофессия Fullstack-разработчик на Python\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fpython-for-web-developers?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_pws_151021&amp;utm_term=cat\"\u003EКурс «Python для веб-разработки»\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Ffrontend-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_fr_151021&amp;utm_term=cat\"\u003EПрофессия Frontend-разработчик\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fwebdev?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_webdev_151021&amp;utm_term=cat\"\u003EПрофессия Веб-разработчик\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EМобильная разработка\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fios-razrabotchik-s-nulya?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_ios_151021&amp;utm_term=cat\"\u003EПрофессия iOS-разработчик\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fandroid-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_andr_151021&amp;utm_term=cat\"\u003EПрофессия Android-разработчик\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EJava и C#\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fjava-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_java_151021&amp;utm_term=cat\"\u003EПрофессия Java-разработчик\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fjava-qa-engineer-testirovshik-po?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_qaja_151021&amp;utm_term=cat\"\u003EПрофессия QA-инженер на JAVA\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fc-sharp-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_cdev_151021&amp;utm_term=cat\"\u003EПрофессия C#-разработчик\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fgame-razrabotchik-na-unity-i-c-sharp?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_gamedev_151021&amp;utm_term=cat\"\u003EПрофессия Разработчик игр на Unity\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EОт основ — в глубину\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Falgoritmy-i-struktury-dannyh?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_algo_151021&amp;utm_term=cat\"\u003EКурс «Алгоритмы и структуры данных»\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fc-plus-plus-razrabotchik?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_cplus_151021&amp;utm_term=cat\"\u003EПрофессия C++ разработчик\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fcyber-security-etichnij-haker?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_hacker_151021&amp;utm_term=cat\"\u003EПрофессия Этичный хакер\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003Cp\u003E\u003Cstrong\u003EА также:\u003C\u002Fstrong\u003E\u003C\u002Fp\u003E\u003Cbr\u002F\u003E\r\n\u003Cul\u003E\r\n\u003Cli\u003E\u003Ca href=\"https:\u002F\u002Fskillfactory.ru\u002Fdevops-ingineer?utm_source=habr&amp;utm_medium=habr&amp;utm_campaign=article&amp;utm_content=coding_devops_151021&amp;utm_term=cat\"\u003EКурс по DevOps\u003C\u002Fa\u003E\u003C\u002Fli\u003E\r\n\u003C\u002Ful\u003E\u003Cbr\u002F\u003E\r\n\u003C\u002Fdiv\u003E\n                    \u003C\u002Fdiv\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"skillfactory"},{"titleHtml":"javascript"},{"titleHtml":"webgl"},{"titleHtml":"нейросети"},{"titleHtml":"webassembly"},{"titleHtml":"распознавание"},{"titleHtml":"работа с видео"},{"titleHtml":"интерактивность"},{"titleHtml":"здоровье"},{"titleHtml":"производительность"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fwi\u002Fk-\u002F4r\u002Fwik-4rsc5kyha-aoaweerwr8zxo.jpeg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fwi\u002Fk-\u002F4r\u002Fwik-4rsc5kyha-aoaweerwr8zxo.jpeg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fskillfactory\\\u002Fblog\\\u002F583752\\\u002F\"},\"headline\":\"Распознаём позу прямо в браузере в реальном времени\",\"datePublished\":\"2021-10-15T22:17:48+03:00\",\"dateModified\":\"2021-10-22T18:21:58+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"honyaki\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для ф...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fskillfactory\\\u002Fblog\\\u002F583752\\\u002F#post-content-body\",\"about\":[\"c_skillfactory\",\"h_video\",\"h_javascript\",\"h_programming\",\"h_tensorflow\",\"f_develop\",\"f_design\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F583752\\\u002Ff3301e04950c31f4793a436d66d91489\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fwi\\\u002Fk-\\\u002F4r\\\u002Fwik-4rsc5kyha-aoaweerwr8zxo.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fyi\\\u002Ftc\\\u002F1f\\\u002Fyitc1flhf9xjzvvmiw7zpihss9k.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fd5\\\u002Fvi\\\u002Fic\\\u002Fd5viichgsvjdi4h-v2ejeehowli.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F0q\\\u002Fvt\\\u002Fjo\\\u002F0qvtjoaqaxhul9zkmsmff47mrzs.gif\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F69d\\\u002F9a5\\\u002F2ff\\\u002F69d9a52ff5b26c71538a8b018a3566dd.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F313\\\u002F70c\\\u002F99a\\\u002F31370c99a378f017d95a136dac95fb83.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Ff19\\\u002F277\\\u002Fa5d\\\u002Ff19277a5ddff65a2398f77c259eb773e.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fc3d\\\u002F5ab\\\u002F01b\\\u002Fc3d5ab01bfbc445938979764ccbf181b.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fik\\\u002Fbl\\\u002Foo\\\u002Fikbloovbhouaxawegt7p6jrnxl8.png\"]}","metaDescription":"Сегодня показываем и рассказываем, как прямо в браузере при помощи ИИ распознать сложную позу человека. Это пригодится, например, в разработке приложений для физических упражнений. Ранее с этой...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"skillfactory":{"alias":"skillfactory","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F9bb\u002F5f7\u002Fd50\u002F9bb5f7d50871bf0981f64b1970f22fe1.png","titleHtml":"SkillFactory","descriptionHtml":"Школа Computer Science. Скидка 45% по коду HABR","relatedData":null,"statistics":{"postsCount":538,"newsCount":3,"vacanciesCount":4,"employeesCount":27,"careerRating":null,"subscribersCount":2670,"rating":146.01,"invest":null},"foundationDate":{"year":"2012","month":"11","day":"01"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"http:\u002F\u002Fwww.skillfactory.ru\u002F","staffNumber":"201–500 человек","registrationDate":"2012-12-14T13:25:37+00:00","representativeUser":{"alias":"skillfactory_school","fullname":"Skillfactory School"},"contacts":[{"title":"Сайт","url":"http:\u002F\u002Fwww.skillfactory.ru\u002F"}],"settings":{"analyticsSettings":[{"type":"ym","trackingId":"38813825"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"SkillFactory, Москва - Школа Computer Science. Скидка 45% по коду HABR с 1 ноября 2012 г.","title":"SkillFactory, Москва - Школа Computer Science. Скидка 45% по коду HABR с 1 ноября 2012 г.","keywords":["Программирование","Python","Машинное обучение","Читальный зал","Научно-популярное"],"descriptionHtml":"538 статей от авторов компании SkillFactory","description":"538 статей от авторов компании SkillFactory"},"aDeskSettings":null,"careerAlias":"skillfactory","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

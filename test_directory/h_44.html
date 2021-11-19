@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Рецепты PostgreSQL: виджет Государственного Адресного Реестра / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/post\/585244\/"},"headline":"Рецепты PostgreSQL: виджет Государственного Адресного Реестра","datePublished":"2021-10-25T07:36:37+03:00","dateModified":"2021-10-25T12:40:15+03:00","author":{"@type":"Person","name":"RekGRpth"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) загрузить. При инициализации базы были созданы не только таблицы для загрузк...","url":"https:\/\/habr.com\/ru\/post\/585244\/#post-content-body","about":["h_postgresql","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/585244\/7422419bc2ea920a6cf65479af17df4c\/"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Рецепты PostgreSQL: виджет Государственного Адресного Реестра" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Рецепты PostgreSQL: виджет Государственного Адресного Реестра" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Рецепты PostgreSQL: виджет Государственного Адресного Реестра" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) загрузить. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) загрузить. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) загрузить. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) загрузить. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) загрузить. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/585244/7422419bc2ea920a6cf65479af17df4c/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/585244/7422419bc2ea920a6cf65479af17df4c/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/585244/7422419bc2ea920a6cf65479af17df4c/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/585244/7422419bc2ea920a6cf65479af17df4c/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/585244/7422419bc2ea920a6cf65479af17df4c/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="585244" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-25T04:36:37.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/585244/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/post/585244/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/585244/7422419bc2ea920a6cf65479af17df4c/" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/585244/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" data-async-called="true" class="tm-page"><div class="tm-page-width"><!----> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/RekGRpth/" title="RekGRpth" class="tm-user-info__userpic"><div class="tm-entity-image"><svg height="24" width="24" class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <span class="tm-user-info__user"><a href="/ru/users/RekGRpth/" class="tm-user-info__username">
+      RekGRpth
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-25T04:36:37.000Z" title="2021-10-25, 07:36">сегодня в 07:36</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Рецепты PostgreSQL: виджет Государственного Адресного Реестра</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/postgresql/" class="tm-article-snippet__hubs-item-link"><span>PostgreSQL</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Tutorial
+      </span></div></div> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><p>Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) <a href="https://habr.com/ru/post/584724/" rel="noopener noreferrer nofollow">загрузить</a>. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и функции для виджета. В этой статье остановимся на них подробнее.</p><p>Итак, для виджета будем использовать следующую иерархическую таблицу (и индексы), в которую поместим все актуальные данные по всем регионам:</p><pre><code class="sql">CREATE TABLE IF NOT EXISTS gar ( -- создаём таблицу если её ещё нет
+    -- первичный ключ
+    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    parent uuid, -- родитель
+    name text NOT NULL, -- наименование
+    short text NOT NULL, -- краткий тип
+    type text NOT NULL, -- полный тип
+    post text, -- почтовый индекс
+    region smallint NOT NULL -- код региона
+);
+CREATE INDEX IF NOT EXISTS gar_parent_idx ON gar USING btree (parent);
+CREATE INDEX IF NOT EXISTS gar_name_idx ON gar USING btree (name);
+CREATE INDEX IF NOT EXISTS gar_short_idx ON gar USING btree (short);
+CREATE INDEX IF NOT EXISTS gar_type_idx ON gar USING btree (type);
+CREATE INDEX IF NOT EXISTS gar_region_idx ON gar USING btree (region);</code></pre><p>Далее определим вспомогательную функцию, которую будем использовать для получения полного наименования</p><pre><code class="sql">-- создаём или меняем функцию от наименования, краткого и полного типа
+CREATE OR REPLACE FUNCTION gar_text(name text, short text, type text)
+RETURNS text -- возвращающую полное наименование
+LANGUAGE sql -- использующую язык sql
+IMMUTABLE AS $body$ -- зависящую только от своих параметров
+    select case -- в случае
+    		-- когда полный тип не определён, возвратить наименование
+        when gar_text.type in ('Не определено') then gar_text.name
+        -- когда полный тип - Чувашия, возвратить наименование и полный тип
+        when gar_text.type in ('Чувашия') then gar_text.name||' '||gar_text.type
+        -- когда в наименовании содержится полный тип, возвратить только наименование
+        when gar_text.name ilike '%'||gar_text.type||'%' then gar_text.name
+        -- иначе возвратить краткий тип точка наименование
+        else gar_text.short||'.'||gar_text.name
+    end;
+$body$;</code></pre><p>Также создадим представление с добавлением этой функции в качестве колонки</p><pre><code class="sql">CREATE OR REPLACE VIEW gar_view AS -- создаём или меняем представление
+SELECT gar.*, -- выбирая всё
+gar_text(name, short, type) AS text -- добавляя полное наименование
+from gar; -- из ГАРа</code></pre><p>Далее определим вспомогательную функцию для подсчёта количества дочерних элементов</p><pre><code class="sql">-- создаём или меняем функцию от идентификатора
+CREATE OR REPLACE FUNCTION gar_child(id uuid)
+-- возвращающую количесвтво его дочерних элементов
+RETURNS bigint LANGUAGE sql STABLE AS $body$
+    select count(1) from gar where parent = gar_child.id;
+$body$;</code></pre><p>Также, вспомогательную функцию для выбора, если задан массив идентификаторов</p><pre><code class="sql">-- создаём или меняем функцию от массива идентификаторов
+CREATE OR REPLACE FUNCTION gar_select(id uuid[])
+RETURNS SETOF gar_view -- возвращающую набор строк из представления
+LANGUAGE sql STABLE AS $body$
+		-- выбираем всё, в т.ч. и полное наименование
+    select gar.*, gar_text(name, short, type) AS text from gar
+    -- в указанном агрументом функции порядке
+    inner join (select unnest(gar_select.id) as id,
+                generate_subscripts(gar_select.id, 1) as i) as _ on _.id = gar.id
+    -- для указанных в аргументе функции идентификаторов
+    where gar.id = any(gar_select.id) order by i;
+$body$;</code></pre><p>И ещё вспомогательную функцию для рекурсивного выбора вверх родителей указанного идентификатора, ограничиваясь указанным родительским идентификатором</p><pre><code class="sql">CREATE OR REPLACE FUNCTION gar_select( -- создаём или меняем функцию от
+id uuid, -- идентификатора
+parent uuid DEFAULT NULL -- и необязательного родительского идентификатора
+) RETURNS SETOF gar_view -- возвращающую набор строк представления
+LANGUAGE sql STABLE AS $body$
+    with recursive _ as ( -- рекурсивно
+      	-- сначала выбирая по указанному идентификатору
+        select gar.*, 0 as i from gar where id = gar_select.id
+        union
+      	-- а потом выбирая родителей вверх до указанного родителя или до самого верха
+        select gar.*, _.i + 1 as i from gar inner join _ on (_.parent = gar.id)
+        where gar_select.parent is null or _.parent != gar_select.parent
+    ) select id, parent, name, short, type, post, region, gar_text(name, short, type) AS text 
+    from _ order by i desc;
+$body$;</code></pre><p>Также вспомогательную функцию для поиска</p><pre><code class="sql">CREATE OR REPLACE FUNCTION gar_select( -- создаём или меняем функцию
+	parent uuid, -- от родителя
+  name text, -- наименования
+  short text, -- краткого типа
+  type text, -- полного типа
+  post text, -- почтового индекса
+  region text -- кода региона
+) RETURNS SETOF gar_view -- возвращающую набор строк представления
+LANGUAGE sql STABLE AS $body$
+		-- выбираем всё, где
+    select gar.*, gar_text(gar.name, gar.short, gar.type) AS text from gar where true
+    -- если не задан родитель то без родителя, а если задан - то по нему
+    and ((gar_select.parent is null and parent is null) or parent = gar_select.parent)
+		-- если задано наимнование, то ищем по нему сначала или после пробела или после дефиса или после точки    
+    and (gar_select.name is null or name ilike gar_select.name||'%' or name ilike '% '||gar_select.name||'%' or name ilike '%-'||gar_select.name||'%' or name ilike '%.'||gar_select.name||'%')
+    -- если задан кратки тип, то ищем по нему
+    and (gar_select.short is null or short ilike gar_select.short)
+    -- если задан полный тип и это массив - то учитываем все элементы массива, а если не массив, то сначала
+    and (gar_select.type is null or case when gar_select.type ilike '{%}' then type = any(gar_select.type::text[]) else type ilike gar_select.type||'%' end)
+    -- если задан почтовый индекс, то ищем по нему сначала
+    and (gar_select.post is null or post ilike gar_select.post||'%')
+    -- если задан код региона и это массив - то учитываем все элементы массива, а если не массив - то ищем по нему 
+    and (gar_select.region is null or case when gar_select.region ilike '{%}' then region = any(gar_select.region::smallint[]) else region = gar_select.region::smallint end)
+    -- сортируем сначала по численному наименованию, а потом по наименованию
+    order by to_number('0'||name, '999999999'), name;
+$body$;</code></pre><p>И ещё вспомогательную функцию для поиска родителей</p><pre><code class="sql">-- создаём или меняем функцию от родителя, наименования, ...
+CREATE OR REPLACE FUNCTION gar_select_parent(parent uuid, name text, short text, type text, post text, region text) RETURNS SETOF gar_view LANGUAGE sql STABLE AS $body$
+		-- выбираем всё
+    select gar.*, gar_text(gar.name, gar.short, gar.type) AS text from gar
+    -- где полный тип из указанного массива
+    where type = any(gar_select_parent.type::text[])
+    -- и если заданно наименование , то ищем по нему или после пробела или после дефиса или после точки
+    and (gar_select_parent.name is null or name ilike gar_select_parent.name||'%' or name ilike '% '||gar_select_parent.name||'%' or name ilike '%-'||gar_select_parent.name||'%' or name ilike '%.'||gar_select_parent.name||'%')
+		-- сортируя по глубине вложенности    
+    order by (select count(id) from gar_select(id, gar_select_parent.parent)), to_number('0'||name, '999999999'), name;
+$body$;</code></pre><p>Ну и теперь, главную функцию для виджета</p><pre><code class="sql">-- создаём или меняем функцию от json, возвращающую json
+CREATE OR REPLACE FUNCTION gar_select(INOUT json json) RETURNS json LANGUAGE plpgsql STABLE AS $body$ &lt;&lt;local>> declare
+    id text default nullif(trim(gar_select.json->>'id'), ''); -- уид
+    parent text default nullif(trim(gar_select.json->>'parent'), ''); -- уид родителя
+    name text default nullif(trim(gar_select.json->>'name'), ''); -- наименование
+    short text default nullif(trim(gar_select.json->>'short'), ''); -- кратко
+    type text default nullif(trim(gar_select.json->>'type'), ''); -- тип
+    post text default nullif(trim(gar_select.json->>'port'), ''); -- индекс
+    region text default nullif(trim(gar_select.json->>'region'), ''); -- регион
+    text text default nullif(trim(gar_select.json->>'text'), ''); -- строка поиска
+    offset int default coalesce(nullif(trim(gar_select.json->>'offset'), '')::int, 0); -- офсет
+    limit int default coalesce(nullif(trim(gar_select.json->>'limit'), '')::int, 10); -- лимит
+    "full" boolean default coalesce(nullif(trim(gar_select.json->>'full'), '')::boolean, false); -- все?
+    child boolean default coalesce(nullif(trim(gar_select.json->>'child'), '')::boolean, false); -- дети?
+begin
+    if local.id is not null then -- если задан id
+        local.id = translate(local.id, '[]','{}');
+        if local.id ilike '{%}' then -- если id - массив
+            if local.full then -- если все результаты
+                with _ as (
+                    with _ as (
+                        select * from gar_select(local.id::uuid[])
+                    ) select count(1), gar_select.json as query, local.offset, local.limit, (
+                        with _ as (
+                            select * from _ offset local.offset limit local.limit
+                        ) select coalesce(json_agg((select json_agg(_) from (
+                            select *, case when local.child then gar_child(_.id) end as child from gar_select(_.id::uuid)
+                        ) as _)), '[]'::json) from _
+                    ) as data from _
+                ) select to_json(_) from _ into strict gar_select.json;
+            else -- иначе - не все результаты
+                with _ as (
+                    with _ as (
+                        select * from gar_select(local.id::uuid[])
+                    ) select count(1), gar_select.json as query, local.offset, local.limit, (
+                        with _ as (
+                            select *, case when local.child then gar_child(_.id) end as child from _ offset local.offset limit local.limit
+                        ) select coalesce(json_agg(_), '[]'::json) from _
+                    ) as data from _
+                ) select to_json(_) from _ into strict gar_select.json;
+            end if;
+        else  -- иначе id - не массив
+            if local.full then -- если все результаты
+                with _ as (
+                    with _ as (
+                        select * from gar_select(local.id::uuid)
+                    ) select count(1), gar_select.json as query, local.offset, local.limit, (
+                        with _ as (
+                            select * from _ offset local.offset limit local.limit
+                        ) select coalesce(json_agg((select json_agg(_) from (
+                            select *, case when local.child then gar_child(_.id) end as child from gar_select(_.id::uuid)
+                        ) as _)), '[]'::json) from _
+                    ) as data from _
+                ) select to_json(_) from _ into strict gar_select.json;
+            else -- иначе - не все результаты
+                with _ as (
+                    with _ as (
+                        select * from gar_select(local.id::uuid)
+                    ) select count(1), gar_select.json as query, local.offset, local.limit, (
+                        with _ as (
+                            select *, case when local.child then gar_child(_.id) end as child from _ offset local.offset limit local.limit
+                        ) select coalesce(json_agg(_), '[]'::json) from _
+                    ) as data from _
+                ) select to_json(_) from _ into strict gar_select.json;
+            end if;
+        end if;
+    else -- иначе - не задан id
+        if local.text is not null then -- если искать что-то
+            local.name = local.text;
+            local.short = split_part(local.name, '.', 1);
+            if local.short = local.name or position(' ' in local.short) > 0 or position(',' in local.short) > 0 then
+                local.short = null;
+            else
+                local.name = split_part(local.name, '.', 2);
+            end if;
+            local.name = ltrim(local.name, ' ');
+        end if;
+        if local.text is not null and local.parent is null then -- если искать что-то и родитель не задан
+            with _ as (
+                with _ as (
+                    select * from gar_select_parent(local.parent::uuid, local.name, local.short, array['Город', 'Поселок', 'Поселение', 'Деревня', 'Населенный пункт', 'Село', 'Рабочий поселок', 'Поселок городского типа']::text, local.post, local.region)
+                ) select count(1), gar_select.json as query, local.offset, local.limit, (
+                    with _ as (
+                        select * from _ offset local.offset limit local.limit
+                    ) select coalesce(json_agg((select json_agg(_) from (
+                        select * from gar_select(_.id, local.parent::uuid)
+                    ) as _)), '[]'::json) from _
+                ) as data from _
+            ) select to_json(_) from _ into strict json;
+        else
+            local.type = translate(local.type, '[]','{}');
+            if local.full then -- если все результаты
+                with _ as (
+                    with _ as (
+                        select * from gar_select(local.parent::uuid, local.name, local.short, local.type, local.post, local.region)
+                    ) select count(1), gar_select.json as query, local.offset, local.limit, (
+                        with _ as (
+                            select * from _ offset local.offset limit local.limit
+                        ) select coalesce(json_agg((select json_agg(_) from (
+                            select *, case when local.child then gar_child(_.id) end as child from gar_select(_.id::uuid)
+                        ) as _)), '[]'::json) from _
+                    ) as data from _
+                ) select to_json(_) from _ into strict gar_select.json;
+            else -- иначе - не все результаты
+                with _ as (
+                    with _ as (
+                        select * from gar_select(local.parent::uuid, local.name, local.short, local.type, local.post, local.region)
+                    ) select count(1), gar_select.json as query, local.offset, local.limit, (
+                        with _ as (
+                            select *, case when local.child then gar_child(_.id) end as child from _ offset local.offset limit local.limit
+                        ) select coalesce(json_agg(_), '[]'::json) from _
+                    ) as data from _
+                ) select to_json(_) from _ into strict gar_select.json;
+            end if;
+        end if;
+    end if;
+end;$body$;</code></pre></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bpostgresql%5D" class="tm-tags-list__link">postgresql</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/hub/postgresql/" class="tm-hubs-list__link">
+    PostgreSQL
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 1: ↑1 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 1: ↑1 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+1</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">959</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    5
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/RekGRpth/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><svg class="tm-svg-img tm-image-placeholder tm-image-placeholder_green"><!----> <use xlink:href="/img/megazord-v24.ce74655c.svg#placeholder-user"></use></svg></div></a> <div class="tm-user-card__meta"><div title=" 33 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    9
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">10.5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><!----> <a href="/ru/users/RekGRpth/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @RekGRpth
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Программист</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="https://career.habr.com/rekgrpth" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Хабр Карьера
+    </a><a href="https://github.com/rekgrpth/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Github
+    </a><a href="https://bitbucket.org/rekgrpth" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Bitbucket
+    </a><a href="skype:rekgrpth" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Skype
+    </a><a href="https://telegram.me/rekgrpth" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Telegram
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/post/585244/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 3 
+    </span></a> <!----></div></div></div> <div class="tm-ad-banner__container tm-page-article__banner"><!----> <div id="articleBottomBanner" class="tm-ad-banner"></div></div> <!----> <!----> <!----> <!----> </div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__ads tm-layout-sidebar__ads_initial"><div class="tm-ad-banner__container tm-layout-sidebar__banner"><!----> <div id="sidebarBanner" class="tm-ad-banner"></div></div></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/post/585244/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/post/585244/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"585244":{"id":"585244","timePublished":"2021-10-25T04:36:37+00:00","isCorporative":false,"lang":"ru","titleHtml":"Рецепты PostgreSQL: виджет Государственного Адресного Реестра","leadData":{"textHtml":"\u003Cp\u003EДля приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F584724\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eзагрузить\u003C\u002Fa\u003E. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и функции для виджета. В этой статье остановимся на них подробнее.\u003C\u002Fp\u003E","imageUrl":null,"buttonTextHtml":"Итак","image":null},"editorVersion":"2.0","postType":"article","postLabels":[{"type":"tutorial","data":null}],"author":{"scoreStats":{"score":9,"votesCount":33},"rating":10.5,"relatedData":null,"contacts":[{"title":"Хабр Карьера","url":"https:\u002F\u002Fcareer.habr.com\u002Frekgrpth","value":"rekgrpth"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Frekgrpth\u002F","value":"rekgrpth"},{"title":"Bitbucket","url":"https:\u002F\u002Fbitbucket.org\u002Frekgrpth","value":"rekgrpth"},{"title":"Skype","url":"skype:rekgrpth","value":"rekgrpth"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002Frekgrpth","value":"rekgrpth"}],"authorContacts":[{"title":"Хабр Карьера","url":"https:\u002F\u002Fcareer.habr.com\u002Frekgrpth","value":"rekgrpth"},{"title":"Github","url":"https:\u002F\u002Fgithub.com\u002Frekgrpth\u002F","value":"rekgrpth"},{"title":"Bitbucket","url":"https:\u002F\u002Fbitbucket.org\u002Frekgrpth","value":"rekgrpth"},{"title":"Skype","url":"skype:rekgrpth","value":"rekgrpth"},{"title":"Telegram","url":"https:\u002F\u002Ftelegram.me\u002Frekgrpth","value":"rekgrpth"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"438760","alias":"RekGRpth","fullname":null,"avatarUrl":null,"speciality":"Программист"},"statistics":{"commentsCount":3,"favoritesCount":5,"readingCount":959,"score":1,"votesCount":1},"hubs":[{"relatedData":null,"id":"358","alias":"postgresql","type":"collective","title":"PostgreSQL","titleHtml":"PostgreSQL","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cp\u003EДля приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fpost\u002F584724\u002F\" rel=\"noopener noreferrer nofollow\"\u003Eзагрузить\u003C\u002Fa\u003E. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и функции для виджета. В этой статье остановимся на них подробнее.\u003C\u002Fp\u003E\u003Cp\u003EИтак, для виджета будем использовать следующую иерархическую таблицу (и индексы), в которую поместим все актуальные данные по всем регионам:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ECREATE TABLE IF NOT EXISTS gar ( -- создаём таблицу если её ещё нет\n    -- первичный ключ\n    id uuid NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,\n    parent uuid, -- родитель\n    name text NOT NULL, -- наименование\n    short text NOT NULL, -- краткий тип\n    type text NOT NULL, -- полный тип\n    post text, -- почтовый индекс\n    region smallint NOT NULL -- код региона\n);\nCREATE INDEX IF NOT EXISTS gar_parent_idx ON gar USING btree (parent);\nCREATE INDEX IF NOT EXISTS gar_name_idx ON gar USING btree (name);\nCREATE INDEX IF NOT EXISTS gar_short_idx ON gar USING btree (short);\nCREATE INDEX IF NOT EXISTS gar_type_idx ON gar USING btree (type);\nCREATE INDEX IF NOT EXISTS gar_region_idx ON gar USING btree (region);\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее определим вспомогательную функцию, которую будем использовать для получения полного наименования\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E-- создаём или меняем функцию от наименования, краткого и полного типа\nCREATE OR REPLACE FUNCTION gar_text(name text, short text, type text)\nRETURNS text -- возвращающую полное наименование\nLANGUAGE sql -- использующую язык sql\nIMMUTABLE AS $body$ -- зависящую только от своих параметров\n    select case -- в случае\n    \t\t-- когда полный тип не определён, возвратить наименование\n        when gar_text.type in ('Не определено') then gar_text.name\n        -- когда полный тип - Чувашия, возвратить наименование и полный тип\n        when gar_text.type in ('Чувашия') then gar_text.name||' '||gar_text.type\n        -- когда в наименовании содержится полный тип, возвратить только наименование\n        when gar_text.name ilike '%'||gar_text.type||'%' then gar_text.name\n        -- иначе возвратить краткий тип точка наименование\n        else gar_text.short||'.'||gar_text.name\n    end;\n$body$;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТакже создадим представление с добавлением этой функции в качестве колонки\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ECREATE OR REPLACE VIEW gar_view AS -- создаём или меняем представление\nSELECT gar.*, -- выбирая всё\ngar_text(name, short, type) AS text -- добавляя полное наименование\nfrom gar; -- из ГАРа\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EДалее определим вспомогательную функцию для подсчёта количества дочерних элементов\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E-- создаём или меняем функцию от идентификатора\nCREATE OR REPLACE FUNCTION gar_child(id uuid)\n-- возвращающую количесвтво его дочерних элементов\nRETURNS bigint LANGUAGE sql STABLE AS $body$\n    select count(1) from gar where parent = gar_child.id;\n$body$;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТакже, вспомогательную функцию для выбора, если задан массив идентификаторов\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E-- создаём или меняем функцию от массива идентификаторов\nCREATE OR REPLACE FUNCTION gar_select(id uuid[])\nRETURNS SETOF gar_view -- возвращающую набор строк из представления\nLANGUAGE sql STABLE AS $body$\n\t\t-- выбираем всё, в т.ч. и полное наименование\n    select gar.*, gar_text(name, short, type) AS text from gar\n    -- в указанном агрументом функции порядке\n    inner join (select unnest(gar_select.id) as id,\n                generate_subscripts(gar_select.id, 1) as i) as _ on _.id = gar.id\n    -- для указанных в аргументе функции идентификаторов\n    where gar.id = any(gar_select.id) order by i;\n$body$;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ ещё вспомогательную функцию для рекурсивного выбора вверх родителей указанного идентификатора, ограничиваясь указанным родительским идентификатором\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ECREATE OR REPLACE FUNCTION gar_select( -- создаём или меняем функцию от\nid uuid, -- идентификатора\nparent uuid DEFAULT NULL -- и необязательного родительского идентификатора\n) RETURNS SETOF gar_view -- возвращающую набор строк представления\nLANGUAGE sql STABLE AS $body$\n    with recursive _ as ( -- рекурсивно\n      \t-- сначала выбирая по указанному идентификатору\n        select gar.*, 0 as i from gar where id = gar_select.id\n        union\n      \t-- а потом выбирая родителей вверх до указанного родителя или до самого верха\n        select gar.*, _.i + 1 as i from gar inner join _ on (_.parent = gar.id)\n        where gar_select.parent is null or _.parent != gar_select.parent\n    ) select id, parent, name, short, type, post, region, gar_text(name, short, type) AS text \n    from _ order by i desc;\n$body$;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EТакже вспомогательную функцию для поиска\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003ECREATE OR REPLACE FUNCTION gar_select( -- создаём или меняем функцию\n\tparent uuid, -- от родителя\n  name text, -- наименования\n  short text, -- краткого типа\n  type text, -- полного типа\n  post text, -- почтового индекса\n  region text -- кода региона\n) RETURNS SETOF gar_view -- возвращающую набор строк представления\nLANGUAGE sql STABLE AS $body$\n\t\t-- выбираем всё, где\n    select gar.*, gar_text(gar.name, gar.short, gar.type) AS text from gar where true\n    -- если не задан родитель то без родителя, а если задан - то по нему\n    and ((gar_select.parent is null and parent is null) or parent = gar_select.parent)\n\t\t-- если задано наимнование, то ищем по нему сначала или после пробела или после дефиса или после точки    \n    and (gar_select.name is null or name ilike gar_select.name||'%' or name ilike '% '||gar_select.name||'%' or name ilike '%-'||gar_select.name||'%' or name ilike '%.'||gar_select.name||'%')\n    -- если задан кратки тип, то ищем по нему\n    and (gar_select.short is null or short ilike gar_select.short)\n    -- если задан полный тип и это массив - то учитываем все элементы массива, а если не массив, то сначала\n    and (gar_select.type is null or case when gar_select.type ilike '{%}' then type = any(gar_select.type::text[]) else type ilike gar_select.type||'%' end)\n    -- если задан почтовый индекс, то ищем по нему сначала\n    and (gar_select.post is null or post ilike gar_select.post||'%')\n    -- если задан код региона и это массив - то учитываем все элементы массива, а если не массив - то ищем по нему \n    and (gar_select.region is null or case when gar_select.region ilike '{%}' then region = any(gar_select.region::smallint[]) else region = gar_select.region::smallint end)\n    -- сортируем сначала по численному наименованию, а потом по наименованию\n    order by to_number('0'||name, '999999999'), name;\n$body$;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EИ ещё вспомогательную функцию для поиска родителей\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E-- создаём или меняем функцию от родителя, наименования, ...\nCREATE OR REPLACE FUNCTION gar_select_parent(parent uuid, name text, short text, type text, post text, region text) RETURNS SETOF gar_view LANGUAGE sql STABLE AS $body$\n\t\t-- выбираем всё\n    select gar.*, gar_text(gar.name, gar.short, gar.type) AS text from gar\n    -- где полный тип из указанного массива\n    where type = any(gar_select_parent.type::text[])\n    -- и если заданно наименование , то ищем по нему или после пробела или после дефиса или после точки\n    and (gar_select_parent.name is null or name ilike gar_select_parent.name||'%' or name ilike '% '||gar_select_parent.name||'%' or name ilike '%-'||gar_select_parent.name||'%' or name ilike '%.'||gar_select_parent.name||'%')\n\t\t-- сортируя по глубине вложенности    \n    order by (select count(id) from gar_select(id, gar_select_parent.parent)), to_number('0'||name, '999999999'), name;\n$body$;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EНу и теперь, главную функцию для виджета\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"sql\"\u003E-- создаём или меняем функцию от json, возвращающую json\nCREATE OR REPLACE FUNCTION gar_select(INOUT json json) RETURNS json LANGUAGE plpgsql STABLE AS $body$ &lt;&lt;local\u003E\u003E declare\n    id text default nullif(trim(gar_select.json-\u003E\u003E'id'), ''); -- уид\n    parent text default nullif(trim(gar_select.json-\u003E\u003E'parent'), ''); -- уид родителя\n    name text default nullif(trim(gar_select.json-\u003E\u003E'name'), ''); -- наименование\n    short text default nullif(trim(gar_select.json-\u003E\u003E'short'), ''); -- кратко\n    type text default nullif(trim(gar_select.json-\u003E\u003E'type'), ''); -- тип\n    post text default nullif(trim(gar_select.json-\u003E\u003E'port'), ''); -- индекс\n    region text default nullif(trim(gar_select.json-\u003E\u003E'region'), ''); -- регион\n    text text default nullif(trim(gar_select.json-\u003E\u003E'text'), ''); -- строка поиска\n    offset int default coalesce(nullif(trim(gar_select.json-\u003E\u003E'offset'), '')::int, 0); -- офсет\n    limit int default coalesce(nullif(trim(gar_select.json-\u003E\u003E'limit'), '')::int, 10); -- лимит\n    \"full\" boolean default coalesce(nullif(trim(gar_select.json-\u003E\u003E'full'), '')::boolean, false); -- все?\n    child boolean default coalesce(nullif(trim(gar_select.json-\u003E\u003E'child'), '')::boolean, false); -- дети?\nbegin\n    if local.id is not null then -- если задан id\n        local.id = translate(local.id, '[]','{}');\n        if local.id ilike '{%}' then -- если id - массив\n            if local.full then -- если все результаты\n                with _ as (\n                    with _ as (\n                        select * from gar_select(local.id::uuid[])\n                    ) select count(1), gar_select.json as query, local.offset, local.limit, (\n                        with _ as (\n                            select * from _ offset local.offset limit local.limit\n                        ) select coalesce(json_agg((select json_agg(_) from (\n                            select *, case when local.child then gar_child(_.id) end as child from gar_select(_.id::uuid)\n                        ) as _)), '[]'::json) from _\n                    ) as data from _\n                ) select to_json(_) from _ into strict gar_select.json;\n            else -- иначе - не все результаты\n                with _ as (\n                    with _ as (\n                        select * from gar_select(local.id::uuid[])\n                    ) select count(1), gar_select.json as query, local.offset, local.limit, (\n                        with _ as (\n                            select *, case when local.child then gar_child(_.id) end as child from _ offset local.offset limit local.limit\n                        ) select coalesce(json_agg(_), '[]'::json) from _\n                    ) as data from _\n                ) select to_json(_) from _ into strict gar_select.json;\n            end if;\n        else  -- иначе id - не массив\n            if local.full then -- если все результаты\n                with _ as (\n                    with _ as (\n                        select * from gar_select(local.id::uuid)\n                    ) select count(1), gar_select.json as query, local.offset, local.limit, (\n                        with _ as (\n                            select * from _ offset local.offset limit local.limit\n                        ) select coalesce(json_agg((select json_agg(_) from (\n                            select *, case when local.child then gar_child(_.id) end as child from gar_select(_.id::uuid)\n                        ) as _)), '[]'::json) from _\n                    ) as data from _\n                ) select to_json(_) from _ into strict gar_select.json;\n            else -- иначе - не все результаты\n                with _ as (\n                    with _ as (\n                        select * from gar_select(local.id::uuid)\n                    ) select count(1), gar_select.json as query, local.offset, local.limit, (\n                        with _ as (\n                            select *, case when local.child then gar_child(_.id) end as child from _ offset local.offset limit local.limit\n                        ) select coalesce(json_agg(_), '[]'::json) from _\n                    ) as data from _\n                ) select to_json(_) from _ into strict gar_select.json;\n            end if;\n        end if;\n    else -- иначе - не задан id\n        if local.text is not null then -- если искать что-то\n            local.name = local.text;\n            local.short = split_part(local.name, '.', 1);\n            if local.short = local.name or position(' ' in local.short) \u003E 0 or position(',' in local.short) \u003E 0 then\n                local.short = null;\n            else\n                local.name = split_part(local.name, '.', 2);\n            end if;\n            local.name = ltrim(local.name, ' ');\n        end if;\n        if local.text is not null and local.parent is null then -- если искать что-то и родитель не задан\n            with _ as (\n                with _ as (\n                    select * from gar_select_parent(local.parent::uuid, local.name, local.short, array['Город', 'Поселок', 'Поселение', 'Деревня', 'Населенный пункт', 'Село', 'Рабочий поселок', 'Поселок городского типа']::text, local.post, local.region)\n                ) select count(1), gar_select.json as query, local.offset, local.limit, (\n                    with _ as (\n                        select * from _ offset local.offset limit local.limit\n                    ) select coalesce(json_agg((select json_agg(_) from (\n                        select * from gar_select(_.id, local.parent::uuid)\n                    ) as _)), '[]'::json) from _\n                ) as data from _\n            ) select to_json(_) from _ into strict json;\n        else\n            local.type = translate(local.type, '[]','{}');\n            if local.full then -- если все результаты\n                with _ as (\n                    with _ as (\n                        select * from gar_select(local.parent::uuid, local.name, local.short, local.type, local.post, local.region)\n                    ) select count(1), gar_select.json as query, local.offset, local.limit, (\n                        with _ as (\n                            select * from _ offset local.offset limit local.limit\n                        ) select coalesce(json_agg((select json_agg(_) from (\n                            select *, case when local.child then gar_child(_.id) end as child from gar_select(_.id::uuid)\n                        ) as _)), '[]'::json) from _\n                    ) as data from _\n                ) select to_json(_) from _ into strict gar_select.json;\n            else -- иначе - не все результаты\n                with _ as (\n                    with _ as (\n                        select * from gar_select(local.parent::uuid, local.name, local.short, local.type, local.post, local.region)\n                    ) select count(1), gar_select.json as query, local.offset, local.limit, (\n                        with _ as (\n                            select *, case when local.child then gar_child(_.id) end as child from _ offset local.offset limit local.limit\n                        ) select coalesce(json_agg(_), '[]'::json) from _\n                    ) as data from _\n                ) select to_json(_) from _ into strict gar_select.json;\n            end if;\n        end if;\n    end if;\nend;$body$;\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"postgresql"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F585244\u002F7422419bc2ea920a6cf65479af17df4c\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F585244\u002F7422419bc2ea920a6cf65479af17df4c\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F585244\\\u002F\"},\"headline\":\"Рецепты PostgreSQL: виджет Государственного Адресного Реестра\",\"datePublished\":\"2021-10-25T07:36:37+03:00\",\"dateModified\":\"2021-10-25T12:40:15+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"RekGRpth\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) загрузить. При инициализации базы были созданы не только таблицы для загрузк...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fpost\\\u002F585244\\\u002F#post-content-body\",\"about\":[\"h_postgresql\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F585244\\\u002F7422419bc2ea920a6cf65479af17df4c\\\u002F\"]}","metaDescription":"Для приготовления виджета Государственного Адресного Реестра сначала нужно его (ГАР) загрузить. При инициализации базы были созданы не только таблицы для загрузки в них ГАР, но также и таблица и...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":"postgresql"},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

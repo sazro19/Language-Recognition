@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Как мы обновляли мобильное приложение для официантов: трудности перевода стека KMM + UI на Flutter из теста в продакшн / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/r_k\/blog\/582272\/"},"headline":"Как мы обновляли мобильное приложение для официантов: трудности перевода стека KMM + UI на Flutter из теста в продакшн","datePublished":"2021-10-08T15:09:46+03:00","dateModified":"2021-10-08T15:36:19+03:00","author":{"@type":"Person","name":"Сергей"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании r_keeper. Я уже рассказывал, как и почему мы выбрали стек Kotlin Multiplatfor...","url":"https:\/\/habr.com\/ru\/company\/r_k\/blog\/582272\/#post-content-body","about":["c_r_k","h_programming","h_mobile_dev","h_kotlin","h_flutter","f_develop"],"image":["https:\/\/habr.com\/share\/publication\/582272\/d82cba49f348a9addafe3e265b2e9ec5\/","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/e9f\/32e\/7df\/e9f32e7df663807510ce941525c4bcdc.jpeg","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/05c\/cce\/184\/05ccce184537a44a12b51e96bd3edced.png","https:\/\/habrastorage.org\/getpro\/habr\/upload_files\/605\/5b5\/307\/6055b53071062b2e5ca51aadaccd6cd0.png"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="Как мы обновляли мобильное приложение для официантов: трудности перевода стека KMM + UI на Flutter из теста в продакшн" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="Как мы обновляли мобильное приложение для официантов: трудности перевода стека KMM + UI на Flutter из теста в продакшн" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="Как мы обновляли мобильное приложение для официантов: трудности перевода стека KMM + UI на Flutter из теста в продакшн" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании r_keeper. Я уже рассказывал, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании r_keeper. Я уже рассказывал, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании r_keeper. Я уже рассказывал, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании r_keeper. Я уже рассказывал, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании r_keeper. Я уже рассказывал, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habrastorage.org/getpro/habr/upload_files/e9f/32e/7df/e9f32e7df663807510ce941525c4bcdc.jpeg" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habrastorage.org/getpro/habr/upload_files/e9f/32e/7df/e9f32e7df663807510ce941525c4bcdc.jpeg" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habrastorage.org/getpro/habr/upload_files/e9f/32e/7df/e9f32e7df663807510ce941525c4bcdc.jpeg" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habrastorage.org/getpro/habr/upload_files/e9f/32e/7df/e9f32e7df663807510ce941525c4bcdc.jpeg" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habrastorage.org/getpro/habr/upload_files/e9f/32e/7df/e9f32e7df663807510ce941525c4bcdc.jpeg" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="582272" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-08T12:09:46.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/582272/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/r_k/blog/582272/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habrastorage.org/getpro/habr/upload_files/e9f/32e/7df/e9f32e7df663807510ce941525c4bcdc.jpeg" data-vmid="image:href"><link data-vue-meta="ssr" rel="amphtml" href="https://habr.com/ru/amp/post/582272/">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="r_k" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/r_k/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/f49/44a/65c/f4944a65cc2168a516d19817987af93e.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">35.14</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/r_k/profile/" class="tm-company-card__name">
+        r_keeper
+      </a> <div class="tm-company-card__description"></div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/SergeiArsyonov/" title="SergeiArsyonov" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/b34/d49/388/b34d493882177222c6c041317c29f18a.jpg" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/SergeiArsyonov/" class="tm-user-info__username">
+      SergeiArsyonov
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-08T12:09:46.000Z" title="2021-10-08, 15:09">8  октября   в 15:09</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>Как мы обновляли мобильное приложение для официантов: трудности перевода стека KMM + UI на Flutter из теста в продакшн</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/r_k/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании r_keeper</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/programming/" class="tm-article-snippet__hubs-item-link"><span>Программирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/mobile_dev/" class="tm-article-snippet__hubs-item-link"><span>Разработка мобильных приложений</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/kotlin/" class="tm-article-snippet__hubs-item-link"><span>Kotlin</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/flutter/" class="tm-article-snippet__hubs-item-link"><span>Flutter</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span></div> <!----> <!----> <!----></div></div> <!----> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-2"><div xmlns="http://www.w3.org/1999/xhtml"><figure class="full-width "><img src="https://habrastorage.org/r/w780q1/getpro/habr/upload_files/e9f/32e/7df/e9f32e7df663807510ce941525c4bcdc.jpeg" width="1920" height="1080" data-src="https://habrastorage.org/getpro/habr/upload_files/e9f/32e/7df/e9f32e7df663807510ce941525c4bcdc.jpeg" data-blurred="true"/><figcaption></figcaption></figure><p><em>Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании </em><a href="https://rkeeper.ru/team/"><em><u>r_keeper</u></em></a><em>. Я </em><a href="https://habr.com/ru/company/r_k/blog/578386/"><em><u>уже рассказывал</u></em></a><em>, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления нашего мобильного приложения для официантов. А теперь посмотрим, что из этого вышло на стадии продакшн (спойлер: все получилось, но проблем хватило).</em></p><figure class="full-width "><img src="/img/image-loader.svg" height="996" data-src="https://habrastorage.org/getpro/habr/upload_files/05c/cce/184/05ccce184537a44a12b51e96bd3edced.png" data-width="1500"/><figcaption></figcaption></figure><p>Итак, мы выбрали технологический стек для нового b2b-приложения для официантов. Казалось, дальше будет просто: бери готовую структуру проекта из отлично работающего тестового приложения и добавляй необходимый функционал… Но нет.</p><h2>Связь логики и представления</h2><p>Из тестового проекта мы взяли схему, по которой бизнес-логика инкапсулируется в виде некоего SDK с набором public-методов. По сути для слоя представления этот SDK является «черным ящиком», с которым можно взаимодействовать только через методы и получать / отправлять данные. </p><p>Поскольку платформенная часть — это своего рода прокси между KMM SDK и Flutter UI, ей незачем знать про сущности и другие особенности реализации. Поэтому для передачи объектов из КММ во Flutter и назад мы выбрали сериализацию / десериализацию в JSON, благо в Kotlin это работает практически «из коробки», без доработки data-классов. В Dart, к сожалению, все устроено не так удобно, но для экономии сил можно использовать online-генераторы классов из JSON вроде <a href="https://javiercbk.github.io/json_to_dart/"><u>этого</u></a> или <a href="https://jsontodart.com"><u>этого</u></a>. </p><p>В итоге наш платформенный прокси получает вызовы из одной части приложения и транслирует их в другую часть, передавая в обе стороны лишь сериализованные сущности — json-строки и базовые типы данных. Важно, что при изменении или добавлении методов в протокол общения эти платформенные части остаются неизменными.</p><figure class="full-width "><img src="/img/image-loader.svg" height="900" data-src="https://habrastorage.org/getpro/habr/upload_files/605/5b5/307/6055b53071062b2e5ca51aadaccd6cd0.png" data-width="1656"/><figcaption></figcaption></figure><p>В отличие от тестового проекта, в рабочей версии пришлось использовать подписки на потоки данных. Kotlin умеет отправлять эти данные через flow, а Flutter — слушать их через eventChannel. Но между ними находится еще и платформенная часть, работающая как прокси.</p><p>Тут мы наткнулись на первую сложность. В Android-версии все было прекрасно — для нее не проблема работать с flow- и suspend-методами SDK из платформенной части. Но когда мы полностью описали весь интерфейс, сделали рабочую версию под Android и попытались собрать то же самое под iOS, выяснилось, что в Swift flow недоступны. Пришлось рефакторить наш SDK и его работу с платформой: теперь в нем нет suspend- и flow-методов, а подписка на потоки данных из бизнес-логики осуществляется, для совместимости, через колбеки.</p><p>Ниже приведу пример кода для обеих платформ, который позволяет общаться Flutter- и KMM-частям, возможно, кому-то этот плод наших изысканий будет полезным</p><p><em>Код для Android</em></p><pre><code class="kotlin">class MainActivity: FlutterActivity() {
+  private val CHANNEL = "mobwaiter/platform"
+  private val CONNECT_CHANNEL = "mobwaiter/connect_channel"
+
+  //создание объекта SDK и  подстановка туда необходимых платформо-зависимостей 
+	private val gateway: MobwaiterSDKGateway = MobwaiterSDK(
+       firebaseAnalyticsFactory = FirebaseAnalyticsFactory(context),
+       driverFactory = DatabaseDriverFactory(context),
+       httpClientFactory = HttpClientFactory(),
+       xmlToJsonConverterFactory = XmlToJsonConverterFactory()
+	).gateway
+
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+
+    //Инициализация каналов для связи флаттера с нативным андроидом
+    val binaryMessenger = flutterEngine?.dartExecutor?.binaryMessenger
+    val connectChannel = EventChannel(binaryMessenger, CONNECT_CHANNEL)
+    val methodChannel = MethodChannel(binaryMessenger, CHANNEL)
+
+    //обработчик, делающий передачу вызова от флаттер в КММ
+  	methodChannel.setMethodCallHandler{ call, result ->
+  		gateway.processCall(call.method, call.arguments, CallHandlerImpl(result) )
+  	}
+    //передача колбэка, позволяющего вызывать методы во флаттер из КММ
+  	gateway.setCallbacks(CallbackHandlerImpl(methodChannel))
+	}
+
+  override fun onDestroy() {
+     super.onDestroy()
+     gateway.destroy();
+  }
+}
+
+//Позволяет возвращать результаты из KMM-части во флаттер
+class CallHandlerImpl(
+       private val callResult : MethodChannel.Result
+) : CallHandler {
+   override fun success(result: Any?) =
+           callResult.success(result)
+  
+   override fun error(errorCode: String?, errorMessage: String?, errorDetails: Any?) =
+           callResult.error(errorCode,errorMessage, errorDetails)
+}
+
+//Позволяет из KMM вызывать во Flutter методы с аргументами
+class CallbackHandlerImpl(
+       private val methodChannel : MethodChannel
+) : CallbackHandler {
+   override fun invokeMethod(method: String, arguments: Any?) {
+       methodChannel.invokeMethod(method, arguments)
+   }
+}</code></pre><p><em>Код для iOS</em></p><pre><code class="swift">import UIKit
+import Flutter
+import shared
+ 
+@UIApplicationMain
+@objc class AppDelegate: FlutterAppDelegate {
+    
+    private var sdk: MobwaiterSDK!;
+    private var gateway: MobwaiterSDKGateway!;
+    
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    
+    //создание объекта SDK и подстановка туда платформо-зависимостей
+    sdk = MobwaiterSDK(
+        firebaseAnalyticsFactory: FirebaseAnalyticsFactory(), driverFactory: DatabaseDriverFactory(), httpClientFactory: HttpClientFactory(), xmlToJsonConverterFactory: XmlToJsonConverterFactory()
+    );
+    gateway = sdk.gateway;
+    
+    //инициализация каналов для связи нативной iOS части с Flutter
+    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
+    
+    let mobwaiterChannel = FlutterMethodChannel(name: "mobwaiter/platform",
+                                                  binaryMessenger: controller.binaryMessenger)
+    
+    
+    //обработчик, делающий вызов от флаттер в КММ
+    mobwaiterChannel.setMethodCallHandler({
+      (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+        
+        let callHandler = CallHandlerImpl(resultHandler: result)
+        self.gateway.processCall(method: call.method, arguments: call.arguments, callHandler: callHandler)
+    })
+ 
+    //передача в КММ колбэка, позволяющего делать вызовы во флаттер
+    self.gateway.setCallbacks(callback: CallbackHandlerImpl(mobwaiterChannel: mobwaiterChannel))
+    
+    GeneratedPluginRegistrant.register(with: self)
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+    
+}
+ 
+class CallHandlerImpl : CallHandler{
+    let resultHandler : FlutterResult
+    
+    init(resultHandler : @escaping FlutterResult) {
+        self.resultHandler = resultHandler
+    }
+    
+    func error(errorCode: String?, errorMessage: String?, errorDetails: Any?) {
+        resultHandler(FlutterError(code: errorCode!, message: errorMessage, details: errorDetails))
+    }
+    
+    func success(result: Any?) {
+        resultHandler(result)
+    }
+}
+ 
+class CallbackHandlerImpl : CallbackHandler{
+    
+    let mobwaiterChannel : FlutterMethodChannel
+    
+    init(mobwaiterChannel : FlutterMethodChannel){
+        self.mobwaiterChannel = mobwaiterChannel
+    }
+    func invokeMethod(method: String, arguments: Any?) {
+        mobwaiterChannel.invokeMethod(method, arguments: arguments)
+    }
+}</code></pre><p>При передаче данных из Flutter в KMM нужно внимательно следить за соответствием типов данных: то, что без проблем передается из Flutter в Android, не обязательно так же нормально попадет из Flutter в iOS, например, arraylist. С этим нам тоже пришлось помучиться.</p><h2>Работа с бэкендом</h2><p>Еще одной проблемой стало древнее, как слеза мамонта, XML API. Официальная кроссплатформенная библиотека <a href="https://github.com/Kotlin/kotlinx.serialization"><u>kotlinx.serialization</u></a> не поддерживает XML, а найти XML-десериализатор для Kotlin Native невозможно — все библиотеки собраны исключительно для Kotlin / JVM. </p><p>Поэтому сначала, чтобы не терять темп, мы вынесли десериализацию в платформенную часть KMM, а потом своими силами портировали в кроссплатформенную часть XML-JSON-парсер, написанный для Android / JVM.</p><h2>Работа с базой данных</h2><p>В этой части каких-то особенностей работы именно с кроссплатформой мы не заметили. Разве что пришлось отойти отойти от привычных по Room ORM, и писать sql-запросы и схемы таблиц вручную. SQLDelight умеет генерить по этому описанию объекты и методы, но просто описать объекты и автоматически получить работу с БД не выйдет. Также,  то, что SQLDelight по умолчанию не поддерживает Foreign Keys стало для нас сюрпризом. Мы потратили немало времени, пока разобрались, что происходит и почему не работает каскадное удаление. </p><p>Вот что нужно прописать в Android-части кода KMM при инициализации драйвера, чтобы ключи заработали:</p><pre><code class="kotlin">    actual fun createDriver(): SqlDriver {
+        return AndroidSqliteDriver(AppDatabase.Schema, context, "rkmobwaiter.db",
+                callback = object : AndroidSqliteDriver.Callback(AppDatabase.Schema) {
+                    override fun onOpen(db: SupportSQLiteDatabase) {
+                        db.execSQL("PRAGMA foreign_keys=ON;");
+                    }
+                })
+    }</code></pre><h2>Реализация представления</h2><p>Интересной задачей стала разработка архитектуры Flutter-части. Я уже упоминал, что Flutter предполагает декларативную верстку, то есть написание Dart-кода в виде дерева виджетов (view), состоянием которых нужно как-то управлять. Официальная документация Flutter <a href="https://flutter.dev/docs/development/data-and-backend/state-mgmt"><u>рекомендует</u></a> использовать или так называемые Stateful-widgets, которые сами в себе хранят свое состояние, или пакет <a href="https://pub.dev/packages/provider"><u>provider</u></a> — некую реализацию классического шаблона «Наблюдатель».</p><p>В тестовом приложения, пока UI-часть была небольшой, эти схемы работали нормально, но по мере роста реального приложения они начали превращать Dart-код в нечитаемую кашу. Выходом стало использование пакета <a href="https://pub.dev/packages/flutter_bloc"><u>flutter_bloc</u></a>, вариации знакомого многим веб-разработчикам Redux-подхода от <a href="https://github.com/felangel"><u>Felix Angelov</u></a>. Пришлось полностью отрефакторить уже написанный код, но оно того стоило. Код структурировался достаточно для того, чтобы новым разработчикам можно было сказать «Делай так» и наращивать функционал приложения без костылей и потери управляемости.</p><p>Сам bloc со своими State и Events нам показался немного избыточным, там очень много шаблонного кода. Мы используем так называемые cubit - вариацию bloc. Там присутствуют те же самые state для вьюшек, но вместо events просто вызываются методы в этом кубите. Это показалось нам более удобным</p><p> Вообще, хочется заметить, что официальные плагины Flutter и Dart для Android Studio пока довольно кривые — они могут внезапно перестать подсвечивать синтаксис или осуществлять переход между классами по Ctrl. Работать одновременно с KMM и Flutter неудобно, в одном SDK через два плагина — невозможно. Поэтому разработчикам приходится держать открытыми сразу два окна с приложением: в первом код подсвечивает Flutter-плагин, во втором — Kotlin. Неудобно, но жить можно.</p><p>И последний момент: импорт библиотек в actual-классах иногда приходится делать наугад, без подсказки.</p><h2>Что мы поняли?</h2><p>Вот какие выводы мы сделали.</p><ul><li><p>Flutter удобен и приятен. Начать писать рабочий код всего через пару недель изучения — не проблема для нормального разработчика. Плюс по нему очень много документации, есть большое сообщество — все проблемы можно решить.</p></li><li><p>С KMM иногда сложно из-за его новизны, минимума документации и небольшого количества кроссплатформенных библиотек. При их использовании всегда есть шанс наткнуться на проблему, которая не описана ни на Stack Overflow, ни в issues к репозиторию на GitHub. </p></li><li><p>Kotlin и его coroutines чудесны — код пишется влет.</p></li><li><p>Обойтись только знанием Flutter и Kotlin не выйдет — нужно разбираться и в нативных платформах. Как минимум, придется научиться писать код Swift и собирать приложения в Xcode. Впрочем, это разовые задачи — достаточно хотя бы одного такого специалиста в команде.</p></li><li><p>Выбранная связка реально экономит ресурсы: мы смогли довести проект с нуля до стадии MVP на iOS и Android за 3 месяца, а если бы API был не XML и адаптирован под мобильные приложения, управились за 2,5. По нашим оценкам, написание аналогичных версий под NativeUI заняло бы почти в два раза больше человеко-часов. </p></li><li><p>Плавность и отзывчивость работы приложения на выбранной связке вполне удовлетворительная, а проблемы, которые мы пару раз выловили, оказались нашими же ошибками в коде.</p></li><li><p>Найти программистов не сложнее, чем под нативные проекты — подойдет любой грамотный мобильный разработчик. Правда, новизна стека может испугать — из-за этого у нас на собеседованиях отпали несколько кандидатов.</p></li></ul><p>Наш первый опыт разработки на связке KMM + UI на Flutter в итоге был признан успешным, так что теперь мы планируем переводить и другие мобильные проекты r_keeper на этот стек.</p><p><em>Спасибо, что прочитали. В рамках статьи было сложно вместить все моменты и тонкости, которые нам встретились, поэтому буду рад ответить на вопросы, если что-то оказалось недостаточно раскрыто или осталось непонятно.</em></p></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bkmm%5D" class="tm-tags-list__link">kmm</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bflutter%5D" class="tm-tags-list__link">flutter</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%BE%D0%B1%D0%B8%D0%BB%D1%8C%D0%BD%D0%B0%D1%8F%20%D1%80%D0%B0%D0%B7%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D0%BA%D0%B0%5D" class="tm-tags-list__link">мобильная разработка</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%BE%D0%B1%D0%B8%D0%BB%D1%8C%D0%BD%D1%8B%D0%B5%20%D0%BF%D1%80%D0%B8%D0%BB%D0%BE%D0%B6%D0%B5%D0%BD%D0%B8%D1%8F%5D" class="tm-tags-list__link">мобильные приложения</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bandroid%5D" class="tm-tags-list__link">android</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bios%5D" class="tm-tags-list__link">ios</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/r_k/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании r_keeper
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/programming/" class="tm-hubs-list__link">
+    Программирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/mobile_dev/" class="tm-hubs-list__link">
+    Разработка мобильных приложений
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/kotlin/" class="tm-hubs-list__link">
+    Kotlin
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/flutter/" class="tm-hubs-list__link">
+    Flutter
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 4: ↑4 и ↓0</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 4: ↑4 и ↓0" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+4</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">1.9K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    8
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/r_k/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/f49/44a/65c/f4944a65cc2168a516d19817987af93e.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/r_k/profile/" class="tm-company-snippet__title">r_keeper</a> <div class="tm-company-snippet__description">Компания</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://rkeeper.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/SergeiArsyonov/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/b34/d49/388/b34d493882177222c6c041317c29f18a.jpg" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 4 голоса " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    4
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">4</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Сергей</span> <a href="/ru/users/SergeiArsyonov/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @SergeiArsyonov
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">мобильная разработка</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/r_k/blog/582272/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 10 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="1992-05-27T20:00:00.000Z" title="1992-05-28, 00:00">28  мая  1992</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://rkeeper.ru/" target="_blank" class="tm-company-basic-info__link">
+      rkeeper.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    201–500 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2021-08-04T10:14:30.000Z" title="2021-08-04, 13:14">4  августа  </time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/r_k/blog/582272/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/r_k/blog/582272/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"582272":{"id":"582272","timePublished":"2021-10-08T12:09:46+00:00","isCorporative":true,"lang":"ru","titleHtml":"Как мы обновляли мобильное приложение для официантов: трудности перевода стека KMM + UI на Flutter из теста в продакшн","leadData":{"textHtml":"\u003Cp\u003EПривет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании \u003Ca href=\"https:\u002F\u002Frkeeper.ru\u002Fteam\u002F\"\u003E\u003Cu\u003Er_keeper\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Я \u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fr_k\u002Fblog\u002F578386\u002F\"\u003E\u003Cu\u003Eуже рассказывал\u003C\u002Fu\u003E\u003C\u002Fa\u003E, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления нашего мобильного приложения для официантов. А теперь посмотрим, что из этого вышло на стадии продакшн (спойлер: все получилось, но проблем хватило).\u003C\u002Fp\u003E","imageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe9f\u002F32e\u002F7df\u002Fe9f32e7df663807510ce941525c4bcdc.jpeg","buttonTextHtml":"Читать далее","image":{"url":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe9f\u002F32e\u002F7df\u002Fe9f32e7df663807510ce941525c4bcdc.jpeg","fit":"cover","positionY":0,"positionX":0}},"editorVersion":"2.0","postType":"article","postLabels":[],"author":{"scoreStats":{"score":4,"votesCount":4},"rating":4,"relatedData":null,"contacts":[],"authorContacts":[],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"2785619","alias":"SergeiArsyonov","fullname":"Сергей","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Fb34\u002Fd49\u002F388\u002Fb34d493882177222c6c041317c29f18a.jpg","speciality":"мобильная разработка"},"statistics":{"commentsCount":10,"favoritesCount":8,"readingCount":1931,"score":4,"votesCount":4},"hubs":[{"relatedData":null,"id":"22800","alias":"r_k","type":"corporative","title":"Блог компании r_keeper","titleHtml":"Блог компании r_keeper","isProfiled":false},{"relatedData":null,"id":"359","alias":"programming","type":"collective","title":"Программирование","titleHtml":"Программирование","isProfiled":true},{"relatedData":null,"id":"6345","alias":"mobile_dev","type":"collective","title":"Разработка мобильных приложений","titleHtml":"Разработка мобильных приложений","isProfiled":true},{"relatedData":null,"id":"19441","alias":"kotlin","type":"collective","title":"Kotlin","titleHtml":"Kotlin","isProfiled":true},{"relatedData":null,"id":"22176","alias":"flutter","type":"collective","title":"Flutter","titleHtml":"Flutter","isProfiled":true}],"flows":[{"id":"1","alias":"develop","title":"Разработка"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe9f\u002F32e\u002F7df\u002Fe9f32e7df663807510ce941525c4bcdc.jpeg\" width=\"1920\" height=\"1080\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe9f\u002F32e\u002F7df\u002Fe9f32e7df663807510ce941525c4bcdc.jpeg\" data-blurred=\"true\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003E\u003Cem\u003EПривет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании \u003C\u002Fem\u003E\u003Ca href=\"https:\u002F\u002Frkeeper.ru\u002Fteam\u002F\"\u003E\u003Cem\u003E\u003Cu\u003Er_keeper\u003C\u002Fu\u003E\u003C\u002Fem\u003E\u003C\u002Fa\u003E\u003Cem\u003E. Я \u003C\u002Fem\u003E\u003Ca href=\"https:\u002F\u002Fhabr.com\u002Fru\u002Fcompany\u002Fr_k\u002Fblog\u002F578386\u002F\"\u003E\u003Cem\u003E\u003Cu\u003Eуже рассказывал\u003C\u002Fu\u003E\u003C\u002Fem\u003E\u003C\u002Fa\u003E\u003Cem\u003E, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления нашего мобильного приложения для официантов. А теперь посмотрим, что из этого вышло на стадии продакшн (спойлер: все получилось, но проблем хватило).\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"996\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F05c\u002Fcce\u002F184\u002F05ccce184537a44a12b51e96bd3edced.png\" data-width=\"1500\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EИтак, мы выбрали технологический стек для нового b2b-приложения для официантов. Казалось, дальше будет просто: бери готовую структуру проекта из отлично работающего тестового приложения и добавляй необходимый функционал… Но нет.\u003C\u002Fp\u003E\u003Ch2\u003EСвязь логики и представления\u003C\u002Fh2\u003E\u003Cp\u003EИз тестового проекта мы взяли схему, по которой бизнес-логика инкапсулируется в виде некоего SDK с набором public-методов. По сути для слоя представления этот SDK является «черным ящиком», с которым можно взаимодействовать только через методы и получать \u002F отправлять данные. \u003C\u002Fp\u003E\u003Cp\u003EПоскольку платформенная часть — это своего рода прокси между KMM SDK и Flutter UI, ей незачем знать про сущности и другие особенности реализации. Поэтому для передачи объектов из КММ во Flutter и назад мы выбрали сериализацию \u002F десериализацию в JSON, благо в Kotlin это работает практически «из коробки», без доработки data-классов. В Dart, к сожалению, все устроено не так удобно, но для экономии сил можно использовать online-генераторы классов из JSON вроде \u003Ca href=\"https:\u002F\u002Fjaviercbk.github.io\u002Fjson_to_dart\u002F\"\u003E\u003Cu\u003Eэтого\u003C\u002Fu\u003E\u003C\u002Fa\u003E или \u003Ca href=\"https:\u002F\u002Fjsontodart.com\"\u003E\u003Cu\u003Eэтого\u003C\u002Fu\u003E\u003C\u002Fa\u003E. \u003C\u002Fp\u003E\u003Cp\u003EВ итоге наш платформенный прокси получает вызовы из одной части приложения и транслирует их в другую часть, передавая в обе стороны лишь сериализованные сущности — json-строки и базовые типы данных. Важно, что при изменении или добавлении методов в протокол общения эти платформенные части остаются неизменными.\u003C\u002Fp\u003E\u003Cfigure class=\"full-width \"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" height=\"900\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002F605\u002F5b5\u002F307\u002F6055b53071062b2e5ca51aadaccd6cd0.png\" data-width=\"1656\"\u002F\u003E\u003Cfigcaption\u003E\u003C\u002Ffigcaption\u003E\u003C\u002Ffigure\u003E\u003Cp\u003EВ отличие от тестового проекта, в рабочей версии пришлось использовать подписки на потоки данных. Kotlin умеет отправлять эти данные через flow, а Flutter — слушать их через eventChannel. Но между ними находится еще и платформенная часть, работающая как прокси.\u003C\u002Fp\u003E\u003Cp\u003EТут мы наткнулись на первую сложность. В Android-версии все было прекрасно — для нее не проблема работать с flow- и suspend-методами SDK из платформенной части. Но когда мы полностью описали весь интерфейс, сделали рабочую версию под Android и попытались собрать то же самое под iOS, выяснилось, что в Swift flow недоступны. Пришлось рефакторить наш SDK и его работу с платформой: теперь в нем нет suspend- и flow-методов, а подписка на потоки данных из бизнес-логики осуществляется, для совместимости, через колбеки.\u003C\u002Fp\u003E\u003Cp\u003EНиже приведу пример кода для обеих платформ, который позволяет общаться Flutter- и KMM-частям, возможно, кому-то этот плод наших изысканий будет полезным\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EКод для Android\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003Eclass MainActivity: FlutterActivity() {\n  private val CHANNEL = \"mobwaiter\u002Fplatform\"\n  private val CONNECT_CHANNEL = \"mobwaiter\u002Fconnect_channel\"\n\n  \u002F\u002Fсоздание объекта SDK и  подстановка туда необходимых платформо-зависимостей \n\tprivate val gateway: MobwaiterSDKGateway = MobwaiterSDK(\n       firebaseAnalyticsFactory = FirebaseAnalyticsFactory(context),\n       driverFactory = DatabaseDriverFactory(context),\n       httpClientFactory = HttpClientFactory(),\n       xmlToJsonConverterFactory = XmlToJsonConverterFactory()\n\t).gateway\n\n  override fun onCreate(savedInstanceState: Bundle?) {\n    super.onCreate(savedInstanceState)\n\n    \u002F\u002FИнициализация каналов для связи флаттера с нативным андроидом\n    val binaryMessenger = flutterEngine?.dartExecutor?.binaryMessenger\n    val connectChannel = EventChannel(binaryMessenger, CONNECT_CHANNEL)\n    val methodChannel = MethodChannel(binaryMessenger, CHANNEL)\n\n    \u002F\u002Fобработчик, делающий передачу вызова от флаттер в КММ\n  \tmethodChannel.setMethodCallHandler{ call, result -\u003E\n  \t\tgateway.processCall(call.method, call.arguments, CallHandlerImpl(result) )\n  \t}\n    \u002F\u002Fпередача колбэка, позволяющего вызывать методы во флаттер из КММ\n  \tgateway.setCallbacks(CallbackHandlerImpl(methodChannel))\n\t}\n\n  override fun onDestroy() {\n     super.onDestroy()\n     gateway.destroy();\n  }\n}\n\n\u002F\u002FПозволяет возвращать результаты из KMM-части во флаттер\nclass CallHandlerImpl(\n       private val callResult : MethodChannel.Result\n) : CallHandler {\n   override fun success(result: Any?) =\n           callResult.success(result)\n  \n   override fun error(errorCode: String?, errorMessage: String?, errorDetails: Any?) =\n           callResult.error(errorCode,errorMessage, errorDetails)\n}\n\n\u002F\u002FПозволяет из KMM вызывать во Flutter методы с аргументами\nclass CallbackHandlerImpl(\n       private val methodChannel : MethodChannel\n) : CallbackHandler {\n   override fun invokeMethod(method: String, arguments: Any?) {\n       methodChannel.invokeMethod(method, arguments)\n   }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003E\u003Cem\u003EКод для iOS\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"swift\"\u003Eimport UIKit\nimport Flutter\nimport shared\n \n@UIApplicationMain\n@objc class AppDelegate: FlutterAppDelegate {\n    \n    private var sdk: MobwaiterSDK!;\n    private var gateway: MobwaiterSDKGateway!;\n    \n  override func application(\n    _ application: UIApplication,\n    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?\n  ) -\u003E Bool {\n    \n    \u002F\u002Fсоздание объекта SDK и подстановка туда платформо-зависимостей\n    sdk = MobwaiterSDK(\n        firebaseAnalyticsFactory: FirebaseAnalyticsFactory(), driverFactory: DatabaseDriverFactory(), httpClientFactory: HttpClientFactory(), xmlToJsonConverterFactory: XmlToJsonConverterFactory()\n    );\n    gateway = sdk.gateway;\n    \n    \u002F\u002Fинициализация каналов для связи нативной iOS части с Flutter\n    let controller : FlutterViewController = window?.rootViewController as! FlutterViewController\n    \n    let mobwaiterChannel = FlutterMethodChannel(name: \"mobwaiter\u002Fplatform\",\n                                                  binaryMessenger: controller.binaryMessenger)\n    \n    \n    \u002F\u002Fобработчик, делающий вызов от флаттер в КММ\n    mobwaiterChannel.setMethodCallHandler({\n      (call: FlutterMethodCall, result: @escaping FlutterResult) -\u003E Void in\n        \n        let callHandler = CallHandlerImpl(resultHandler: result)\n        self.gateway.processCall(method: call.method, arguments: call.arguments, callHandler: callHandler)\n    })\n \n    \u002F\u002Fпередача в КММ колбэка, позволяющего делать вызовы во флаттер\n    self.gateway.setCallbacks(callback: CallbackHandlerImpl(mobwaiterChannel: mobwaiterChannel))\n    \n    GeneratedPluginRegistrant.register(with: self)\n    return super.application(application, didFinishLaunchingWithOptions: launchOptions)\n  }\n    \n}\n \nclass CallHandlerImpl : CallHandler{\n    let resultHandler : FlutterResult\n    \n    init(resultHandler : @escaping FlutterResult) {\n        self.resultHandler = resultHandler\n    }\n    \n    func error(errorCode: String?, errorMessage: String?, errorDetails: Any?) {\n        resultHandler(FlutterError(code: errorCode!, message: errorMessage, details: errorDetails))\n    }\n    \n    func success(result: Any?) {\n        resultHandler(result)\n    }\n}\n \nclass CallbackHandlerImpl : CallbackHandler{\n    \n    let mobwaiterChannel : FlutterMethodChannel\n    \n    init(mobwaiterChannel : FlutterMethodChannel){\n        self.mobwaiterChannel = mobwaiterChannel\n    }\n    func invokeMethod(method: String, arguments: Any?) {\n        mobwaiterChannel.invokeMethod(method, arguments: arguments)\n    }\n}\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cp\u003EПри передаче данных из Flutter в KMM нужно внимательно следить за соответствием типов данных: то, что без проблем передается из Flutter в Android, не обязательно так же нормально попадет из Flutter в iOS, например, arraylist. С этим нам тоже пришлось помучиться.\u003C\u002Fp\u003E\u003Ch2\u003EРабота с бэкендом\u003C\u002Fh2\u003E\u003Cp\u003EЕще одной проблемой стало древнее, как слеза мамонта, XML API. Официальная кроссплатформенная библиотека \u003Ca href=\"https:\u002F\u002Fgithub.com\u002FKotlin\u002Fkotlinx.serialization\"\u003E\u003Cu\u003Ekotlinx.serialization\u003C\u002Fu\u003E\u003C\u002Fa\u003E не поддерживает XML, а найти XML-десериализатор для Kotlin Native невозможно — все библиотеки собраны исключительно для Kotlin \u002F JVM. \u003C\u002Fp\u003E\u003Cp\u003EПоэтому сначала, чтобы не терять темп, мы вынесли десериализацию в платформенную часть KMM, а потом своими силами портировали в кроссплатформенную часть XML-JSON-парсер, написанный для Android \u002F JVM.\u003C\u002Fp\u003E\u003Ch2\u003EРабота с базой данных\u003C\u002Fh2\u003E\u003Cp\u003EВ этой части каких-то особенностей работы именно с кроссплатформой мы не заметили. Разве что пришлось отойти отойти от привычных по Room ORM, и писать sql-запросы и схемы таблиц вручную. SQLDelight умеет генерить по этому описанию объекты и методы, но просто описать объекты и автоматически получить работу с БД не выйдет. Также,  то, что SQLDelight по умолчанию не поддерживает Foreign Keys стало для нас сюрпризом. Мы потратили немало времени, пока разобрались, что происходит и почему не работает каскадное удаление. \u003C\u002Fp\u003E\u003Cp\u003EВот что нужно прописать в Android-части кода KMM при инициализации драйвера, чтобы ключи заработали:\u003C\u002Fp\u003E\u003Cpre\u003E\u003Ccode class=\"kotlin\"\u003E    actual fun createDriver(): SqlDriver {\n        return AndroidSqliteDriver(AppDatabase.Schema, context, \"rkmobwaiter.db\",\n                callback = object : AndroidSqliteDriver.Callback(AppDatabase.Schema) {\n                    override fun onOpen(db: SupportSQLiteDatabase) {\n                        db.execSQL(\"PRAGMA foreign_keys=ON;\");\n                    }\n                })\n    }\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Ch2\u003EРеализация представления\u003C\u002Fh2\u003E\u003Cp\u003EИнтересной задачей стала разработка архитектуры Flutter-части. Я уже упоминал, что Flutter предполагает декларативную верстку, то есть написание Dart-кода в виде дерева виджетов (view), состоянием которых нужно как-то управлять. Официальная документация Flutter \u003Ca href=\"https:\u002F\u002Fflutter.dev\u002Fdocs\u002Fdevelopment\u002Fdata-and-backend\u002Fstate-mgmt\"\u003E\u003Cu\u003Eрекомендует\u003C\u002Fu\u003E\u003C\u002Fa\u003E использовать или так называемые Stateful-widgets, которые сами в себе хранят свое состояние, или пакет \u003Ca href=\"https:\u002F\u002Fpub.dev\u002Fpackages\u002Fprovider\"\u003E\u003Cu\u003Eprovider\u003C\u002Fu\u003E\u003C\u002Fa\u003E — некую реализацию классического шаблона «Наблюдатель».\u003C\u002Fp\u003E\u003Cp\u003EВ тестовом приложения, пока UI-часть была небольшой, эти схемы работали нормально, но по мере роста реального приложения они начали превращать Dart-код в нечитаемую кашу. Выходом стало использование пакета \u003Ca href=\"https:\u002F\u002Fpub.dev\u002Fpackages\u002Fflutter_bloc\"\u003E\u003Cu\u003Eflutter_bloc\u003C\u002Fu\u003E\u003C\u002Fa\u003E, вариации знакомого многим веб-разработчикам Redux-подхода от \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Ffelangel\"\u003E\u003Cu\u003EFelix Angelov\u003C\u002Fu\u003E\u003C\u002Fa\u003E. Пришлось полностью отрефакторить уже написанный код, но оно того стоило. Код структурировался достаточно для того, чтобы новым разработчикам можно было сказать «Делай так» и наращивать функционал приложения без костылей и потери управляемости.\u003C\u002Fp\u003E\u003Cp\u003EСам bloc со своими State и Events нам показался немного избыточным, там очень много шаблонного кода. Мы используем так называемые cubit - вариацию bloc. Там присутствуют те же самые state для вьюшек, но вместо events просто вызываются методы в этом кубите. Это показалось нам более удобным\u003C\u002Fp\u003E\u003Cp\u003E Вообще, хочется заметить, что официальные плагины Flutter и Dart для Android Studio пока довольно кривые — они могут внезапно перестать подсвечивать синтаксис или осуществлять переход между классами по Ctrl. Работать одновременно с KMM и Flutter неудобно, в одном SDK через два плагина — невозможно. Поэтому разработчикам приходится держать открытыми сразу два окна с приложением: в первом код подсвечивает Flutter-плагин, во втором — Kotlin. Неудобно, но жить можно.\u003C\u002Fp\u003E\u003Cp\u003EИ последний момент: импорт библиотек в actual-классах иногда приходится делать наугад, без подсказки.\u003C\u002Fp\u003E\u003Ch2\u003EЧто мы поняли?\u003C\u002Fh2\u003E\u003Cp\u003EВот какие выводы мы сделали.\u003C\u002Fp\u003E\u003Cul\u003E\u003Cli\u003E\u003Cp\u003EFlutter удобен и приятен. Начать писать рабочий код всего через пару недель изучения — не проблема для нормального разработчика. Плюс по нему очень много документации, есть большое сообщество — все проблемы можно решить.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EС KMM иногда сложно из-за его новизны, минимума документации и небольшого количества кроссплатформенных библиотек. При их использовании всегда есть шанс наткнуться на проблему, которая не описана ни на Stack Overflow, ни в issues к репозиторию на GitHub. \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EKotlin и его coroutines чудесны — код пишется влет.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EОбойтись только знанием Flutter и Kotlin не выйдет — нужно разбираться и в нативных платформах. Как минимум, придется научиться писать код Swift и собирать приложения в Xcode. Впрочем, это разовые задачи — достаточно хотя бы одного такого специалиста в команде.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EВыбранная связка реально экономит ресурсы: мы смогли довести проект с нуля до стадии MVP на iOS и Android за 3 месяца, а если бы API был не XML и адаптирован под мобильные приложения, управились за 2,5. По нашим оценкам, написание аналогичных версий под NativeUI заняло бы почти в два раза больше человеко-часов. \u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EПлавность и отзывчивость работы приложения на выбранной связке вполне удовлетворительная, а проблемы, которые мы пару раз выловили, оказались нашими же ошибками в коде.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003Cli\u003E\u003Cp\u003EНайти программистов не сложнее, чем под нативные проекты — подойдет любой грамотный мобильный разработчик. Правда, новизна стека может испугать — из-за этого у нас на собеседованиях отпали несколько кандидатов.\u003C\u002Fp\u003E\u003C\u002Fli\u003E\u003C\u002Ful\u003E\u003Cp\u003EНаш первый опыт разработки на связке KMM + UI на Flutter в итоге был признан успешным, так что теперь мы планируем переводить и другие мобильные проекты r_keeper на этот стек.\u003C\u002Fp\u003E\u003Cp\u003E\u003Cem\u003EСпасибо, что прочитали. В рамках статьи было сложно вместить все моменты и тонкости, которые нам встретились, поэтому буду рад ответить на вопросы, если что-то оказалось недостаточно раскрыто или осталось непонятно.\u003C\u002Fem\u003E\u003C\u002Fp\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"kmm"},{"titleHtml":"flutter"},{"titleHtml":"мобильная разработка"},{"titleHtml":"мобильные приложения"},{"titleHtml":"android"},{"titleHtml":"ios"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe9f\u002F32e\u002F7df\u002Fe9f32e7df663807510ce941525c4bcdc.jpeg","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fupload_files\u002Fe9f\u002F32e\u002F7df\u002Fe9f32e7df663807510ce941525c4bcdc.jpeg","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fr_k\\\u002Fblog\\\u002F582272\\\u002F\"},\"headline\":\"Как мы обновляли мобильное приложение для официантов: трудности перевода стека KMM + UI на Flutter из теста в продакшн\",\"datePublished\":\"2021-10-08T15:09:46+03:00\",\"dateModified\":\"2021-10-08T15:36:19+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Сергей\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании r_keeper. Я уже рассказывал, как и почему мы выбрали стек Kotlin Multiplatfor...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fr_k\\\u002Fblog\\\u002F582272\\\u002F#post-content-body\",\"about\":[\"c_r_k\",\"h_programming\",\"h_mobile_dev\",\"h_kotlin\",\"h_flutter\",\"f_develop\"],\"image\":[\"https:\\\u002F\\\u002Fhabr.com\\\u002Fshare\\\u002Fpublication\\\u002F582272\\\u002Fd82cba49f348a9addafe3e265b2e9ec5\\\u002F\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002Fe9f\\\u002F32e\\\u002F7df\\\u002Fe9f32e7df663807510ce941525c4bcdc.jpeg\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F05c\\\u002Fcce\\\u002F184\\\u002F05ccce184537a44a12b51e96bd3edced.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fgetpro\\\u002Fhabr\\\u002Fupload_files\\\u002F605\\\u002F5b5\\\u002F307\\\u002F6055b53071062b2e5ca51aadaccd6cd0.png\"]}","metaDescription":"Привет! На связи снова Сергей Арсёнов, руководитель мобильной разработки в компании r_keeper. Я уже рассказывал, как и почему мы выбрали стек Kotlin Multiplatform Mobile + UI на Flutter для обновления...","mainImageUrl":null,"amp":true},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"r_k":{"alias":"r_k","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002Ff49\u002F44a\u002F65c\u002Ff4944a65cc2168a516d19817987af93e.png","titleHtml":"r_keeper","descriptionHtml":null,"relatedData":null,"statistics":{"postsCount":3,"newsCount":0,"vacanciesCount":0,"employeesCount":3,"careerRating":null,"subscribersCount":14,"rating":35.14,"invest":null},"foundationDate":{"year":"1992","month":"05","day":"28"},"location":{"city":{"id":"447159","title":"Москва"},"region":{"id":"1885","title":"Москва и Московская обл."},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Frkeeper.ru\u002F","staffNumber":"201–500 человек","registrationDate":"2021-08-04T10:14:30+00:00","representativeUser":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Frkeeper.ru\u002F"}],"settings":{"analyticsSettings":[],"branding":null,"status":"active"},"metadata":{"titleHtml":"r_keeper, Москва -  с 28 мая 1992 г.","title":"r_keeper, Москва -  с 28 мая 1992 г.","keywords":["Программирование","Разработка мобильных приложений","Kotlin","Flutter",".NET"],"descriptionHtml":"3 статьи от авторов компании r_keeper","description":"3 статьи от авторов компании r_keeper"},"aDeskSettings":null,"careerAlias":null,"maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>

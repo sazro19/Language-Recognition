@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ru" data-vue-meta="%7B%22lang%22:%7B%22ssr%22:%22ru%22%7D%7D">
+<head >
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>ZFS таинственным образом поедает мой CPU / Хабр</title>
+  <style>
+    /* cyrillic-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSxf6TF0.woff2) format('woff2');
+      unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+    }
+
+    /* cyrillic */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveQhf6TF0.woff2) format('woff2');
+      unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+    }
+
+    /* latin-ext */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveSBf6TF0.woff2) format('woff2');
+      unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+
+    /* latin */
+    @font-face {
+      font-family: 'Fira Sans';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url(https://fonts.gstatic.com/s/firasans/v11/va9B4kDNxMZdWfMOD5VnZKveRhf6.woff2) format('woff2');
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+  </style>
+  <link rel="preload" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" as="script"><link rel="preload" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css" as="style"><link rel="preload" href="https://assets.habr.com/habr-web/js/app.c0af73e7.js" as="script">
+  <link rel="stylesheet" href="https://assets.habr.com/habr-web/css/chunk-vendors.e7843cc0.css"><link rel="stylesheet" href="https://assets.habr.com/habr-web/css/app.02ee25a4.css">
+  <script>window.i18nFetch = new Promise((res, rej) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', '/js/i18n/ru-compiled.85eb77f0b17c8235e7b64b9f81ea5ec2.json');
+          xhr.responseType = 'json';
+          xhr.onload = function(e) {
+            if (this.status === 200) {
+              res({ru: xhr.response});
+            } else {
+              rej(e);
+            }
+          };
+          xhr.send();
+        });</script>
+  
+  <script data-vue-meta="ssr" src="/js/ads.js" onload="window['zhY4i4nJ9K'] = true" data-vmid="checkad"></script><script data-vue-meta="ssr" type="application/ld+json" data-vmid="ldjson-schema">{"@context":"http:\/\/schema.org","@type":"Article","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/habr.com\/ru\/company\/dcmiran\/blog\/584458\/"},"headline":"ZFS таинственным образом поедает мой CPU","datePublished":"2021-10-20T09:23:59+03:00","dateModified":"2021-10-21T01:14:44+03:00","author":{"@type":"Person","name":"Дата-центр &quot;Миран&quot;"},"publisher":{"@type":"Organization","name":"Habr","logo":{"@type":"ImageObject","url":"https:\/\/habrastorage.org\/webt\/a_\/lk\/9m\/a_lk9mjkccjox-zccjrpfolmkmq.png"}},"description":"Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я ра...","url":"https:\/\/habr.com\/ru\/company\/dcmiran\/blog\/584458\/#post-content-body","about":["c_dcmiran","h_linux","h_sys_admin","h_dwh","h_cloud_services","f_admin"],"image":["https:\/\/habrastorage.org\/webt\/eq\/lu\/j1\/eqluj19uzsrz18ydpkdtardjnka.png","https:\/\/habrastorage.org\/webt\/-o\/cm\/fb\/-ocmfbzlgktfgwdy--xuopbjmqo.png","https:\/\/habrastorage.org\/webt\/sd\/sz\/mp\/sdszmpxwmgw9iamvif3y5jufvso.png","https:\/\/www.brendangregg.com\/blog\/images\/2021\/zfsflamegraph-zoom.png","https:\/\/habrastorage.org\/webt\/8p\/hx\/-1\/8phx-1apbwvk5vchi3wxibeaorw.jpeg"]}</script>
+  <script src="//www.googletagservices.com/tag/js/gpt.js" async></script>
+  <style>.grecaptcha-badge{visibility: hidden;}</style>
+  <meta name="habr-version" content="2.49.0">
+  
+  <meta data-vue-meta="ssr" property="fb:app_id" content="444736788986613"><meta data-vue-meta="ssr" property="fb:pages" content="472597926099084"><meta data-vue-meta="ssr" name="twitter:card" content="summary_large_image"><meta data-vue-meta="ssr" name="twitter:site" content="@habr_eng"><meta data-vue-meta="ssr" property="og:title" content="ZFS таинственным образом поедает мой CPU" data-vmid="og:title"><meta data-vue-meta="ssr" name="twitter:title" content="ZFS таинственным образом поедает мой CPU" data-vmid="twitter:title"><meta data-vue-meta="ssr" name="aiturec:title" content="ZFS таинственным образом поедает мой CPU" data-vmid="aiturec:title"><meta data-vue-meta="ssr" name="description" content="Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я рассказывал об этом на конференции..." data-vmid="description"><meta data-vue-meta="ssr" itemprop="description" content="Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я рассказывал об этом на конференции..." data-vmid="description:itemprop"><meta data-vue-meta="ssr" property="og:description" content="Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я рассказывал об этом на конференции..." data-vmid="og:description"><meta data-vue-meta="ssr" name="twitter:description" content="Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я рассказывал об этом на конференции..." data-vmid="twitter:description"><meta data-vue-meta="ssr" property="aiturec:description" content="Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я рассказывал об этом на конференции..." data-vmid="aiturec:description"><meta data-vue-meta="ssr" itemprop="image" content="https://habr.com/share/publication/584458/4277682e48eb6c4629242fd1600fe22e/" data-vmid="image:itemprop"><meta data-vue-meta="ssr" property="og:image" content="https://habr.com/share/publication/584458/4277682e48eb6c4629242fd1600fe22e/" data-vmid="og:image"><meta data-vue-meta="ssr" property="aiturec:image" content="https://habr.com/share/publication/584458/4277682e48eb6c4629242fd1600fe22e/" data-vmid="aiturec:image"><meta data-vue-meta="ssr" name="twitter:image" content="https://habr.com/share/publication/584458/4277682e48eb6c4629242fd1600fe22e/" data-vmid="twitter:image"><meta data-vue-meta="ssr" property="vk:image" content="https://habr.com/share/publication/584458/4277682e48eb6c4629242fd1600fe22e/" data-vmid="vk:image"><meta data-vue-meta="ssr" property="aiturec:item_id" content="584458" data-vmid="aiturec:item_id"><meta data-vue-meta="ssr" property="aiturec:datetime" content="2021-10-20T06:23:59.000Z" data-vmid="aiturec:datetime"><meta data-vue-meta="ssr" property="og:type" content="article" data-vmid="og:type"><meta data-vue-meta="ssr" property="og:locale" content="ru_RU" data-vmid="og:locale"><meta data-vue-meta="ssr" property="og:image:width" content="1200" data-vmid="og:image:width"><meta data-vue-meta="ssr" property="og:image:height" content="630" data-vmid="og:image:height">
+  <link data-vue-meta="ssr" href="https://habr.com/ru/rss/post/584458/?fl=ru" type="application/rss+xml" title="" rel="alternate" name="rss"><link data-vue-meta="ssr" href="https://habr.com/ru/company/dcmiran/blog/584458/" rel="canonical" data-vmid="canonical"><link data-vue-meta="ssr" data-vmid="hreflang"><link data-vue-meta="ssr" image_src="image" href="https://habr.com/share/publication/584458/4277682e48eb6c4629242fd1600fe22e/" data-vmid="image:href">
+  <meta name="apple-mobile-web-app-status-bar-style" content="#303b44">
+  <meta name="msapplication-TileColor" content="#629FBC">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="16x16"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-16.png"
+  >
+  <link
+    rel="shortcut icon"
+    type="image/png"
+    sizes="32x32"
+    href="https://assets.habr.com/habr-web/img/favicons/favicon-32.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="76x76"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-76.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="120x120"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="152x152"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-152.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="180x180"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-180.png"
+  >
+  <link
+    rel="apple-touch-icon"
+    type="image/png"
+    sizes="256x256"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-256.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1136x640.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2436x1125.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1792x828.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_828x1792.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1334x750.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2208x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1125x2436.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1242x2208.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2732x2048.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2688x1242.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2224x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_750x1334.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x2732.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2388x1668.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2224.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_640x1136.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1668x2388.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: landscape)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_2048x1536.png"
+  >
+  <link
+    rel="apple-touch-startup-image"
+    media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)"
+    href="https://assets.habr.com/habr-web/img/splashes/splash_1536x2048.png"
+  >
+  <link
+    rel="mask-icon"
+    color="#77a2b6"
+    href="https://assets.habr.com/habr-web/img/favicons/apple-touch-icon-120.svg"
+  >
+  <link
+    crossorigin="use-credentials"
+    href="/manifest.webmanifest"
+    rel="manifest"
+  >
+</head>
+<body>
+
+
+<div id="app" data-server-rendered="true" data-async-called="true"><div class="tm-layout__wrapper"><!----> <div></div> <!----> <header class="tm-header"><div class="tm-page-width"><div class="tm-header__container"><!----> <span class="tm-header__logo-wrap"><a href="/ru/" class="tm-header__logo tm-header__logo_ru"><svg height="16" width="16" class="tm-svg-img tm-header__icon"><title>Хабр</title> <use xlink:href="/img/habr-logo-ru.svg#logo"></use></svg></a> <span class="tm-header__beta-sign" style="display:none;">β</span></span> <div class="tm-dropdown tm-header__projects"><div class="tm-dropdown__head"><button class="tm-header__dropdown-toggle"><svg height="16" width="16" class="tm-svg-img tm-header__icon tm-header__icon_dropdown"><title>Открыть список</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#arrow-down"></use></svg></button></div> <!----></div> <a href="/ru/sandbox/start/" class="tm-header__become-author-btn">
+            Как стать автором
+          </a> <div class="tm-feature tm-header__feature tm-feature_variant-inline"><!----></div> <!----> <!----></div></div></header> <div class="tm-layout"><div class="tm-page-progress-bar"></div> <div data-menu-sticky="true" class="tm-base-layout__header tm-base-layout__header_is-sticky"><div class="tm-page-width"><div class="tm-base-layout__header-wrapper"><div class="tm-main-menu"><div class="tm-main-menu__section"><nav class="tm-main-menu__section-content"><!----> <a href="/ru/all/" class="tm-main-menu__item">
+        Все потоки
+      </a> <a href="/ru/flows/develop/" class="tm-main-menu__item">
+          Разработка
+        </a><a href="/ru/flows/admin/" class="tm-main-menu__item">
+          Администрирование
+        </a><a href="/ru/flows/design/" class="tm-main-menu__item">
+          Дизайн
+        </a><a href="/ru/flows/management/" class="tm-main-menu__item">
+          Менеджмент
+        </a><a href="/ru/flows/marketing/" class="tm-main-menu__item">
+          Маркетинг
+        </a><a href="/ru/flows/popsci/" class="tm-main-menu__item">
+          Научпоп
+        </a></nav></div></div> <div class="tm-header-user-menu tm-base-layout__user-menu"><a href="/ru/search/" class="tm-header-user-menu__item tm-header-user-menu__search"><svg height="24" width="24" class="tm-svg-img tm-header-user-menu__icon tm-header-user-menu__icon_search tm-header-user-menu__icon_dark"><title>Поиск</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#search"></use></svg></a> <!----> <!----> <!----> <div class="tm-header-user-menu__item tm-header-user-menu__user_desktop"><div class="tm-dropdown"><div class="tm-dropdown__head"><svg height="24" width="24" data-test-id="menu-toggle-guest" class="tm-svg-img tm-header-user-menu__icon"><title>Профиль</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#header-user"></use></svg> <!----></div> <!----></div> <!----></div> <!----></div></div></div></div> <!----> <div class="tm-page-width"></div> <main class="tm-layout__container"><div hl="ru" companyName="dcmiran" data-async-called="true" class="tm-page"><div class="tm-page-width"><div class="tm-page__header"><!----></div> <div class="tm-page__wrapper"><div class="tm-page__main tm-page__main_has-sidebar"><div class="pull-down"><div class="pull-down__header" style="height:0px;"><div class="pull-down__content" style="bottom:10px;"><svg height="24" width="24" class="tm-svg-img pull-down__arrow"><title>Обновить</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#pull-arrow"></use></svg></div></div> <div class="tm-article-presenter"><div class="tm-company-card tm-company-article__company-card"><div class="tm-company-card__info"><div class="tm-company-card__header"><a href="/ru/company/dcmiran/profile/" class="tm-company-card__avatar"><div class="tm-entity-image"><img alt="" height="48" src="//habrastorage.org/getpro/habr/company/2bd/077/d42/2bd077d429f247d38e24e5f0612293ed.png" width="48" class="tm-entity-image__pic"></div></a> <!----> <div class="tm-rating tm-company-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">119.99</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div> <div class="tm-company-card__info"><a href="/ru/company/dcmiran/profile/" class="tm-company-card__name">
+        Дата-центр «Миран»
+      </a> <div class="tm-company-card__description">Решения для аренды и размещения ИТ-инфраструктуры</div></div></div> <div class="tm-company-card__buttons"><!----> <!----></div></div> <div class="tm-article-presenter__body"><div class="tm-misprint-area"><div class="tm-misprint-area__wrapper"><article class="tm-article-presenter__content tm-article-presenter__content_narrow"><div class="tm-article-presenter__header"> <div class="tm-article-snippet tm-article-presenter__snippet"><div class="tm-article-snippet__meta-container"><div class="tm-article-snippet__meta"><span class="tm-user-info tm-article-snippet__author"><a href="/ru/users/Data_center_MIRAN/" title="Data_center_MIRAN" class="tm-user-info__userpic"><div class="tm-entity-image"><img alt="" height="24" loading="lazy" src="//habrastorage.org/r/w32/getpro/habr/avatars/c93/cd3/933/c93cd3933012bcefcc7414b9e2ec718d.png" width="24" class="tm-entity-image__pic"></div></a> <span class="tm-user-info__user"><a href="/ru/users/Data_center_MIRAN/" class="tm-user-info__username">
+      Data_center_MIRAN
+    </a> </span></span> <span class="tm-article-snippet__datetime-published"><time datetime="2021-10-20T06:23:59.000Z" title="2021-10-20, 09:23">20  октября   в 09:23</time></span></div> <!----></div> <h1 lang="ru" class="tm-article-snippet__title tm-article-snippet__title_h1"><span>ZFS таинственным образом поедает мой CPU</span></h1> <div class="tm-article-snippet__hubs"><span class="tm-article-snippet__hubs-item"><a href="/ru/company/dcmiran/blog/" class="tm-article-snippet__hubs-item-link router-link-active"><span>Блог компании Дата-центр «Миран»</span> <!----></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/linux/" class="tm-article-snippet__hubs-item-link"><span>Настройка Linux</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/sys_admin/" class="tm-article-snippet__hubs-item-link"><span>Системное администрирование</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/dwh/" class="tm-article-snippet__hubs-item-link"><span>Хранение данных</span> <span title="Профильный хаб" class="tm-article-snippet__profiled-hub">*</span></a></span><span class="tm-article-snippet__hubs-item"><a href="/ru/hub/cloud_services/" class="tm-article-snippet__hubs-item-link"><span>Облачные сервисы</span> <!----></a></span></div> <div class="tm-article-snippet__labels"><div class="tm-article-snippet__label"><span>
+        Перевод
+      </span></div></div> <!----> <!----></div></div> <div class="tm-article-presenter__origin"><a href="https://www.brendangregg.com/blog/2021-09-06/zfs-is-mysteriously-eating-my-cpu.html" target="_blank" class="tm-article-presenter__origin-link">
+                Автор оригинала:
+                <span>
+                  Brendan Gregg
+                </span></a></div> <div data-gallery-root="" lang="ru" class="tm-article-body"><div id="post-content-body" class="article-formatted-body article-formatted-body_version-1"><div xmlns="http://www.w3.org/1999/xhtml"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/eq/lu/j1/eqluj19uzsrz18ydpkdtardjnka.png"/><br/>
+<br/>
+Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я <a href="https://youtu.be/UVM3WX8Lq2k?t=133">рассказывал</a> об этом на конференции Kernel Recipes 2017 — да, это старая история… но её стоит рассказать ещё раз.<br/>
+<br/>
+<h1>Постановка задачи</h1><br/>
+Этот микросервис предназначен для сбора метрик. Недавно ребята обновились на новый образ ОС (BaseAMI) — и после этого заявили, что ZFS начала потреблять более 30% ресурса CPU. Первым делом я подумал, что они ошиблись: я лично разрабатывал системные компоненты ZFS в компании Sun Microsystems — и файловая система ну никак не могла настолько загружать процессор.<br/>
+<a name="habracut"></a><br/>
+Однако в своей карьере я неоднократно сталкивался с неожиданными проблемами производительности. Поэтому решил всё-таки лично проверить их инстансы. Хотелось разобраться, какой процесс на самом деле нагружает CPU.<br/>
+<br/>
+<h1>Мониторинг</h1><br/>
+Для начала я запустил инструмент облачного мониторинга <a href="https://netflixtechblog.com/introducing-atlas-netflixs-primary-telemetry-platform-bd31f4d8ed9a">Atlas</a>, чтобы посмотреть показатели CPU в целом, включая разбивку процессорного времени в процентах на работу системы ('sys') и пользовательскую нагрузку ('usr').<br/>
+<br/>
+К своему удивлению я обнаружил, что 38% процессорного времени действительно приходится на <code>sys</code>. Это очень необычно для облачных рабочих нагрузок Netflix — и вроде бы подтверждает заявление парней, что ZFS съедает CPU… но как такое возможно? Наверняка тут ошибка — и процессор нагружает некий другой процесс в ядре, а не ZFS.<br/>
+<br/>
+<h1>Дальнейшие действия</h1><br/>
+Для более глубокого анализа я обычно подключаюсь к инстансам по SSH, так можно запустить <code>mpstat(1)</code> и ещё раз посмотреть разбивку usr/sys, а также <code>perf(1)</code> для первоначального профилирования и проверки, какие конкретно пути кода нагружают ядра CPU. Однако у Netflix есть очень удобные инструменты для построения flame-графики прямо из облачного UI (раньше это был Vector, теперь FlameCommander). Так что я сразу перешёл к делу. Для наглядности на КДПВ показан пользовательский интерфейс Vector и типичный flame-график для облачной нагрузки.<br/>
+<br/>
+Обратите внимание, что в этом образце преобладает Java (показана зелёным). Вот увеличенный фрагмент:<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/-o/cm/fb/-ocmfbzlgktfgwdy--xuopbjmqo.png"/><br/>
+<br/>
+<h1>Flame-график</h1><br/>
+Посмотрим график нагрузки на CPU одного из проблемных инстансов:<br/>
+<br/>
+<a href="https://www.brendangregg.com/blog/images/2021/zfsflamegraph-red.svg"><img src="/img/image-loader.svg" data-src="https://habrastorage.org/webt/sd/sz/mp/sdszmpxwmgw9iamvif3y5jufvso.png"/></a><br/>
+<br/>
+Сразу бросаются в глаза системные процессы. Это две оранжевые башни слева и справа. Жёлтый — это C++, а красный — прочий код пользовательского уровня.<br/>
+<br/>
+Итак, посмотрим поближе на левую башню с нагрузкой от ядра:<br/>
+<br/>
+<img src="/img/image-loader.svg" data-src="https://www.brendangregg.com/blog/images/2021/zfsflamegraph-zoom.png"/><br/>
+<br/>
+Да это же поток <code>arc_reclaim_thread</code>! С этим кодом я колупался ещё в Sun. Так что здесь действительно ZFS, они правы!<br/>
+<br/>
+Adapative Replacement Cache (ARC) в ZFS — это основной кэш памяти для файловой системы. Поток <code>arc_reclaim_thread</code> выполняет операцию <code>arc_adjust()</code> для удаления памяти из кэша, чтобы тот не слишком разрастался и чтобы освободить память для приложений. Процесс выполняется по расписанию или по вызову, в условиях нехватки памяти. Вообще-то я помню, что поток <code>arc_reclaim_thread</code> действительно может нагружать CPU в определённых условиях: если в файловой системе используется крошечный размер записи (например, 512 байт), что создаёт миллионы маленьких буферов. Но это по сути некорректная конфигурация ZFS. Размер записи по умолчанию составляет 128 КБ, и ни при каких условиях не следует указывать размер меньше 8 КБ.<br/>
+<br/>
+Правая башня нагрузки от ядра показывает <code>spl_kmem_cache_reap_now()</code>, ещё одну функцию освобождения памяти ZFS. Предполагаю, что она связана с левой башней (например, борьба за одни и те же блокировки).<br/>
+<br/>
+Но главный вопрос: почему вообще используется ZFS?<br/>
+<br/>
+<h1>Конфигурация</h1><br/>
+Насколько я знаю, до сих пор ZFS использовалась только однажды: инновационную файловую систему поставили для контейнеров в новом инфраструктурном проекте. Это навело меня на мысль: если они быстро меняют контейнеры, то есть вероятность, что так же быстро меняются файловые системы ZFS, а это может означать, что многие старые страницы нужно вычищать из кэша. Теперь всё понятно.<br/>
+<br/>
+Я выложил ребятам свою теорию, уверенный, что нахожусь на правильном пути. Но они ответили: «Мы не используем контейнеры». Хорошо, тогда как вы используете ZFS? Я не ожидал такого ответа:<br/>
+<br/>
+<b>— Мы не используем ZFS.</b><br/>
+<br/>
+Что!? Конечно используете. Я же вижу поток <code>arc_reclaim_thread</code> на flame-графике. Он не запускается просто так! Он может появиться на CPU только по одной причине: когда нужно удалить страницы памяти из кэша ARC. Если вы не используете ZFS, то в ARC не будет никаких страниц, поэтому нечего очищать, и этот процесс просто не запустится.<br/>
+<br/>
+Но они были уверены, что вообще не используют ZFS. В таком случае график невозможно логично объяснить. Я должен был выяснить, каким образом всё-таки запускается ZFS, и показать им это.<br/>
+<br/>
+<h1>cd и ls</h1><br/>
+Для ответов на все вопросы достаточно команд <code>cd</code> и <code>ls(1)</code>. Первая обращается к файловой системе, а вторая показывает, что там находится. Имена файлов во многом объяснят, почему запускается эта файловая система.<br/>
+<br/>
+Сначала посмотрим, где смонтированы системы ZFS:<br/>
+<br/>
+<pre><code class="bash">df -h
+mount
+zfs list</code></pre><br/>
+Но результат нулевой! В данный момент не смонтировано ни одной файловой системы ZFS. Я попробовал другой инстанс — то же самое. Что за ерунда?<br/>
+<br/>
+А, ну да, контейнеры же могли создать раньше, а затем уничтожить. Поэтому сейчас не осталось тех файловых систем. Как же доказать, что использовалась ZFS?<br/>
+<br/>
+<h1>arcstats</h1><br/>
+Точно, мне помогут <code>arcstats</code>! Счётчики работают на уровне ядра и отслеживают статистику ZFS, включая попадания и промахи кэша ARC. Посмотрим на них:<br/>
+<br/>
+<pre># cat /proc/spl/kstat/zfs/arcstats
+name                            type data
+hits                            4    0
+misses                          4    0
+demand_data_hits                4    0
+demand_data_misses              4    0
+demand_metadata_hits            4    0
+demand_metadata_misses          4    0
+prefetch_data_hits              4    0
+prefetch_data_misses            4    0
+prefetch_metadata_hits          4    0
+prefetch_metadata_misses        4    0
+mru_hits                        4    0
+mru_ghost_hits                  4    0
+mfu_hits                        4    0
+mfu_ghost_hits                  4    0
+deleted                         4    0
+mutex_miss                      4    0
+evict_skip                      4    0
+evict_not_enough                4    0
+evict_l2_cached                 4    0
+evict_l2_eligible               4    0
+[...]</pre><br/>
+Невероятно! Все счётчики по нулям! ZFS действительно не использовалась, вообще ни разу! Но в то же время она съедала более 30% вычислительных ресурсов! Как???<br/>
+<br/>
+Клиент, который впервые заметил проблему, оказался прав. ZFS прямо-таки пожирала процессор, причём без всякой причины.<br/>
+<br/>
+Как файловая система, <i>которая вообще не используется</i>, может потреблять 38% CPU? Я такого никогда не видел… Загадка.<br/>
+<br/>
+<h1>8. Анализ кода</h1><br/>
+Я внимательнее посмотрел график, а именно задействованные пути кода. И обратил внимание, что они ведут к <code>get_random_bytes()</code> и <code>extract_entropy()</code>. Это что-то новенькое, я такого не писал. Посмотрев <a href="https://github.com/openzfs/zfs/blob/4e33ba4c389f59b74138bf7130e924a4230d64e9/module/zfs/arc.c">исходный код</a> и историю изменений, всё стало понятно.<br/>
+<br/>
+В кэше ARC хранятся списки буферов для различных типов памяти. В какой-то момент для оптимизации производительности в код добавили функцию <code>multilist</code>, которая разделяла списки ARC по разным CPU, чтобы убрать конфликты блокировок на многопроцессорных системах. Вроде хорошее дело — это должно повысить производительность. Но что происходит, когда вы очищаете кэш? Вам нужно выбрать один из этих списков. Какой именно? Можно брать их по очереди, но разработчик решил, что лучше выбрать наугад.<br/>
+<br/>
+<i>Криптографически безопасный рандом.</i><br/>
+<br/>
+Самое интересное заключалось в том, что ZFS даже не использовалась. ARC замечал низкий уровень системной памяти, соответствующим образом пытался изменить размер списка, фиксировал, что список нулевого размера — значит, ничего не нужно делать. Но это происходило после случайного выбора списка нулевого размера с помощью генератора случайных чисел, который сильно нагружал CPU.<br/>
+<br/>
+В 2017 году я зафиксировал проблему в <a href="https://github.com/openzfs/zfs/issues/6531">тикете #6531</a>. Полагаю, что первым делом они внесли изменения в код <code>arc_reclaim_thread</code>, чтобы процесс не занимался выбором списка, когда ZFS не используется, а завершал работу. С тех пор код ARC изменяли многократно, и я больше не слышал об этой проблеме.<br/>
+<br/>
+<hr/><br/>
+<a href="http://miran.ru/"><img src="https://habrastorage.org/r/w780q1/webt/8p/hx/-1/8phx-1apbwvk5vchi3wxibeaorw.jpeg" data-src="https://habrastorage.org/webt/8p/hx/-1/8phx-1apbwvk5vchi3wxibeaorw.jpeg" data-blurred="true"/></a></div></div> <!----> <!----></div> <div class="tm-article-presenter__meta"><div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Теги:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BZFS%5D" class="tm-tags-list__link">ZFS</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BBaseAMI%5D" class="tm-tags-list__link">BaseAMI</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BC%D0%B8%D0%BA%D1%80%D0%BE%D1%81%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B%5D" class="tm-tags-list__link">микросервисы</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%BF%D1%80%D0%BE%D1%84%D0%B8%D0%BB%D0%B8%D1%80%D0%BE%D0%B2%D0%B0%D0%BD%D0%B8%D0%B5%5D" class="tm-tags-list__link">профилирование</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5Bflame-%D0%B3%D1%80%D0%B0%D1%84%D0%B8%D0%BA%D0%B8%5D" class="tm-tags-list__link">flame-графики</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BVector%5D" class="tm-tags-list__link">Vector</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5BFlameCommander%5D" class="tm-tags-list__link">FlameCommander</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B0%D0%BD%D0%B0%D0%BB%D0%B8%D0%B7%20%D0%BA%D0%BE%D0%B4%D0%B0%5D" class="tm-tags-list__link">анализ кода</a></li><li class="tm-separated-list__item"><a href="/ru/search/?target_type=posts&amp;order=relevance&amp;q=%5B%D0%B3%D0%B5%D0%BD%D0%B5%D1%80%D0%B0%D1%82%D0%BE%D1%80%20%D1%81%D0%BB%D1%83%D1%87%D0%B0%D0%B9%D0%BD%D1%8B%D1%85%20%D1%87%D0%B8%D1%81%D0%B5%D0%BB%5D" class="tm-tags-list__link">генератор случайных чисел</a></li></ul></div> <div class="tm-separated-list tm-article-presenter__meta-list"><span class="tm-separated-list__title">Хабы:</span> <ul class="tm-separated-list__list"><li class="tm-separated-list__item"><a href="/ru/company/dcmiran/blog/" class="tm-hubs-list__link router-link-active">
+    Блог компании Дата-центр «Миран»
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/linux/" class="tm-hubs-list__link">
+    Настройка Linux
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/sys_admin/" class="tm-hubs-list__link">
+    Системное администрирование
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/dwh/" class="tm-hubs-list__link">
+    Хранение данных
+  </a></li><li class="tm-separated-list__item"><a href="/ru/hub/cloud_services/" class="tm-hubs-list__link">
+    Облачные сервисы
+  </a></li></ul></div></div></article></div> <!----></div> <div class="tm-article-sticky-panel"><div class="tm-data-icons tm-article-sticky-panel__icons"><div class="tm-article-rating tm-data-icons__item"><div class="tm-votes-meter tm-article-rating__votes-switcher"><svg height="16" width="16" class="tm-svg-img tm-votes-meter__icon tm-votes-meter__icon_medium"><title>Всего голосов 35: ↑33 и ↓2</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-rating"></use></svg> <span title="Всего голосов 35: ↑33 и ↓2" class="tm-votes-meter__value tm-votes-meter__value_positive tm-votes-meter__value_medium">+31</span></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----> <span title="Количество просмотров" class="tm-icon-counter tm-data-icons__item"><svg height="16" width="16" class="tm-svg-img tm-icon-counter__icon"><title>Просмотры</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-views"></use></svg> <span class="tm-icon-counter__value">12K</span></span> <button title="Добавить в закладки" type="button" class="bookmarks-button tm-data-icons__item"><span title="Добавить в закладки" class="tm-svg-icon__wrapper bookmarks-button__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Добавить в закладки</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-favorite"></use></svg></span> <span title="Количество пользователей, добавивших публикацию в закладки" class="bookmarks-button__counter">
+    34
+  </span></button> <!----> <div title="Поделиться" class="tm-sharing tm-data-icons__item"><button type="button" class="tm-sharing__button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="tm-sharing__icon"><path fill="currentColor" d="M10.33.275l9.047 7.572a.2.2 0 010 .306l-9.048 7.572a.2.2 0 01-.328-.153V11c-8 0-9.94 6-9.94 6S-1 5 10 5V.428a.2.2 0 01.328-.153z"></path></svg></button> <!----></div> <DIV class="v-portal" style="display:none;"></DIV></div> </div></div> <!----> <!----> <div class="tm-article-presenter__footer"><div class="tm-article-blocks"><!----> <section class="tm-block tm-block_spacing-bottom"><!----> <div class="tm-block__body tm-block__body_variant-balanced"><div class="tm-article-author"><div class="tm-article-author__company"><div class="tm-article-author__company-card"><div class="tm-company-snippet"><a href="/ru/company/dcmiran/profile/" class="tm-company-snippet__logo-link"><div class="tm-entity-image"><img alt="" height="40" src="//habrastorage.org/getpro/habr/company/2bd/077/d42/2bd077d429f247d38e24e5f0612293ed.png" width="40" class="tm-entity-image__pic"></div></a> <div class="tm-company-snippet__info"><a href="/ru/company/dcmiran/profile/" class="tm-company-snippet__title">Дата-центр «Миран»</a> <div class="tm-company-snippet__description">Решения для аренды и размещения ИТ-инфраструктуры</div></div></div> <div class="tm-article-author__buttons"><!----> <!----></div></div> <div class="tm-article-author__company-contacts"><a href="https://miran.ru/" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div> <div class="tm-article-author__separator"></div></div> <div class="tm-user-card tm-article-author__user-card tm-user-card_variant-article"><div class="tm-user-card__info-container"><div class="tm-user-card__header"><div class="tm-user-card__header-data"><a href="/ru/users/Data_center_MIRAN/" class="tm-user-card__userpic tm-user-card__userpic_size-40"><div class="tm-entity-image"><img alt="" src="//habrastorage.org/getpro/habr/avatars/c93/cd3/933/c93cd3933012bcefcc7414b9e2ec718d.png" class="tm-entity-image__pic"></div></a> <div class="tm-user-card__meta"><div title=" 240 голосов " class="tm-karma tm-user-card__karma"><div class="tm-karma__votes tm-karma__votes_positive">
+    122
+  </div> <div class="tm-karma__text">
+    Карма
+  </div></div> <div title="Рейтинг пользователя" class="tm-rating tm-user-card__rating"><div class="tm-rating__header"> <div class="tm-rating__counter">76.5</div></div> <div class="tm-rating__text">
+    Рейтинг
+  </div></div></div></div></div> <div class="tm-user-card__info tm-user-card__info_variant-article"><div class="tm-user-card__title tm-user-card__title_variant-article"><span class="tm-user-card__name tm-user-card__name_variant-article">Дата-центр &quot;Миран&quot;</span> <a href="/ru/users/Data_center_MIRAN/" class="tm-user-card__nickname tm-user-card__nickname_variant-article">
+          @Data_center_MIRAN
+        </a> <!----></div> <p class="tm-user-card__short-info tm-user-card__short-info_variant-article">Серверы, стойки, VPS</p></div></div> <div class="tm-user-card__buttons tm-user-card__buttons_variant-article"><!----> <!----> <!----> <!----> <!----></div></div> <div class="tm-article-author__user-contacts"><a href="http://miran.ru" rel="noopener" target="_blank" class="tm-article-author__contact">
+      Сайт
+    </a></div></div> <DIV class="v-portal" style="display:none;"></DIV></div> <!----></section> <div class="tm-article-blocks__comments"><div class="tm-article-page-comments"><div class="tm-article-comments-counter-link tm-article-comments-counter-button"><a href="/ru/company/dcmiran/blog/584458/comments/" class="tm-article-comments-counter-link__link tm-article-comments-counter-link__link_button-style"><svg height="16" width="16" class="tm-svg-img tm-article-comments-counter-link__icon tm-article-comments-counter-link__icon_contrasted"><title>Комментарии</title> <use xlink:href="/img/megazord-v24.ce74655c.svg#counter-comments"></use></svg> <span class="tm-article-comments-counter-link__value tm-article-comments-counter-link__value_contrasted">
+       Комментарии 22 
+    </span></a> <!----></div></div></div>  <!---->  <!----> <!----></div></div></div></div></div> <div class="tm-page__sidebar"><div class="tm-layout-sidebar"><div class="tm-layout-sidebar__placeholder_initial"></div> <div class="tm-sexy-sidebar tm-sexy-sidebar_initial" style="margin-top:0px;"><!----> <section class="tm-block tm-block_spacing-bottom"><header class="tm-block__header"><h2 class="tm-block__title">Информация</h2> <!----></header> <div class="tm-block__body"><div class="tm-company-basic-info"><dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата основания</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="1999-04-06T20:00:00.000Z" title="1999-04-07, 00:00">7  апреля  1999</time></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Местоположение</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    Россия
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Сайт</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><a href="https://miran.ru/" target="_blank" class="tm-company-basic-info__link">
+      miran.ru
+    </a></dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Численность</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap">
+    51–100 человек
+  </dd></dl> <dl class="tm-description-list tm-description-list_variant-columns-nowrap"><dt class="tm-description-list__title tm-description-list__title_variant-columns-nowrap">Дата регистрации</dt> <dd class="tm-description-list__body tm-description-list__body_variant-columns-nowrap"><time datetime="2017-07-05T07:30:05.000Z" title="2017-07-05, 10:30">5  июля  2017</time></dd></dl> <!----></div></div> <!----></section> <div class="tm-company-widgets"></div> <!----></div></div></div></div></div></div></main> <!----></div> <div class="tm-footer-menu"><div class="tm-page-width"><div class="tm-footer-menu__container"><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Ваш аккаунт
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr/?back=/ru/company/dcmiran/blog/584458/&amp;hl=ru" rel="nofollow" target="_self">
+                Войти
+              </a></li><li class="tm-footer-menu__list-item"><a href="/kek/v1/auth/habrahabr-register/?back=/ru/company/dcmiran/blog/584458/&amp;hl=ru" rel="nofollow" target="_self">
+                Регистрация
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Разделы
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/" class="footer-menu__item-link router-link-active">
+                Публикации
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/news/" class="footer-menu__item-link">
+                Новости
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/hubs/" class="footer-menu__item-link">
+                Хабы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/companies/" class="footer-menu__item-link">
+                Компании
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/users/" class="footer-menu__item-link">
+                Авторы
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/sandbox/" class="footer-menu__item-link">
+                Песочница
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Информация
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="/ru/docs/help/" class="footer-menu__item-link">
+                Устройство сайта
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/authors/codex/" class="footer-menu__item-link">
+                Для авторов
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/companies/corpblogs/" class="footer-menu__item-link">
+                Для компаний
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/docs/docs/transparency/" class="footer-menu__item-link">
+                Документы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/agreement" target="_blank">
+                Соглашение
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://account.habr.com/info/confidential/" target="_blank">
+                Конфиденциальность
+              </a></li></ul></div></div><div class="tm-footer-menu__block"><h3 class="tm-footer-menu__block-title">
+          Услуги
+        </h3> <div class="tm-footer-menu__block-content"><ul class="tm-footer-menu__list"><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQLwRfQmXibiUlWaRg-BAc38s7oM3lJiaPju7qmdJsp8ysIvZ_G-Npem0njJLMozE2bPHMpDqiI5hhy/pub?start=false&amp;loop=false&amp;delayms=60000&amp;slide=id.g91a03369cd_4_297" target="_blank">
+                Реклама
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://habrastorage.org/storage/stuff/habr/service_price.pdf" target="_blank">
+                Тарифы
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://docs.google.com/presentation/d/e/2PACX-1vQJJds8-Di7BQSP_guHxICN7woVYoN5NP_22ra-BIo4bqnTT9FR6fB-Ku2P0AoRpX0Ds-LRkDeAoD8F/pub?start=false&amp;loop=false&amp;delayms=60000" target="_blank">
+                Контент
+              </a></li><li class="tm-footer-menu__list-item"><a href="https://tmtm.timepad.ru/" target="_blank">
+                Семинары
+              </a></li><li class="tm-footer-menu__list-item"><a href="/ru/megaprojects/" class="footer-menu__item-link">
+                Мегапроекты
+              </a></li></ul></div></div></div></div></div> <div class="tm-footer"><div class="tm-page-width"><div class="tm-footer__container"><!----> <div class="tm-footer__social"><a href="https://www.facebook.com/habrahabr.ru" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Facebook</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-facebook"></use></svg></a><a href="https://twitter.com/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Twitter</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-twitter"></use></svg></a><a href="https://vk.com/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>VK</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-vkontakte"></use></svg></a><a href="https://telegram.me/habr_com" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Telegram</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-telegram"></use></svg></a><a href="https://www.youtube.com/channel/UCd_sTwKqVrweTt4oAKY5y4w" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Youtube</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-youtube"></use></svg></a><a href="https://zen.yandex.ru/habr" rel="nofollow noopener noreferrer" target="_blank" class="tm-svg-icon__wrapper tm-social-icons__icon"><svg height="16" width="16" class="tm-svg-img tm-svg-icon"><title>Яндекс Дзен</title> <use xlink:href="/img/social-icons-sprite.svg#social-logo-zen"></use></svg></a></div> <DIV class="v-portal" style="display:none;"></DIV> <button class="tm-footer__link"><!---->
+        Настройка языка
+      </button> <a href="/ru/about" class="tm-footer__link">
+        О сайте
+      </a> <a href="/ru/feedback/" class="tm-footer__link">
+        Техническая поддержка
+      </a> <!----> <a href="/berserk-mode-nope" class="tm-footer__link">
+        Вернуться на старую версию
+      </a> <div class="tm-footer-copyright"><span class="tm-copyright"><span class="tm-copyright__years">© 2006–2021 </span> <span class="tm-copyright__name">«<a href="https://company.habr.com/" rel="noopener" target="_blank" class="tm-copyright__link">Habr</a>»</span></span></div></div></div></div> <!----> <!----></div> <div class="vue-portal-target"></div></div>
+<script>window.__INITIAL_STATE__={"adblock":{"hasAcceptableAdsFilter":false,"hasAdblock":false},"articlesList":{"articlesList":{"584458":{"id":"584458","timePublished":"2021-10-20T06:23:59+00:00","isCorporative":true,"lang":"ru","titleHtml":"ZFS таинственным образом поедает мой CPU","leadData":{"textHtml":"\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Feq\u002Flu\u002Fj1\u002Feqluj19uzsrz18ydpkdtardjnka.png\"\u003E\u003Cbr\u003E\r\n\u003Cbr\u003E\r\nОтдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я \u003Ca href=\"https:\u002F\u002Fyoutu.be\u002FUVM3WX8Lq2k?t=133\" rel=\"nofollow noopener noreferrer\"\u003Eрассказывал\u003C\u002Fa\u003E об этом на конференции Kernel Recipes 2017 — да, это старая история… но её стоит рассказать ещё раз.\u003Cbr\u003E\r\n\u003Cbr\u003E\r\n\u003Ch1\u003EПостановка задачи\u003C\u002Fh1\u003E\u003Cbr\u003E\r\nЭтот микросервис предназначен для сбора метрик. Недавно ребята обновились на новый образ ОС (BaseAMI) — и после этого заявили, что ZFS начала потреблять более 30% ресурса CPU. Первым делом я подумал, что они ошиблись: я лично разрабатывал системные компоненты ZFS в компании Sun Microsystems — и файловая система ну никак не могла настолько загружать процессор.\u003Cbr\u003E","imageUrl":null,"buttonTextHtml":"Читать дальше &rarr;","image":null},"editorVersion":"1.0","postType":"article","postLabels":[{"type":"translation","data":{"originalAuthorName":"Brendan Gregg","originalUrl":"https:\u002F\u002Fwww.brendangregg.com\u002Fblog\u002F2021-09-06\u002Fzfs-is-mysteriously-eating-my-cpu.html"}}],"author":{"scoreStats":{"score":122,"votesCount":240},"rating":76.5,"relatedData":null,"contacts":[{"title":"Сайт","url":"http:\u002F\u002Fmiran.ru","value":"http:\u002F\u002Fmiran.ru"}],"authorContacts":[{"title":"Сайт","url":"http:\u002F\u002Fmiran.ru","value":"http:\u002F\u002Fmiran.ru"}],"paymentDetails":{"paymentYandexMoney":null,"paymentPayPalMe":null,"paymentWebmoney":null},"id":"1503469","alias":"Data_center_MIRAN","fullname":"Дата-центр &quot;Миран&quot;","avatarUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Favatars\u002Fc93\u002Fcd3\u002F933\u002Fc93cd3933012bcefcc7414b9e2ec718d.png","speciality":"Серверы, стойки, VPS"},"statistics":{"commentsCount":22,"favoritesCount":34,"readingCount":12009,"score":31,"votesCount":35},"hubs":[{"relatedData":null,"id":"21124","alias":"dcmiran","type":"corporative","title":"Блог компании Дата-центр «Миран»","titleHtml":"Блог компании Дата-центр «Миран»","isProfiled":false},{"relatedData":null,"id":"36","alias":"linux","type":"collective","title":"Настройка Linux","titleHtml":"Настройка Linux","isProfiled":true},{"relatedData":null,"id":"221","alias":"sys_admin","type":"collective","title":"Системное администрирование","titleHtml":"Системное администрирование","isProfiled":true},{"relatedData":null,"id":"19197","alias":"dwh","type":"collective","title":"Хранение данных","titleHtml":"Хранение данных","isProfiled":true},{"relatedData":null,"id":"21470","alias":"cloud_services","type":"collective","title":"Облачные сервисы","titleHtml":"Облачные сервисы","isProfiled":false}],"flows":[{"id":"6","alias":"admin","title":"Администрирование"}],"relatedData":null,"textHtml":"\u003Cdiv xmlns=\"http:\u002F\u002Fwww.w3.org\u002F1999\u002Fxhtml\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Feq\u002Flu\u002Fj1\u002Feqluj19uzsrz18ydpkdtardjnka.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОтдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я \u003Ca href=\"https:\u002F\u002Fyoutu.be\u002FUVM3WX8Lq2k?t=133\"\u003Eрассказывал\u003C\u002Fa\u003E об этом на конференции Kernel Recipes 2017 — да, это старая история… но её стоит рассказать ещё раз.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch1\u003EПостановка задачи\u003C\u002Fh1\u003E\u003Cbr\u002F\u003E\r\nЭтот микросервис предназначен для сбора метрик. Недавно ребята обновились на новый образ ОС (BaseAMI) — и после этого заявили, что ZFS начала потреблять более 30% ресурса CPU. Первым делом я подумал, что они ошиблись: я лично разрабатывал системные компоненты ZFS в компании Sun Microsystems — и файловая система ну никак не могла настолько загружать процессор.\u003Cbr\u002F\u003E\r\n\u003Ca name=\"habracut\"\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\nОднако в своей карьере я неоднократно сталкивался с неожиданными проблемами производительности. Поэтому решил всё-таки лично проверить их инстансы. Хотелось разобраться, какой процесс на самом деле нагружает CPU.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch1\u003EМониторинг\u003C\u002Fh1\u003E\u003Cbr\u002F\u003E\r\nДля начала я запустил инструмент облачного мониторинга \u003Ca href=\"https:\u002F\u002Fnetflixtechblog.com\u002Fintroducing-atlas-netflixs-primary-telemetry-platform-bd31f4d8ed9a\"\u003EAtlas\u003C\u002Fa\u003E, чтобы посмотреть показатели CPU в целом, включая разбивку процессорного времени в процентах на работу системы ('sys') и пользовательскую нагрузку ('usr').\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nК своему удивлению я обнаружил, что 38% процессорного времени действительно приходится на \u003Ccode\u003Esys\u003C\u002Fcode\u003E. Это очень необычно для облачных рабочих нагрузок Netflix — и вроде бы подтверждает заявление парней, что ZFS съедает CPU… но как такое возможно? Наверняка тут ошибка — и процессор нагружает некий другой процесс в ядре, а не ZFS.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch1\u003EДальнейшие действия\u003C\u002Fh1\u003E\u003Cbr\u002F\u003E\r\nДля более глубокого анализа я обычно подключаюсь к инстансам по SSH, так можно запустить \u003Ccode\u003Empstat(1)\u003C\u002Fcode\u003E и ещё раз посмотреть разбивку usr\u002Fsys, а также \u003Ccode\u003Eperf(1)\u003C\u002Fcode\u003E для первоначального профилирования и проверки, какие конкретно пути кода нагружают ядра CPU. Однако у Netflix есть очень удобные инструменты для построения flame-графики прямо из облачного UI (раньше это был Vector, теперь FlameCommander). Так что я сразу перешёл к делу. Для наглядности на КДПВ показан пользовательский интерфейс Vector и типичный flame-график для облачной нагрузки.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nОбратите внимание, что в этом образце преобладает Java (показана зелёным). Вот увеличенный фрагмент:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F-o\u002Fcm\u002Ffb\u002F-ocmfbzlgktfgwdy--xuopbjmqo.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch1\u003EFlame-график\u003C\u002Fh1\u003E\u003Cbr\u002F\u003E\r\nПосмотрим график нагрузки на CPU одного из проблемных инстансов:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ca href=\"https:\u002F\u002Fwww.brendangregg.com\u002Fblog\u002Fimages\u002F2021\u002Fzfsflamegraph-red.svg\"\u003E\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002Fsd\u002Fsz\u002Fmp\u002Fsdszmpxwmgw9iamvif3y5jufvso.png\"\u002F\u003E\u003C\u002Fa\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСразу бросаются в глаза системные процессы. Это две оранжевые башни слева и справа. Жёлтый — это C++, а красный — прочий код пользовательского уровня.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nИтак, посмотрим поближе на левую башню с нагрузкой от ядра:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cimg src=\"\u002Fimg\u002Fimage-loader.svg\" data-src=\"https:\u002F\u002Fwww.brendangregg.com\u002Fblog\u002Fimages\u002F2021\u002Fzfsflamegraph-zoom.png\"\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nДа это же поток \u003Ccode\u003Earc_reclaim_thread\u003C\u002Fcode\u003E! С этим кодом я колупался ещё в Sun. Так что здесь действительно ZFS, они правы!\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nAdapative Replacement Cache (ARC) в ZFS — это основной кэш памяти для файловой системы. Поток \u003Ccode\u003Earc_reclaim_thread\u003C\u002Fcode\u003E выполняет операцию \u003Ccode\u003Earc_adjust()\u003C\u002Fcode\u003E для удаления памяти из кэша, чтобы тот не слишком разрастался и чтобы освободить память для приложений. Процесс выполняется по расписанию или по вызову, в условиях нехватки памяти. Вообще-то я помню, что поток \u003Ccode\u003Earc_reclaim_thread\u003C\u002Fcode\u003E действительно может нагружать CPU в определённых условиях: если в файловой системе используется крошечный размер записи (например, 512 байт), что создаёт миллионы маленьких буферов. Но это по сути некорректная конфигурация ZFS. Размер записи по умолчанию составляет 128 КБ, и ни при каких условиях не следует указывать размер меньше 8 КБ.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nПравая башня нагрузки от ядра показывает \u003Ccode\u003Espl_kmem_cache_reap_now()\u003C\u002Fcode\u003E, ещё одну функцию освобождения памяти ZFS. Предполагаю, что она связана с левой башней (например, борьба за одни и те же блокировки).\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо главный вопрос: почему вообще используется ZFS?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch1\u003EКонфигурация\u003C\u002Fh1\u003E\u003Cbr\u002F\u003E\r\nНасколько я знаю, до сих пор ZFS использовалась только однажды: инновационную файловую систему поставили для контейнеров в новом инфраструктурном проекте. Это навело меня на мысль: если они быстро меняют контейнеры, то есть вероятность, что так же быстро меняются файловые системы ZFS, а это может означать, что многие старые страницы нужно вычищать из кэша. Теперь всё понятно.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЯ выложил ребятам свою теорию, уверенный, что нахожусь на правильном пути. Но они ответили: «Мы не используем контейнеры». Хорошо, тогда как вы используете ZFS? Я не ожидал такого ответа:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cb\u003E— Мы не используем ZFS.\u003C\u002Fb\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nЧто!? Конечно используете. Я же вижу поток \u003Ccode\u003Earc_reclaim_thread\u003C\u002Fcode\u003E на flame-графике. Он не запускается просто так! Он может появиться на CPU только по одной причине: когда нужно удалить страницы памяти из кэша ARC. Если вы не используете ZFS, то в ARC не будет никаких страниц, поэтому нечего очищать, и этот процесс просто не запустится.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nНо они были уверены, что вообще не используют ZFS. В таком случае график невозможно логично объяснить. Я должен был выяснить, каким образом всё-таки запускается ZFS, и показать им это.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch1\u003Ecd и ls\u003C\u002Fh1\u003E\u003Cbr\u002F\u003E\r\nДля ответов на все вопросы достаточно команд \u003Ccode\u003Ecd\u003C\u002Fcode\u003E и \u003Ccode\u003Els(1)\u003C\u002Fcode\u003E. Первая обращается к файловой системе, а вторая показывает, что там находится. Имена файлов во многом объяснят, почему запускается эта файловая система.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСначала посмотрим, где смонтированы системы ZFS:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E\u003Ccode class=\"bash\"\u003Edf -h\nmount\nzfs list\u003C\u002Fcode\u003E\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНо результат нулевой! В данный момент не смонтировано ни одной файловой системы ZFS. Я попробовал другой инстанс — то же самое. Что за ерунда?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nА, ну да, контейнеры же могли создать раньше, а затем уничтожить. Поэтому сейчас не осталось тех файловых систем. Как же доказать, что использовалась ZFS?\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch1\u003Earcstats\u003C\u002Fh1\u003E\u003Cbr\u002F\u003E\r\nТочно, мне помогут \u003Ccode\u003Earcstats\u003C\u002Fcode\u003E! Счётчики работают на уровне ядра и отслеживают статистику ZFS, включая попадания и промахи кэша ARC. Посмотрим на них:\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Cpre\u003E# cat \u002Fproc\u002Fspl\u002Fkstat\u002Fzfs\u002Farcstats\nname                            type data\nhits                            4    0\nmisses                          4    0\ndemand_data_hits                4    0\ndemand_data_misses              4    0\ndemand_metadata_hits            4    0\ndemand_metadata_misses          4    0\nprefetch_data_hits              4    0\nprefetch_data_misses            4    0\nprefetch_metadata_hits          4    0\nprefetch_metadata_misses        4    0\nmru_hits                        4    0\nmru_ghost_hits                  4    0\nmfu_hits                        4    0\nmfu_ghost_hits                  4    0\ndeleted                         4    0\nmutex_miss                      4    0\nevict_skip                      4    0\nevict_not_enough                4    0\nevict_l2_cached                 4    0\nevict_l2_eligible               4    0\n[...]\u003C\u002Fpre\u003E\u003Cbr\u002F\u003E\r\nНевероятно! Все счётчики по нулям! ZFS действительно не использовалась, вообще ни разу! Но в то же время она съедала более 30% вычислительных ресурсов! Как???\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКлиент, который впервые заметил проблему, оказался прав. ZFS прямо-таки пожирала процессор, причём без всякой причины.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nКак файловая система, \u003Ci\u003Eкоторая вообще не используется\u003C\u002Fi\u003E, может потреблять 38% CPU? Я такого никогда не видел… Загадка.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ch1\u003E8. Анализ кода\u003C\u002Fh1\u003E\u003Cbr\u002F\u003E\r\nЯ внимательнее посмотрел график, а именно задействованные пути кода. И обратил внимание, что они ведут к \u003Ccode\u003Eget_random_bytes()\u003C\u002Fcode\u003E и \u003Ccode\u003Eextract_entropy()\u003C\u002Fcode\u003E. Это что-то новенькое, я такого не писал. Посмотрев \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fopenzfs\u002Fzfs\u002Fblob\u002F4e33ba4c389f59b74138bf7130e924a4230d64e9\u002Fmodule\u002Fzfs\u002Farc.c\"\u003Eисходный код\u003C\u002Fa\u003E и историю изменений, всё стало понятно.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ кэше ARC хранятся списки буферов для различных типов памяти. В какой-то момент для оптимизации производительности в код добавили функцию \u003Ccode\u003Emultilist\u003C\u002Fcode\u003E, которая разделяла списки ARC по разным CPU, чтобы убрать конфликты блокировок на многопроцессорных системах. Вроде хорошее дело — это должно повысить производительность. Но что происходит, когда вы очищаете кэш? Вам нужно выбрать один из этих списков. Какой именно? Можно брать их по очереди, но разработчик решил, что лучше выбрать наугад.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Ci\u003EКриптографически безопасный рандом.\u003C\u002Fi\u003E\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nСамое интересное заключалось в том, что ZFS даже не использовалась. ARC замечал низкий уровень системной памяти, соответствующим образом пытался изменить размер списка, фиксировал, что список нулевого размера — значит, ничего не нужно делать. Но это происходило после случайного выбора списка нулевого размера с помощью генератора случайных чисел, который сильно нагружал CPU.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\nВ 2017 году я зафиксировал проблему в \u003Ca href=\"https:\u002F\u002Fgithub.com\u002Fopenzfs\u002Fzfs\u002Fissues\u002F6531\"\u003Eтикете #6531\u003C\u002Fa\u003E. Полагаю, что первым делом они внесли изменения в код \u003Ccode\u003Earc_reclaim_thread\u003C\u002Fcode\u003E, чтобы процесс не занимался выбором списка, когда ZFS не используется, а завершал работу. С тех пор код ARC изменяли многократно, и я больше не слышал об этой проблеме.\u003Cbr\u002F\u003E\r\n\u003Cbr\u002F\u003E\r\n\u003Chr\u002F\u003E\u003Cbr\u002F\u003E\r\n\u003Ca href=\"http:\u002F\u002Fmiran.ru\u002F\"\u003E\u003Cimg src=\"https:\u002F\u002Fhabrastorage.org\u002Fr\u002Fw780q1\u002Fwebt\u002F8p\u002Fhx\u002F-1\u002F8phx-1apbwvk5vchi3wxibeaorw.jpeg\" data-src=\"https:\u002F\u002Fhabrastorage.org\u002Fwebt\u002F8p\u002Fhx\u002F-1\u002F8phx-1apbwvk5vchi3wxibeaorw.jpeg\" data-blurred=\"true\"\u002F\u003E\u003C\u002Fa\u003E\u003C\u002Fdiv\u003E","tags":[{"titleHtml":"ZFS"},{"titleHtml":"BaseAMI"},{"titleHtml":"микросервисы"},{"titleHtml":"профилирование"},{"titleHtml":"flame-графики"},{"titleHtml":"Vector"},{"titleHtml":"FlameCommander"},{"titleHtml":"анализ кода"},{"titleHtml":"генератор случайных чисел"}],"metadata":{"stylesUrls":[],"scriptUrls":[],"shareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F584458\u002F4277682e48eb6c4629242fd1600fe22e\u002F","shareImageWidth":1200,"shareImageHeight":630,"vkShareImageUrl":"https:\u002F\u002Fhabr.com\u002Fshare\u002Fpublication\u002F584458\u002F4277682e48eb6c4629242fd1600fe22e\u002F?format=vk","schemaJsonLd":"{\"@context\":\"http:\\\u002F\\\u002Fschema.org\",\"@type\":\"Article\",\"mainEntityOfPage\":{\"@type\":\"WebPage\",\"@id\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fdcmiran\\\u002Fblog\\\u002F584458\\\u002F\"},\"headline\":\"ZFS таинственным образом поедает мой CPU\",\"datePublished\":\"2021-10-20T09:23:59+03:00\",\"dateModified\":\"2021-10-21T01:14:44+03:00\",\"author\":{\"@type\":\"Person\",\"name\":\"Дата-центр &quot;Миран&quot;\"},\"publisher\":{\"@type\":\"Organization\",\"name\":\"Habr\",\"logo\":{\"@type\":\"ImageObject\",\"url\":\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fa_\\\u002Flk\\\u002F9m\\\u002Fa_lk9mjkccjox-zccjrpfolmkmq.png\"}},\"description\":\"Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я ра...\",\"url\":\"https:\\\u002F\\\u002Fhabr.com\\\u002Fru\\\u002Fcompany\\\u002Fdcmiran\\\u002Fblog\\\u002F584458\\\u002F#post-content-body\",\"about\":[\"c_dcmiran\",\"h_linux\",\"h_sys_admin\",\"h_dwh\",\"h_cloud_services\",\"f_admin\"],\"image\":[\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Feq\\\u002Flu\\\u002Fj1\\\u002Feqluj19uzsrz18ydpkdtardjnka.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F-o\\\u002Fcm\\\u002Ffb\\\u002F-ocmfbzlgktfgwdy--xuopbjmqo.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002Fsd\\\u002Fsz\\\u002Fmp\\\u002Fsdszmpxwmgw9iamvif3y5jufvso.png\",\"https:\\\u002F\\\u002Fwww.brendangregg.com\\\u002Fblog\\\u002Fimages\\\u002F2021\\\u002Fzfsflamegraph-zoom.png\",\"https:\\\u002F\\\u002Fhabrastorage.org\\\u002Fwebt\\\u002F8p\\\u002Fhx\\\u002F-1\\\u002F8phx-1apbwvk5vchi3wxibeaorw.jpeg\"]}","metaDescription":"Отдел микросервисов Netflix обратился ко мне за помощью с загадочной проблемой. Они заявили, что у них на сервере файловая система ZFS потребляет 30% CPU. Я рассказывал об этом на конференции...","mainImageUrl":null,"amp":false},"polls":[],"commentsEnabled":true,"rulesRemindEnabled":false,"votesEnabled":true,"status":"published","plannedPublishTime":null,"checked":null,"isEditorial":false}},"articlesIds":{},"isLoading":false,"pagesCount":{},"route":{},"reasonsList":null,"view":"cards","lastVisitedRoute":{},"ssrCommentsArticleIds":[""],"karma":{}},"authorContribution":{"authors":{}},"betaTest":{"currentAnnouncement":null,"announcements":{},"announcementCards":null,"announcementComments":{},"announcementCommentThreads":{},"announcementCommentingStatuses":{},"archivedList":[]},"authorStatistics":{"articleRefs":{},"articleIds":{},"pagesCount":{},"route":{},"viewsCount":[],"maxStatsCount":{}},"career":{"seoLandings":[],"hubs":""},"comments":{"articleComments":{},"searchCommentsResults":null,"previewComment":null,"pagesCount":null,"commentAccess":{},"scrollParents":{},"pageArticleComments":{"lastViewedComment":0,"postId":null,"lastCommentTimestamp":"","moderated":[],"moderatedIds":[],"commentRoute":""}},"companies":{"companyRefs":{"dcmiran":{"alias":"dcmiran","imageUrl":"\u002F\u002Fhabrastorage.org\u002Fgetpro\u002Fhabr\u002Fcompany\u002F2bd\u002F077\u002Fd42\u002F2bd077d429f247d38e24e5f0612293ed.png","titleHtml":"Дата-центр «Миран»","descriptionHtml":"Решения для аренды и размещения ИТ-инфраструктуры","relatedData":null,"statistics":{"postsCount":124,"newsCount":50,"vacanciesCount":0,"employeesCount":7,"careerRating":null,"subscribersCount":951,"rating":119.99,"invest":null},"foundationDate":{"year":"1999","month":"04","day":"07"},"location":{"city":{"id":"447733","title":"Санкт-Петербург"},"region":{"id":"1948","title":"Санкт-Петербург и область"},"country":{"id":"168","title":"Россия"}},"siteUrl":"https:\u002F\u002Fmiran.ru\u002F","staffNumber":"51–100 человек","registrationDate":"2017-07-05T07:30:05+00:00","representativeUser":null,"contacts":[{"title":"Сайт","url":"https:\u002F\u002Fmiran.ru\u002F"}],"settings":{"analyticsSettings":[{"type":"ga","trackingId":"UA-61745753-1"}],"branding":null,"status":"active"},"metadata":{"titleHtml":"Дата-центр «Миран», Санкт-Петербург - Решения для аренды и размещения ИТ-инфраструктуры с 7 апреля 1999 г.","title":"Дата-центр «Миран», Санкт-Петербург - Решения для аренды и размещения ИТ-инфраструктуры с 7 апреля 1999 г.","keywords":["Производство и разработка электроники","Компьютерное железо","Процессоры","Информационная безопасность","Настольные компьютеры"],"descriptionHtml":"124 статьи от авторов компании Дата-центр «Миран»","description":"124 статьи от авторов компании Дата-центр «Миран»"},"aDeskSettings":null,"careerAlias":"dcmiran","maxCustomTrackerLinks":0}},"companyIds":{},"companyTopIds":{},"pagesCount":{},"companyProfiles":{},"companiesCategories":[],"companiesCategoriesTotalCount":0,"companiesWidgets":{},"companiesWorkers":{},"companiesFans":{},"route":{},"isLoading":false,"companyWorkersLoading":false,"companyFansLoading":false,"vacancies":{}},"companiesContribution":{"hubs":{},"flows":{},"companyRefs":{}},"companyHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"conversation":{"messages":[],"respondent":null,"isLoadMore":false},"conversations":{"conversations":[],"unreadCount":0,"pagesCount":0,"isLoadMore":false},"desktopState":{"desktopFl":null,"desktopHl":null,"isChecked":false,"isLoginDemanded":false},"dfp":{"slotsDict":{}},"docs":{"menu":{},"articles":{},"mainMenu":[],"loading":{"main":false,"dropdown":false,"article":false}},"feature":{"isProbablyVisible":"true"},"flows":{"flows":[{"alias":"develop","id":1,"route":{"name":"FLOW_PAGE","params":{"flowName":"develop"}}},{"alias":"admin","id":6,"route":{"name":"FLOW_PAGE","params":{"flowName":"admin"}}},{"alias":"design","id":2,"route":{"name":"FLOW_PAGE","params":{"flowName":"design"}}},{"alias":"management","id":3,"route":{"name":"FLOW_PAGE","params":{"flowName":"management"}}},{"alias":"marketing","id":4,"route":{"name":"FLOW_PAGE","params":{"flowName":"marketing"}}},{"alias":"popsci","id":7,"route":{"name":"FLOW_PAGE","params":{"flowName":"popsci"}}}]},"global":{"isPwa":false,"device":"desktop","isHabrCom":true},"hubs":{"hubRefs":{},"hubIds":{},"pagesCount":{},"isLoading":false,"route":{}},"hubsBlock":{"hubRefs":{},"hubIds":{}},"i18n":{"fl":"ru","hl":"ru"},"info":{"infoPage":{},"isLoading":true},"location":{"urlStruct":{"protocol":null,"slashes":null,"auth":null,"host":null,"port":null,"hostname":null,"hash":null,"search":null,"query":{},"pathname":null,"path":null,"href":""},"searchQuery":null},"me":{"user":null,"ppgDemanded":false,"karmaResetInfo":{"canReincarnate":null,"wasReincarnated":null,"currentScore":null},"notes":null},"mostReadingList":{"mostReadingListIds":[],"mostReadingListRefs":null,"promoPost":null},"pinnedPost":{"pinnedPost":null},"ppa":{"articles":{},"card":null,"transactions":null,"totalTransactions":null,"isAccessible":null},"projectsBlocks":{"activeBlocks":{}},"pullRefresh":{"shouldRefresh":false},"sandbox":{"articleIds":[],"articleRefs":{},"pagesCount":null,"route":{},"lastVisitedRoute":{},"isLoading":false},"settingsOther":{"inputs":{"uiLang":{"errors":[],"ref":null,"value":""},"articlesLangEnglish":{"errors":[],"ref":null,"value":false},"articlesLangRussian":{"errors":[],"ref":null,"value":false},"agreement":{"errors":[],"ref":null,"value":false},"email":{"errors":[],"ref":null,"value":true},"digest":{"errors":[],"ref":null,"value":true}}},"similarList":{"similarListIds":[],"similarListRefs":null},"ssr":{"error":null,"isDataLoaded":false,"isDataLoading":false,"isHydrationFailed":false,"isServer":false},"userHubsContribution":{"contributionRefs":{"hubRefs":{},"hubIds":{}}},"userInvites":{"availableInvites":0,"usedInvitesIds":[],"usedInvitesRefs":{},"usedInvitesPagesCount":0,"unusedInvitesIds":[],"unusedInvitesRefs":{},"unusedInvitesPagesCount":0},"users":{"authorRefs":{},"authorIds":{},"pagesCount":{},"authorProfiles":{},"userHubs":{},"userInvitations":{},"authorFollowers":{},"authorFollowed":{},"karmaStats":[],"statistics":null,"isLoading":false,"authorFollowersLoading":false,"authorFollowedLoading":false,"userHubsLoading":false,"userInvitationsLoading":false,"route":{}},"viewport":{"prevScrollY":{},"scrollY":0,"width":0},"tracker":{"items":{},"pagesCache":{},"markedViewedSilently":{},"markedRead":{},"unreadCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null},"unviewedCounters":{"applications":null,"system":null,"mentions":null,"subscribers":null,"posts_and_comments":null}}};(function(){var s;(s=document.currentScript||document.scripts[document.scripts.length-1]).parentNode.removeChild(s);}());</script>
+<script src="https://assets.habr.com/habr-web/js/chunk-vendors.c2c3fc9a.js" defer></script><script src="https://assets.habr.com/habr-web/js/app.c0af73e7.js" defer></script>
+
+
+
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+    </script>
+  
+  <script type="text/javascript" >
+    (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+    m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+    (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+    ym(24049213, "init", {
+      defer:true,
+      trackLinks:true,
+      accurateTrackBounce:true,
+      webvisor:false,
+    });
+  </script>
+  <noscript>
+    <div>
+      <img src="https://mc.yandex.ru/watch/24049213" style="position:absolute; left:-9999px;" alt="" />
+    </div>
+  </noscript>
+  
+    <script type="text/javascript">
+      window.addEventListener('load', function () {
+        setTimeout(() => {
+          const img = new Image();
+          img.src = 'https://vk.com/rtrg?p=VK-RTRG-421343-57vKE';
+        }, 0);
+      });
+    </script>
+  
+</body>
+</html>
